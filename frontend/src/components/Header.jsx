@@ -4,20 +4,20 @@ function Header() {
       style={{
         backgroundColor: "black",
         overflow: "hidden",
-        marginTop: "-20px",
-        marginBottom: "-5px",
+        marginTop: "-40px",
+        marginBottom: "-10px",
       }}
     >
       <div style={{ padding: "0" }}>
         <p
           style={{
             fontFamily: '"Merriweather", serif',
-            fontSize: "28px",
+            fontSize: "36px",
             color: "#FF0000",
-            paddingLeft: "40px",
+            paddingLeft: "35px",
             fontStyle: "italic",
             fontWeight: "bolder",
-            textShadow: "0 2px 0 rgba(255,255,255,1)",
+            textShadow: "2px 2px 0 rgba(255,255,255,1)",
           }}
         >
           J&amp;A
@@ -25,13 +25,13 @@ function Header() {
         <p
           style={{
             fontFamily: '"Merriweather", serif',
-            fontSize: "14px",
+            fontSize: "18px",
             color: "#FF0000",
             fontStyle: "italic",
-            paddingLeft: "20px",
-            marginTop: "-25px",
+            paddingLeft: "10px",
+            marginTop: "-40px",
             fontWeight: "bolder",
-            textShadow: "0 2px 0 rgba(255,255,255,1)",
+            textShadow: "2px 2px 0 rgba(255,255,255,1)",
           }}
         >
           CAR RENTAL

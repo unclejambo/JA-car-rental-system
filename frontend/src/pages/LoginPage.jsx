@@ -10,7 +10,7 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   return (
-    <div>
+    <>
       <Header />
       <div
         className="m-0 p-0 h-screen overflow-hidden"
@@ -19,6 +19,7 @@ function LoginPage() {
           backgroundSize: "cover",
           backgroundPosition: "center",
           height: "100vh",
+          width: "100vw",
           placeContent: "center",
           justifyItems: "center",
           textAlign: "center",
@@ -31,7 +32,7 @@ function LoginPage() {
             padding: "20px",
             width: "360px",
             height: "390px",
-            marginTop: "60px",
+            marginTop: "145px",
             placeContent: "center",
             justifyItems: "center",
             boxShadow: "0 2px 2px rgba(0, 0, 0, .7)",
@@ -176,7 +177,7 @@ function LoginPage() {
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

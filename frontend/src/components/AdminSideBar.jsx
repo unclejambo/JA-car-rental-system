@@ -11,7 +11,6 @@ export default function AdminSideBar() {
     overflow: "hidden",
     alignContent: "center",
     placeContent: "center",
-
   };
   return (
     <div
@@ -34,7 +33,7 @@ export default function AdminSideBar() {
       <br />
       <hr />
       <Link
-        to="/#"
+        to="/manage-booking"
         className="font-pathway"
         style={{
           textDecoration: "none",
@@ -48,7 +47,7 @@ export default function AdminSideBar() {
       <br />
       <hr />
       <Link
-        to="/#"
+        to="/manage-car"
         className="font-pathway"
         style={{
           textDecoration: "none",
@@ -62,7 +61,7 @@ export default function AdminSideBar() {
       <br />
       <hr />
       <Link
-        to="/#"
+        to="/manage-user"
         className="font-pathway"
         style={{
           textDecoration: "none",
@@ -90,7 +89,7 @@ export default function AdminSideBar() {
       <br />
       <hr />
       <Link
-        to="/#"
+        to="/transaction-logs"
         className="font-pathway"
         style={{
           textDecoration: "none",
@@ -104,7 +103,7 @@ export default function AdminSideBar() {
       <br />
       <hr />
       <Link
-        to="/#"
+        to="/report-analytics"
         className="font-pathway"
         style={{
           textDecoration: "none",
@@ -118,7 +117,7 @@ export default function AdminSideBar() {
       <br />
       <hr />
       <Link
-        to="/#"
+        to="/settings"
         className="font-pathway"
         style={{
           textDecoration: "none",
@@ -132,7 +131,7 @@ export default function AdminSideBar() {
       <br />
       <hr />
       <Link
-        to="/#"
+        to="/home"
         className="font-pathway"
         style={{
           textDecoration: "none",

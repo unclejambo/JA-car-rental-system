@@ -1,7 +1,7 @@
 import AdminSideBar from "../../components/AdminSideBar";
 import Header from "../../components/Header";
 
-function AdminDashboard() {
+export default function AdminSchedulePage() {
   return (
     <>
       <Header />
@@ -15,12 +15,12 @@ function AdminDashboard() {
           padding: "20px",
         }}
       >
-        <title>Dashboard</title>
+        <title>Schedule</title>
 
-        <h1 style={{ textAlign: "center" }}>Hilu, Admin Goy!</h1>
+        <h1 style={{ textAlign: "center" }}>
+          Hilu, Admin Goy! <br /> mao ni ang skedyul
+        </h1>
       </div>
     </>
   );
 }
-
-export default AdminDashboard;

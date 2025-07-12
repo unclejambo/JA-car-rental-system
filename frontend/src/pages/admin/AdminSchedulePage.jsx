@@ -1,23 +1,16 @@
 import AdminSideBar from "../../components/AdminSideBar";
 import Header from "../../components/Header";
+import "../../styles/adminschedule.css";
 
 export default function AdminSchedulePage() {
   return (
     <>
       <Header />
       <AdminSideBar />
-      <div
-        style={{
-          marginTop: "70px",
-          marginLeft: "20vw",
-          height: "calc(100vh - 70px)",
-          overflowY: "auto",
-          padding: "20px",
-        }}
-      >
+      <div className="page-content">
         <title>Schedule</title>
 
-        <h1 style={{ textAlign: "center" }}>
+        <h1>
           Hilu, Admin Goy! <br /> mao ni ang skedyul
         </h1>
       </div>

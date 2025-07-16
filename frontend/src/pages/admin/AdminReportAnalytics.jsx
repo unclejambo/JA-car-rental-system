@@ -1,7 +1,7 @@
 import AdminSideBar from "../../components/AdminSideBar";
 import Header from "../../components/Header";
 
-export default function AdminSettings() {
+export default function AdminReportAnalytics() {
   return (
     <>
       <Header />
@@ -15,9 +15,9 @@ export default function AdminSettings() {
           padding: "20px",
         }}
       >
-        <title>Settings</title>
+        <title>Report & Analytics</title>
 
-        <h1 style={{ textAlign: "center" }}>Settings</h1>
+        <h1 style={{ textAlign: "center" }}>Report & Analytics</h1>
       </div>
     </>
   );

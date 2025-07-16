@@ -6,19 +6,19 @@ import { Link } from "react-router-dom";
 
 export default function HomePage() {
   return (
-    <div>
+    <>
       <Header />
-
       <div
-        className="m-0 p-0 h-screen overflow-hidden"
+        className="m-0 p-0 h-screen"
         style={{
           backgroundImage: `url(${carImage})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
-          height: "100vh",
+          height: "105vh",
           placeContent: "center",
           justifyItems: "center",
           textAlign: "center",
+          zIndex: "100",
         }}
       >
         <LoginButton />
@@ -80,6 +80,6 @@ export default function HomePage() {
           </Link>
         </div>
       </div>
-    </div>
+    </>
   );
 }

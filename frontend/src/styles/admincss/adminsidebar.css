@@ -1,0 +1,43 @@
+.admin-sidebar {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  height: calc(100vh - 10vh);
+  width: 15vw;
+  background-color: #d9d9d9;
+  overflow: hidden;
+  align-content: center;
+  place-content: center;
+}
+
+.admin-sidebar a {
+  text-decoration: none;
+  color: #000;
+  font-size: 24px;
+  padding-left: 10px;
+  font-family: "Pathway Gothic One", sans-serif;
+}
+
+.admin-sidebar a:hover {
+  text-decoration: none;
+  color: #797979;
+  font-size: 24px;
+  padding-left: 10px;
+}
+
+.admin-sidebar .active {
+  text-decoration: none;
+  color: #797979;
+  font-size: 24px;
+  padding-left: 10px;
+}
+
+hr {
+  border: none;
+  height: 1px;
+  background-color: #000000;
+}
+
+br {
+  margin: 10px;
+}

@@ -26,6 +26,7 @@ function Header() {
             fontStyle: "italic",
             fontWeight: "bolder",
             textShadow: "2px 2px 0 rgba(255,255,255,.85)",
+            textDecoration: "none",
           }}
         >
           J&amp;A
@@ -42,6 +43,7 @@ function Header() {
             marginTop: "-40px",
             fontWeight: "bolder",
             textShadow: "2px 2px 0 rgba(255,255,255,.85)",
+            textDecoration: "none",
           }}
         >
           CAR RENTAL

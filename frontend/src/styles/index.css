@@ -5,3 +5,17 @@
 .font-pathway {
   font-family: "Pathway Gothic One", sans-serif;
 }
+
+table tbody tr {
+  border-bottom: 1px solid #000;
+}
+
+#globeButton {
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+#globeButton:hover {
+  color: #888888;
+}

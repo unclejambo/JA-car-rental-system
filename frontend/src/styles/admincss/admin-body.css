@@ -1,0 +1,83 @@
+.page-content {
+  position: fixed;
+  top: 85px;
+  left: 16vw;
+  width: calc(100vw - 20vw);
+  height: calc(100vh - 22.5vh);
+  overflow: auto;
+  padding: 20px;
+  background: #f8f8f8;
+  box-shadow: 0px 0px 3px #000;
+}
+
+.admin-schedule-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+@media (max-width: 992px) {
+  .page-content {
+    left: 21vw;
+    width: calc(100vw - 27.5vw);
+  }
+}
+
+@media (max-width: 600px) {
+  .page-content {
+    top: 60px;
+    left: 21vw;
+    width: calc(100vw - 29vw);
+    height: calc(100vh - 20.5vh);
+  }
+
+  .admin-sidebar a {
+    text-decoration: none;
+    color: #000;
+    font-size: 14px;
+    padding-left: 10px;
+  }
+
+  .admin-sidebar a:hover {
+    text-decoration: none;
+    color: #797979;
+    font-size: 14px;
+    padding-left: 10px;
+  }
+
+  .admin-sidebar .active {
+    text-decoration: none;
+    color: #797979;
+    font-size: 14px;
+    padding-left: 10px;
+  }
+}
+
+@media (max-width: 300px) {
+  .page-content {
+    top: 60px;
+    left: 21vw;
+    width: calc(100vw - 37vw);
+    height: calc(100vh - 20.5vh);
+  }
+
+  .admin-sidebar a {
+    text-decoration: none;
+    color: #000;
+    font-size: 9px;
+    padding-left: 2px;
+  }
+
+  .admin-sidebar a:hover {
+    text-decoration: none;
+    color: #797979;
+    font-size: 9px;
+    padding-left: 2px;
+  }
+
+  .admin-sidebar .active {
+    text-decoration: none;
+    color: #797979;
+    font-size: 9px;
+    padding-left: 2px;
+  }
+}

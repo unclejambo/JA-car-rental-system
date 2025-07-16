@@ -1,148 +1,34 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import "../styles/admincss/adminsidebar.css";
 
 export default function AdminSideBar() {
-  const sidebarStyle = {
-    position: "fixed",
-    top: "70px", // start below the fixed header
-    left: 0,
-    height: "calc(100vh - 70px)",
-    width: "20vw",
-    backgroundColor: "#D9D9D9",
-    overflow: "hidden",
-    alignContent: "center",
-    placeContent: "center",
-
-  };
   return (
-    <div
-      style={{
-        ...sidebarStyle,
-      }}
-    >
-      <Link
-        to="/#"
-        className="font-pathway"
-        style={{
-          textDecoration: "none",
-          fontSize: "24px",
-          paddingLeft: "10px",
-          color: "black",
-        }}
-      >
-        DASHBOARD
-      </Link>
+    <div id="admin-sidebar" className="admin-sidebar">
+      <NavLink to="/#">DASHBOARD</NavLink>
       <br />
       <hr />
-      <Link
-        to="/#"
-        className="font-pathway"
-        style={{
-          textDecoration: "none",
-          fontSize: "24px",
-          paddingLeft: "10px",
-          color: "black",
-        }}
-      >
-        MANAGE BOOKINGS
-      </Link>
+      <NavLink to="/manage-booking">MANAGE BOOKINGS</NavLink>
       <br />
       <hr />
-      <Link
-        to="/#"
-        className="font-pathway"
-        style={{
-          textDecoration: "none",
-          fontSize: "24px",
-          paddingLeft: "10px",
-          color: "black",
-        }}
-      >
-        MANAGE CARS
-      </Link>
+      <NavLink to="/manage-car">MANAGE CARS</NavLink>
       <br />
       <hr />
-      <Link
-        to="/#"
-        className="font-pathway"
-        style={{
-          textDecoration: "none",
-          fontSize: "24px",
-          paddingLeft: "10px",
-          color: "black",
-        }}
-      >
-        MANAGE USERS
-      </Link>
+      <NavLink to="/manage-user">MANAGE USERS</NavLink>
       <br />
       <hr />
-      <Link
-        to="/schedule"
-        className="font-pathway"
-        style={{
-          textDecoration: "none",
-          fontSize: "24px",
-          paddingLeft: "10px",
-          color: "black",
-        }}
-      >
-        SCHEDULE
-      </Link>
+      <NavLink to="/schedule">SCHEDULE</NavLink>
       <br />
       <hr />
-      <Link
-        to="/#"
-        className="font-pathway"
-        style={{
-          textDecoration: "none",
-          fontSize: "24px",
-          paddingLeft: "10px",
-          color: "black",
-        }}
-      >
-        TRANSACTION LOGS
-      </Link>
+      <NavLink to="/transaction-logs">TRANSACTION LOGS</NavLink>
       <br />
       <hr />
-      <Link
-        to="/#"
-        className="font-pathway"
-        style={{
-          textDecoration: "none",
-          fontSize: "24px",
-          paddingLeft: "10px",
-          color: "black",
-        }}
-      >
-        REPORT & ANALYTICS
-      </Link>
+      <NavLink to="/report-analytics">REPORT & ANALYTICS</NavLink>
       <br />
       <hr />
-      <Link
-        to="/#"
-        className="font-pathway"
-        style={{
-          textDecoration: "none",
-          fontSize: "24px",
-          paddingLeft: "10px",
-          color: "black",
-        }}
-      >
-        SETTINGS
-      </Link>
+      <NavLink to="/settings">SETTINGS</NavLink>
       <br />
       <hr />
-      <Link
-        to="/#"
-        className="font-pathway"
-        style={{
-          textDecoration: "none",
-          fontSize: "24px",
-          paddingLeft: "10px",
-          color: "black",
-        }}
-      >
-        LOGOUT
-      </Link>
+      <NavLink to="/home">LOGOUT</NavLink>
     </div>
   );
 }

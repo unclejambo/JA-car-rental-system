@@ -11,9 +11,10 @@ export default function LoginButton() {
           color: "white",
           border: "none",
           cursor: "pointer",
-          position: "absolute",
+          position: "fixed",
           top: "20px",
           right: "20px",
+          zIndex: "100",
         }}
       >
         Login

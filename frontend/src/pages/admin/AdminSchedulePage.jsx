@@ -1,10 +1,11 @@
 import AdminSideBar from "../../components/AdminSideBar";
 import Header from "../../components/Header";
-import "../../styles/adminschedule.css";
-import React, { useMemo } from "react";
+import "../../styles/admincss/admin-body.css";
+import React, { useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
+  getSortedRowModel,
   getPaginationRowModel,
   flexRender,
 } from "@tanstack/react-table";
@@ -15,11 +16,20 @@ export default function AdminSchedulePage() {
   const data = useScheduleStore((state) => state.reservations);
 
   const columns = useMemo(() => scheduleColumns, []);
+  const [sorting, setSorting] = useState([]);
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 5 });
 
   const table = useReactTable({
     data,
     columns,
+    state: { sorting, pagination },
+    onSortingChange: (updater) => {
+      setSorting(updater);
+      setPagination((p) => ({ ...p, pageIndex: 0 }));
+    },
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
 
@@ -34,7 +44,7 @@ export default function AdminSchedulePage() {
           Hilu, Admin Goy! <br /> mao ni ang skedyul
         </h1>
         <div className="p-4">
-          <table className="min-w-full">
+          <table className="min-w-full admin-schedule-table">
             <thead className="bg-gray-100">
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
@@ -44,7 +54,7 @@ export default function AdminSchedulePage() {
                       className="text-left cursor-pointer border font-pathway"
                       style={{
                         fontSize: "20px",
-                        padding: "3px",
+                        padding: "3px 3px 3px 10px",
                       }}
                       onClick={header.column.getToggleSortingHandler()}
                     >
@@ -65,14 +75,14 @@ export default function AdminSchedulePage() {
 
             <tbody>
               {table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="border-t">
+                <tr key={row.id} className="border-t font-pathway">
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
                       className="p-2"
                       style={{
                         borderBottom: "1px solid #000",
-                        padding: "10px",
+                        padding: "10px ",
                       }}
                     >
                       {flexRender(
@@ -99,7 +109,7 @@ export default function AdminSchedulePage() {
             >
               ← Prev
             </button>
-            <span>
+            <span style={{ padding: "0 10px" }}>
               Page {table.getState().pagination.pageIndex + 1} of{" "}
               {table.getPageCount()}
             </span>
@@ -109,17 +119,6 @@ export default function AdminSchedulePage() {
             >
               Next →
             </button>
-
-            <select
-              value={table.getState().pagination.pageSize}
-              onChange={(e) => table.setPageSize(Number(e.target.value))}
-            >
-              {[2, 5, 8].map((sz) => (
-                <option key={sz} value={sz}>
-                  Show {sz}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
       </div>

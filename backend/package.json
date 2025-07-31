@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "prisma": "prisma"
+    "prisma": "prisma",
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "express": "^4.18.2",

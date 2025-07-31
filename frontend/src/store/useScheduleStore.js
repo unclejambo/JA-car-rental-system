@@ -1,11 +1,8 @@
 import { create } from "zustand";
 
-// Global schedule store – holds reservation records used by AdminSchedulePage.
-// You can later load real data from your backend and call setReservations().
-
 export const useScheduleStore = create((set) => ({
   reservations: [
-    // Sample row – delete once you have real data
+    // FOR TESTING SA FRONT END NI... WILL REPLACE WITH ACTUAL DATABASE... SEE PRISMA SCHEMA (../prisma/schema.prisma) or run npx prisma studio sud sa backend
     {
       reservationId: 1,
       carPlate: "ABC-1234",

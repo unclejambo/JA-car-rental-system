@@ -1,5 +1,6 @@
 import AdminSideBar from "../../components/AdminSideBar";
 import Header from "../../components/Header";
+import { Link } from "react-router-dom";
 import "../../styles/admincss/admindashboard.css";
 
 function AdminDashboard() {
@@ -47,9 +48,9 @@ function AdminDashboard() {
               </h4>
             </div>
             <h3 className="font-pathway total">TOTAL BOOKINGS: 4</h3>
-            <a href="/#" className="more-details">
+            <Link to="/report-analytics" className="more-details">
               More Details
-            </a>
+            </Link>
           </div>
           <div className="topmost-2">
             <h1 className="font-pathway">
@@ -59,9 +60,9 @@ function AdminDashboard() {
               JASPEN GERME
             </h2>
             <h3 className="font-pathway total">TOTAL BOOKINGS: 4</h3>
-            <a href="/#" className="more-details">
+            <Link to="/report-analytics" className="more-details">
               More Details
-            </a>
+            </Link>
           </div>
         </div>
         <br />
@@ -69,16 +70,16 @@ function AdminDashboard() {
           <div className="topmost-1">
             <h1 className="font-pathway">SCHEDULE</h1>
             <h3 className="font-pathway">TODAY</h3>
-            <a href="/#" className="more-details">
+            <Link to="/schedule" className="more-details">
               More Details
-            </a>
+            </Link>
           </div>
           <div className="topmost-2">
             <h1 className="font-pathway">AVAILABLE CARS</h1>
             <h3 className="font-pathway">TODAY</h3>
-            <a href="/#" className="more-details">
+            <Link to="/manage-car" className="more-details">
               More Details
-            </a>
+            </Link>
           </div>
         </div>
         <br />
@@ -89,9 +90,9 @@ function AdminDashboard() {
             <p className="font-pathway text-[24px] no-req">
               No booking requests.
             </p>
-            <a href="/#" className="more-details-req">
+            <Link to="/manage-booking" className="more-details-req">
               More Details
-            </a>
+            </Link>
           </div>
           <br />
           <div className="request-2">
@@ -100,9 +101,9 @@ function AdminDashboard() {
             <p className="font-pathway text-[24px] no-req">
               No extension/cancellation requests.
             </p>
-            <a href="/#" className="more-details-req">
+            <Link to="/manage-booking" className="more-details-req">
               More Details
-            </a>
+            </Link>
           </div>
         </div>
       </div>

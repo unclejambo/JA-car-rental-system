@@ -10,7 +10,7 @@ export default function AdminCarPage() {
       <div className="page-content">
         <title>Manage Cars</title>
 
-        <h1 style={{ textAlign: "center" }}>Manage Cars</h1>
+        <h1 className="font-pathway text-2xl header-req">CARS</h1>
       </div>
     </>
   );

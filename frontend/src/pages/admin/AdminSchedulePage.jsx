@@ -9,8 +9,8 @@ import {
   getPaginationRowModel,
   flexRender,
 } from "@tanstack/react-table";
-import { scheduleColumns } from "./ScheduleColumns.jsx";
-import { useScheduleStore } from "../../store/useScheduleStore.js";
+import { scheduleColumns } from "../accessor/ScheduleColumns.jsx";
+import { useScheduleStore } from "../../store/schedule.js";
 
 export default function AdminSchedulePage() {
   const data = useScheduleStore((state) => state.reservations);
@@ -40,9 +40,7 @@ export default function AdminSchedulePage() {
       <div className="page-content">
         <title>Schedule</title>
 
-        <h1>
-          Hilu, Admin Goy! <br /> mao ni ang skedyul
-        </h1>
+        <h1 className="font-pathway text-2xl header-req">SCHEDULE</h1>
         <div className="p-4">
           <table className="min-w-full admin-schedule-table">
             <thead className="bg-gray-100">

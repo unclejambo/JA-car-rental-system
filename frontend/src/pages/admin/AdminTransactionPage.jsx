@@ -10,7 +10,7 @@ export default function AdminTransactionPage() {
       <div className="page-content">
         <title>Transaction Logs</title>
 
-        <h1 style={{ textAlign: "center" }}>Transaction Logs</h1>
+        <h1 className="font-pathway text-2xl header-req">TRANSACTIONS</h1>
       </div>
     </>
   );

@@ -10,7 +10,7 @@ export default function AdminManageUser() {
       <div className="page-content">
         <title>Manage Users</title>
 
-        <h1 style={{ textAlign: "center" }}>Manage Users</h1>
+        <h1 className="font-pathway text-2xl header-req">CUSTOMERS</h1>
       </div>
     </>
   );

@@ -19,3 +19,34 @@ table tbody tr {
 #globeButton:hover {
   color: #888888;
 }
+
+.status {
+  display: flex;
+  gap: 10px;
+}
+
+.release-btn {
+  margin-right: -20px;
+  border: none;
+  border-radius: 20px;
+  color: #eeeeee;
+  background-color: green;
+  cursor: pointer;
+}
+
+.release-btn:hover {
+  color: #888888;
+}
+
+.return-btn {
+  margin-right: -20px;
+  border: none;
+  border-radius: 20px;
+  color: #eeeeee;
+  background-color: green;
+  cursor: pointer;
+}
+
+.return-btn:hover {
+  color: #888888;
+}

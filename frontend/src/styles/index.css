@@ -50,3 +50,19 @@ table tbody tr {
 .return-btn:hover {
   color: #888888;
 }
+
+.admin-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.header-req {
+  margin: -5px 0 5px 0;
+}
+
+.pagination {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  bottom: 0;
+}

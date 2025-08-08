@@ -17,7 +17,7 @@ export default function AdminSchedulePage() {
 
   const columns = useMemo(() => scheduleColumns, []);
   const [sorting, setSorting] = useState([]);
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 5 });
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   const table = useReactTable({
     data,
@@ -93,14 +93,7 @@ export default function AdminSchedulePage() {
               ))}
             </tbody>
           </table>
-          <div
-            className="mt-2 flex gap-2"
-            style={{
-              marginTop: "20px",
-              alignItems: "center",
-              placeContent: "center",
-            }}
-          >
+          <div className="mt-2 flex gap-2 pagination">
             <button
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}

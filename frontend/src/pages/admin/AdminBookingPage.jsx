@@ -1,7 +1,6 @@
 import AdminSideBar from "../../components/AdminSideBar";
 import Header from "../../components/Header";
 import "../../styles/admincss/adminbooking.css";
-import "../../styles/index.css";
 import React, { useMemo, useState } from "react";
 import {
   useReactTable,
@@ -14,7 +13,7 @@ import { bookingColumns } from "../accessor/BookingColumns.jsx";
 import { useBookingStore } from "../../store/bookings.js";
 
 export default function AdminBookingPage() {
-  const data = useBookingStore((state) => state.reservations);
+  const data = useBookingStore((state) => state.bookings);
 
   const columns = useMemo(() => bookingColumns, []);
   const [sorting, setSorting] = useState([]);
@@ -70,26 +69,41 @@ export default function AdminBookingPage() {
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="border-t font-pathway">
-                {row.getVisibleCells().map((cell) => (
-                  <td
-                    key={cell.id}
-                    className="p-2"
-                    style={{
-                      borderBottom: "1px solid #000",
-                      padding: "10px ",
-                    }}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
+            {table.getRowModel().rows.length === 0 ? (
+              <tr style={{ border: "none" }}>
+                <td
+                  colSpan={table.getAllColumns().length}
+                  className="text-center py-4 font-pathway"
+                  style={{ color: "#808080" }}
+                >
+                  <h3>No booking requests.</h3>
+                </td>
               </tr>
-            ))}
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <tr key={row.id} className="border-t font-pathway">
+                  {row.getVisibleCells().map((cell) => (
+                    <td
+                      key={cell.id}
+                      className="p-2"
+                      style={{
+                        borderBottom: "1px solid #000",
+                        padding: "10px ",
+                      }}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
         <div
-          className="mt-2 flex gap-2"
+          className="mt-2 flex gap-2 pagination"
           style={{
             marginTop: "15px",
             alignItems: "center",

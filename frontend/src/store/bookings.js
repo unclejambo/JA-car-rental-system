@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export const useBookingStore = create((set) => ({
-  reservations: [
+  bookings: [
     {
       reservationId: 1,
       customerName: "Juan Dela Cruz",
@@ -58,5 +58,5 @@ export const useBookingStore = create((set) => ({
       bookingStatus: "Confirmed",
     },
   ],
-  setReservations: (rows) => set({ reservations: rows }),
+  setBookings: (rows) => set({ bookings: rows }),
 }));

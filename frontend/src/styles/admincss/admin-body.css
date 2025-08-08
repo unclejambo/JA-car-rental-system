@@ -1,9 +1,9 @@
 .page-content {
   position: fixed;
-  top: 85px;
+  top: 80px;
   left: 16vw;
   width: calc(100vw - 20vw);
-  height: calc(100vh - 22.5vh);
+  height: calc(100vh - 21vh);
   overflow: auto;
   padding: 20px;
   background: #f8f8f8;

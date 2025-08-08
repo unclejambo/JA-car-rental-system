@@ -40,7 +40,6 @@ export const scheduleColumns = [
       if (row.startDate === "2025-07-06") {
         return (
           <span className="inline-flex items-center gap-1 status">
-            {status}
             <button
               type="button"
               onClick={() => {
@@ -57,7 +56,6 @@ export const scheduleColumns = [
       if (row.endDate === "2025-08-13") {
         return (
           <span className="inline-flex items-center gap-1 status">
-            {status}
             <button
               type="button"
               onClick={() => {

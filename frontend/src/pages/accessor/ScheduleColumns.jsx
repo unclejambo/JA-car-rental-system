@@ -31,7 +31,7 @@ export const scheduleColumns = [
               }}
               id="globeButton"
             >
-              <GlobeAltIcon style={{ height: "14px", width: "14px" }} />
+              <GlobeAltIcon />
             </button>
           </span>
         );

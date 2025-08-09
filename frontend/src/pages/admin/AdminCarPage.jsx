@@ -13,12 +13,23 @@ import { carColumns } from "../accessor/CarColumns.jsx";
 import { useCarStore } from "../../store/cars.js";
 import { carMaintenanceColumns } from "../accessor/CarMaintenanceColumns.jsx";
 import { useMaintenanceStore } from "../../store/maintenance.js";
+import AddCarModal from "../../components/modal/AddCarModal.jsx";
+import EditCarModal from "../../components/modal/EditCarModal.jsx";
+import { AiOutlinePlus } from "react-icons/ai";
 
 export default function AdminCarPage() {
   const data = useCarStore((state) => state.cars);
   const maintenanceData = useMaintenanceStore((state) => state.maintenances);
 
-  const columns = useMemo(() => carColumns, []);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const openAddModal = () => setShowAddModal(true);
+  const closeAddModal = () => setShowAddModal(false);
+
+  const [editCar, setEditCar] = useState(null);
+  const openEditModal = (car) => setEditCar(car);
+  const closeEditModal = () => setEditCar(null);
+
+  const columns = useMemo(() => carColumns(openEditModal), [openEditModal]);
   const maintenanceColumns = useMemo(() => carMaintenanceColumns, []);
   const [sorting, setSorting] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 5 });
@@ -59,6 +70,12 @@ export default function AdminCarPage() {
         <title>Manage Cars</title>
 
         <h1 className="font-pathway text-2xl header-req">CARS</h1>
+        <button className="add-car-btn" onClick={openAddModal}>
+          <AiOutlinePlus className="add-icon" style={{ marginRight: 6 }} />
+          ADD NEW CAR
+        </button>
+        <AddCarModal show={showAddModal} onClose={closeAddModal} />
+        <EditCarModal show={!!editCar} onClose={closeEditModal} />
 
         <table className="admin-table">
           <thead>
@@ -122,6 +139,31 @@ export default function AdminCarPage() {
             )}
           </tbody>
         </table>
+        <div
+          className="mt-2 flex gap-2 pagination"
+          style={{
+            marginTop: "15px",
+            alignItems: "center",
+            placeContent: "center",
+          }}
+        >
+          <button
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            ← Prev
+          </button>
+          <span style={{ padding: "0 10px" }}>
+            {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount()}
+          </span>
+          <button
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next →
+          </button>
+        </div>
       </div>
       <br />
       <div className="page-content-maintenance">

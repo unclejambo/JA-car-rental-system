@@ -117,7 +117,7 @@ export default function AdminBookingPage() {
             ← Prev
           </button>
           <span style={{ padding: "0 10px" }}>
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getState().pagination.pageIndex + 1} of{" "}
             {table.getPageCount()}
           </span>
           <button

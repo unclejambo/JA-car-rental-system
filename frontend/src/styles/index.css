@@ -11,9 +11,17 @@ table tbody tr {
 }
 
 #globeButton {
+  display: inline-flex;
+  padding: 0;
   border: none;
   background-color: transparent;
   cursor: pointer;
+  vertical-align: middle;
+}
+
+#globeButton svg {
+  width: 20px;
+  height: 20px;
 }
 
 #globeButton:hover {
@@ -26,6 +34,7 @@ table tbody tr {
 }
 
 .release-btn {
+  padding: 3px 10px;
   margin-right: -20px;
   border: none;
   border-radius: 20px;
@@ -39,6 +48,7 @@ table tbody tr {
 }
 
 .return-btn {
+  padding: 3px 10px;
   margin-right: -20px;
   border: none;
   border-radius: 20px;

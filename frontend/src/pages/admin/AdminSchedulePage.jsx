@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { scheduleColumns } from "../accessor/ScheduleColumns.jsx";
 import { useScheduleStore } from "../../store/schedule.js";
+import { HiCalendar } from "react-icons/hi2";
 
 export default function AdminSchedulePage() {
   const data = useScheduleStore((state) => state.reservations);
@@ -40,7 +41,10 @@ export default function AdminSchedulePage() {
       <div className="page-content">
         <title>Schedule</title>
 
-        <h1 className="font-pathway text-2xl header-req">SCHEDULE</h1>
+        <h1 className="font-pathway text-2xl header-req">
+          <HiCalendar style={{ verticalAlign: "-3px", marginRight: "5px" }} />
+          SCHEDULE
+        </h1>
         <div className="p-4">
           <table className="min-w-full admin-schedule-table">
             <thead className="bg-gray-100">

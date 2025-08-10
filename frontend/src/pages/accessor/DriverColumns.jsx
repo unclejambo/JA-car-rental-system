@@ -4,20 +4,17 @@ import "../../styles/index.css";
 
 const c = createColumnHelper();
 
-export const userColumns = [
-  c.accessor("customerFirstName", { header: "First Name" }),
-  c.accessor("customerLastName", { header: "Last Name" }),
-  c.accessor("customerAddress", {
+export const driverColumns = [
+  c.accessor("driverFirstName", { header: "First Name" }),
+  c.accessor("driverLastName", { header: "Last Name" }),
+  c.accessor("driverAddress", {
     header: "Address",
     cell: (info) => <span>{info.getValue().slice(0, 31)}</span>,
   }),
   c.accessor("contactNumber", { header: "Contact Number" }),
-  c.accessor("socMedLink", {
-    header: "Social Media Link",
-    cell: (info) => <span>{info.getValue().slice(12, 30)}</span>,
-  }),
-  c.accessor("customerEmail", { header: "Email" }),
   c.accessor("driverLicense", { header: "Driver License" }),
+  c.accessor("restriction", { header: "Restriction" }),
+  c.accessor("expirationDate", { header: "Expiration Date" }),
   c.accessor("username", { header: "Username" }),
   c.accessor("password", { header: "Password" }),
   c.accessor("status", {

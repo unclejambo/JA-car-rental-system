@@ -4,25 +4,26 @@ import "../../styles/index.css";
 
 const c = createColumnHelper();
 
-export const userColumns = [
-  c.accessor("customerFirstName", { header: "First Name" }),
-  c.accessor("customerLastName", { header: "Last Name" }),
-  c.accessor("customerAddress", {
+export const staffColumns = [
+  c.accessor("staffFirstName", { header: "First Name" }),
+  c.accessor("staffLastName", { header: "Last Name" }),
+  c.accessor("staffAddress", {
     header: "Address",
     cell: (info) => <span>{info.getValue().slice(0, 31)}</span>,
   }),
   c.accessor("contactNumber", { header: "Contact Number" }),
-  c.accessor("socMedLink", {
-    header: "Social Media Link",
-    cell: (info) => <span>{info.getValue().slice(12, 30)}</span>,
-  }),
-  c.accessor("customerEmail", { header: "Email" }),
-  c.accessor("driverLicense", { header: "Driver License" }),
+  c.accessor("staffEmail", { header: "Email" }),
   c.accessor("username", { header: "Username" }),
   c.accessor("password", { header: "Password" }),
   c.accessor("status", {
     header: "Status",
     cell: (info) => {
+      const row = info.row.original;
+
+      if (row.type === "ADMIN") {
+        return row.type;
+      }
+
       const currentStatus = info.getValue();
       const statusOptions = ["Active", "Inactive"];
       const otherOption = statusOptions.find(

@@ -1,8 +1,6 @@
-
 import { createColumnHelper } from "@tanstack/react-table";
 import "../../styles/index.css";
 import { MdEdit } from "react-icons/md";
-
 
 const c = createColumnHelper();
 

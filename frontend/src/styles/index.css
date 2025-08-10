@@ -20,8 +20,8 @@ table tbody tr {
 }
 
 #globeButton svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 #globeButton:hover {
@@ -75,4 +75,40 @@ table tbody tr {
   left: 50%;
   transform: translate(-50%, -50%);
   bottom: 0;
+}
+
+.select-opt {
+  width: auto;
+  margin: 0;
+  font-size: 14px;
+  padding: 2px 3px;
+  border: none;
+  border-radius: 10px;
+  background-color: #d9d9d9;
+  cursor: pointer;
+}
+
+.select-opt:hover {
+  background-color: #c9c9c9;
+}
+
+.select-opt option {
+  background-color: #d9d9d9;
+  color: black;
+}
+
+.approve-btn {
+  position: absolute;
+  right: 0;
+  background-color: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: green;
+  margin: 0;
+  padding: 0;
+}
+
+.approve-btn:hover {
+  color: rgb(1, 95, 1);
 }

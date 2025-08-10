@@ -38,14 +38,16 @@ function AdminDashboard() {
                 alt="nissan"
                 className="w-[200px] h-[120px]"
               />
-              <h4 className="font-pathway text-[30px]">
-                Nissan
-                <br />
-                Terra
-                <h5 className="font-pathway text-[16px]" style={{ margin: 0 }}>
+              <div>
+                <h4 className="font-pathway text-[30px] m-0">
+                  Nissan
+                  <br />
+                  Terra
+                </h4>
+                <h5 className="font-pathway text-[16px] mt-1 mb-0">
                   SUV
                 </h5>
-              </h4>
+              </div>
             </div>
             <h3 className="font-pathway total">TOTAL BOOKINGS: 4</h3>
             <Link to="/report-analytics" className="more-details">

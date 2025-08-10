@@ -77,24 +77,79 @@ table tbody tr {
   bottom: 0;
 }
 
+/* Base select styles */
 .select-opt {
   width: auto;
   margin: 0;
   font-size: 14px;
-  padding: 2px 3px;
+  padding: 4px 28px 4px 12px;
   border: none;
   border-radius: 10px;
   background-color: #d9d9d9;
   cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
 }
 
-.select-opt:hover {
-  background-color: #c9c9c9;
+/* Active state */
+.select-opt[value="Active"],
+.select-opt[value="Active"]:hover,
+.select-opt[value="Active"]:focus {
+  background-color: #4CAF50 !important;
+  color: white !important;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
 }
 
+/* Inactive state */
+.select-opt[value="Inactive"],
+.select-opt[value="Inactive"]:hover,
+.select-opt[value="Inactive"]:focus {
+  background-color: #FF9800 !important;
+  color: white !important;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+/* Style the dropdown options */
 .select-opt option {
-  background-color: #d9d9d9;
+  background-color: white;
   color: black;
+  padding: 8px 12px;
+}
+
+/* Style the Active option in dropdown */
+.select-opt option[value="Active"] {
+  background-color: #4CAF50;
+  color: white;
+}
+
+/* Style the Inactive option in dropdown */
+.select-opt option[value="Inactive"] {
+  background-color: #FF9800;
+  color: white;
+}
+
+/* Style the dropdown when it's open */
+.select-opt:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
+}
+
+/* Style the dropdown arrow */
+.select-opt {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+  padding-right: 28px;
 }
 
 .approve-btn {

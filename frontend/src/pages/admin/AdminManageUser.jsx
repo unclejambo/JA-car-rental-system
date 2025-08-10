@@ -18,6 +18,9 @@ import { driverColumns } from "../accessor/DriverColumns.jsx";
 import { HiMiniChevronRight } from "react-icons/hi2";
 import { HiMiniChevronLeft } from "react-icons/hi2";
 import { HiOutlineUserGroup } from "react-icons/hi2";
+import { AiOutlinePlus } from "react-icons/ai";
+import AddStaffModal from "../../components/modal/AddStaffModal";
+import AddDriverModal from "../../components/modal/AddDriverModal";
 
 export default function AdminManageUser() {
   const userData = useUserStore((state) => state.users);
@@ -27,6 +30,14 @@ export default function AdminManageUser() {
   const [userType, setUserType] = useState("customer"); // 'customer', 'staff', or 'driver'
   const [sorting, setSorting] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [showAddDriverModal, setShowAddDriverModal] = useState(false);
+
+  const openAddStaffModal = () => setShowAddStaffModal(true);
+  const closeAddStaffModal = () => setShowAddStaffModal(false);
+  
+  const openAddDriverModal = () => setShowAddDriverModal(true);
+  const closeAddDriverModal = () => setShowAddDriverModal(false);
 
   const [users, setUsers] = useState(userData);
   const [staff, setStaff] = useState(staffData);
@@ -134,6 +145,9 @@ export default function AdminManageUser() {
     <>
       <Header />
       <AdminSideBar />
+      
+      <AddStaffModal show={showAddStaffModal} onClose={closeAddStaffModal} />
+      <AddDriverModal show={showAddDriverModal} onClose={closeAddDriverModal} />
       <div className="users-container">
         <button
           className={getButtonClass("customer")}
@@ -163,6 +177,19 @@ export default function AdminManageUser() {
           />
           {userType.toUpperCase()}
         </h1>
+
+        {userType === "staff" && (
+          <button className="add-car-btn" onClick={openAddStaffModal}>
+            <AiOutlinePlus className="add-icon" style={{ marginRight: 6 }} />
+            ADD NEW STAFF
+          </button>
+        )}
+        {userType === "driver" && (
+          <button className="add-car-btn" onClick={openAddDriverModal}>
+            <AiOutlinePlus className="add-icon" style={{ marginRight: 6 }} />
+            ADD NEW DRIVER
+          </button>
+        )}
         <table className="admin-table">
           <thead>
             {activeTable.getHeaderGroups().map((hg) => (

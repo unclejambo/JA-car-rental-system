@@ -12,11 +12,11 @@ function AdminDashboard() {
       <div
         style={{
           marginTop: "55px",
-          marginLeft: "15vw",
-          height: "calc(100vh - 19vh)",
-          width: "auto",
+          marginLeft: "15.2vw",
+          height: "calc(100vh - 15.5vh)",
+          width: "calc(100vw - 17vw)",
           overflowY: "auto",
-          padding: "20px",
+          padding: "10px",
         }}
       >
         <title>Dashboard</title>

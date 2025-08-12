@@ -54,8 +54,5 @@
   background-color: #4a4a4a;
   color: white;
   font-weight: bold;
-}
-
-.requests-container button.active:hover {
-  background-color: #3a3a3a;
+  cursor: default;
 }

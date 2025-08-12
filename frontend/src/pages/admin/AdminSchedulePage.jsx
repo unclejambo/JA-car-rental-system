@@ -11,17 +11,28 @@ import {
 } from "@tanstack/react-table";
 import { scheduleColumns } from "../accessor/ScheduleColumns.jsx";
 import { useScheduleStore } from "../../store/schedule.js";
-import { HiCalendar } from "react-icons/hi2";
+import { HiCalendar, HiMagnifyingGlass } from "react-icons/hi2";
 
 export default function AdminSchedulePage() {
-  const data = useScheduleStore((state) => state.reservations);
+  const allData = useScheduleStore((state) => state.reservations);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Filter data based on search term
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return allData;
+    const term = searchTerm.toLowerCase();
+    return allData.filter(item => 
+      (item.customerName && item.customerName.toLowerCase().includes(term)) ||
+      (item.driverName && item.driverName.toLowerCase().includes(term))
+    );
+  }, [allData, searchTerm]);
 
   const columns = useMemo(() => scheduleColumns, []);
   const [sorting, setSorting] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     state: { sorting, pagination },
     onSortingChange: (updater) => {
@@ -41,10 +52,22 @@ export default function AdminSchedulePage() {
       <div className="page-content">
         <title>Schedule</title>
 
-        <h1 className="font-pathway text-2xl header-req">
-          <HiCalendar style={{ verticalAlign: "-3px", marginRight: "5px" }} />
-          SCHEDULE
-        </h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="font-pathway text-2xl header-req">
+            <HiCalendar style={{ verticalAlign: "-3px", marginRight: "5px" }} />
+            SCHEDULE
+          </h1>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search by name..."
+              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <HiMagnifyingGlass className="absolute left-3 top-3 text-gray-400" />
+          </div>
+        </div>
         <div className="p-4">
           <table className="min-w-full admin-schedule-table">
             <thead className="bg-gray-100">

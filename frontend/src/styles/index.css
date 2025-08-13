@@ -10,19 +10,6 @@ table tbody tr {
   border-bottom: 1px solid #000;
 }
 
-#globeButton {
-  display: inline-flex;
-  padding: 0;
-  border: none;
-  background-color: transparent;
-  cursor: pointer;
-  vertical-align: middle;
-}
-
-#globeButton svg {
-  width: 18px;
-  height: 18px;
-}
 
 #globeButton:hover {
   color: #888888;

@@ -35,7 +35,9 @@ export default function AdminTransactionPage() {
 
   const filteredTransactions = useMemo(() => {
     if (activeTab === "all") return transactions;
-    return transactions.filter(tx => tx.paymentStatus === activeTab);
+    if (activeTab === "payment") return transactions.filter(tx => tx.paymentStatus === 'Paid');
+    if (activeTab === "refund") return transactions.filter(tx => tx.paymentStatus === 'Refunded');
+    return transactions;
   }, [transactions, activeTab]);
 
   const columns = useMemo(
@@ -76,6 +78,8 @@ export default function AdminTransactionPage() {
             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
               info.getValue() === 'Paid'
                 ? 'bg-green-100 text-green-800'
+                : info.getValue() === 'Refunded'
+                ? 'bg-yellow-100 text-yellow-800'
                 : 'bg-red-100 text-red-800'
             }`}
           >
@@ -115,14 +119,14 @@ export default function AdminTransactionPage() {
             ALL TRANSACTIONS
           </button>
           <button
-            className={getButtonClass("Paid")}
-            onClick={() => setActiveTab("Paid")}
+            className={getButtonClass("payment")}
+            onClick={() => setActiveTab("payment")}
           >
             Payment Logs
           </button>
           <button
-            className={getButtonClass("Pending")}
-            onClick={() => setActiveTab("Pending")}
+            className={getButtonClass("refund")}
+            onClick={() => setActiveTab("refund")}
           >
             Refund Logs
           </button>

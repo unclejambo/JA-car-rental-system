@@ -2,7 +2,7 @@
   position: fixed;
   top: 70px;
   left: 0;
-  height: calc(100vh - 70px);
+  height: calc(100vh - 10vh);
   width: 15vw;
   background-color: #d9d9d9;
   overflow: hidden;
@@ -20,16 +20,17 @@
 
 .admin-sidebar a:hover {
   text-decoration: none;
-  color: #8f8f8f;
+  color: #797979;
   font-size: 24px;
   padding-left: 10px;
 }
 
 .admin-sidebar .active {
   text-decoration: none;
-  color: #8f8f8f;
+  color: #797979;
   font-size: 24px;
   padding-left: 10px;
+  cursor: default;
 }
 
 hr {

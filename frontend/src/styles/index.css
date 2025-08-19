@@ -10,12 +10,147 @@ table tbody tr {
   border-bottom: 1px solid #000;
 }
 
-#globeButton {
-  border: none;
-  background-color: transparent;
-  cursor: pointer;
-}
 
 #globeButton:hover {
   color: #888888;
+}
+
+.status {
+  display: flex;
+  gap: 10px;
+}
+
+.release-btn {
+  padding: 3px 10px;
+  margin-right: -20px;
+  border: none;
+  border-radius: 20px;
+  color: #eeeeee;
+  background-color: green;
+  cursor: pointer;
+}
+
+.release-btn:hover {
+  color: #888888;
+}
+
+.return-btn {
+  padding: 3px 10px;
+  margin-right: -20px;
+  border: none;
+  border-radius: 20px;
+  color: #eeeeee;
+  background-color: green;
+  cursor: pointer;
+}
+
+.return-btn:hover {
+  color: #888888;
+}
+
+.admin-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.header-req {
+  margin: -5px 0 5px 0;
+}
+
+.pagination {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  bottom: 0;
+}
+
+/* Base select styles */
+.select-opt {
+  width: auto;
+  margin: 0;
+  font-size: 14px;
+  padding: 4px 28px 4px 12px;
+  border: none;
+  border-radius: 10px;
+  background-color: #d9d9d9;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+}
+
+/* Active state */
+.select-opt[value="Active"],
+.select-opt[value="Active"]:hover,
+.select-opt[value="Active"]:focus {
+  background-color: #4CAF50 !important;
+  color: white !important;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+/* Inactive state */
+.select-opt[value="Inactive"],
+.select-opt[value="Inactive"]:hover,
+.select-opt[value="Inactive"]:focus {
+  background-color: #FF9800 !important;
+  color: white !important;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+/* Style the dropdown options */
+.select-opt option {
+  background-color: white;
+  color: black;
+  padding: 8px 12px;
+}
+
+/* Style the Active option in dropdown */
+.select-opt option[value="Active"] {
+  background-color: #4CAF50;
+  color: white;
+}
+
+/* Style the Inactive option in dropdown */
+.select-opt option[value="Inactive"] {
+  background-color: #FF9800;
+  color: white;
+}
+
+/* Style the dropdown when it's open */
+.select-opt:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
+}
+
+/* Style the dropdown arrow */
+.select-opt {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+  padding-right: 28px;
+}
+
+.approve-btn {
+  position: absolute;
+  right: 0;
+  background-color: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: green;
+  margin: 0;
+  padding: 0;
+}
+
+.approve-btn:hover {
+  color: rgb(1, 95, 1);
 }

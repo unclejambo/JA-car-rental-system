@@ -1,0 +1,73 @@
+.div-1,
+.div-2 {
+  display: flex;
+  gap: 10px;
+}
+
+.topmost-1,
+.topmost-2 {
+  flex: 1;
+  background-color: #f8f8f8;
+  height: 250px;
+  width: 200px;
+  box-shadow: 0px 0px 3px #000;
+  padding: 5px;
+  position: relative;
+}
+
+.request-1,
+.request-2 {
+  flex: 1;
+  background-color: #f8f8f8;
+  height: 200px;
+  width: auto;
+  box-shadow: 0px 0px 3px #000;
+  padding: 5px;
+  position: relative;
+}
+
+.topmost-1 h1,
+.topmost-1 h3,
+.topmost-2 h1,
+.topmost-2 h3,
+.request-1 h1,
+.request-2 h1 {
+  margin: 0;
+}
+
+.total {
+  position: absolute;
+  bottom: 20px;
+  left: 8px;
+}
+
+.no-req {
+  text-align: center;
+  color: #808080;
+}
+
+.more-details {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  font-family: "Pathway Gothic One", sans-serif;
+  color: #089eff;
+  font-size: 16px;
+}
+
+.more-details:hover {
+  color: #088edf;
+}
+
+.more-details-req {
+  position: absolute;
+  right: 8px;
+  top: 17px;
+  font-family: "Pathway Gothic One", sans-serif;
+  color: #089eff;
+  font-size: 16px;
+}
+
+.more-details-req:hover {
+  color: #088edf;
+}

@@ -1,23 +1,19 @@
 import AdminSideBar from "../../components/AdminSideBar";
 import Header from "../../components/Header";
+import "../../styles/admincss/admin-body.css";
+import { HiCog8Tooth } from "react-icons/hi2";
 
 export default function AdminSettings() {
   return (
     <>
       <Header />
       <AdminSideBar />
-      <div
-        style={{
-          marginTop: "70px",
-          marginLeft: "20vw",
-          height: "calc(100vh - 70px)",
-          overflowY: "auto",
-          padding: "20px",
-        }}
-      >
+      <div className="page-content">
         <title>Settings</title>
-
-        <h1 style={{ textAlign: "center" }}>Settings</h1>
+        <h1 className="font-pathway text-2xl header-req">
+          <HiCog8Tooth style={{ verticalAlign: "-3px", marginRight: "5px" }} />
+          SETTINGS
+        </h1>
       </div>
     </>
   );

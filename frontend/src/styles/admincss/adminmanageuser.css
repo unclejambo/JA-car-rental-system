@@ -1,0 +1,43 @@
+.page-content-customers {
+  position: fixed;
+  margin-top: 115px;
+  margin-left: 15.7vw;
+  margin-right: 1vw;
+  width: calc(100vw - 17vw);
+  height: calc(100vh - 22vh);
+  padding: 5px;
+  background: #f8f8f8;
+  box-shadow: 0px 0px 3px #000;
+  overflow-y: auto;
+}
+
+.users-container {
+  position: absolute;
+  display: inline-flex;
+  margin-top: 80px;
+  margin-left: 15.7vw;
+  gap: 1px;
+}
+
+.users-container button {
+  font-family: "Pathway Gothic One", sans-serif;
+  font-size: 24px;
+  padding: 5px 20px;
+  border: none;
+  background-color: #d9d9d9;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.users-container button:hover {
+  background-color: #c9c9c9;
+}
+
+.users-container button.active {
+  background-color: #4a4a4a;
+  color: white;
+  font-weight: bold;
+  cursor: default;
+}

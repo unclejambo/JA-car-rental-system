@@ -51,7 +51,8 @@ export default function AddCarModal({ show, onClose }) {
               <input className="font-pathway" type="file" />
             </div>
             <div className="btn-container">
-              <button className="font-pathway save-btn">Save</button>
+              <button className="font-pathway save-btn" onClick={onClose}>
+                Save</button>
               <button className="font-pathway cancel-btn" onClick={onClose}>
                 Cancel
               </button>

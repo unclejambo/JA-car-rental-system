@@ -33,19 +33,19 @@ export default function AdminBookingPage() {
   const [bookingSorting, setBookingSorting] = useState([]);
   const [bookingPagination, setBookingPagination] = useState({
     pageIndex: 0,
-    pageSize: 5,
+    pageSize: 10,
   });
 
   const [cancellationSorting, setCancellationSorting] = useState([]);
   const [cancellationPagination, setCancellationPagination] = useState({
     pageIndex: 0,
-    pageSize: 5,
+    pageSize: 10,
   });
 
   const [extensionSorting, setExtensionSorting] = useState([]);
   const [extensionPagination, setExtensionPagination] = useState({
     pageIndex: 0,
-    pageSize: 5,
+    pageSize: 10,
   });
 
   // Initialize tables with their own state

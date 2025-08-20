@@ -1,7 +1,7 @@
 import AdminSideBar from "../../components/AdminSideBar";
 import Header from "../../components/Header";
 import "../../styles/admincss/admincar.css";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -16,109 +16,73 @@ import { useMaintenanceStore } from "../../store/maintenance.js";
 import AddCarModal from "../../components/modal/AddCarModal.jsx";
 import EditCarModal from "../../components/modal/EditCarModal.jsx";
 import { AiOutlinePlus } from "react-icons/ai";
-import { HiMiniChevronRight } from "react-icons/hi2";
-import { HiMiniChevronLeft } from "react-icons/hi2";
-import { HiWrenchScrewdriver } from "react-icons/hi2";
-import { HiTruck } from "react-icons/hi2";
+import { HiMiniChevronRight, HiMiniChevronLeft } from "react-icons/hi2";
+import { HiTruck, HiWrenchScrewdriver } from "react-icons/hi2";
 
 export default function AdminCarPage() {
   const carsData = useCarStore((state) => state.cars);
   const maintenanceData = useMaintenanceStore((state) => state.maintenances);
 
   const [activeTab, setActiveTab] = useState("cars");
-
+  const [sorting, setSorting] = useState([]);
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editCar, setEditCar] = useState(null);
+
   const openAddModal = () => setShowAddModal(true);
   const closeAddModal = () => setShowAddModal(false);
-
-  const [editCar, setEditCar] = useState(null);
-  const openEditModal = useCallback((car) => setEditCar(car), []);
   const closeEditModal = () => setEditCar(null);
 
-  // Memoize columns
-  const columns = useMemo(() => carColumns(openEditModal), [openEditModal]);
-  const maintenanceColumns = useMemo(() => carMaintenanceColumns, []);
-
-  // Separate states for each table
-  const [carSorting, setCarSorting] = useState([]);
-  const [carPagination, setCarPagination] = useState({
-    pageIndex: 0,
-    pageSize: 5,
-  });
-
-  const [maintenanceSorting, setMaintenanceSorting] = useState([]);
-  const [maintenancePagination, setMaintenancePagination] = useState({
-    pageIndex: 0,
-    pageSize: 5,
-  });
-
-  // Initialize tables with their own state
-  const carsTable = useReactTable({
-    data: carsData,
+  // Get the appropriate data and columns based on active tab
+  const {
+    data,
     columns,
-    state: {
-      sorting: carSorting,
-      pagination: carPagination,
-    },
-    onSortingChange: setCarSorting,
-    onPaginationChange: setCarPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  });
-
-  const maintenanceTable = useReactTable({
-    data: maintenanceData,
-    columns: maintenanceColumns,
-    state: {
-      sorting: maintenanceSorting,
-      pagination: maintenancePagination,
-    },
-    onSortingChange: setMaintenanceSorting,
-    onPaginationChange: setMaintenancePagination,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  });
-
-  const getActiveTable = () => {
+    title,
+    icon: TabIcon,
+    emptyMessage,
+  } = useMemo(() => {
     switch (activeTab) {
       case "cars":
         return {
-          table: carsTable,
           data: carsData,
-          emptyMessage: "There are no cars available.",
+          columns: carColumns(setEditCar),
           title: "CARS",
-          showAddButton: true,
+          icon: HiTruck,
+          emptyMessage: "There are no cars available.",
         };
       case "maintenance":
         return {
-          table: maintenanceTable,
           data: maintenanceData,
-          emptyMessage: "There are no maintenance requests yet.",
+          columns: carMaintenanceColumns,
           title: "MAINTENANCE",
-          showAddButton: false,
+          icon: HiWrenchScrewdriver,
+          emptyMessage: "There are no maintenance requests yet.",
         };
       default:
         return {
-          table: carsTable,
           data: carsData,
-          emptyMessage: "There are no cars available.",
+          columns: carColumns(setEditCar),
           title: "CARS",
-          showAddButton: true,
+          icon: HiTruck,
+          emptyMessage: "There are no cars available.",
         };
     }
-  };
-  const {
-    table: activeTable,
-    title,
-    emptyMessage,
-    showAddButton,
-  } = getActiveTable();
+  }, [activeTab, carsData, maintenanceData]);
 
-  const getButtonClass = (tabName) => {
-    return `tab-btn ${activeTab === tabName ? "active" : ""}`;
-  };
+  // Single table instance
+  const table = useReactTable({
+    data,
+    columns,
+    state: { sorting, pagination },
+    onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  const getButtonClass = (tabName) =>
+    `user-type-btn ${activeTab === tabName ? "active" : ""}`;
 
   return (
     <>
@@ -147,11 +111,11 @@ export default function AdminCarPage() {
           <title>Manage Cars</title>
 
           <h1 className="font-pathway text-2xl header-req">
-            <HiTruck style={{ verticalAlign: "-3px", marginRight: "5px" }} />
+            <TabIcon style={{ verticalAlign: "-3px", marginRight: "5px" }} />
             {title}
           </h1>
 
-          {showAddButton && (
+          {activeTab === "cars" && (
             <button className="add-car-btn" onClick={openAddModal}>
               <AiOutlinePlus className="add-icon" style={{ marginRight: 6 }} />
               ADD NEW CAR
@@ -160,7 +124,7 @@ export default function AdminCarPage() {
 
           <table className="admin-table">
             <thead>
-              {activeTable.getHeaderGroups().map((hg) => (
+              {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
                   {hg.headers.map((header) => (
                     <th
@@ -187,10 +151,10 @@ export default function AdminCarPage() {
               ))}
             </thead>
             <tbody>
-              {activeTable.getRowModel().rows.length === 0 ? (
+              {table.getRowModel().rows.length === 0 ? (
                 <tr style={{ border: "none" }}>
                   <td
-                    colSpan={activeTable.getAllColumns().length}
+                    colSpan={table.getAllColumns().length}
                     className="text-center py-4 font-pathway"
                     style={{ color: "#808080" }}
                   >
@@ -198,7 +162,7 @@ export default function AdminCarPage() {
                   </td>
                 </tr>
               ) : (
-                activeTable.getRowModel().rows.map((row) => (
+                table.getRowModel().rows.map((row) => (
                   <tr key={row.id} className="border-t font-pathway">
                     {row.getVisibleCells().map((cell) => (
                       <td
@@ -229,19 +193,19 @@ export default function AdminCarPage() {
             }}
           >
             <button
-              onClick={() => activeTable.previousPage()}
-              disabled={!activeTable.getCanPreviousPage()}
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
               className="pagination-btn"
             >
               <HiMiniChevronLeft style={{ verticalAlign: "-3px" }} /> Prev
             </button>
             <span style={{ padding: "0 10px" }}>
-              {activeTable.getState().pagination.pageIndex + 1} of{" "}
-              {activeTable.getPageCount()}
+              {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
             </span>
             <button
-              onClick={() => activeTable.nextPage()}
-              disabled={!activeTable.getCanNextPage()}
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
               className="pagination-btn"
             >
               Next <HiMiniChevronRight style={{ verticalAlign: "-3px" }} />

@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
 import axios from "axios";
 import AdminSideBar from "../../components/AdminSideBar";
 import Header from "../../components/Header";
-import "../../styles/admincss/admincar.css";
+//import "../../styles/admincss/admincar.css";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   useReactTable,
@@ -23,143 +22,6 @@ import { HiMiniChevronLeft } from "react-icons/hi2";
 import { HiWrenchScrewdriver } from "react-icons/hi2";
 import { HiTruck } from "react-icons/hi2";
 
-<<<<<<< HEAD
-// Use a direct URL for development
-const API_URL = "http://localhost:3001"; // Update this with your actual backend URL
-
-const styles = {
-  page: { margin: "70px 0 0 250px", padding: "20px" },
-  header: { display: "flex", justifyContent: "space-between", marginBottom: "20px" },
-  table: { width: "100%", borderCollapse: "collapse" },
-  th: { background: "#f0f0f0", padding: "10px", textAlign: "left" },
-  td: { padding: "10px", borderBottom: "1px solid #ddd" },
-  button: { 
-    padding: "8px 16px", 
-    background: "#007bff", 
-    color: "white", 
-    border: "none", 
-    borderRadius: "4px",
-    cursor: "pointer"
-  },
-  input: { 
-    padding: "8px", 
-    margin: "5px 0", 
-    width: "100%",
-    boxSizing: "border-box"
-  },
-  imagePreview: {
-    width: "80px",
-    height: "50px",
-    objectFit: "cover",
-    borderRadius: "4px"
-  },
-  form: {
-    maxWidth: "500px",
-    margin: "0 auto",
-    padding: "20px",
-    background: "white",
-    borderRadius: "8px"
-  },
-  imageUpload: {
-    margin: "10px 0",
-    padding: "10px",
-    border: "1px dashed #ccc",
-    borderRadius: "4px",
-    textAlign: "center"
-  },
-  formGroup: { marginBottom: "15px" },
-  label: { display: "block", marginBottom: "5px" }
-};
-
-export default function SimpleCarPage() {
-  const [cars, setCars] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({
-    make: "",
-    model: "",
-    year: new Date().getFullYear(),
-    license_plate: "",
-    no_of_seat: 4,
-    rent_price: 0,
-    status: "available",
-    image_url: ""
-  });
-  const [currentCar, setCurrentCar] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // Fetch cars on component mount
-  useEffect(() => {
-    fetchCars();
-  }, []);
-
-  const fetchCars = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/cars`);
-      setCars(response.data);
-    } catch (error) {
-      console.error("Error fetching cars:", error);
-      alert("Failed to load cars");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      if (currentCar) {
-        await axios.put(`${API_URL}/api/cars/${currentCar.car_id}`, formData);
-        alert("Car updated successfully");
-      } else {
-        await axios.post(`${API_URL}/api/cars`, formData);
-        alert("Car added successfully");
-      }
-      fetchCars();
-      setShowForm(false);
-      setCurrentCar(null);
-    } catch (error) {
-      console.error("Error saving car:", error);
-      alert(`Failed to ${currentCar ? 'update' : 'add'} car`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (carId) => {
-    if (window.confirm("Are you sure you want to delete this car?")) {
-      try {
-        setLoading(true);
-        await axios.delete(`${API_URL}/api/cars/${carId}`);
-        alert("Car deleted successfully");
-        fetchCars();
-      } catch (error) {
-        console.error("Error deleting car:", error);
-        alert("Failed to delete car");
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  const filteredCars = cars.filter(car => 
-    car.make?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    car.model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    car.license_plate?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  if (loading) return <div>Loading...</div>;
-
-=======
 export default function AdminCarPage() {
   const carsData = useCarStore((state) => state.cars);
   const maintenanceData = useMaintenanceStore((state) => state.maintenances);
@@ -174,11 +36,9 @@ export default function AdminCarPage() {
   const openEditModal = useCallback((car) => setEditCar(car), []);
   const closeEditModal = () => setEditCar(null);
 
-  // Memoize columns
   const columns = useMemo(() => carColumns(openEditModal), [openEditModal]);
   const maintenanceColumns = useMemo(() => carMaintenanceColumns, []);
 
-  // Separate states for each table
   const [carSorting, setCarSorting] = useState([]);
   const [carPagination, setCarPagination] = useState({
     pageIndex: 0,
@@ -191,7 +51,6 @@ export default function AdminCarPage() {
     pageSize: 5,
   });
 
-  // Initialize tables with their own state
   const carsTable = useReactTable({
     data: carsData,
     columns,
@@ -259,34 +118,10 @@ export default function AdminCarPage() {
     return `tab-btn ${activeTab === tabName ? "active" : ""}`;
   };
 
->>>>>>> origin/frontend
   return (
     <div style={styles.page}>
       <Header />
       <AdminSideBar />
-<<<<<<< HEAD
-      
-      <div style={styles.header}>
-        <h2>Manage Cars</h2>
-        <button 
-          style={styles.button}
-          onClick={() => {
-            setCurrentCar(null);
-            setFormData({
-              make: "",
-              model: "",
-              year: new Date().getFullYear(),
-              license_plate: "",
-              no_of_seat: 4,
-              rent_price: 0,
-              status: "available"
-            });
-            setShowForm(true);
-          }}
-        >
-          Add New Car
-        </button>
-=======
 
       <AddCarModal show={showAddModal} onClose={closeAddModal} />
       <EditCarModal show={!!editCar} onClose={closeEditModal} />
@@ -411,7 +246,6 @@ export default function AdminCarPage() {
             </button>
           </div>
         </div>
->>>>>>> origin/frontend
       </div>
 
       <div style={styles.formGroup}>

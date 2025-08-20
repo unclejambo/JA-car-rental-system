@@ -64,7 +64,7 @@ export default function AdminSideBar() {
       </NavLink>
       <br />
       <hr />
-      <NavLink to="/home">LOGOUT</NavLink>
+      <NavLink to="/login">LOGOUT</NavLink>
     </div>
   );
 }

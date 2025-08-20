@@ -1,0 +1,189 @@
+// This file defines your Prisma data models and database connection
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  admin_id   Int       @id @default(autoincrement())
+  first_name String
+  last_name  String
+  contact_no String?
+  email      String
+  username   String
+  password   String
+  user_type  String
+  bookings   Booking[]
+}
+
+model Customer {
+  customer_id       Int            @id @default(autoincrement())
+  first_name        String
+  last_name         String
+  address           String?
+  contact_no        String?
+  email             String
+  username          String
+  password          String
+  fb_link           String?
+  date_created      DateTime?      @default(now())
+  status            String?
+  driver_license_no String?
+  driver_license    DriverLicense? @relation("CustomerDriverLicense", fields: [driver_license_no], references: [driver_license_no])
+  bookings          Booking[]
+  payments          Payment[]
+  refunds           Refund[]
+  transactions      Transaction[]
+}
+
+model DriverLicense {
+  driver_license_no String     @id
+  expiry_date       DateTime?
+  restrictions      String?
+  dl_img_url        String?
+  customers         Customer[] @relation("CustomerDriverLicense")
+  drivers           Driver[]
+}
+
+model Driver {
+  drivers_id        Int           @id @default(autoincrement())
+  first_name        String
+  last_name         String
+  address           String?
+  contact_no        String?
+  email             String
+  username          String
+  password          String
+  driver_license_no String
+  driver_license    DriverLicense @relation(fields: [driver_license_no], references: [driver_license_no])
+  releases          Release[]
+  bookings          Booking[]
+}
+
+model Car {
+  car_id        Int           @id @default(autoincrement())
+  car_img_url   String?
+  make          String?
+  model         String?
+  year          Int?
+  mileage       Int?
+  license_plate String?
+  no_of_seat    Int
+  rent_price    Int
+  car_status    String?
+  bookings      Booking[]
+  maintenances  Maintenance[]
+  transactions  Transaction[]
+}
+
+model Booking {
+  booking_id     Int           @id @default(autoincrement())
+  customer_id    Int
+  car_id         Int
+  booking_date   DateTime
+  purpose        String?
+  start_date     DateTime
+  end_date       DateTime
+  pickup_time    DateTime?
+  pickup_loc     String?
+  dropoff_time   DateTime?
+  dropoff_loc    String?
+  refunds        Refund[]
+  isSelfDriver   Boolean?      @default(false)
+  isExtend       Boolean?      @default(false)
+  new_end_date   DateTime?
+  isCancel       Boolean?      @default(false)
+  total_amount   Int?
+  payment_status String?
+  isRelease      Boolean?      @default(false)
+  isReturned     Boolean?      @default(false)
+  booking_status String?
+  drivers_id     Int?
+  admin_id       Int?
+  customer       Customer      @relation(fields: [customer_id], references: [customer_id])
+  car            Car           @relation(fields: [car_id], references: [car_id])
+  driver         Driver?       @relation(fields: [drivers_id], references: [drivers_id])
+  admin          Admin?        @relation(fields: [admin_id], references: [admin_id])
+  extensions     Extension[]
+  payments       Payment[]
+  releases       Release[]
+  transactions   Transaction[]
+}
+
+model Extension {
+  extension_id   Int      @id @default(autoincrement())
+  booking_id     Int
+  extension_date DateTime
+  payment_status String?
+  status         String?
+  booking        Booking  @relation(fields: [booking_id], references: [booking_id])
+}
+
+model Payment {
+  payment_id     Int       @id @default(autoincrement())
+  booking_id     Int
+  customer_id    Int
+  description    String?
+  payment_method String?
+  gcash_no       String?
+  reference_no   String?
+  amount         Int
+  paid_date      DateTime?
+  booking        Booking   @relation(fields: [booking_id], references: [booking_id])
+  customer       Customer  @relation(fields: [customer_id], references: [customer_id])
+}
+
+model Refund {
+  refund_id     Int       @id @default(autoincrement())
+  booking_id    Int
+  customer_id   Int
+  refund_method String?
+  gcash_no      String?
+  reference_no  String?
+  refund_amount Int
+  refund_date   DateTime?
+  booking       Booking   @relation(fields: [booking_id], references: [booking_id])
+  customer      Customer  @relation(fields: [customer_id], references: [customer_id])
+}
+
+model Transaction {
+  transaction_id    Int       @id @default(autoincrement())
+  booking_id        Int
+  customer_id       Int
+  car_id            Int
+  completion_date   DateTime?
+  cancellation_date DateTime?
+  booking           Booking   @relation(fields: [booking_id], references: [booking_id])
+  customer          Customer  @relation(fields: [customer_id], references: [customer_id])
+  car               Car       @relation(fields: [car_id], references: [car_id])
+}
+
+model Maintenance {
+  maintenance_id         Int       @id @default(autoincrement())
+  car_id                 Int
+  maintenance_start_date DateTime?
+  maintenance_end_date   DateTime?
+  description            String?
+  maintenance_cost       Int?
+  maintenance_shop_name  String?
+  car                    Car       @relation(fields: [car_id], references: [car_id])
+}
+
+model Release {
+  release_id     Int     @id @default(autoincrement())
+  booking_id     Int
+  drivers_id     Int
+  valid_id_img1  String?
+  valid_id_img2  String?
+  agreement_form String?
+  equipment      String?
+  others         String?
+  gas_level      String?
+  booking        Booking @relation(fields: [booking_id], references: [booking_id])
+  driver         Driver  @relation(fields: [drivers_id], references: [drivers_id])
+}

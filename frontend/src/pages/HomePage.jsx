@@ -61,7 +61,7 @@ export default function HomePage() {
           >
             on the ROAD
           </h1>
-          <Link to="/">
+          <Link to="/admin/dashboard">
             <button
               style={{
                 fontStyle: "italic",

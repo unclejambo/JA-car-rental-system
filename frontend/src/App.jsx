@@ -28,6 +28,7 @@ function App() {
           <Route path="/settings" element={<AdminSettings />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<HomePage />} />
         </Routes>
       </BrowserRouter>
     </div>

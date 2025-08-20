@@ -33,7 +33,6 @@ export default function AdminCarPage() {
   const closeAddModal = () => setShowAddModal(false);
   const closeEditModal = () => setEditCar(null);
 
-  // Get the appropriate data and columns based on active tab
   const {
     data,
     columns,

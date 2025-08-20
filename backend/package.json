@@ -10,8 +10,9 @@
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "@prisma/client": "^5.13.0"
+    "@prisma/client": "^5.13.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.0",

@@ -35,7 +35,7 @@
 }
 
 .requests-container button {
-  font-family: "Pathway Gothic One", sans-serif;
+  font-family: 'Pathway Gothic One', sans-serif;
   font-size: 24px;
   padding: 5px 20px;
   border: none;
@@ -55,4 +55,23 @@
   color: white;
   font-weight: bold;
   cursor: default;
+}
+
+.manage-fees-btn {
+  font-family: 'Pathway Gothic One', sans-serif;
+  font-size: 22px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 20px;
+  background-color: #53a83e;
+  color: white;
+  cursor: pointer;
+  position: fixed;
+  overflow: hidden;
+  right: 7px;
+  top: 75px;
+}
+
+.manage-fees-btn:hover {
+  background-color: #40862e;
 }

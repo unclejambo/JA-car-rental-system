@@ -3,13 +3,12 @@
 @tailwind utilities;
 
 .font-pathway {
-  font-family: "Pathway Gothic One", sans-serif;
+  font-family: 'Pathway Gothic One', sans-serif;
 }
 
 table tbody tr {
   border-bottom: 1px solid #000;
 }
-
 
 #globeButton:hover {
   color: #888888;
@@ -74,7 +73,9 @@ table tbody tr {
   border-radius: 10px;
   background-color: #d9d9d9;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
@@ -85,19 +86,19 @@ table tbody tr {
 }
 
 /* Active state */
-.select-opt[value="Active"],
-.select-opt[value="Active"]:hover,
-.select-opt[value="Active"]:focus {
-  background-color: #4CAF50 !important;
+.select-opt[value='Active'],
+.select-opt[value='Active']:hover,
+.select-opt[value='Active']:focus {
+  background-color: #4caf50 !important;
   color: white !important;
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
 }
 
 /* Inactive state */
-.select-opt[value="Inactive"],
-.select-opt[value="Inactive"]:hover,
-.select-opt[value="Inactive"]:focus {
-  background-color: #FF9800 !important;
+.select-opt[value='Inactive'],
+.select-opt[value='Inactive']:hover,
+.select-opt[value='Inactive']:focus {
+  background-color: #ff9800 !important;
   color: white !important;
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
 }
@@ -110,14 +111,14 @@ table tbody tr {
 }
 
 /* Style the Active option in dropdown */
-.select-opt option[value="Active"] {
-  background-color: #4CAF50;
+.select-opt option[value='Active'] {
+  background-color: #4caf50;
   color: white;
 }
 
 /* Style the Inactive option in dropdown */
-.select-opt option[value="Inactive"] {
-  background-color: #FF9800;
+.select-opt option[value='Inactive'] {
+  background-color: #ff9800;
   color: white;
 }
 
@@ -153,4 +154,32 @@ table tbody tr {
 
 .approve-btn:hover {
   color: rgb(1, 95, 1);
+}
+
+.save-btn {
+  cursor: pointer;
+  margin-left: 45px;
+  font-size: 24px;
+  padding: 5px 20px;
+  border: none;
+  background-color: #30bd1e;
+  border-radius: 20px;
+}
+.save-btn:hover {
+  color: white;
+  background-color: #259a1a;
+}
+
+.cancel-btn {
+  cursor: pointer;
+  font-size: 24px;
+  padding: 5px 15px;
+  border: none;
+  background-color: #ff1e1e;
+  border-radius: 20px;
+}
+
+.cancel-btn:hover {
+  color: white;
+  background-color: #e91b1b;
 }

@@ -35,7 +35,7 @@
   position: absolute;
   right: 5px;
   top: 5px;
-  font-family: "Pathway Gothic One", sans-serif;
+  font-family: 'Pathway Gothic One', sans-serif;
   font-size: 18px;
   border: none;
   background-color: #d9d9d9;
@@ -105,7 +105,7 @@
   margin-right: 10px;
 }
 
-input[type="file"] {
+input[type='file'] {
   font-size: 16px;
   width: 200px;
 }
@@ -123,32 +123,6 @@ select {
   gap: 150px;
 }
 
-.save-btn {
-  margin-left: 45px;
-  font-size: 24px;
-  padding: 5px 20px;
-  border: none;
-  background-color: #30bd1e;
-  border-radius: 20px;
-}
-.save-btn:hover {
-  color: white;
-  background-color: #259a1a;
-}
-
-.cancel-btn {
-  font-size: 24px;
-  padding: 5px 15px;
-  border: none;
-  background-color: #ff1e1e;
-  border-radius: 20px;
-}
-
-.cancel-btn:hover {
-  color: white;
-  background-color: #e91b1b;
-}
-
 .cars-container {
   display: flex;
   gap: 1px;
@@ -156,7 +130,7 @@ select {
 }
 
 .cars-container button {
-  font-family: "Pathway Gothic One", sans-serif;
+  font-family: 'Pathway Gothic One', sans-serif;
   font-size: 24px;
   padding: 5px 20px;
   border: none;

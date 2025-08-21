@@ -7,14 +7,14 @@ import { HiOutlineUserGroup } from "react-icons/hi2";
 import { HiCog8Tooth } from "react-icons/hi2";
 import { HiDocumentCurrencyDollar } from "react-icons/hi2";
 import { HiTruck } from "react-icons/hi2";
-import { HiSwatch } from "react-icons/hi2";
+import { HiMiniSquaresPlus } from "react-icons/hi2";
 import { HiArrowLeftStartOnRectangle } from "react-icons/hi2";
 
 export default function AdminSideBar() {
   return (
     <div id="admin-sidebar" className="admin-sidebar">
       <NavLink to="/#">
-        <HiSwatch style={{ verticalAlign: "-3px", marginRight: "5px" }} />
+        <HiMiniSquaresPlus style={{ verticalAlign: "-3px", marginRight: "5px" }} />
         DASHBOARD
       </NavLink>
       <br />

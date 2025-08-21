@@ -5,7 +5,7 @@ import "../../styles/index.css";
 
 const c = createColumnHelper();
 
-export const scheduleColumns = [
+export const scheduleColumns = (openReleaseModal) => [
   c.accessor("customerName", { header: "Customer Name" }),
   c.accessor("startDate", { header: "Start Date" }),
   c.accessor("pickupTime", { header: "Pick-up Time" }),
@@ -31,7 +31,7 @@ export const scheduleColumns = [
               }}
               id="globeButton"
             >
-              <GlobeAltIcon />
+              <GlobeAltIcon className="w-[20px] h-[20px]" style={{ verticalAlign: "middle", position: "relative" }}/>
             </button>
           </span>
         );
@@ -42,9 +42,7 @@ export const scheduleColumns = [
           <span className="inline-flex items-center gap-1 status">
             <button
               type="button"
-              onClick={() => {
-                console.log("Return button clicked for row", row.reservationId);
-              }}
+              onClick={() => openReleaseModal(row.original)}
               className="release-btn"
             >
               Release

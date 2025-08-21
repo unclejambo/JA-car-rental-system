@@ -12,6 +12,7 @@ import {
 import { scheduleColumns } from "../accessor/ScheduleColumns.jsx";
 import { useScheduleStore } from "../../store/schedule.js";
 import { HiCalendar, HiMagnifyingGlass } from "react-icons/hi2";
+import ReleaseModal from "../../components/modal/ReleaseModal";
 
 export default function AdminSchedulePage() {
   const allData = useScheduleStore((state) => state.reservations);
@@ -27,9 +28,17 @@ export default function AdminSchedulePage() {
     );
   }, [allData, searchTerm]);
 
-  const columns = useMemo(() => scheduleColumns, []);
   const [sorting, setSorting] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+  const [showReleaseModal, setShowReleaseModal] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState(null);
+
+  const handleReleaseClick = (reservation) => {
+    setSelectedReservation(reservation);
+    setShowReleaseModal(true);
+  };
+
+  const columns = useMemo(() => scheduleColumns(handleReleaseClick), []);
 
   const table = useReactTable({
     data: filteredData,
@@ -49,6 +58,14 @@ export default function AdminSchedulePage() {
     <>
       <Header />
       <AdminSideBar />
+
+      {showReleaseModal && (
+        <ReleaseModal 
+          show={showReleaseModal} 
+          onClose={() => setShowReleaseModal(false)} 
+          reservation={selectedReservation}
+        />
+      )}
       <div className="page-content">
         <title>Schedule</title>
 

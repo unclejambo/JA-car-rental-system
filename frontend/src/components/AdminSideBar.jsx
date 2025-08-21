@@ -8,6 +8,7 @@ import { HiCog8Tooth } from "react-icons/hi2";
 import { HiDocumentCurrencyDollar } from "react-icons/hi2";
 import { HiTruck } from "react-icons/hi2";
 import { HiSwatch } from "react-icons/hi2";
+import { HiArrowLeftStartOnRectangle } from "react-icons/hi2";
 
 export default function AdminSideBar() {
   return (
@@ -64,7 +65,12 @@ export default function AdminSideBar() {
       </NavLink>
       <br />
       <hr />
-      <NavLink to="/login">LOGOUT</NavLink>
+      <NavLink to="/login">
+        <HiArrowLeftStartOnRectangle
+          style={{ verticalAlign: "-3px", marginRight: "5px" }}
+        />
+        LOGOUT
+      </NavLink>
     </div>
   );
 }

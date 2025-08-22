@@ -36,7 +36,7 @@ app.get('/api/cars', async (req, res) => {
 // POST /api/cars - add a new car
 app.post('/api/cars', async (req, res) => {
   try {
-    const { make, model, year, license_plate, no_of_seat, rent_price, status, image_url } = req.body;
+    const { make, model, year, license_plate, no_of_seat, rent_price, car_status, car_img_url, mileage } = req.body;
     const newCar = await prisma.car.create({
       data: {
         make,
@@ -45,8 +45,9 @@ app.post('/api/cars', async (req, res) => {
         license_plate,
         no_of_seat,
         rent_price,
-        car_status: status,
-        car_img_url: image_url
+        car_status,
+        car_img_url,
+        mileage
       }
     });
     res.status(201).json(newCar);
@@ -56,13 +57,27 @@ app.post('/api/cars', async (req, res) => {
   }
 });
 
+// DELETE /api/cars/:car_id - delete a car
+app.delete('/api/cars/:car_id', async (req, res) => {
+  const { car_id } = req.params;
+  try {
+    await prisma.car.delete({
+      where: { car_id: parseInt(car_id) },
+    });
+    res.status(204).send();
+  } catch (error) {
+    console.error(`Error deleting car with id ${car_id}:`, error);
+    res.status(500).json({ error: 'Failed to delete car' });
+  }
+});
+
 // PUT /api/cars/:car_id - update a car
 app.put('/api/cars/:car_id', async (req, res) => {
   try {
     const car_id = parseInt(req.params.car_id);
-    const { make, model, year, license_plate, no_of_seat, rent_price, status, image_url } = req.body;
+    const { make, model, year, license_plate, no_of_seat, rent_price, car_status, car_img_url, mileage } = req.body;
     const updatedCar = await prisma.car.update({
-      where: { id: car_id },
+      where: { car_id: car_id },
       data: {
         make,
         model,
@@ -70,8 +85,9 @@ app.put('/api/cars/:car_id', async (req, res) => {
         license_plate,
         no_of_seat,
         rent_price,
-        car_status: status,
-        car_img_url: image_url
+        car_status,
+        car_img_url,
+        mileage
       }
     });
     res.json(updatedCar);

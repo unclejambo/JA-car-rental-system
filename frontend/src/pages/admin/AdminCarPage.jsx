@@ -1,7 +1,7 @@
 import AdminSideBar from "../../components/AdminSideBar";
 import Header from "../../components/Header";
 import "../../styles/admincss/admincar.css";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -20,6 +20,19 @@ import { HiMiniChevronRight, HiMiniChevronLeft } from "react-icons/hi2";
 import { HiTruck, HiWrenchScrewdriver } from "react-icons/hi2";
 
 export default function AdminCarPage() {
+  const { cars, init } = useCarStore();
+  
+  useEffect(() => {
+    const loadCars = async () => {
+      try {
+        await init();
+      } catch (error) {
+        console.error('Failed to load cars:', error);
+      }
+    };
+    
+    loadCars();
+  }, [init]);
   const carsData = useCarStore((state) => state.cars);
   const maintenanceData = useMaintenanceStore((state) => state.maintenances);
 
@@ -32,8 +45,18 @@ export default function AdminCarPage() {
   const openAddModal = () => setShowAddModal(true);
   const closeAddModal = () => setShowAddModal(false);
   const closeEditModal = () => setEditCar(null);
+  const { deleteCar } = useCarStore();
 
-  // Get the appropriate data and columns based on active tab
+  const handleDelete = async (carId) => {
+    if (window.confirm('Are you sure you want to delete this car?')) {
+      try {
+        await deleteCar(carId);
+      } catch (error) {
+        console.error('Failed to delete car:', error);
+      }
+    }
+  };
+
   const {
     data,
     columns,
@@ -45,7 +68,7 @@ export default function AdminCarPage() {
       case "cars":
         return {
           data: carsData,
-          columns: carColumns(setEditCar),
+          columns: carColumns(setEditCar, handleDelete),
           title: "CARS",
           icon: HiTruck,
           emptyMessage: "There are no cars available.",
@@ -61,7 +84,7 @@ export default function AdminCarPage() {
       default:
         return {
           data: carsData,
-          columns: carColumns(setEditCar),
+          columns: carColumns(setEditCar, handleDelete),
           title: "CARS",
           icon: HiTruck,
           emptyMessage: "There are no cars available.",
@@ -69,7 +92,6 @@ export default function AdminCarPage() {
     }
   }, [activeTab, carsData, maintenanceData]);
 
-  // Single table instance
   const table = useReactTable({
     data,
     columns,
@@ -90,7 +112,7 @@ export default function AdminCarPage() {
       <AdminSideBar />
 
       <AddCarModal show={showAddModal} onClose={closeAddModal} />
-      <EditCarModal show={!!editCar} onClose={closeEditModal} />
+      <EditCarModal show={!!editCar} onClose={closeEditModal} car={editCar} />
 
       <div className="page-main-content-car">
         <div className="cars-container">

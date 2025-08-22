@@ -1,7 +1,7 @@
-import AdminSideBar from '../../components/AdminSideBar';
-import Header from '../../components/Header';
-import '../../styles/admincss/adminbooking.css';
-import React, { useState } from 'react';
+import AdminSideBar from "../../components/AdminSideBar";
+import Header from "../../components/Header";
+//import "../../styles/admincss/adminbooking.css";
+import React, { useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,

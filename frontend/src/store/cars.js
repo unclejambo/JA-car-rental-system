@@ -1,67 +1,55 @@
 import { create } from "zustand";
+import axios from 'axios';
 
-export const useCarStore = create((set) => ({
-  cars: [
-    {
-      carId: 1,
-      model: "Terra",
-      make: "Nissan",
-      type: "SUV",
-      year: "2020",
-      mileage: "17000",
-      seats: "7",
-      rentPrice: "3000",
-      licensePlate: "NJS-1234",
-      status: "Available",
-    },
-    {
-      carId: 2,
-      model: "Mirage",
-      make: "Mitsubishi",
-      type: "Sedan",
-      year: "2023",
-      mileage: "26990",
-      seats: "5",
-      rentPrice: "1800",
-      licensePlate: "MBS-1234",
-      status: "Maintenance",
-    },
-    {
-      carId: 3,
-      model: "Navarra",
-      make: "Nissan",
-      type: "Pickup",
-      year: "2017",
-      mileage: "18000",
-      seats: "5",
-      rentPrice: "2800",
-      licensePlate: "GOY-1234",
-      status: "Available",
-    },
-    {
-      carId: 4,
-      model: "Rio",
-      make: "Kia",
-      type: "Sedan",
-      year: "2014",
-      mileage: "20000",
-      seats: "5",
-      rentPrice: "1500",
-      licensePlate: "NGX-1234",
-      status: "Available",
-    },
-    {
-      carId: 5,
-      model: "Avanza",
-      make: "Toyota",
-      type: "SUV",
-      year: "2023",
-      mileage: "25000",
-      seats: "7",
-      rentPrice: "2800",
-      licensePlate: "LAB-1234",
-      status: "Available",
-    },
-  ],
-  setCars: (rows) => set({ cars: rows }),
+export const useCarStore = create((set, get) => ({
+  cars: [],
+  
+  fetchCars: async () => {
+    try {
+      const response = await axios.get('http://localhost:3001/api/cars');
+      set({ cars: response.data });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching cars:', error);
+      throw error;
+    }
+  },
+  
+  addCar: async (carData) => {
+    try {
+      const response = await axios.post('http://localhost:3001/api/cars', carData);
+      await get().fetchCars();
+      return response.data;
+    } catch (error) {
+      console.error('Error adding car:', error);
+      throw error;
+    }
+  },
+  
+  updateCar: async (carId, carData) => {
+    try {
+      const response = await axios.put(`http://localhost:3001/api/cars/${carId}`, carData);
+      await get().fetchCars();
+      return response.data;
+    } catch (error) {
+      console.error('Error updating car:', error);
+      throw error;
+    }
+  },
+  
+  deleteCar: async (carId) => {
+    try {
+      await axios.delete(`http://localhost:3001/api/cars/${carId}`);
+      await get().fetchCars();
+    } catch (error) {
+      console.error('Error deleting car:', error);
+      throw error;
+    }
+  },
+  
+  init: async () => {
+    return get().fetchCars();
+  },
+  
+  setCars: (cars) => set({ cars })
 }));

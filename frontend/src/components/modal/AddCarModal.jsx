@@ -1,11 +1,17 @@
 import React from "react";
 
 export default function AddCarModal({ show, onClose }) {
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
   return (
     <>
       {show && (
         <div className="modal-overlay" onClick={onClose}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              // Handle form submission
+            }}>
             <h1 className="font-pathway" style={{ margin: "0 0 10px 0" }}>
               ADD CAR
             </h1>
@@ -69,7 +75,8 @@ export default function AddCarModal({ show, onClose }) {
                 Cancel
               </button>
             </div>
-          </form>
+            </form>
+          </div>
         </div>
       )}
     </>

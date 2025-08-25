@@ -1,27 +1,27 @@
-import AdminSideBar from "../../components/AdminSideBar";
-import Header from "../../components/Header";
-import "../../styles/admincss/admincar.css";
-import React, { useMemo, useState, useEffect } from "react";
+import AdminSideBar from '../../components/AdminSideBar';
+import Header from '../../components/Header';
+import '../../styles/admincss/admincar.css';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   getPaginationRowModel,
   flexRender,
-} from "@tanstack/react-table";
-import { carColumns } from "../accessor/CarColumns.jsx";
-import { useCarStore } from "../../store/cars.js";
-import { carMaintenanceColumns } from "../accessor/CarMaintenanceColumns.jsx";
-import { useMaintenanceStore } from "../../store/maintenance.js";
-import AddCarModal from "../../components/modal/AddCarModal.jsx";
-import EditCarModal from "../../components/modal/EditCarModal.jsx";
-import { AiOutlinePlus } from "react-icons/ai";
-import { HiMiniChevronRight, HiMiniChevronLeft } from "react-icons/hi2";
-import { HiTruck, HiWrenchScrewdriver } from "react-icons/hi2";
+} from '@tanstack/react-table';
+import { carColumns } from '../accessor/CarColumns.jsx';
+import { useCarStore } from '../../store/cars.js';
+import { carMaintenanceColumns } from '../accessor/CarMaintenanceColumns.jsx';
+import { useMaintenanceStore } from '../../store/maintenance.js';
+import AddCarModal from '../../components/modal/AddCarModal.jsx';
+import EditCarModal from '../../components/modal/EditCarModal.jsx';
+import { AiOutlinePlus } from 'react-icons/ai';
+import { HiMiniChevronRight, HiMiniChevronLeft } from 'react-icons/hi2';
+import { HiTruck, HiWrenchScrewdriver } from 'react-icons/hi2';
 
 export default function AdminCarPage() {
   const { cars, init } = useCarStore();
-  
+
   useEffect(() => {
     const loadCars = async () => {
       try {
@@ -30,13 +30,13 @@ export default function AdminCarPage() {
         console.error('Failed to load cars:', error);
       }
     };
-    
+
     loadCars();
   }, [init]);
   const carsData = useCarStore((state) => state.cars);
   const maintenanceData = useMaintenanceStore((state) => state.maintenances);
 
-  const [activeTab, setActiveTab] = useState("cars");
+  const [activeTab, setActiveTab] = useState('cars');
   const [sorting, setSorting] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [showAddModal, setShowAddModal] = useState(false);
@@ -65,29 +65,29 @@ export default function AdminCarPage() {
     emptyMessage,
   } = useMemo(() => {
     switch (activeTab) {
-      case "cars":
+      case 'cars':
         return {
           data: carsData,
           columns: carColumns(setEditCar, handleDelete),
-          title: "CARS",
+          title: 'CARS',
           icon: HiTruck,
-          emptyMessage: "There are no cars available.",
+          emptyMessage: 'There are no cars available.',
         };
-      case "maintenance":
+      case 'maintenance':
         return {
           data: maintenanceData,
           columns: carMaintenanceColumns,
-          title: "MAINTENANCE",
+          title: 'MAINTENANCE',
           icon: HiWrenchScrewdriver,
-          emptyMessage: "There are no maintenance requests yet.",
+          emptyMessage: 'There are no maintenance requests yet.',
         };
       default:
         return {
           data: carsData,
           columns: carColumns(setEditCar, handleDelete),
-          title: "CARS",
+          title: 'CARS',
           icon: HiTruck,
-          emptyMessage: "There are no cars available.",
+          emptyMessage: 'There are no cars available.',
         };
     }
   }, [activeTab, carsData, maintenanceData]);
@@ -104,7 +104,7 @@ export default function AdminCarPage() {
   });
 
   const getButtonClass = (tabName) =>
-    `user-type-btn ${activeTab === tabName ? "active" : ""}`;
+    `user-type-btn ${activeTab === tabName ? 'active' : ''}`;
 
   return (
     <>
@@ -117,14 +117,14 @@ export default function AdminCarPage() {
       <div className="page-main-content-car">
         <div className="cars-container">
           <button
-            className={getButtonClass("cars")}
-            onClick={() => setActiveTab("cars")}
+            className={getButtonClass('cars')}
+            onClick={() => setActiveTab('cars')}
           >
             CARS
           </button>
           <button
-            className={getButtonClass("maintenance")}
-            onClick={() => setActiveTab("maintenance")}
+            className={getButtonClass('maintenance')}
+            onClick={() => setActiveTab('maintenance')}
           >
             MAINTENANCE
           </button>
@@ -133,11 +133,11 @@ export default function AdminCarPage() {
           <title>Manage Cars</title>
 
           <h1 className="font-pathway text-2xl header-req">
-            <TabIcon style={{ verticalAlign: "-3px", marginRight: "5px" }} />
+            <TabIcon style={{ verticalAlign: '-3px', marginRight: '5px' }} />
             {title}
           </h1>
 
-          {activeTab === "cars" && (
+          {activeTab === 'cars' && (
             <button className="add-car-btn" onClick={openAddModal}>
               <AiOutlinePlus className="add-icon" style={{ marginRight: 6 }} />
               ADD NEW CAR
@@ -153,8 +153,8 @@ export default function AdminCarPage() {
                       key={header.id}
                       className="text-left cursor-pointer border font-pathway"
                       style={{
-                        fontSize: "20px",
-                        padding: "3px 3px 3px 10px",
+                        fontSize: '20px',
+                        padding: '3px 3px 3px 10px',
                       }}
                       onClick={header.column.getToggleSortingHandler()}
                     >
@@ -163,10 +163,10 @@ export default function AdminCarPage() {
                         header.getContext()
                       )}
                       {header.column.getIsSorted()
-                        ? header.column.getIsSorted() === "asc"
-                          ? " ↑"
-                          : " ↓"
-                        : ""}
+                        ? header.column.getIsSorted() === 'asc'
+                          ? ' ↑'
+                          : ' ↓'
+                        : ''}
                     </th>
                   ))}
                 </tr>
@@ -174,11 +174,11 @@ export default function AdminCarPage() {
             </thead>
             <tbody>
               {table.getRowModel().rows.length === 0 ? (
-                <tr style={{ border: "none" }}>
+                <tr style={{ border: 'none' }}>
                   <td
                     colSpan={table.getAllColumns().length}
                     className="text-center py-4 font-pathway"
-                    style={{ color: "#808080" }}
+                    style={{ color: '#808080' }}
                   >
                     <h3>{emptyMessage}</h3>
                   </td>
@@ -191,8 +191,8 @@ export default function AdminCarPage() {
                         key={cell.id}
                         className="p-2"
                         style={{
-                          borderBottom: "1px solid #000",
-                          padding: "10px ",
+                          borderBottom: '1px solid #000',
+                          padding: '10px ',
                         }}
                       >
                         {flexRender(
@@ -209,9 +209,9 @@ export default function AdminCarPage() {
           <div
             className="mt-2 flex gap-2 pagination"
             style={{
-              marginTop: "15px",
-              alignItems: "center",
-              placeContent: "center",
+              marginTop: '15px',
+              alignItems: 'center',
+              placeContent: 'center',
             }}
           >
             <button
@@ -219,10 +219,10 @@ export default function AdminCarPage() {
               disabled={!table.getCanPreviousPage()}
               className="pagination-btn"
             >
-              <HiMiniChevronLeft style={{ verticalAlign: "-3px" }} /> Prev
+              <HiMiniChevronLeft style={{ verticalAlign: '-3px' }} /> Prev
             </button>
-            <span style={{ padding: "0 10px" }}>
-              {table.getState().pagination.pageIndex + 1} of{" "}
+            <span style={{ padding: '0 10px' }}>
+              {table.getState().pagination.pageIndex + 1} of{' '}
               {table.getPageCount()}
             </span>
             <button
@@ -230,7 +230,7 @@ export default function AdminCarPage() {
               disabled={!table.getCanNextPage()}
               className="pagination-btn"
             >
-              Next <HiMiniChevronRight style={{ verticalAlign: "-3px" }} />
+              Next <HiMiniChevronRight style={{ verticalAlign: '-3px' }} />
             </button>
           </div>
         </div>

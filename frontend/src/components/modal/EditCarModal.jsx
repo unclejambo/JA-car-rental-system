@@ -55,7 +55,7 @@ export default function EditCarModal({ show, onClose, car }) {
       {show && (
         <div className="modal-overlay" onClick={onClose}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h1 className="font-pathway" style={{ margin: "0 0 10px 0" }}>
+            <h1 className="font-pathway" style={{ margin: '0 0 10px 0' }}>
               EDIT CAR
             </h1>
 

@@ -64,11 +64,22 @@
 .edit-icon {
   cursor: pointer;
   position: absolute;
-  right: 10px;
+  right: 35px;
 }
 
 .edit-icon:hover {
-  color: #797979;
+  color: #ff8800;
+}
+
+.delete-icon {
+  cursor: pointer;
+  position: absolute;
+  right: 10px;
+  color: #f54d4d;
+}
+
+.delete-icon:hover {
+  color: #f80000;
 }
 
 /* Tabs CSS */

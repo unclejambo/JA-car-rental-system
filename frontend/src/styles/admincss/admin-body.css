@@ -16,6 +16,20 @@
   width: 100%;
 }
 
+.fee-row {
+  margin: 0 20px;
+}
+
+.fee-row h3,
+.fee-row p {
+  font-weight: normal;
+  margin: 10px 0;
+}
+
+.fee-row p {
+  font-size: 18px;
+}
+
 @media (max-width: 992px) {
   .page-content {
     left: 21vw;

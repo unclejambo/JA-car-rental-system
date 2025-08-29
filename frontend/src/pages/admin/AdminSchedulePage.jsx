@@ -1,36 +1,39 @@
-import AdminSideBar from "../../components/AdminSideBar";
-import Header from "../../components/Header";
-import "../../styles/admincss/admin-body.css";
-import React, { useMemo, useState } from "react";
+import AdminSideBar from '../../components/AdminSideBar';
+import Header from '../../components/Header';
+import '../../styles/admincss/admin-body.css';
+import React, { useMemo, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   getPaginationRowModel,
   flexRender,
-} from "@tanstack/react-table";
-import { scheduleColumns } from "../accessor/ScheduleColumns.jsx";
-import { useScheduleStore } from "../../store/schedule.js";
-import { HiCalendar, HiMagnifyingGlass } from "react-icons/hi2";
-import ReleaseModal from "../../components/modal/ReleaseModal";
+} from '@tanstack/react-table';
+import { scheduleColumns } from '../accessor/ScheduleColumns.jsx';
+import { useScheduleStore } from '../../store/schedule.js';
+import { HiCalendar, HiMagnifyingGlass } from 'react-icons/hi2';
+import ReleaseModal from '../../components/modal/ReleaseModal';
+import ReturnModal from '../../components/modal/ReturnModal';
 
 export default function AdminSchedulePage() {
   const allData = useScheduleStore((state) => state.reservations);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
     if (!searchTerm.trim()) return allData;
     const term = searchTerm.toLowerCase();
-    return allData.filter(item => 
-      (item.customerName && item.customerName.toLowerCase().includes(term)) ||
-      (item.driverName && item.driverName.toLowerCase().includes(term))
+    return allData.filter(
+      (item) =>
+        (item.customerName && item.customerName.toLowerCase().includes(term)) ||
+        (item.driverName && item.driverName.toLowerCase().includes(term))
     );
   }, [allData, searchTerm]);
 
   const [sorting, setSorting] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [showReleaseModal, setShowReleaseModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);
 
   const handleReleaseClick = (reservation) => {
@@ -38,7 +41,15 @@ export default function AdminSchedulePage() {
     setShowReleaseModal(true);
   };
 
-  const columns = useMemo(() => scheduleColumns(handleReleaseClick), []);
+  const handleReturnClick = (reservation) => {
+    setSelectedReservation(reservation);
+    setShowReturnModal(true);
+  };
+
+  const columns = useMemo(
+    () => scheduleColumns(handleReleaseClick, handleReturnClick),
+    []
+  );
 
   const table = useReactTable({
     data: filteredData,
@@ -60,9 +71,17 @@ export default function AdminSchedulePage() {
       <AdminSideBar />
 
       {showReleaseModal && (
-        <ReleaseModal 
-          show={showReleaseModal} 
-          onClose={() => setShowReleaseModal(false)} 
+        <ReleaseModal
+          show={showReleaseModal}
+          onClose={() => setShowReleaseModal(false)}
+          reservation={selectedReservation}
+        />
+      )}
+
+      {showReturnModal && (
+        <ReturnModal
+          show={showReturnModal}
+          onClose={() => setShowReturnModal(false)}
           reservation={selectedReservation}
         />
       )}
@@ -71,7 +90,7 @@ export default function AdminSchedulePage() {
 
         <div className="flex justify-between items-center mb-4">
           <h1 className="font-pathway text-2xl header-req">
-            <HiCalendar style={{ verticalAlign: "-3px", marginRight: "5px" }} />
+            <HiCalendar style={{ verticalAlign: '-3px', marginRight: '5px' }} />
             SCHEDULE
           </h1>
           <div className="relative">
@@ -95,8 +114,8 @@ export default function AdminSchedulePage() {
                       key={header.id}
                       className="text-left cursor-pointer border font-pathway"
                       style={{
-                        fontSize: "20px",
-                        padding: "3px 3px 3px 10px",
+                        fontSize: '20px',
+                        padding: '3px 3px 3px 10px',
                       }}
                       onClick={header.column.getToggleSortingHandler()}
                     >
@@ -105,10 +124,10 @@ export default function AdminSchedulePage() {
                         header.getContext()
                       )}
                       {header.column.getIsSorted()
-                        ? header.column.getIsSorted() === "asc"
-                          ? " ↑"
-                          : " ↓"
-                        : ""}
+                        ? header.column.getIsSorted() === 'asc'
+                          ? ' ↑'
+                          : ' ↓'
+                        : ''}
                     </th>
                   ))}
                 </tr>
@@ -123,8 +142,8 @@ export default function AdminSchedulePage() {
                       key={cell.id}
                       className="p-2"
                       style={{
-                        borderBottom: "1px solid #000",
-                        padding: "10px ",
+                        borderBottom: '1px solid #000',
+                        padding: '10px ',
                       }}
                     >
                       {flexRender(
@@ -144,8 +163,8 @@ export default function AdminSchedulePage() {
             >
               ← Prev
             </button>
-            <span style={{ padding: "0 10px" }}>
-              {table.getState().pagination.pageIndex + 1} of{" "}
+            <span style={{ padding: '0 10px' }}>
+              {table.getState().pagination.pageIndex + 1} of{' '}
               {table.getPageCount()}
             </span>
             <button

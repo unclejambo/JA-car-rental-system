@@ -68,6 +68,8 @@ table tbody tr {
   left: 50%;
   transform: translate(-50%, -50%);
   bottom: 0;
+  gap: 10px;
+  font-family: 'Pathway Gothic One', sans-serif;
 }
 
 /* Base select styles */
@@ -237,8 +239,8 @@ input[type='file'] {
   margin: 0 0;
 }
 
-input[type="file"]::file-selector-button {
-  background: #4CAF50;
+input[type='file']::file-selector-button {
+  background: #4caf50;
   color: white;
   border: none;
   font-size: 14px;
@@ -247,11 +249,11 @@ input[type="file"]::file-selector-button {
   cursor: pointer;
 }
 
-input[type="checkbox"] {
+input[type='checkbox'] {
   margin-left: -125px;
 }
 
-input[type="radio"] {
+input[type='radio'] {
   margin-left: -125px;
   margin-right: -80px;
 }

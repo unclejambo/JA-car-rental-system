@@ -1,7 +1,7 @@
-import AdminSideBar from "../../components/AdminSideBar";
-import Header from "../../components/Header";
-//import "../../styles/admincss/adminbooking.css";
-import React, { useState } from "react";
+import AdminSideBar from '../../components/AdminSideBar';
+import Header from '../../components/Header';
+import '../../styles/admincss/adminbooking.css';
+import React, { useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -129,9 +129,15 @@ export default function AdminBookingPage() {
     <>
       <Header />
       <AdminSideBar />
-      <ManageFeesModal show={showManageFeesModal} onClose={() => setShowManageFeesModal(false)} />
+      <ManageFeesModal
+        show={showManageFeesModal}
+        onClose={() => setShowManageFeesModal(false)}
+      />
       <div className="requests-container">
-        <button className={getButtonClass('booking')} onClick={() => setRequestType('booking')}>
+        <button
+          className={getButtonClass('booking')}
+          onClick={() => setRequestType('booking')}
+        >
           Booking
         </button>
         <button
@@ -140,13 +146,21 @@ export default function AdminBookingPage() {
         >
           Cancellation
         </button>
-        <button className={getButtonClass('extension')} onClick={() => setRequestType('extension')}>
+        <button
+          className={getButtonClass('extension')}
+          onClick={() => setRequestType('extension')}
+        >
           Extension
         </button>
       </div>
       <div>
-        <button className="manage-fees-btn" onClick={() => setShowManageFeesModal(true)}>
-          <HiOutlineCurrencyDollar style={{ verticalAlign: '-3px', marginRight: '3px' }} />
+        <button
+          className="manage-fees-btn"
+          onClick={() => setShowManageFeesModal(true)}
+        >
+          <HiOutlineCurrencyDollar
+            style={{ verticalAlign: '-3px', marginRight: '3px' }}
+          />
           Manage Fees
         </button>
       </div>
@@ -171,7 +185,10 @@ export default function AdminBookingPage() {
                     }}
                     onClick={header.column.getToggleSortingHandler()}
                   >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
                     {header.column.getIsSorted()
                       ? header.column.getIsSorted() === 'asc'
                         ? ' ↑'
@@ -205,7 +222,10 @@ export default function AdminBookingPage() {
                         padding: '10px ',
                       }}
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </td>
                   ))}
                 </tr>
@@ -228,9 +248,13 @@ export default function AdminBookingPage() {
             <HiMiniChevronLeft style={{ verticalAlign: '-3px' }} /> Prev
           </button>
           <span style={{ padding: '0 10px' }}>
-            {activeTable.getState().pagination.pageIndex + 1} of {activeTable.getPageCount()}
+            {activeTable.getState().pagination.pageIndex + 1} of{' '}
+            {activeTable.getPageCount()}
           </span>
-          <button onClick={() => activeTable.nextPage()} disabled={!activeTable.getCanNextPage()}>
+          <button
+            onClick={() => activeTable.nextPage()}
+            disabled={!activeTable.getCanNextPage()}
+          >
             Next <HiMiniChevronRight style={{ verticalAlign: '-3px' }} />
           </button>
         </div>

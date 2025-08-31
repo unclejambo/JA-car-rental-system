@@ -1,0 +1,48 @@
+/* Styles for Admin Schedule Page */
+
+.page-content {
+  position: fixed;
+  margin-top: 115px;
+  margin-left: 15.7vw;
+  margin-right: 1vw;
+  width: calc(100vw - 17vw);
+  height: calc(100vh - 22vh);
+  padding: 5px;
+  background: #f8f8f8;
+  box-shadow: 0px 0px 3px #000;
+}
+
+/* Search bar area */
+.page-content .flex {
+  display: flex;
+}
+
+.page-content .justify-between {
+  justify-content: space-between;
+}
+
+.page-content .items-center {
+  align-items: center;
+}
+
+/* Table wrapper override to ensure spacing aligns with other admin pages */
+.admin-table-wrapper {
+  background: white;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+/* Pagination button baseline for consistency */
+.pagination-btn {
+  font-family: 'Pathway Gothic One', sans-serif;
+  font-size: 16px;
+  padding: 4px 10px;
+  border: none;
+  background-color: #d9d9d9;
+  cursor: pointer;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

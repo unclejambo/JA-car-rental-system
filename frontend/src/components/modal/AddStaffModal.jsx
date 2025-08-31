@@ -95,7 +95,6 @@ export default function AddStaffModal({ show, onClose }) {
               required
             >
               <option value="staff">Staff</option>
-              <option value="admin">Admin</option>
               <option value="manager">Manager</option>
             </select>
           </div>

@@ -4,15 +4,7 @@ import Header from '../../components/Header';
 //import "../../styles/admin-main.css";
 import { HiDocumentCurrencyDollar } from 'react-icons/hi2';
 import { useTransactionStore } from '../../store/transactions';
-import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  getPaginationRowModel,
-  flexRender,
-} from '@tanstack/react-table';
-import { AiOutlinePlus } from 'react-icons/ai';
-import { HiChevronLeft, HiChevronRight } from 'react-icons/hi2';
+import AdminTable from '../../components/AdminTable';
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
@@ -23,11 +15,6 @@ const formatDate = (dateString) => {
 export default function AdminTransactionPage() {
   const { transactions } = useTransactionStore();
   const [activeTab, setActiveTab] = useState('all');
-  const [sorting, setSorting] = useState([]);
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 5,
-  });
 
   const getButtonClass = (tabName) => {
     return `tab-btn ${activeTab === tabName ? 'active' : ''}`;
@@ -93,20 +80,6 @@ export default function AdminTransactionPage() {
     []
   );
 
-  const table = useReactTable({
-    data: filteredTransactions,
-    columns,
-    state: {
-      sorting,
-      pagination,
-    },
-    onSortingChange: setSorting,
-    onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  });
-
   return (
     <>
       <Header />
@@ -136,109 +109,16 @@ export default function AdminTransactionPage() {
         <div className="page-content-car">
           <title>Transaction Logs</title>
 
-          <h1 className="font-pathway text-2xl header-req">
-            <HiDocumentCurrencyDollar
-              style={{ verticalAlign: '-3px', marginRight: '5px' }}
-            />
-            TRANSACTIONS
-          </h1>
+          
 
-          <table className="admin-table">
-            <thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="text-left cursor-pointer border font-pathway"
-                      style={{
-                        fontSize: '20px',
-                        padding: '3px 3px 3px 10px',
-                      }}
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                      {header.column.getIsSorted()
-                        ? header.column.getIsSorted() === 'asc'
-                          ? ' ↑'
-                          : ' ↓'
-                        : ''}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.length === 0 ? (
-                <tr style={{ border: 'none' }}>
-                  <td
-                    colSpan={table.getAllColumns().length}
-                    className="text-center py-4 font-pathway"
-                    style={{ color: '#808080' }}
-                  >
-                    <h3>No transactions found</h3>
-                  </td>
-                </tr>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <tr key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="border-t px-4 py-2 text-sm font-pathway"
-                        style={{
-                          borderBottom: '1px solid #000',
-                          padding: '10px ',
-                        }}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-
-          <div
-            className="mt-2 flex gap-2 pagination"
-            style={{
-              marginTop: '15px',
-              alignItems: 'center',
-              placeContent: 'center',
-            }}
-          >
-            <button
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="pagination-button flex items-center gap-1"
-            >
-              <span className="pagination-arrow">
-                <HiChevronLeft />
-              </span>
-              <span>Prev</span>
-            </button>
-            <span className="page-info">
-              {table.getState().pagination.pageIndex + 1} of{' '}
-              {table.getPageCount()}
-            </span>
-            <button
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="pagination-button flex items-center gap-1"
-            >
-              <span>Next</span>
-              <span className="pagination-arrow">
-                <HiChevronRight />
-              </span>
-            </button>
-          </div>
+          <AdminTable
+            data={filteredTransactions}
+            columns={columns}
+            title={'TRANSACTIONS'}
+            Icon={HiDocumentCurrencyDollar}
+            emptyMessage={'No transactions found'}
+            pageSize={5}
+          />
         </div>
       </div>
     </>

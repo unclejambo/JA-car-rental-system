@@ -1,28 +1,22 @@
 import AdminSideBar from '../../components/AdminSideBar';
 import Header from '../../components/Header';
 import '../../styles/admincss/adminbooking.css';
-import React, { useState } from 'react';
-import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  getPaginationRowModel,
-  flexRender,
-} from '@tanstack/react-table';
+import React, { useState, useEffect } from 'react';
 import { bookingColumns } from '../accessor/BookingColumns.jsx';
-import { useBookingStore } from '../../store/bookings.js';
 import { cancellationColumns } from '../accessor/CancellationColumns.jsx';
 import { useCancellationStore } from '../../store/cancellation.js';
 import { useExtensionStore } from '../../store/extension.js';
 import { extensionColumns } from '../accessor/ExtensionColumns.jsx';
-import { HiMiniChevronRight } from 'react-icons/hi2';
-import { HiMiniChevronLeft } from 'react-icons/hi2';
 import { HiBookOpen } from 'react-icons/hi2';
 import { HiOutlineCurrencyDollar } from 'react-icons/hi2';
 import ManageFeesModal from '../../components/modal/ManageFeesModal';
+import AdminTable from '../../components/AdminTable';
 
 export default function AdminBookingPage() {
-  const bookingData = useBookingStore((state) => state.bookings);
+  // Bookings: fetch from MockAPI instead of local store
+  const [bookingData, setBookingData] = useState([]);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState(null);
   const cancellationData = useCancellationStore((state) => state.cancellations);
   const extensionData = useExtensionStore((state) => state.extensions);
   const [showManageFeesModal, setShowManageFeesModal] = useState(false);
@@ -30,96 +24,68 @@ export default function AdminBookingPage() {
   // State for tracking active request type
   const [requestType, setRequestType] = useState('booking');
 
-  // Separate states for each table
-  const [bookingSorting, setBookingSorting] = useState([]);
-  const [bookingPagination, setBookingPagination] = useState({
-    pageIndex: 0,
-    pageSize: 5,
-  });
+  // Fetch bookings from MockAPI on mount
+  useEffect(() => {
+    const controller = new AbortController();
+    const fetchBookings = async () => {
+      try {
+        setBookingLoading(true);
+        setBookingError(null);
+        const res = await fetch(
+          'https://68b2fd5cc28940c9e69de1ab.mockapi.io/bookings',
+          { signal: controller.signal }
+        );
+        if (!res.ok) throw new Error('Failed to fetch bookings');
+        const data = await res.json();
+        // Ensure data is an array
+        setBookingData(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setBookingError(err.message || 'Unknown error');
+        }
+      } finally {
+        setBookingLoading(false);
+      }
+    };
+    fetchBookings();
+    return () => controller.abort();
+  }, []);
 
-  const [cancellationSorting, setCancellationSorting] = useState([]);
-  const [cancellationPagination, setCancellationPagination] = useState({
-    pageIndex: 0,
-    pageSize: 5,
-  });
-
-  const [extensionSorting, setExtensionSorting] = useState([]);
-  const [extensionPagination, setExtensionPagination] = useState({
-    pageIndex: 0,
-    pageSize: 5,
-  });
-
-  // Initialize tables with their own state
-  const bookingTable = useReactTable({
-    data: bookingData,
-    columns: bookingColumns,
-    state: {
-      sorting: bookingSorting,
-      pagination: bookingPagination,
-    },
-    onSortingChange: setBookingSorting,
-    onPaginationChange: setBookingPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  });
-
-  const cancellationTable = useReactTable({
-    data: cancellationData,
-    columns: cancellationColumns,
-    state: {
-      sorting: cancellationSorting,
-      pagination: cancellationPagination,
-    },
-    onSortingChange: setCancellationSorting,
-    onPaginationChange: setCancellationPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  });
-
-  const extensionTable = useReactTable({
-    data: extensionData,
-    columns: extensionColumns,
-    state: {
-      sorting: extensionSorting,
-      pagination: extensionPagination,
-    },
-    onSortingChange: setExtensionSorting,
-    onPaginationChange: setExtensionPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  });
-
-  const getActiveTable = () => {
+  // Determine current table config
+  const getActiveConfig = () => {
     switch (requestType) {
       case 'booking':
         return {
-          table: bookingTable,
           data: bookingData,
+          columns: bookingColumns,
           emptyMessage: 'There are no booking requests yet.',
-          title: 'BOOKING',
+          title: 'BOOKING REQUESTS',
+          loading: bookingLoading,
+          error: bookingError,
         };
       case 'cancellation':
         return {
-          table: cancellationTable,
           data: cancellationData,
+          columns: cancellationColumns,
           emptyMessage: 'There are no cancellation requests yet.',
-          title: 'CANCELLATION',
+          title: 'CANCELLATION REQUESTS',
+          loading: false,
+          error: null,
         };
       case 'extension':
       default:
         return {
-          table: extensionTable,
           data: extensionData,
+          columns: extensionColumns,
           emptyMessage: 'There are no extension requests yet.',
-          title: 'EXTENSION',
+          title: 'EXTENSION REQUESTS',
+          loading: false,
+          error: null,
         };
     }
   };
 
-  const { table: activeTable, emptyMessage, title } = getActiveTable();
+  const { data, columns, emptyMessage, title, loading, error } = getActiveConfig();
 
   const getButtonClass = (type) => {
     return `tab-btn ${requestType === type ? 'active' : ''}`;
@@ -167,97 +133,16 @@ export default function AdminBookingPage() {
       <div className="page-content-booking">
         <title>Manage Bookings</title>
 
-        <h1 className="font-pathway header-req">
-          <HiBookOpen style={{ verticalAlign: '-3px', marginRight: '5px' }} />
-          {title} REQUESTS
-        </h1>
-        <table className="admin-table">
-          <thead>
-            {activeTable.getHeaderGroups().map((hg) => (
-              <tr key={hg.id}>
-                {hg.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="text-left cursor-pointer border font-pathway"
-                    style={{
-                      fontSize: '20px',
-                      padding: '3px 3px 3px 10px',
-                    }}
-                    onClick={header.column.getToggleSortingHandler()}
-                  >
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                    {header.column.getIsSorted()
-                      ? header.column.getIsSorted() === 'asc'
-                        ? ' ↑'
-                        : ' ↓'
-                      : ''}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {activeTable.getRowModel().rows.length === 0 ? (
-              <tr style={{ border: 'none' }}>
-                <td
-                  colSpan={activeTable.getAllColumns().length}
-                  className="text-center py-4 font-pathway"
-                  style={{ color: '#808080' }}
-                >
-                  <h3>{emptyMessage}</h3>
-                </td>
-              </tr>
-            ) : (
-              activeTable.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="border-t font-pathway">
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="p-2"
-                      style={{
-                        borderBottom: '1px solid #000',
-                        padding: '10px ',
-                      }}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-        <div
-          className="mt-2 flex gap-2 pagination"
-          style={{
-            marginTop: '15px',
-            alignItems: 'center',
-            placeContent: 'center',
-          }}
-        >
-          <button
-            onClick={() => activeTable.previousPage()}
-            disabled={!activeTable.getCanPreviousPage()}
-          >
-            <HiMiniChevronLeft style={{ verticalAlign: '-3px' }} /> Prev
-          </button>
-          <span style={{ padding: '0 10px' }}>
-            {activeTable.getState().pagination.pageIndex + 1} of{' '}
-            {activeTable.getPageCount()}
-          </span>
-          <button
-            onClick={() => activeTable.nextPage()}
-            disabled={!activeTable.getCanNextPage()}
-          >
-            Next <HiMiniChevronRight style={{ verticalAlign: '-3px' }} />
-          </button>
-        </div>
+        <AdminTable
+          data={data}
+          columns={columns}
+          title={title}
+          Icon={HiBookOpen}
+          emptyMessage={emptyMessage}
+          loading={loading}
+          error={error}
+          pageSize={5}
+        />
       </div>
       <br />
     </>

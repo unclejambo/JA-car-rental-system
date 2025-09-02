@@ -5,73 +5,86 @@
   height: calc(100vh - 70px);
   width: 15vw;
   background-color: #d9d9d9;
-  overflow-x: hidden;
   overflow-y: auto;
-  align-content: center;
-  place-content: center;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0;
+  z-index: 1000;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .admin-sidebar a {
   text-decoration: none;
   transition: all 0.3s ease;
   color: #000;
-  font-size: 24px;
-  padding: 8px 10px;
+  font-size: 20px;
+  padding: 12px 24px;
   font-family: "Pathway Gothic One", sans-serif;
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 44px; /* touch target */
+  gap: 12px;
+  min-height: 50px;
   line-height: 1.2;
+  position: relative;
+  margin: 2px 12px;
+  border-radius: 6px;
 }
 
 .admin-sidebar a:hover {
-  text-decoration: none;
-  color: #797979;
-  font-size: 24px;
-  padding: 8px 10px;
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #333;
+  transform: translateX(4px);
 }
 
 .admin-sidebar .active {
-  text-decoration: none;
-  color: #797979;
-  font-size: 24px;
-  padding: 8px 10px;
-  cursor: default;
+  background-color: #c5c5c5;
+  color: #000;
+  font-weight: 600;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
 }
 
 hr {
   border: none;
   height: 1px;
-  background-color: #000000;
+  background-color: rgba(0, 0, 0, 0.1);
+  margin: 8px 24px;
+  box-shadow: 0 1px 1px rgba(255, 255, 255, 0.2);
 }
 
-br {
-  margin: 6px;
+/* Add a subtle border to the right of the sidebar */
+.admin-sidebar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 1px;
+  background: linear-gradient(to bottom, 
+    transparent, 
+    rgba(0, 0, 0, 0.1) 20%, 
+    rgba(0, 0, 0, 0.2) 50%, 
+    rgba(0, 0, 0, 0.1) 80%, 
+    transparent);
 }
 
 /* Make the sidebar content fit the mobile Drawer nicely */
 @media (max-width: 1024px) {
   .admin-sidebar {
-    position: static;
+    position: relative;
     top: 0;
-    left: 0;
     height: auto;
     width: 100%;
-    overflow: auto;
-    padding: 8px 12px;
+    padding: 0;
+    box-shadow: none;
   }
-
-  .admin-sidebar a,
-  .admin-sidebar a:hover,
-  .admin-sidebar .active {
-    font-size: 20px;
-    padding: 8px;
-    gap: 8px;
+  
+  .admin-sidebar a {
+    padding: 12px 20px;
+    margin: 2px 8px;
   }
-
-  /* Tighter separators on mobile */
+  
   hr {
-    margin: 6px 0;
+    margin: 8px 16px;
   }
 }

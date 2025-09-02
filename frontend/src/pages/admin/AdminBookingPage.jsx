@@ -13,6 +13,7 @@ import ManageFeesModal from '../../components/modal/ManageFeesModal';
 import AdminTable from '../../components/AdminTable';
 
 export default function AdminBookingPage() {
+  const [mobileOpen, setMobileOpen] = useState(false);
   // Bookings: fetch from MockAPI instead of local store
   const [bookingData, setBookingData] = useState([]);
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -93,8 +94,8 @@ export default function AdminBookingPage() {
 
   return (
     <>
-      <Header />
-      <AdminSideBar />
+      <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
+      <AdminSideBar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <ManageFeesModal
         show={showManageFeesModal}
         onClose={() => setShowManageFeesModal(false)}
@@ -130,7 +131,7 @@ export default function AdminBookingPage() {
           Manage Fees
         </button>
       </div>
-      <div className="page-content-booking">
+      <div className="page-container">
         <title>Manage Bookings</title>
 
         <AdminTable

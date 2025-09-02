@@ -15,6 +15,7 @@ import AddDriverModal from "../../components/modal/AddDriverModal";
 import AdminTable from "../../components/AdminTable";
 
 export default function AdminManageUser() {
+  const [mobileOpen, setMobileOpen] = useState(false);
   const userData = useUserStore((state) => state.users);
   const staffData = useStaffStore((state) => state.staff);
   const driverData = useDriverStore((state) => state.driver);
@@ -80,8 +81,8 @@ export default function AdminManageUser() {
 
   return (
     <>
-      <Header />
-      <AdminSideBar />
+      <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
+      <AdminSideBar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       
       <AddStaffModal show={showAddStaffModal} onClose={closeAddStaffModal} />
       <AddDriverModal show={showAddDriverModal} onClose={closeAddDriverModal} />
@@ -105,7 +106,7 @@ export default function AdminManageUser() {
           Driver
         </button>
       </div>
-      <div className="page-content-customers">
+      <div className="page-container">
         <title>Manage Users</title>
 
         

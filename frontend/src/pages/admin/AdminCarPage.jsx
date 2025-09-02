@@ -13,6 +13,7 @@ import { HiTruck, HiWrenchScrewdriver } from 'react-icons/hi2';
 import AdminTable from '../../components/AdminTable';
 
 export default function AdminCarPage() {
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { cars, init } = useCarStore();
 
   useEffect(() => {
@@ -88,13 +89,13 @@ export default function AdminCarPage() {
 
   return (
     <>
-      <Header />
-      <AdminSideBar />
+      <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
+      <AdminSideBar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
       <AddCarModal show={showAddModal} onClose={closeAddModal} />
       <EditCarModal show={!!editCar} onClose={closeEditModal} car={editCar} />
 
-      <div className="page-main-content-car">
+      <div className="page-container">
         <div className="cars-container">
           <button
             className={getButtonClass('cars')}
@@ -109,7 +110,7 @@ export default function AdminCarPage() {
             MAINTENANCE
           </button>
         </div>
-        <div className="page-content-car">
+        <div>
           <title>Manage Cars</title>
 
           

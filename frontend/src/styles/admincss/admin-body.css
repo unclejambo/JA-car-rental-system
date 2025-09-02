@@ -96,3 +96,17 @@
     padding-left: 2px;
   }
 }
+
+/* Mobile-first fluid layout for admin pages */
+@media (max-width: 1024px) {
+  .page-content {
+    position: static;
+    top: auto;
+    left: auto;
+    margin: 80px 12px 12px;
+    width: 100% !important;
+    height: auto;
+    overflow: visible;
+    padding: 12px;
+  }
+}

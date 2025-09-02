@@ -37,29 +37,38 @@ export default function AdminTable({
   return (
     <div className="admin-table-wrapper">
       {title ? (
-        <h1 className="font-pathway text-2xl header-req" style={{ marginBottom: 8 }}>
+        <h1 id="admin-table-title" className="font-pathway text-2xl header-req">
           {Icon ? <Icon style={{ verticalAlign: '-3px', marginRight: '5px' }} /> : null}
           {title}
         </h1>
       ) : null}
 
-      <table className="admin-table">
+      <div className="admin-table-container">
+        <table className="admin-table" aria-labelledby="admin-table-title">
         <thead>
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id}>
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="text-left cursor-pointer border font-pathway"
-                  style={{ fontSize: '20px', padding: '3px 3px 3px 10px' }}
-                  onClick={header.column.getToggleSortingHandler()}
+                  aria-sort={
+                    header.column.getIsSorted()
+                      ? header.column.getIsSorted() === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : 'none'
+                  }
                 >
+                  <button
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                   {header.column.getIsSorted()
                     ? header.column.getIsSorted() === 'asc'
                       ? ' ↑'
                       : ' ↓'
                     : ''}
+                </button>
                 </th>
               ))}
             </tr>
@@ -68,53 +77,57 @@ export default function AdminTable({
         <tbody>
           {loading && (
             <tr style={{ border: 'none' }}>
-              <td colSpan={table.getAllColumns().length} className="text-center py-4 font-pathway" style={{ color: '#808080' }}>
+              <td colSpan={table.getAllColumns().length} className="text-center py-4 font-pathway table-message-loading">
                 <h3>Loading...</h3>
               </td>
             </tr>
           )}
           {error && !loading && (
             <tr style={{ border: 'none' }}>
-              <td colSpan={table.getAllColumns().length} className="text-center py-4 font-pathway" style={{ color: 'crimson' }}>
+              <td colSpan={table.getAllColumns().length} className="text-center py-4 font-pathway table-message-error">
                 <h3>{error}</h3>
               </td>
             </tr>
           )}
           {!loading && !error && table.getRowModel().rows.length === 0 && (
             <tr style={{ border: 'none' }}>
-              <td colSpan={table.getAllColumns().length} className="text-center py-4 font-pathway" style={{ color: '#808080' }}>
+              <td colSpan={table.getAllColumns().length} className="text-center py-4 font-pathway table-message-empty">
                 <h3>{emptyMessage}</h3>
               </td>
             </tr>
           )}
           {!loading && !error &&
             table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="border-t font-pathway">
+              <tr key={row.id} className="font-pathway">
                 {row.getVisibleCells().map((cell) => (
-                  <td
-                    key={cell.id}
-                    className="p-2"
-                    style={{ borderBottom: '1px solid #000', padding: '10px ' }}
-                  >
+                  <td key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
               </tr>
             ))}
         </tbody>
-      </table>
+        </table>
+      </div>
 
-      <div
-        className="mt-2 flex gap-2 pagination"
-        style={{ marginTop: '15px', alignItems: 'center', placeContent: 'center' }}
-      >
-        <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} className="pagination-btn">
+      <div className="pagination">
+        <button
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+          className="pagination-btn"
+          aria-label="Go to previous page"
+        >
           <HiMiniChevronLeft style={{ verticalAlign: '-3px' }} /> Prev
         </button>
-        <span style={{ padding: '0 10px' }}>
+        <span role="status" aria-live="polite" aria-atomic="true">
           {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </span>
-        <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} className="pagination-btn">
+        <button
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+          className="pagination-btn"
+          aria-label="Go to next page"
+        >
           Next <HiMiniChevronRight style={{ verticalAlign: '-3px' }} />
         </button>
       </div>

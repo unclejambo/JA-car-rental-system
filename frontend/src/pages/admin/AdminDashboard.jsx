@@ -2,42 +2,23 @@ import AdminSideBar from "../../components/AdminSideBar";
 import Header from "../../components/Header";
 import { Link } from "react-router-dom";
 import "../../styles/admincss/admindashboard.css";
+import React from "react";
 
 function AdminDashboard() {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
   return (
     <>
-      <Header />
+      <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
       <br />
-      <AdminSideBar />
-      <div
-        style={{
-          marginTop: "55px",
-          marginLeft: "15.2vw",
-          height: "calc(100vh - 15.5vh)",
-          width: "calc(100vw - 17vw)",
-          overflowY: "auto",
-          padding: "10px",
-        }}
-      >
+      <AdminSideBar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <div className="page-container dashboard-container">
         <title>Dashboard</title>
         <div className="div-1">
           <div className="topmost-1">
             <h1 className="font-pathway">MOST RENTED CAR</h1>
             <h3 className="font-pathway">MARCH</h3>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "30px",
-                paddingInlineStart: "80px",
-                marginTop: "-20px",
-              }}
-            >
-              <img
-                src="/nissan.png"
-                alt="nissan"
-                className="w-[200px] h-[120px]"
-              />
+            <div className="dashboard-card-content">
+              <img src="/nissan.png" alt="nissan" className="dashboard-card-image" />
               <div>
                 <h4 className="font-pathway text-[30px] m-0">
                   Nissan
@@ -58,7 +39,7 @@ function AdminDashboard() {
             <h1 className="font-pathway">
               TOP <br /> COSTUMER
             </h1>
-            <h2 className="font-pathway text-[80px]" style={{ margin: "0" }}>
+            <h2 className="font-pathway text-[80px]">
               JASPEN GERME
             </h2>
             <h3 className="font-pathway total">TOTAL BOOKINGS: 4</h3>

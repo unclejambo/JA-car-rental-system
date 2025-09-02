@@ -12,53 +12,52 @@
   position: relative;
   width: calc(100vw - 17vw);
   height: calc(100vh - 22vh);
-  padding: 5px;
-  background: #f8f8f8;
-  box-shadow: 0px 0px 3px #000;
-  position: relative;
+  padding: var(--space-sm);
+  background: var(--background-dark);
+  box-shadow: 0 0 3px var(--text-primary);
 }
 
 .page-content-maintenance {
   position: relative;
-  margin-top: 10px;
+  margin-top: var(--space-md);
   margin-left: 16vw;
   margin-right: 1vw;
   width: auto;
   height: calc(100vh - 55vh);
   overflow-y: auto;
-  padding: 5px;
-  background: #f8f8f8;
-  box-shadow: 0px 0px 3px #000;
+  padding: var(--space-sm);
+  background: var(--background-dark);
+  box-shadow: 0 0 3px var(--text-primary);
 }
 
 .add-car-btn {
   position: absolute;
-  right: 5px;
-  top: 5px;
-  font-family: 'Pathway Gothic One', sans-serif;
-  font-size: 18px;
+  right: var(--space-sm);
+  top: var(--space-sm);
+  font-family: var(--font-secondary);
+  font-size: var(--fs-lg);
   border: none;
-  background-color: #d9d9d9;
+  background-color: var(--border-color);
   border-radius: 20px;
-  padding: 5px 10px;
+  padding: var(--space-sm) var(--space-md);
   cursor: pointer;
 }
 
 .add-icon {
   font-weight: bold;
   vertical-align: -3px;
-  color: white;
-  background-color: #000;
+  color: var(--text-secondary);
+  background-color: var(--text-primary);
 }
 
 .add-car-btn:hover {
-  color: white;
-  background-color: #797979;
+  color: var(--text-secondary);
+  background-color: var(--secondary-color);
 }
 
 .add-car-btn:hover .add-icon {
-  background-color: white;
-  color: #797979;
+  background-color: var(--text-secondary);
+  color: var(--secondary-color);
 }
 
 .edit-icon {
@@ -68,23 +67,23 @@
 }
 
 .edit-icon:hover {
-  color: #ff8800;
+  color: #ff8800; /* --warning-color */
 }
 
 .delete-icon {
   cursor: pointer;
   position: absolute;
-  right: 10px;
-  color: #f54d4d;
+  right: var(--space-md);
+  color: var(--accent-color);
 }
 
 .delete-icon:hover {
-  color: #f80000;
+  filter: brightness(0.9);
 }
 
 /* Tabs CSS */
 .btn-container {
-  margin-top: 10px;
+  margin-top: var(--space-md);
   display: flex;
   gap: 150px;
 }
@@ -96,11 +95,11 @@
 }
 
 .cars-container button {
-  font-family: 'Pathway Gothic One', sans-serif;
-  font-size: 24px;
-  padding: 5px 20px;
+  font-family: var(--font-secondary);
+  font-size: var(--fs-xl);
+  padding: var(--space-sm) var(--space-lg);
   border: none;
-  background-color: #d9d9d9;
+  background-color: var(--border-color);
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
@@ -112,8 +111,50 @@
 }
 
 .cars-container button.active {
-  background-color: #4a4a4a;
-  color: white;
+  background-color: var(--secondary-color);
+  color: var(--text-secondary);
   font-weight: bold;
   cursor: default;
+}
+
+/* Mobile-first responsive layout for Car page */
+@media (max-width: 1024px) {
+  .page-main-content-car {
+    position: static;
+    margin: 90px var(--space-md) var(--space-md);
+    width: 100% !important;
+    height: auto;
+    box-sizing: border-box;
+  }
+
+  .page-content-car {
+    width: 100% !important;
+    height: auto;
+    padding: var(--space-md);
+    box-sizing: border-box;
+  }
+
+  .page-content-maintenance {
+    margin: var(--space-md) 0 0 0;
+    width: 100% !important;
+    height: auto;
+    padding: var(--space-md);
+    box-sizing: border-box;
+  }
+
+  .btn-container {
+    gap: var(--space-md);
+    flex-wrap: wrap;
+  }
+
+  .cars-container {
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-right: 0;
+  }
+
+  .cars-container button {
+    font-size: var(--fs-lg);
+    padding: var(--space-sm) var(--space-md);
+  }
 }

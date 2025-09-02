@@ -10,6 +10,7 @@ import ReturnModal from '../../components/modal/ReturnModal.jsx';
 import AdminTable from '../../components/AdminTable';
 
 export default function AdminSchedulePage() {
+  const [mobileOpen, setMobileOpen] = useState(false);
   const allData = useScheduleStore((state) => state.reservations);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -45,8 +46,8 @@ export default function AdminSchedulePage() {
 
   return (
     <>
-      <Header />
-      <AdminSideBar />
+      <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
+      <AdminSideBar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
       {showReleaseModal && (
         <ReleaseModal
@@ -63,7 +64,7 @@ export default function AdminSchedulePage() {
           reservation={selectedReservation}
         />
       )}
-      <div className="page-content">
+      <div className="page-container">
         <title>Schedule</title>
 
         <div className="flex justify-between items-center mb-4">

@@ -13,6 +13,7 @@ const formatDate = (dateString) => {
 };
 
 export default function AdminTransactionPage() {
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { transactions } = useTransactionStore();
   const [activeTab, setActiveTab] = useState('all');
 
@@ -82,10 +83,10 @@ export default function AdminTransactionPage() {
 
   return (
     <>
-      <Header />
-      <AdminSideBar />
+      <Header onMenuClick={() => setMobileOpen(true)} />
+      <AdminSideBar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
-      <div className="page-main-content-car">
+      <div className="page-container">
         <div className="cars-container">
           <button
             className={getButtonClass('all')}
@@ -106,7 +107,7 @@ export default function AdminTransactionPage() {
             Refund Logs
           </button>
         </div>
-        <div className="page-content-car">
+        <div>
           <title>Transaction Logs</title>
 
           

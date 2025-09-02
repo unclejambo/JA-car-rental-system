@@ -2,10 +2,11 @@
   position: fixed;
   top: 70px;
   left: 0;
-  height: calc(100vh - 10vh);
+  height: calc(100vh - 70px);
   width: 15vw;
   background-color: #d9d9d9;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   align-content: center;
   place-content: center;
 }
@@ -15,22 +16,27 @@
   transition: all 0.3s ease;
   color: #000;
   font-size: 24px;
-  padding-left: 10px;
+  padding: 8px 10px;
   font-family: "Pathway Gothic One", sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px; /* touch target */
+  line-height: 1.2;
 }
 
 .admin-sidebar a:hover {
   text-decoration: none;
   color: #797979;
   font-size: 24px;
-  padding-left: 10px;
+  padding: 8px 10px;
 }
 
 .admin-sidebar .active {
   text-decoration: none;
   color: #797979;
   font-size: 24px;
-  padding-left: 10px;
+  padding: 8px 10px;
   cursor: default;
 }
 
@@ -41,5 +47,31 @@ hr {
 }
 
 br {
-  margin: 10px;
+  margin: 6px;
+}
+
+/* Make the sidebar content fit the mobile Drawer nicely */
+@media (max-width: 1024px) {
+  .admin-sidebar {
+    position: static;
+    top: 0;
+    left: 0;
+    height: auto;
+    width: 100%;
+    overflow: auto;
+    padding: 8px 12px;
+  }
+
+  .admin-sidebar a,
+  .admin-sidebar a:hover,
+  .admin-sidebar .active {
+    font-size: 20px;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  /* Tighter separators on mobile */
+  hr {
+    margin: 6px 0;
+  }
 }

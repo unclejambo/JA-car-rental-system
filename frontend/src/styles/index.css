@@ -2,8 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
+
+/* Visually hide content while keeping it accessible to screen readers */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:root {
+  /* Color Palette */
+  --primary-color: #089eff;
+  --primary-hover: #088edf;
+  --secondary-color: #4a4a4a;
+  --accent-color: #ff0000;
+  --background-light: #ffffff;
+  --background-dark: #f0f2f5;
+  --text-primary: #000000;
+  --text-secondary: #ffffff;
+  --border-color: #d9d9d9;
+
+  /* Typography */
+  --font-primary: "Roboto", sans-serif;
+  --font-secondary: "Pathway Gothic One", sans-serif;
+  --font-display: "Merriweather", serif;
+
+  --fs-base: 1rem; /* 16px */
+  --fs-sm: 0.875rem; /* 14px */
+  --fs-lg: 1.125rem; /* 18px */
+  --fs-xl: 1.5rem; /* 24px */
+  --fs-xxl: 1.875rem; /* 30px */
+
+  /* Spacing */
+  --space-xs: 0.25rem; /* 4px */
+  --space-sm: 0.5rem;  /* 8px */
+  --space-md: 1rem;    /* 16px */
+  --space-lg: 1.5rem;  /* 24px */
+  --space-xl: 2rem;    /* 32px */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 .font-pathway {
-  font-family: 'Pathway Gothic One', sans-serif;
+  font-family: var(--font-secondary), sans-serif;
 }
 
 table tbody tr {
@@ -54,9 +107,51 @@ table tbody tr {
   color: #888888;
 }
 
+.admin-table-container {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .admin-table {
   border-collapse: collapse;
   width: 100%;
+  table-layout: fixed;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  font-size: var(--fs-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-table th {
+  font-size: var(--fs-lg);
+  padding: 0; /* Reset padding for button inside */
+}
+
+.admin-table th button {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--fs-lg);
+}
+
+.admin-table td {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table-message-loading,
+.table-message-empty {
+  color: var(--secondary-color);
+  opacity: 0.8;
+}
+
+.table-message-error {
+  color: var(--accent-color);
 }
 
 .header-req {
@@ -76,11 +171,11 @@ table tbody tr {
 .select-opt {
   width: auto;
   margin: 0;
-  font-size: 14px;
-  padding: 4px 28px 4px 12px;
+  font-size: var(--fs-sm);
+  padding: var(--space-xs) 1.75rem var(--space-xs) 0.75rem; /* 4px 28px 4px 12px */
   border: none;
   border-radius: 10px;
-  background-color: #d9d9d9;
+  background-color: var(--border-color);
   cursor: pointer;
   transition:
     background-color 0.3s ease,
@@ -90,8 +185,8 @@ table tbody tr {
   appearance: none;
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 16px;
+  background-position: right var(--space-sm) center;
+  background-size: 1rem;
 }
 
 /* Active state */
@@ -137,17 +232,6 @@ table tbody tr {
   box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
 }
 
-/* Style the dropdown arrow */
-.select-opt {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 16px;
-  padding-right: 28px;
-}
 
 .approve-btn {
   position: absolute;
@@ -288,11 +372,13 @@ input[type='radio'] {
 input[type='number']::-webkit-outer-spin-button,
 input[type='number']::-webkit-inner-spin-button {
   -webkit-appearance: none;
+  appearance: none;
   margin: 0;
 }
 
 input[type='number'] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 /* Hide the default file input */
@@ -314,4 +400,64 @@ input[type='number'] {
 
 .file-upload-button:hover {
   background-color: #45a049;
+}
+
+/* ------------------------ */
+/* Responsive tweaks        */
+/* ------------------------ */
+@media (max-width: 1024px) {
+  .page-container {
+    margin-left: 0 !important;
+    padding-left: 12px;
+    padding-right: 12px;
+    width: 100% !important;
+  }
+
+  /* Keep pagination visible without overlapping on small screens */
+  .pagination {
+    position: static;
+    transform: none;
+    margin-top: 12px;
+  }
+
+  /* Responsive forms */
+  .modal input,
+  .modal select {
+    width: 100%;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .car-img-btn {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Touch target sizes for interactive elements on mobile */
+  .page-container button,
+  .page-container a.button,
+  .page-container .pagination-btn {
+    min-height: 44px;
+  }
+}
+
+/* Fluid media */
+img,
+svg,
+canvas,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+
+/* Prevent horizontal scrolling globally */
+html,
+body {
+  overflow-x: hidden;
 }

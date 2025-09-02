@@ -1,18 +1,29 @@
-import React from "react";
-import { createColumnHelper } from "@tanstack/react-table";
-import "../../styles/index.css";
+import React from 'react';
+import { createColumnHelper } from '@tanstack/react-table';
+import '../../styles/index.css';
 
 const c = createColumnHelper();
 
 export const bookingColumns = [
-  c.accessor("customerName", { header: "Customer Name" }),
-  c.accessor("carModel", { header: "Car Model" }),
-  c.accessor("bookingDate", { header: "Booking Date" }),
-  c.accessor("purpose", { header: "Purpose" }),
-  c.accessor("startDate", { header: "Start Date" }),
-  c.accessor("endDate", { header: "End Date" }),
-  c.accessor("paymentStatus", { header: "Payment Status" }),
-  c.accessor("bookingStatus", { header: "Booking Status" }),
+  c.accessor('customerName', { header: 'Customer Name' }),
+  c.accessor('carModel', { header: 'Car Model' }),
+  c.accessor('bookingDate', {
+    header: 'Booking Date',
+    cell: (info) => <span>{info.getValue().slice(0, 10)}</span>,
+  }),
+  c.accessor('purpose', {
+    header: 'Purpose',
+  }),
+  c.accessor('startDate', {
+    header: 'Start Date',
+    cell: (info) => <span>{info.getValue().slice(0, 10)}</span>,
+  }),
+  c.accessor('endDate', {
+    header: 'End Date',
+    cell: (info) => <span>{info.getValue().slice(0, 10)}</span>,
+  }),
+  c.accessor('paymentStatus', { header: 'Payment Status' }),
+  c.accessor('bookingStatus', { header: 'Booking Status' }),
   //   c.accessor("action", {
   //     header: "",
   //     cell: (info) => {

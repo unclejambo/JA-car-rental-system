@@ -1,8 +1,8 @@
-import AdminSideBar from "../../components/AdminSideBar";
-import Header from "../../components/Header";
-import { Link } from "react-router-dom";
-import "../../styles/admincss/admindashboard.css";
-import React from "react";
+import AdminSideBar from '../../components/AdminSideBar';
+import Header from '../../components/Header';
+import { Link } from 'react-router-dom';
+import '../../styles/admincss/admindashboard.css';
+import React from 'react';
 
 function AdminDashboard() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -10,7 +10,10 @@ function AdminDashboard() {
     <>
       <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
       <br />
-      <AdminSideBar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <AdminSideBar
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+      />
       <div className="page-container dashboard-container">
         <title>Dashboard</title>
         <div className="div-1">
@@ -18,16 +21,18 @@ function AdminDashboard() {
             <h1 className="font-pathway">MOST RENTED CAR</h1>
             <h3 className="font-pathway">MARCH</h3>
             <div className="dashboard-card-content">
-              <img src="/nissan.png" alt="nissan" className="dashboard-card-image" />
+              <img
+                src="/nissan.png"
+                alt="nissan"
+                className="dashboard-card-image"
+              />
               <div>
                 <h4 className="font-pathway text-[30px] m-0">
                   Nissan
                   <br />
                   Terra
                 </h4>
-                <h5 className="font-pathway text-[16px] mt-1 mb-0">
-                  SUV
-                </h5>
+                <h5 className="font-pathway text-[16px] mt-1 mb-0">SUV</h5>
               </div>
             </div>
             <h3 className="font-pathway total">TOTAL BOOKINGS: 4</h3>
@@ -39,9 +44,7 @@ function AdminDashboard() {
             <h1 className="font-pathway">
               TOP <br /> COSTUMER
             </h1>
-            <h2 className="font-pathway text-[80px]">
-              JASPEN GERME
-            </h2>
+            <h2 className="font-pathway text-[80px]">JASPEN GERME</h2>
             <h3 className="font-pathway total">TOTAL BOOKINGS: 4</h3>
             <Link to="/report-analytics" className="more-details">
               More Details

@@ -14,6 +14,8 @@ import AdminTable from '../../components/AdminTable';
 
 export default function AdminBookingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  
   // Bookings: fetch from MockAPI instead of local store
   const [bookingData, setBookingData] = useState([]);
   const [bookingLoading, setBookingLoading] = useState(false);

@@ -1,7 +1,6 @@
 .page-content-booking {
-  position: fixed;
   margin-top: 115px;
-  margin-left: 15.7vw;
+  margin-left: 25vw;
   margin-right: 1vw;
   width: calc(100vw - 17vw);
   height: calc(100vh - 22vh);
@@ -27,10 +26,9 @@
 }
 
 .requests-container {
-  position: absolute;
   display: inline-flex;
   margin-top: 80px;
-  margin-left: 15.7vw;
+  margin-left: 19.7vw;
   gap: 1px;
 }
 

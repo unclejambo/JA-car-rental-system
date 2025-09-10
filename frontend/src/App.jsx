@@ -1,17 +1,17 @@
-import "./styles/index.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import './styles/index.css';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 // import { useState } from 'react'
 
-import LoginPage from "./pages/LoginPage";
-import HomePage from "./pages/HomePage";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminBookingPage from "./pages/admin/AdminBookingPage";
-import AdminCarPage from "./pages/admin/AdminCarPage";
-import AdminManageUser from "./pages/admin/AdminManageUser";
-import AdminSchedulePage from "./pages/admin/AdminSchedulePage";
-import AdminTransactionPage from "./pages/admin/AdminTransactionPage";
-import AdminReportAnalytics from "./pages/admin/AdminReportAnalytics";
-import AdminSettings from "./pages/admin/AdminSettings";
+import LoginPage from './pages/LoginPage';
+import HomePage from './pages/HomePage';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminBookingPage from './pages/admin/AdminBookingPage';
+import AdminCarPage from './pages/admin/AdminCarPage';
+import AdminManageUser from './pages/admin/AdminManageUser';
+import AdminSchedulePage from './pages/admin/AdminSchedulePage';
+import AdminTransactionPage from './pages/admin/AdminTransactionPage';
+import AdminReportAnalytics from './pages/admin/AdminReportAnalytics';
+import AdminSettings from './pages/admin/AdminSettings';
 
 function App() {
   return (

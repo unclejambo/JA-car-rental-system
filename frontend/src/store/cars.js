@@ -1,9 +1,9 @@
-import { create } from "zustand";
+import { create } from 'zustand';
 import axios from 'axios';
 
 export const useCarStore = create((set, get) => ({
   cars: [],
-  
+
   fetchCars: async () => {
     try {
       const response = await axios.get('http://localhost:3001/api/cars');
@@ -14,10 +14,13 @@ export const useCarStore = create((set, get) => ({
       throw error;
     }
   },
-  
+
   addCar: async (carData) => {
     try {
-      const response = await axios.post('http://localhost:3001/api/cars', carData);
+      const response = await axios.post(
+        'http://localhost:3001/api/cars',
+        carData
+      );
       await get().fetchCars();
       return response.data;
     } catch (error) {
@@ -25,10 +28,13 @@ export const useCarStore = create((set, get) => ({
       throw error;
     }
   },
-  
+
   updateCar: async (carId, carData) => {
     try {
-      const response = await axios.put(`http://localhost:3001/api/cars/${carId}`, carData);
+      const response = await axios.put(
+        `http://localhost:3001/api/cars/${carId}`,
+        carData
+      );
       await get().fetchCars();
       return response.data;
     } catch (error) {
@@ -36,7 +42,7 @@ export const useCarStore = create((set, get) => ({
       throw error;
     }
   },
-  
+
   deleteCar: async (carId) => {
     try {
       await axios.delete(`http://localhost:3001/api/cars/${carId}`);
@@ -46,10 +52,10 @@ export const useCarStore = create((set, get) => ({
       throw error;
     }
   },
-  
+
   init: async () => {
     return get().fetchCars();
   },
-  
-  setCars: (cars) => set({ cars })
+
+  setCars: (cars) => set({ cars }),
 }));

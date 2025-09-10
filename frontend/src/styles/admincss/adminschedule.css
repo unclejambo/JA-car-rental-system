@@ -27,6 +27,7 @@
 
 /* Table wrapper override to ensure spacing aligns with other admin pages */
 .admin-table-wrapper {
+  margin-left: 19.1vw;
   background: var(--background-light);
   border-radius: var(--space-xs);
   padding: var(--space-sm);

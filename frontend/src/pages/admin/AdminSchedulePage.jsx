@@ -47,7 +47,10 @@ export default function AdminSchedulePage() {
   return (
     <>
       <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
-      <AdminSideBar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <AdminSideBar
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+      />
 
       {showReleaseModal && (
         <ReleaseModal
@@ -64,7 +67,7 @@ export default function AdminSchedulePage() {
           reservation={selectedReservation}
         />
       )}
-      <div className="page-container">
+      <div className="page-container page-content">
         <title>Schedule</title>
 
         <div className="flex justify-between items-center mb-4">

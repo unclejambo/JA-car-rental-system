@@ -90,7 +90,10 @@ export default function AdminCarPage() {
   return (
     <>
       <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
-      <AdminSideBar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <AdminSideBar
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+      />
 
       <AddCarModal show={showAddModal} onClose={closeAddModal} />
       <EditCarModal show={!!editCar} onClose={closeEditModal} car={editCar} />
@@ -112,8 +115,6 @@ export default function AdminCarPage() {
         </div>
         <div>
           <title>Manage Cars</title>
-
-          
 
           {activeTab === 'cars' && (
             <button className="add-car-btn" onClick={openAddModal}>

@@ -12,10 +12,9 @@
 }
 
 .users-container {
-  position: absolute;
   display: inline-flex;
   margin-top: 80px;
-  margin-left: 15.7vw;
+  margin-left: 19.7vw;
   gap: 1px;
 }
 

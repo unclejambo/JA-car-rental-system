@@ -32,8 +32,8 @@
 
 .add-car-btn {
   position: absolute;
-  right: var(--space-sm);
-  top: var(--space-sm);
+  right: 20px;
+  top: 90px;
   font-family: var(--font-secondary);
   font-size: var(--fs-lg);
   border: none;
@@ -89,6 +89,8 @@
 }
 
 .cars-container {
+  margin-top: 80px;
+  margin-left: 19.7vw;
   display: flex;
   gap: 1px;
   margin-right: 1vw;

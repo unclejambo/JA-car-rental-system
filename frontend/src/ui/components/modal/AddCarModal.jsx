@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useCarStore } from '../../store/cars';
+import { useCarStore } from '../../../store/cars';
 
 export default function AddCarModal({ show, onClose }) {
   const [formData, setFormData] = useState({

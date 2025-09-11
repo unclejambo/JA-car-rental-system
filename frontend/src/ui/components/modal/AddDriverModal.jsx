@@ -1,32 +1,32 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 
 export default function AddDriverModal({ show, onClose }) {
   const [formData, setFormData] = useState({
-    driverFirstName: "",
-    driverLastName: "",
-    driverAddress: "",
-    contactNumber: "",
-    driverEmail: "",
-    driverLicense: "",
-    restriction: "",
-    expirationDate: "",
-    username: "",
-    password: "",
-    status: "Active"
+    driverFirstName: '',
+    driverLastName: '',
+    driverAddress: '',
+    contactNumber: '',
+    driverEmail: '',
+    driverLicense: '',
+    restriction: '',
+    expirationDate: '',
+    // username: "",
+    // password: "",
+    status: 'Active',
   });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     // TODO: Add driver submission logic here
-    console.log("Driver form submitted:", formData);
+    console.log('Driver form submitted:', formData);
     onClose();
   };
 
@@ -35,7 +35,7 @@ export default function AddDriverModal({ show, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h1 className="font-pathway" style={{ margin: "0 0 20px 0" }}>
+        <h1 className="font-pathway" style={{ margin: '0 0 20px 0' }}>
           ADD NEW DRIVER
         </h1>
 
@@ -138,7 +138,7 @@ export default function AddDriverModal({ show, onClose }) {
             />
           </div>
 
-          <div className="field-row">
+          {/* <div className="field-row">
             <label className="field-label font-pathway">Username</label>
             <input
               className="font-pathway"
@@ -161,7 +161,7 @@ export default function AddDriverModal({ show, onClose }) {
               placeholder="Password"
               required
             />
-          </div>
+          </div> */}
 
           <div className="field-row">
             <label className="field-label font-pathway">Status</label>
@@ -181,9 +181,9 @@ export default function AddDriverModal({ show, onClose }) {
             <button type="submit" className="font-pathway save-btn">
               Save
             </button>
-            <button 
-              type="button" 
-              className="font-pathway cancel-btn" 
+            <button
+              type="button"
+              className="font-pathway cancel-btn"
               onClick={onClose}
             >
               Cancel

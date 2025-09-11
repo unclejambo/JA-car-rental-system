@@ -1,13 +1,13 @@
-import AdminSideBar from '../../components/AdminSideBar';
-import Header from '../../components/Header';
+import AdminSideBar from '../../ui/components/AdminSideBar.jsx';
+import Header from '../../ui/components/Header';
 import '../../styles/admincss/adminschedule.css';
 import React, { useMemo, useState } from 'react';
 import { scheduleColumns } from '../accessor/ScheduleColumns.jsx';
 import { useScheduleStore } from '../../store/schedule.js';
 import { HiCalendarDays, HiMagnifyingGlass } from 'react-icons/hi2';
-import ReleaseModal from '../../components/modal/ReleaseModal.jsx';
-import ReturnModal from '../../components/modal/ReturnModal.jsx';
-import AdminTable from '../../components/AdminTable';
+import ReleaseModal from '../../ui/components/modal/ReleaseModal.jsx';
+import ReturnModal from '../../ui/components/modal/ReturnModal.jsx';
+import AdminTable from '../../ui/components/AdminTable';
 
 export default function AdminSchedulePage() {
   const [mobileOpen, setMobileOpen] = useState(false);

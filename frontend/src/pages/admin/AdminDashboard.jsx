@@ -1,5 +1,5 @@
-import AdminSideBar from '../../components/AdminSideBar';
-import Header from '../../components/Header';
+import AdminSideBar from '../../ui/components/AdminSideBar';
+import Header from '../../ui/components/Header';
 import { Link } from 'react-router-dom';
 import '../../styles/admincss/admindashboard.css';
 import React from 'react';

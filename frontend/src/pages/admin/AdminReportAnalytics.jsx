@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import '../../styles/index.css';
-import '../../styles/admincss/admin-body.css';
-import Header from '../../components/Header';
-import AdminSideBar from '../../components/AdminSideBar';
-import ManageUserHeader from '../../components/header/ManageUserHeader';
-import ManageUserTable from '../../components/table/ManageUserTable';
+import Header from '../../ui/components/Header';
+import AdminSideBar from '../../ui/components/AdminSideBar';
+import ManageUserHeader from '../../ui/components/header/ManageUserHeader';
+import ManageUserTable from '../../ui/components/table/ManageUserTable';
+import Loading from '../../ui/components/Loading';
 
 export default function AdminReportAnalytics() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -44,13 +44,13 @@ export default function AdminReportAnalytics() {
 
   if (loading) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-      >
-        <Typography>Loading data...</Typography>
+      <Box sx={{ display: 'flex' }}>
+        <Header onMenuClick={() => setMobileOpen(true)} />
+        <AdminSideBar
+          mobileOpen={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+        />
+        <Loading />
       </Box>
     );
   }
@@ -166,19 +166,6 @@ export default function AdminReportAnalytics() {
                 >
                   Add New {activeTab}
                 </Button>
-                // <Button
-                //   variant="contained"
-                //   startIcon={<AddIcon />}
-                //   sx={{
-                //     backgroundColor: '#c10007',
-                //     '&:hover': { backgroundColor: '#a00006' },
-                //     textTransform: 'none',
-                //     height: 36,
-                //     px: 2,
-                //   }}
-                // >
-                //   Add New {activeTab}
-                // </Button>
               )}
             </Box>
             <Box

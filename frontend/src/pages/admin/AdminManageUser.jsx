@@ -1,138 +1,235 @@
-import AdminSideBar from "../../components/AdminSideBar";
-import Header from "../../components/Header";
-import "../../styles/admincss/adminmanageuser.css";
-import React, { useMemo, useState } from "react";
-import { useUserStore } from "../../store/users.js";
-import { userColumns } from "../accessor/UserColumns.jsx";
-import { useStaffStore } from "../../store/staff.js";
-import { staffColumns } from "../accessor/StaffColumns.jsx";
-import { useDriverStore } from "../../store/driver.js";
-import { driverColumns } from "../accessor/DriverColumns.jsx";
-import { HiOutlineUserGroup } from "react-icons/hi2";
-import { AiOutlinePlus } from "react-icons/ai";
-import AddStaffModal from "../../components/modal/AddStaffModal";
-import AddDriverModal from "../../components/modal/AddDriverModal";
-import AdminTable from "../../components/AdminTable";
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Button } from '@mui/material';
+import AdminSideBar from '../../ui/components/AdminSideBar';
+import Header from '../../ui/components/Header';
+import AddIcon from '@mui/icons-material/Add';
+import ManageUserHeader from '../../ui/components/header/ManageUserHeader';
+import ManageUserTable from '../../ui/components/table/ManageUserTable';
+import Loading from '../../ui/components/Loading';
+import AddStaffModal from '../../ui/components/modal/AddStaffModal';
+import AddDriverModal from '../../ui/components/modal/AddDriverModal';
 
 export default function AdminManageUser() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const userData = useUserStore((state) => state.users);
-  const staffData = useStaffStore((state) => state.staff);
-  const driverData = useDriverStore((state) => state.driver);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('CUSTOMER');
 
-  const [userType, setUserType] = useState("customer"); // 'customer', 'staff', or 'driver'
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showAddDriverModal, setShowAddDriverModal] = useState(false);
 
   const openAddStaffModal = () => setShowAddStaffModal(true);
   const closeAddStaffModal = () => setShowAddStaffModal(false);
-  
+
   const openAddDriverModal = () => setShowAddDriverModal(true);
   const closeAddDriverModal = () => setShowAddDriverModal(false);
 
-  const [users, setUsers] = useState(userData);
-  const [staff, setStaff] = useState(staffData);
-  const [drivers, setDrivers] = useState(driverData);
+  useEffect(() => {
+    setLoading(true);
 
-  const updateUserStatus = (rowIndex, columnId, value) => {
-    setUsers((prev) =>
-      prev.map((row, index) =>
-        index === rowIndex ? { ...row, [columnId]: value } : row
-      )
+    fetch('https://68bd9bc5227c48698f84f2ce.mockapi.io/users')
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        const formattedData = data.map((item) => ({
+          ...item,
+          status: item.status ? 'Active' : 'Inactive',
+        }));
+        setRows(formattedData);
+        setError(null);
+      })
+      .catch((err) => {
+        console.error('Error fetching data:', err);
+        setError('Failed to load data. Please try again later.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex' }}>
+        <Header onMenuClick={() => setMobileOpen(true)} />
+        <AdminSideBar
+          mobileOpen={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+        />
+        <Loading />
+      </Box>
     );
-  };
+  }
 
-  const updateStaffStatus = (rowIndex, columnId, value) => {
-    setStaff((prev) =>
-      prev.map((row, index) =>
-        index === rowIndex ? { ...row, [columnId]: value } : row
-      )
+  if (error) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="200px"
+        color="error.main"
+      >
+        <Typography>{error}</Typography>
+      </Box>
     );
-  };
-
-  const updateDriverStatus = (rowIndex, columnId, value) => {
-    setDrivers((prev) =>
-      prev.map((row, index) =>
-        index === rowIndex ? { ...row, [columnId]: value } : row
-      )
-    );
-  };
-
-  const activeConfig = useMemo(() => {
-    switch (userType) {
-      case "staff":
-        return { data: staff, columns: staffColumns, meta: { updateData: updateStaffStatus }, empty: "There are no staff members yet." };
-      case "driver":
-        return { data: drivers, columns: driverColumns, meta: { updateData: updateDriverStatus }, empty: "There are no drivers yet." };
-      case "customer":
-      default:
-        return { data: users, columns: userColumns, meta: { updateData: updateUserStatus }, empty: "There are no customers yet." };
-    }
-  }, [userType, users, staff, drivers]);
-  const emptyMessage = {
-    customer: "There are no customers yet.",
-    staff: "There are no staff members yet.",
-    driver: "There are no drivers yet.",
-  };
-
-  const getButtonClass = (type) => {
-    return `tab-btn ${userType === type ? "active" : ""}`;
-  };
+  }
 
   return (
-    <>
-      <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
-      <AdminSideBar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-      
+    <Box sx={{ display: 'flex' }}>
       <AddStaffModal show={showAddStaffModal} onClose={closeAddStaffModal} />
       <AddDriverModal show={showAddDriverModal} onClose={closeAddDriverModal} />
-      <div className="users-container">
-        <button
-          className={getButtonClass("customer")}
-          onClick={() => setUserType("customer")}
-        >
-          Customers
-        </button>
-        <button
-          className={getButtonClass("staff")}
-          onClick={() => setUserType("staff")}
-        >
-          Staff
-        </button>
-        <button
-          className={getButtonClass("driver")}
-          onClick={() => setUserType("driver")}
-        >
-          Driver
-        </button>
-      </div>
-      <div className="page-container">
-        <title>Manage Users</title>
 
-        
-
-        {userType === "staff" && (
-          <button className="add-car-btn" onClick={openAddStaffModal}>
-            <AiOutlinePlus className="add-icon" style={{ marginRight: 6 }} />
-            ADD NEW STAFF
-          </button>
-        )}
-        {userType === "driver" && (
-          <button className="add-car-btn" onClick={openAddDriverModal}>
-            <AiOutlinePlus className="add-icon" style={{ marginRight: 6 }} />
-            ADD NEW DRIVER
-          </button>
-        )}
-        <AdminTable
-          data={activeConfig.data}
-          columns={activeConfig.columns}
-          title={userType.toUpperCase()}
-          Icon={HiOutlineUserGroup}
-          emptyMessage={activeConfig.empty}
-          meta={activeConfig.meta}
-          pageSize={10}
-        />
-      </div>
-    </>
+      <Header onMenuClick={() => setMobileOpen(true)} />
+      <AdminSideBar
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+      />
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: { xs: 1, sm: 2, md: 3 },
+          width: `calc(100% - 18.7dvw)`,
+          ml: {
+            xs: '0px',
+            sm: '0px',
+            md: '18.7dvw',
+            lg: '18.7dvw',
+          },
+          '@media (max-width: 1024px)': {
+            ml: '0px',
+          },
+          mt: { xs: '64px', sm: '64px', md: '56px', lg: '56px' }, // Adjust based on your header height
+          height: '100%',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <Box
+          sx={{
+            width: '100%',
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <ManageUserHeader activeTab={activeTab} onTabChange={setActiveTab} />
+          <Box
+            sx={{
+              flexGrow: 1,
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: '#f9f9f9',
+              p: { xs: 1, sm: 2, md: 2, lg: 2 },
+              boxShadow:
+                '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 4px 0 6px -1px rgba(0, 0, 0, 0.1), -4px 0 6px -1px rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+              height: 'auto',
+              boxSizing: 'border-box',
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography
+                variant="h4"
+                component="h1"
+                gutterBottom
+                sx={{
+                  fontSize: '1.8rem',
+                  color: '#000',
+                  '@media (max-width: 1024px)': {
+                    fontSize: '2rem',
+                  },
+                }}
+              >
+                {activeTab}
+              </Typography>
+              {activeTab === 'STAFF' && (
+                <Button
+                  variant="outlined"
+                  startIcon={
+                    <AddIcon
+                      sx={{ width: '18px', height: '18px', mt: '-2px' }}
+                    />
+                  }
+                  onClick={openAddStaffModal}
+                  sx={{
+                    color: '#fff',
+                    p: 1,
+                    pb: 0.5,
+                    height: 36,
+                    border: 'none',
+                    backgroundColor: '#c10007',
+                    '&:hover': {
+                      backgroundColor: '#a00006',
+                      color: '#fff',
+                      fontWeight: 600,
+                      borderColor: '#4a4a4a',
+                      boxShadow: 'none',
+                    },
+                    '@media (max-width: 600px)': {
+                      height: 28,
+                    },
+                  }}
+                >
+                  Add New {activeTab}
+                </Button>
+              )}
+              {activeTab === 'DRIVER' && (
+                <Button
+                  variant="outlined"
+                  startIcon={
+                    <AddIcon
+                      sx={{ width: '18px', height: '18px', mt: '-2px' }}
+                    />
+                  }
+                  onClick={openAddDriverModal}
+                  sx={{
+                    color: '#fff',
+                    p: 1,
+                    pb: 0.5,
+                    height: 36,
+                    border: 'none',
+                    backgroundColor: '#c10007',
+                    '&:hover': {
+                      backgroundColor: '#a00006',
+                      color: '#fff',
+                      fontWeight: 600,
+                      borderColor: '#4a4a4a',
+                      boxShadow: 'none',
+                    },
+                    '@media (max-width: 600px)': {
+                      height: 28,
+                    },
+                  }}
+                >
+                  Add New {activeTab}
+                </Button>
+              )}
+            </Box>
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
+            >
+              <ManageUserTable
+                rows={rows}
+                loading={loading}
+                activeTab={activeTab}
+              />
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

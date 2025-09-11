@@ -1,10 +1,10 @@
-import { Link } from "react-router-dom";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import { HiBars3 } from "react-icons/hi2";
-import "../../src/styles/components/header.css";
+import { Link } from 'react-router-dom';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { HiBars3 } from 'react-icons/hi2';
+import '../../styles/components/header.css';
 
 function Header({ onMenuClick = null, isMenuOpen = false }) {
-  const isMobile = useMediaQuery("(max-width: 1024px)");
+  const isMobile = useMediaQuery('(max-width: 1024px)');
 
   return (
     <header className="app-header">
@@ -12,7 +12,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
         {isMobile && (
           <button
             className="menu-button"
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={isMenuOpen}
             onClick={onMenuClick}
             disabled={!onMenuClick}

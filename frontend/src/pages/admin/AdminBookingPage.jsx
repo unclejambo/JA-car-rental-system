@@ -1,5 +1,5 @@
-import AdminSideBar from '../../components/AdminSideBar';
-import Header from '../../components/Header';
+import AdminSideBar from '../../ui/components/AdminSideBar';
+import Header from '../../ui/components/Header';
 import '../../styles/admincss/adminbooking.css';
 import React, { useState, useEffect } from 'react';
 import { bookingColumns } from '../accessor/BookingColumns.jsx';
@@ -9,13 +9,12 @@ import { useExtensionStore } from '../../store/extension.js';
 import { extensionColumns } from '../accessor/ExtensionColumns.jsx';
 import { HiBookOpen } from 'react-icons/hi2';
 import { HiOutlineCurrencyDollar } from 'react-icons/hi2';
-import ManageFeesModal from '../../components/modal/ManageFeesModal';
-import AdminTable from '../../components/AdminTable';
+import ManageFeesModal from '../../ui/components/modal/ManageFeesModal';
+import AdminTable from '../../ui/components/AdminTable';
 
 export default function AdminBookingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  
   // Bookings: fetch from MockAPI instead of local store
   const [bookingData, setBookingData] = useState([]);
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -88,7 +87,8 @@ export default function AdminBookingPage() {
     }
   };
 
-  const { data, columns, emptyMessage, title, loading, error } = getActiveConfig();
+  const { data, columns, emptyMessage, title, loading, error } =
+    getActiveConfig();
 
   const getButtonClass = (type) => {
     return `tab-btn ${requestType === type ? 'active' : ''}`;
@@ -97,7 +97,10 @@ export default function AdminBookingPage() {
   return (
     <>
       <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
-      <AdminSideBar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <AdminSideBar
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+      />
       <ManageFeesModal
         show={showManageFeesModal}
         onClose={() => setShowManageFeesModal(false)}

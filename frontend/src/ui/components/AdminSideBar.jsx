@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import Drawer from '@mui/material/Drawer';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import '../styles/admincss/adminsidebar.css';
+import '../../styles/admincss/adminsidebar.css';
 import { HiCalendar } from 'react-icons/hi2';
 import { HiChartBar } from 'react-icons/hi2';
 import { HiBookOpen } from 'react-icons/hi2';

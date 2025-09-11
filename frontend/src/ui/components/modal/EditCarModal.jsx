@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useCarStore } from '../../store/cars';
+import { useCarStore } from '../../../store/cars';
 
 export default function EditCarModal({ show, onClose, car }) {
   const [formData, setFormData] = useState({});

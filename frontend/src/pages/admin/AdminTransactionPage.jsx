@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import AdminSideBar from '../../components/AdminSideBar';
-import Header from '../../components/Header';
+import AdminSideBar from '../../ui/components/AdminSideBar';
+import Header from '../../ui/components/Header';
 //import "../../styles/admin-main.css";
 import { HiDocumentCurrencyDollar } from 'react-icons/hi2';
 import { useTransactionStore } from '../../store/transactions';
-import AdminTable from '../../components/AdminTable';
+import AdminTable from '../../ui/components/AdminTable';
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
@@ -84,7 +84,10 @@ export default function AdminTransactionPage() {
   return (
     <>
       <Header onMenuClick={() => setMobileOpen(true)} />
-      <AdminSideBar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <AdminSideBar
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+      />
 
       <div className="page-container">
         <div className="cars-container">
@@ -109,8 +112,6 @@ export default function AdminTransactionPage() {
         </div>
         <div>
           <title>Transaction Logs</title>
-
-          
 
           <AdminTable
             data={filteredTransactions}

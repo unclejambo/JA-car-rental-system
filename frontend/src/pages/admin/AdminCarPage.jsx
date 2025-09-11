@@ -1,16 +1,16 @@
-import AdminSideBar from '../../components/AdminSideBar';
-import Header from '../../components/Header';
+import AdminSideBar from '../../ui/components/AdminSideBar';
+import Header from '../../ui/components/Header';
 import '../../styles/admincss/admincar.css';
 import React, { useMemo, useState, useEffect } from 'react';
 import { carColumns } from '../accessor/CarColumns.jsx';
 import { useCarStore } from '../../store/cars.js';
 import { carMaintenanceColumns } from '../accessor/CarMaintenanceColumns.jsx';
 import { useMaintenanceStore } from '../../store/maintenance.js';
-import AddCarModal from '../../components/modal/AddCarModal.jsx';
-import EditCarModal from '../../components/modal/EditCarModal.jsx';
+import AddCarModal from '../../ui/components/modal/AddCarModal.jsx';
+import EditCarModal from '../../ui/components/modal/EditCarModal.jsx';
 import { AiOutlinePlus } from 'react-icons/ai';
 import { HiTruck, HiWrenchScrewdriver } from 'react-icons/hi2';
-import AdminTable from '../../components/AdminTable';
+import AdminTable from '../../ui/components/AdminTable';
 
 export default function AdminCarPage() {
   const [mobileOpen, setMobileOpen] = useState(false);

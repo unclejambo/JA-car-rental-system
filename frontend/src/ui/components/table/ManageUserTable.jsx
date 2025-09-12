@@ -44,6 +44,21 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         headerName: 'SocMed Link',
         flex: 1.2,
         minWidth: 80,
+        renderCell: (params) => {
+          const url = params.value;
+          if (!url) return <span>-</span>;
+          return (
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{ color: '#1976d2', textDecoration: 'none', fontWeight: 500 }}
+            >
+              Link
+            </a>
+          );
+        },
       },
       {
         field: 'email',

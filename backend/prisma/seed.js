@@ -16,17 +16,18 @@ async function main() {
   
   // Clear existing data
   console.log('🧹 Clearing existing data...');
-  const models = ['Transaction', 'Release', 'Maintenance', 'Payment', 'Refund', 
-                 'Extension', 'Booking', 'Car', 'Driver', 'Customer', 'DriverLicense', 'Admin'];
-
-  for (const model of models) {
-    try {
-      await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${model}" CASCADE;`);
-      console.log(`✅ Cleared ${model} table`);
-    } catch (error) {
-      console.warn(`⚠️  Couldn't clear ${model} table:`, error.message);
-    }
-  }
+  await prisma.release.deleteMany();
+  await prisma.maintenance.deleteMany();
+  await prisma.transaction.deleteMany();
+  await prisma.refund.deleteMany();
+  await prisma.payment.deleteMany();
+  await prisma.extension.deleteMany();
+  await prisma.booking.deleteMany();
+  await prisma.driver.deleteMany();
+  await prisma.driverLicense.deleteMany();
+  await prisma.car.deleteMany();
+  await prisma.customer.deleteMany();
+  await prisma.admin.deleteMany();
 
   // Create Admin
   console.log('👨‍💼 Creating admin user...');
@@ -128,10 +129,11 @@ async function main() {
     createdCars.push(createdCar);
   }
 
-  // Create Bookings
+  // Create Bookings (store created bookings)
   console.log('📅 Creating bookings...');
   const bookingStatuses = ['Confirmed', 'Completed', 'Cancelled', 'In Progress'];
   const paymentStatuses = ['Paid', 'Pending', 'Refunded'];
+  const createdBookings = [];
   
   for (let i = 0; i < 15; i++) {
     const startDate = randomDate(new Date(), new Date(2024, 11, 31));
@@ -140,8 +142,11 @@ async function main() {
     
     const isSelfDriver = Math.random() > 0.5;
     const bookingStatus = randomElement(bookingStatuses);
+    const totalAmount = Math.floor(Math.random() * 10000) + 5000;
+    const paymentStatus = bookingStatus === 'Cancelled' ? 'Refunded' : (Math.random() > 0.2 ? 'Paid' : 'Pending');
+    const assignedDriver = isSelfDriver ? null : randomElement(drivers).drivers_id;
     
-    await prisma.booking.create({
+    const createdBooking = await prisma.booking.create({
       data: {
         customer_id: randomElement(customers).customer_id,
         car_id: randomElement(createdCars).car_id,
@@ -156,16 +161,137 @@ async function main() {
         isSelfDriver,
         isExtend: false,
         isCancel: bookingStatus === 'Cancelled',
-        total_amount: Math.floor(Math.random() * 10000) + 5000,
-        payment_status: bookingStatus === 'Cancelled' ? 'Refunded' : 'Paid',
+        total_amount: totalAmount,
+        payment_status: paymentStatus,
         booking_status: bookingStatus,
-        drivers_id: isSelfDriver ? null : randomElement(drivers).drivers_id,
+        drivers_id: assignedDriver,
         admin_id: admin.admin_id,
       },
     });
+    createdBookings.push(createdBooking);
   }
 
-  console.log('✅ Database seeded successfully!');
+  // Create Payments, Refunds, Transactions, Extensions, Releases, Maintenances
+  console.log('💳 Creating payments, refunds, transactions, extensions and releases...');
+
+  const payments = [];
+  const refunds = [];
+  const transactions = [];
+  const extensions = [];
+  const releases = [];
+  const maintenances = [];
+
+  for (const booking of createdBookings) {
+    // create a transaction for each booking
+    const tx = await prisma.transaction.create({
+      data: {
+        booking_id: booking.booking_id,
+        customer_id: booking.customer_id,
+        car_id: booking.car_id,
+        completion_date: booking.booking_status === 'Completed' ? randomDate(booking.end_date, new Date()) : null,
+        cancellation_date: booking.booking_status === 'Cancelled' ? randomDate(booking.booking_date, booking.end_date) : null,
+      },
+    });
+    transactions.push(tx);
+
+    // payments: create at least one payment for Paid or Pending bookings
+    if (booking.payment_status === 'Paid' || booking.payment_status === 'Pending') {
+      const paidAmount = booking.payment_status === 'Paid' ? booking.total_amount : Math.floor(booking.total_amount / 2);
+      const payment = await prisma.payment.create({
+        data: {
+          booking_id: booking.booking_id,
+          customer_id: booking.customer_id,
+          description: `Payment for booking ${booking.booking_id}`,
+          payment_method: randomElement(['GCash','Cash','Card']),
+          gcash_no: Math.random() > 0.5 ? randomPhone() : null,
+          reference_no: `REF-${randomString(6)}`,
+          amount: paidAmount,
+          paid_date: new Date(),
+        },
+      });
+      payments.push(payment);
+    }
+
+    // refunds for some cancelled or refunded bookings
+    if (booking.booking_status === 'Cancelled' || booking.payment_status === 'Refunded') {
+      const refund = await prisma.refund.create({
+        data: {
+          booking_id: booking.booking_id,
+          customer_id: booking.customer_id,
+          refund_method: 'GCash',
+          gcash_no: randomPhone(),
+          reference_no: `REF-R-${randomString(6)}`,
+          refund_amount: Math.floor(booking.total_amount * (Math.random() * 0.9 + 0.1)),
+          refund_date: new Date(),
+        },
+      });
+      refunds.push(refund);
+    }
+
+    // extensions: randomly add for about ~20% of bookings
+    if (Math.random() < 0.2) {
+      const extDate = randomDate(booking.end_date, new Date(booking.end_date.getTime() + 5 * 24 * 60 * 60 * 1000));
+      const ext = await prisma.extension.create({
+        data: {
+          booking_id: booking.booking_id,
+          extension_date: extDate,
+          payment_status: Math.random() > 0.5 ? 'Paid' : 'Pending',
+          status: Math.random() > 0.3 ? 'approved' : 'pending',
+        },
+      });
+      extensions.push(ext);
+    }
+
+    // releases: only if drivers_id exists (i.e., driver assigned)
+    if (booking.drivers_id) {
+      const rel = await prisma.release.create({
+        data: {
+          booking_id: booking.booking_id,
+          drivers_id: booking.drivers_id,
+          valid_id_img1: `/releases/vid1-${booking.booking_id}.jpg`,
+          valid_id_img2: `/releases/vid2-${booking.booking_id}.jpg`,
+          agreement_form: `/releases/agreement-${booking.booking_id}.pdf`,
+          equipment: 'GPS, Charger',
+          gas_level: Math.random() > 0.5 ? 'Full' : 'Half',
+          others: 'N/A',
+        },
+      });
+      releases.push(rel);
+    }
+  }
+
+  // maintenances: add a few maintenance records for existing cars
+  console.log('🛠️  Creating maintenance records for some cars...');
+  for (const car of createdCars.slice(0, 3)) {
+    const m = await prisma.maintenance.create({
+      data: {
+        car_id: car.car_id,
+        maintenance_start_date: randomDate(new Date(2023, 0, 1), new Date()),
+        maintenance_end_date: randomDate(new Date(), new Date(2025, 11, 31)),
+        description: randomElement(['Oil change', 'Brake pads', 'Tire replacement', 'Engine check']),
+        maintenance_cost: Math.floor(Math.random() * 5000) + 500,
+        maintenance_shop_name: randomElement(['QuickFix Auto', 'Super Mechanics', 'AutoCare Center']),
+      },
+    });
+    maintenances.push(m);
+  }
+
+  console.log('✅ Database seeded successfully! Summary counts:');
+  const counts = {
+    admins: await prisma.admin.count(),
+    customers: await prisma.customer.count(),
+    drivers: await prisma.driver.count(),
+    driverLicenses: await prisma.driverLicense.count(),
+    cars: await prisma.car.count(),
+    bookings: await prisma.booking.count(),
+    payments: await prisma.payment.count(),
+    refunds: await prisma.refund.count(),
+    transactions: await prisma.transaction.count(),
+    extensions: await prisma.extension.count(),
+    releases: await prisma.release.count(),
+    maintenances: await prisma.maintenance.count(),
+  };
+  console.log(JSON.stringify(counts, null, 2));
 }
 
 main()

@@ -1,156 +1,160 @@
+import { useState, useEffect } from 'react';
+import { Box, Typography, Button } from '@mui/material';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
-import '../../styles/admincss/adminbooking.css';
-import React, { useState, useEffect } from 'react';
-import { bookingColumns } from '../accessor/BookingColumns.jsx';
-import { cancellationColumns } from '../accessor/CancellationColumns.jsx';
-import { useCancellationStore } from '../../store/cancellation.js';
-import { useExtensionStore } from '../../store/extension.js';
-import { extensionColumns } from '../accessor/ExtensionColumns.jsx';
-import { HiBookOpen } from 'react-icons/hi2';
-import { HiOutlineCurrencyDollar } from 'react-icons/hi2';
-import ManageFeesModal from '../../ui/components/modal/ManageFeesModal';
-import AdminTable from '../../ui/components/AdminTable';
+import Loading from '../../ui/components/Loading';
+import ManageBookingsTable from '../../ui/components/table/ManageBookingsTable';
+import ManageBookingsHeader from '../../ui/components/header/ManageBookingsHeader';
 
 export default function AdminBookingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('BOOKINGS');
 
-  // Bookings: fetch from MockAPI instead of local store
-  const [bookingData, setBookingData] = useState([]);
-  const [bookingLoading, setBookingLoading] = useState(false);
-  const [bookingError, setBookingError] = useState(null);
-  const cancellationData = useCancellationStore((state) => state.cancellations);
-  const extensionData = useExtensionStore((state) => state.extensions);
-  const [showManageFeesModal, setShowManageFeesModal] = useState(false);
 
-  // State for tracking active request type
-  const [requestType, setRequestType] = useState('booking');
-
-  // Fetch bookings from MockAPI on mount
   useEffect(() => {
-    const controller = new AbortController();
-    const fetchBookings = async () => {
-      try {
-        setBookingLoading(true);
-        setBookingError(null);
-        const res = await fetch(
-          'https://68b2fd5cc28940c9e69de1ab.mockapi.io/bookings',
-          { signal: controller.signal }
-        );
-        if (!res.ok) throw new Error('Failed to fetch bookings');
-        const data = await res.json();
-        // Ensure data is an array
-        setBookingData(Array.isArray(data) ? data : []);
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          setBookingError(err.message || 'Unknown error');
+    setLoading(true);
+
+    fetch('https://68b2fd5cc28940c9e69de1ab.mockapi.io/bookings')
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-      } finally {
-        setBookingLoading(false);
-      }
-    };
-    fetchBookings();
-    return () => controller.abort();
+        return response.json();
+      })
+      .then((data) => {
+        const formattedData = data.map((item, index) => ({
+          ...item,
+          id: item.customerId || item.reservationId || `row-${index}`, // Add unique id property
+          status: item.status ? 'Active' : 'Inactive',
+        }));
+        setRows(formattedData);
+        setError(null);
+      })
+      .catch((err) => {
+        console.error('Error fetching data:', err);
+        setError('Failed to load data. Please try again later.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
-  // Determine current table config
-  const getActiveConfig = () => {
-    switch (requestType) {
-      case 'booking':
-        return {
-          data: bookingData,
-          columns: bookingColumns,
-          emptyMessage: 'There are no booking requests yet.',
-          title: 'BOOKING REQUESTS',
-          loading: bookingLoading,
-          error: bookingError,
-        };
-      case 'cancellation':
-        return {
-          data: cancellationData,
-          columns: cancellationColumns,
-          emptyMessage: 'There are no cancellation requests yet.',
-          title: 'CANCELLATION REQUESTS',
-          loading: false,
-          error: null,
-        };
-      case 'extension':
-      default:
-        return {
-          data: extensionData,
-          columns: extensionColumns,
-          emptyMessage: 'There are no extension requests yet.',
-          title: 'EXTENSION REQUESTS',
-          loading: false,
-          error: null,
-        };
-    }
-  };
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex' }}>
+        <Header onMenuClick={() => setMobileOpen(true)} />
+        <AdminSideBar
+          mobileOpen={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+        />
+        <Loading />
+      </Box>
+    );
+  }
 
-  const { data, columns, emptyMessage, title, loading, error } =
-    getActiveConfig();
-
-  const getButtonClass = (type) => {
-    return `tab-btn ${requestType === type ? 'active' : ''}`;
-  };
+  if (error) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="200px"
+        color="error.main"
+      >
+        <Typography>{error}</Typography>
+      </Box>
+    );
+  }
 
   return (
-    <>
-      <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
+    <Box sx={{ display: 'flex' }}>
+      <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar
         mobileOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
       />
-      <ManageFeesModal
-        show={showManageFeesModal}
-        onClose={() => setShowManageFeesModal(false)}
-      />
-      <div className="requests-container">
-        <button
-          className={getButtonClass('booking')}
-          onClick={() => setRequestType('booking')}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: { xs: 1, sm: 2, md: 3 },
+          width: `calc(100% - 18.7dvw)`,
+          ml: {
+            xs: '0px',
+            sm: '0px',
+            md: '18.7dvw',
+            lg: '18.7dvw',
+          },
+          '@media (max-width: 1024px)': {
+            ml: '0px',
+          },
+          mt: { xs: '64px', sm: '64px', md: '56px', lg: '56px' }, // Adjust based on your header height
+          height: '100%',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <Box
+          sx={{
+            width: '100%',
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
         >
-          Booking
-        </button>
-        <button
-          className={getButtonClass('cancellation')}
-          onClick={() => setRequestType('cancellation')}
-        >
-          Cancellation
-        </button>
-        <button
-          className={getButtonClass('extension')}
-          onClick={() => setRequestType('extension')}
-        >
-          Extension
-        </button>
-      </div>
-      <div>
-        <button
-          className="manage-fees-btn"
-          onClick={() => setShowManageFeesModal(true)}
-        >
-          <HiOutlineCurrencyDollar
-            style={{ verticalAlign: '-3px', marginRight: '3px' }}
-          />
-          Manage Fees
-        </button>
-      </div>
-      <div className="page-container">
-        <title>Manage Bookings</title>
-
-        <AdminTable
-          data={data}
-          columns={columns}
-          title={title}
-          Icon={HiBookOpen}
-          emptyMessage={emptyMessage}
-          loading={loading}
-          error={error}
-          pageSize={5}
-        />
-      </div>
-      <br />
-    </>
+          <ManageBookingsHeader activeTab={activeTab} onTabChange={setActiveTab} />
+          <Box
+            sx={{
+              flexGrow: 1,
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: '#f9f9f9',
+              p: { xs: 1, sm: 2, md: 2, lg: 2 },
+              boxShadow:
+                '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 4px 0 6px -1px rgba(0, 0, 0, 0.1), -4px 0 6px -1px rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+              height: 'auto',
+              boxSizing: 'border-box',
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography
+                variant="h4"
+                component="h1"
+                gutterBottom
+                sx={{
+                  fontSize: '1.8rem',
+                  color: '#000',
+                  '@media (max-width: 1024px)': {
+                    fontSize: '2rem',
+                  },
+                }}
+              >
+                {activeTab}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
+            >
+              <ManageBookingsTable
+                rows={rows}
+                loading={loading}
+                activeTab={activeTab}
+              />
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

@@ -8,6 +8,7 @@ import ManageUserTable from '../../ui/components/table/ManageUserTable';
 import Loading from '../../ui/components/Loading';
 import AddStaffModal from '../../ui/components/modal/AddStaffModal';
 import AddDriverModal from '../../ui/components/modal/AddDriverModal';
+import { HiOutlineUserGroup } from 'react-icons/hi2';
 
 export default function AdminManageUser() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -25,31 +26,32 @@ export default function AdminManageUser() {
   const openAddDriverModal = () => setShowAddDriverModal(true);
   const closeAddDriverModal = () => setShowAddDriverModal(false);
 
-  useEffect(() => {
+  const fetchData = async () => {
     setLoading(true);
+    try {
+      const response = await fetch(
+        'https://68bd9bc5227c48698f84f2ce.mockapi.io/users'
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      const formattedData = data.map((item) => ({
+        ...item,
+        status: item.status ? 'Active' : 'Inactive',
+      }));
+      setRows(formattedData);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load data. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetch('https://68bd9bc5227c48698f84f2ce.mockapi.io/users')
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        const formattedData = data.map((item) => ({
-          ...item,
-          status: item.status ? 'Active' : 'Inactive',
-        }));
-        setRows(formattedData);
-        setError(null);
-      })
-      .catch((err) => {
-        console.error('Error fetching data:', err);
-        setError('Failed to load data. Please try again later.');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+  useEffect(() => {
+    fetchData();
   }, []);
 
   if (loading) {
@@ -60,7 +62,17 @@ export default function AdminManageUser() {
           mobileOpen={mobileOpen}
           onClose={() => setMobileOpen(false)}
         />
-        <Loading />
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+          }}
+        >
+          <Loading />
+        </Box>
       </Box>
     );
   }
@@ -148,6 +160,9 @@ export default function AdminManageUser() {
                   },
                 }}
               >
+                <HiOutlineUserGroup
+                  style={{ verticalAlign: '-3px', marginRight: '5px' }}
+                />
                 {activeTab}
               </Typography>
               {activeTab === 'STAFF' && (

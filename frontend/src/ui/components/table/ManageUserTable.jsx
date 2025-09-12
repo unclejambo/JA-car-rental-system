@@ -112,32 +112,58 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
     field: 'status',
     headerName: 'Status',
     flex: 1,
-    minWidth: 110,
+    minWidth: 120,
     editable: true,
     sortable: false,
     headerAlign: 'center',
     align: 'center',
-    renderCell: (params) => (
-      <Select
-        size="small"
-        value={params.value}
-        onChange={(e) => {
-          console.log(
-            `Status changed to ${e.target.value} for row ${params.id}`
+    renderCell: (params) => {
+      const handleStatusChange = async (e) => {
+        const newStatus = e.target.value;
+        try {
+          // Update the status in the mock API
+          const response = await fetch(
+            `https://68bd9bc5227c48698f84f2ce.mockapi.io/users/${params.id}`,
+            {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                ...params.row,
+                status: newStatus === 'Active',
+              }),
+            }
           );
-        }}
-        sx={{
-          width: '100%',
-          fontSize: '0.8rem',
-          '& .MuiSelect-select': {
-            py: '2px',
-          },
-        }}
-      >
-        <MenuItem value="Active">Active</MenuItem>
-        <MenuItem value="Inactive">Inactive</MenuItem>
-      </Select>
-    ),
+
+          if (!response.ok) {
+            throw new Error('Failed to update status');
+          }
+
+          // Update the local state to reflect the change
+          params.api.updateRows([{ ...params.row, status: newStatus }]);
+        } catch (error) {
+          console.error('Error updating status:', error);
+          // Optionally show an error message to the user
+        }
+      };
+
+      return (
+        <Select
+          value={params.value}
+          onChange={handleStatusChange}
+          sx={{ width: 90, height: 20, fontSize: 12 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MenuItem value="Active" sx={{ fontSize: 12 }}>
+            Active
+          </MenuItem>
+          <MenuItem value="Inactive" sx={{ fontSize: 12 }}>
+            Inactive
+          </MenuItem>
+        </Select>
+      );
+    },
   };
 
   // Combine columns based on active tab
@@ -197,7 +223,7 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         disableVirtualization
         pagination
         pageSizeOptions={[5, 10, 25]}
-        disableColumnResize
+        disableColumnResize={false}
         initialState={{
           pagination: {
             paginationModel: { pageSize: 5, page: 0 },

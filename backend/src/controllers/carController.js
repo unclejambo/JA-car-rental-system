@@ -1,7 +1,7 @@
 import prisma from '../config/prisma.js';
 
 // @desc    Get all cars
-// @route   GET /api/cars
+// @route   GET /cars
 // @access  Public
 export const getCars = async (req, res) => {
   try {
@@ -14,7 +14,7 @@ export const getCars = async (req, res) => {
 };
 
 // @desc    Get GPS info for a car
-// @route   GET /api/cars/:id/gps
+// @route   GET cars/:id/gps
 // @access  Public
 export const getCarGps = async (req, res) => {
   const carId = parseInt(req.params.id, 10);
@@ -33,7 +33,7 @@ export const getCarGps = async (req, res) => {
 };
 
 // @desc    Create a car
-// @route   POST /api/cars
+// @route   POST /cars
 // @access  Private/Admin
 export const createCar = async (req, res) => {
   try {
@@ -70,7 +70,7 @@ export const createCar = async (req, res) => {
 };
 
 // @desc    Update a car
-// @route   PUT /api/cars/:id
+// @route   PUT /cars/:id
 // @access  Private/Admin
 export const updateCar = async (req, res) => {
   try {
@@ -109,7 +109,7 @@ export const updateCar = async (req, res) => {
 };
 
 // @desc    Delete a car
-// @route   DELETE /api/cars/:id
+// @route   DELETE /cars/:id
 // @access  Private/Admin
 export const deleteCar = async (req, res) => {
   try {

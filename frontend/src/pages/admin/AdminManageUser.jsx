@@ -30,7 +30,7 @@ export default function AdminManageUser() {
     setLoading(true);
     try {
       const response = await fetch(
-        'https://68bd9bc5227c48698f84f2ce.mockapi.io/users'
+        'http://localhost:3001/customers'
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -38,10 +38,19 @@ export default function AdminManageUser() {
       const data = await response.json();
       const formattedData = data.map((item) => ({
         ...item,
-        status: item.status ? 'Active' : 'Inactive',
+        id: item.customer_id, // required by DataGrid
+        contact_number: item.contact_no,
+        // normalize status explicitly so strings like 'inactive' don't become truthy -> Active
+        status:
+          item.status === true ||
+          item.status === 'Active' ||
+          item.status === 'active' ||
+          item.status === 1 ||
+          item.status === '1'
+            ? 'Active'
+            : 'Inactive',
       }));
       setRows(formattedData);
-      setError(null);
     } catch (err) {
       console.error('Error fetching data:', err);
       setError('Failed to load data. Please try again later.');

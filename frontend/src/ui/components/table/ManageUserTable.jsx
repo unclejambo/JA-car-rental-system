@@ -7,14 +7,14 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
   // Define columns that are common to all tabs
   const commonColumns = [
     {
-      field: 'firstName',
+      field: 'first_name',
       headerName: 'First Name',
       flex: 1,
       minWidth: 70,
       editable: false,
     },
     {
-      field: 'lastName',
+      field: 'last_name',
       headerName: 'Last Name',
       flex: 1,
       minWidth: 70,
@@ -28,7 +28,7 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
       editable: false,
     },
     {
-      field: 'contactNumber',
+      field: 'contact_number',
       headerName: 'Contact #',
       flex: 1,
       minWidth: 90,
@@ -40,7 +40,7 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
   const tabSpecificColumns = {
     CUSTOMER: [
       {
-        field: 'socMedLink',
+        field: 'fb_link',
         headerName: 'SocMed Link',
         flex: 1.2,
         minWidth: 80,
@@ -52,7 +52,7 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         minWidth: 120,
       },
       {
-        field: 'driversLicenseNo',
+        field: 'driver_license_no',
         headerName: 'License #',
         flex: 1.2,
         minWidth: 80,
@@ -119,38 +119,44 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
     align: 'center',
     renderCell: (params) => {
       const handleStatusChange = async (e) => {
-        const newStatus = e.target.value;
+        const newStatusLabel = e.target.value; // 'Active' | 'Inactive'
+
         try {
-          // Update the status in the mock API
           const response = await fetch(
-            `https://68bd9bc5227c48698f84f2ce.mockapi.io/users/${params.id}`,
+            `http://localhost:3001/customers/${params.id}`,
             {
               method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                ...params.row,
-                status: newStatus === 'Active',
-              }),
+              headers: { 'Content-Type': 'application/json' },
+              // send status as lowercase string to match Postman that worked
+              body: JSON.stringify({ status: newStatusLabel.toLowerCase() }),
             }
           );
 
+          const text = await response.text();
+          let json;
+          try { json = JSON.parse(text); } catch { json = { message: text }; }
+
           if (!response.ok) {
-            throw new Error('Failed to update status');
+            console.error('Update failed:', response.status, json);
+            throw new Error(json.error || json.message || 'Failed to update status');
           }
 
-          // Update the local state to reflect the change
-          params.api.updateRows([{ ...params.row, status: newStatus }]);
+          // update only the status cell in the grid (use label displayed in UI)
+          params.api.updateRows([{ id: params.id, status: newStatusLabel.toLowerCase() }]);
         } catch (error) {
           console.error('Error updating status:', error);
-          // Optionally show an error message to the user
         }
       };
 
+      // normalize value so boolean, "Active"/"active" all display correctly
+      const statusLabel =
+        params.value === true || params.value === 'Active' || params.value === 'active'
+          ? 'Active'
+          : 'Inactive';
+
       return (
         <Select
-          value={params.value}
+          value={statusLabel}
           onChange={handleStatusChange}
           sx={{ width: 90, height: 20, fontSize: 12 }}
           onClick={(e) => e.stopPropagation()}

@@ -113,7 +113,7 @@ export const updateCustomer = async (req, res) => {
             fb_link,
             date_created,
             status,
-            driver_license_no,
+            driver_license_no,      // -> This must be an exisiting driver_license in the system (FK)
         } = req.body;
 
         const updatedCustomer = await prisma.customer.update({

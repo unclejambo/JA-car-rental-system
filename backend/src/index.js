@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import carRoutes from './routes/carRoutes.js';
 import customerRoutes from './routes/customerRoute.js';
+import bookingRoutes from './routes/bookingRoute.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -18,6 +19,7 @@ app.get('/', (req, res) => {
 // API Routes
 app.use('/cars', carRoutes);
 app.use('/customers', customerRoutes);
+app.use('/bookings', bookingRoutes);
 
 
 // Error handling middleware

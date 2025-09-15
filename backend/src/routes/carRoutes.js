@@ -14,8 +14,8 @@ router.get('/', getCars);
 router.get('/:id/gps', getCarGps);
 
 // Protected routes (add authentication middleware later)
-router.post('/create', createCar);    // use "api/cars/create"  -> POST
-router.put('/:id', updateCar);        // use "api/cars/:id"     -> PUT
-router.delete('/:id', deleteCar);     // use "api/cars/:id"     -> DELETE
+router.post('/create', createCar);    // use "cars/create"  -> POST
+router.put('/:id', updateCar);        // use "cars/:id"     -> PUT
+router.delete('/:id', deleteCar);     // use "cars/:id"     -> DELETE
 
 export default router;

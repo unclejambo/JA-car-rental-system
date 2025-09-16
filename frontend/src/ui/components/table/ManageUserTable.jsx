@@ -1,6 +1,9 @@
 import { DataGrid } from '@mui/x-data-grid';
 import { Box, Select, MenuItem, useMediaQuery } from '@mui/material';
 
+// use Vite env var, fallback to localhost; remove trailing slash if present
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+
 const ManageUserTable = ({ activeTab, rows, loading }) => {
   const isSmallScreen = useMediaQuery('(max-width:600px)');
 
@@ -135,29 +138,26 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
     renderCell: (params) => {
       const handleStatusChange = async (e) => {
         const newStatusLabel = e.target.value; // 'Active' | 'Inactive'
+        const bodyStatus = newStatusLabel.toLowerCase(); // send 'active'|'inactive' (backend normalizes)
 
         try {
           const response = await fetch(
-            `http://localhost:3001/customers/${params.id}`,
+            `${API_BASE}/customers/${params.id}`,
             {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
-              // send status as lowercase string to match Postman that worked
-              body: JSON.stringify({ status: newStatusLabel.toLowerCase() }),
+              body: JSON.stringify({ status: bodyStatus }),
             }
           );
 
-          const text = await response.text();
-          let json;
-          try { json = JSON.parse(text); } catch { json = { message: text }; }
-
+          const json = await response.json().catch(() => null);
           if (!response.ok) {
             console.error('Update failed:', response.status, json);
-            throw new Error(json.error || json.message || 'Failed to update status');
+            throw new Error(json?.error || json?.message || 'Failed to update status');
           }
 
-          // update only the status cell in the grid (use label displayed in UI)
-          params.api.updateRows([{ id: params.id, status: newStatusLabel.toLowerCase() }]);
+          // update only the status cell in the grid with the display label
+          params.api.updateRows([{ id: params.id, status: newStatusLabel }]);
         } catch (error) {
           console.error('Error updating status:', error);
         }
@@ -165,7 +165,11 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
 
       // normalize value so boolean, "Active"/"active" all display correctly
       const statusLabel =
-        params.value === true || params.value === 'Active' || params.value === 'active'
+        params.value === true ||
+        params.value === 'Active' ||
+        params.value === 'active' ||
+        params.value === 1 ||
+        params.value === '1'
           ? 'Active'
           : 'Inactive';
 

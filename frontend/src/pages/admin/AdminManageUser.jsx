@@ -26,11 +26,14 @@ export default function AdminManageUser() {
   const openAddDriverModal = () => setShowAddDriverModal(true);
   const closeAddDriverModal = () => setShowAddDriverModal(false);
 
+  // use Vite env var, fallback to localhost; remove trailing slash if present
+  const API_BASE = (import.meta.env.VITE_API_URL).replace(/\/$/, '');
+
   const fetchData = async () => {
     setLoading(true);
     try {
       const response = await fetch(
-        'http://localhost:3001/customers'
+        `${API_BASE}/customers`
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

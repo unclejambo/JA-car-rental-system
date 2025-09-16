@@ -1,46 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import '../../styles/index.css';
+import { Box, Typography } from '@mui/material';
 import Header from '../../ui/components/Header';
 import AdminSideBar from '../../ui/components/AdminSideBar';
-import ManageUserHeader from '../../ui/components/header/ManageUserHeader';
-import ManageUserTable from '../../ui/components/table/ManageUserTable';
 import Loading from '../../ui/components/Loading';
+import { HiChartBar } from 'react-icons/hi2';
 
 export default function AdminReportAnalytics() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);    // -----------------------------------> CHANGE TO TRUE WHEN CONTENT IS ADDED
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('CUSTOMER');
 
-  useEffect(() => {
-    setLoading(true);
 
-    fetch('https://68bd9bc5227c48698f84f2ce.mockapi.io/users')
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        const formattedData = data.map((item) => ({
-          ...item,
-          status: item.status ? 'Active' : 'Inactive',
-        }));
-        setRows(formattedData);
-        setError(null);
-      })
-      .catch((err) => {
-        console.error('Error fetching data:', err);
-        setError('Failed to load data. Please try again later.');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
 
   if (loading) {
     return (
@@ -50,21 +20,41 @@ export default function AdminReportAnalytics() {
           mobileOpen={mobileOpen}
           onClose={() => setMobileOpen(false)}
         />
-        <Loading />
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+          }}
+        >
+          <Loading />
+        </Box>
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-        color="error.main"
-      >
-        <Typography>{error}</Typography>
+      <Box sx={{ display: 'flex' }}>
+        <Header onMenuClick={() => setMobileOpen(true)} />
+        <AdminSideBar
+          mobileOpen={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+        />
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+          }}
+          color="error.main"
+        >
+          <Typography>{error}</Typography>
+        </Box>
       </Box>
     );
   }
@@ -106,7 +96,7 @@ export default function AdminReportAnalytics() {
             flexDirection: 'column',
           }}
         >
-          <ManageUserHeader activeTab={activeTab} onTabChange={setActiveTab} />
+         
           <Box
             sx={{
               flexGrow: 1,
@@ -135,38 +125,9 @@ export default function AdminReportAnalytics() {
                   },
                 }}
               >
-                {activeTab}
+                <HiChartBar style={{ verticalAlign: '-3px', marginRight: '5px' }} />
+                REPORT & ANALYTICS
               </Typography>
-              {(activeTab === 'STAFF' || activeTab === 'DRIVER') && (
-                <Button
-                  variant="outlined"
-                  startIcon={
-                    <AddIcon
-                      sx={{ width: '18px', height: '18px', mt: '-2px' }}
-                    />
-                  }
-                  sx={{
-                    color: '#fff',
-                    p: 1,
-                    pb: 0.5,
-                    height: 36,
-                    border: 'none',
-                    backgroundColor: '#c10007',
-                    '&:hover': {
-                      backgroundColor: '#a00006',
-                      color: '#fff',
-                      fontWeight: 600,
-                      borderColor: '#4a4a4a',
-                      boxShadow: 'none',
-                    },
-                    '@media (max-width: 600px)': {
-                      height: 28,
-                    },
-                  }}
-                >
-                  Add New {activeTab}
-                </Button>
-              )}
             </Box>
             <Box
               sx={{
@@ -176,11 +137,10 @@ export default function AdminReportAnalytics() {
                 overflow: 'hidden',
               }}
             >
-              <ManageUserTable
-                rows={rows}
-                loading={loading}
-                activeTab={activeTab}
-              />
+
+              {/* Content for Report & Analytics goes here */}
+
+
             </Box>
           </Box>
         </Box>

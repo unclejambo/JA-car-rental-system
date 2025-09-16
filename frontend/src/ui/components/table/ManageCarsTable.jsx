@@ -3,7 +3,7 @@ import { Box, IconButton } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-const ManageCarsTable = ({ activeTab, rows, loading }) => {
+const ManageCarsTable = ({ activeTab, rows, loading, onEdit, onDelete }) => {
   const commonColumns = [
     {
       field: 'model',
@@ -91,28 +91,32 @@ const ManageCarsTable = ({ activeTab, rows, loading }) => {
       },
       {
         field: 'action',
-        headerName: 'Action',
+        headerName: '',
         flex: 1.5,
         minWidth: 100,
         editable: false,
         align: 'center',
-        renderCell: () => (
-          <>
+        renderCell: (params) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <IconButton
+              size="small"
               color="primary"
               aria-label="edit"
-              sx={{ width: 16, height: 16, mr: 1 }}
+              sx={{ p: 0.5 }}
+              onClick={() => onEdit?.(params.row)}
             >
-              <EditIcon />
+              <EditIcon fontSize="small" />
             </IconButton>
             <IconButton
+              size="small"
               color="error"
               aria-label="delete"
-              sx={{ width: 16, height: 16 }}
+              sx={{ p: 0.5 }}
+              onClick={() => onDelete?.(params.row)}
             >
-              <DeleteIcon />
+              <DeleteIcon fontSize="small" />
             </IconButton>
-          </>
+          </Box>
         ),
       },
     ],
@@ -163,16 +167,18 @@ const ManageCarsTable = ({ activeTab, rows, loading }) => {
         minWidth: 100,
         editable: false,
         align: 'center',
-        renderCell: () => (
-          <>
+        renderCell: (params) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <IconButton
-              color="error"
-              aria-label="delete"
-              sx={{ width: 16, height: 16 }}
+              size="small"
+              color="primary"
+              aria-label="edit"
+              sx={{ p: 0.5 }}
+              onClick={() => onEdit?.(params.row)}
             >
-              <DeleteIcon />
+              <EditIcon fontSize="small" />
             </IconButton>
-          </>
+          </Box>
         ),
       },
     ],
@@ -235,7 +241,7 @@ const ManageCarsTable = ({ activeTab, rows, loading }) => {
         disableColumnResize
         initialState={{
           pagination: {
-            paginationModel: { pageSize: 5, page: 0 },
+            paginationModel: { pageSize: 10, page: 0 },
           },
         }}
         sx={{

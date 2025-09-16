@@ -223,7 +223,7 @@ const ScheduleTable = ({ rows, loading }) => {
         disableColumnResize={false}
         initialState={{
           pagination: {
-            paginationModel: { pageSize: 5, page: 0 },
+            paginationModel: { pageSize: 10, page: 0 },
           },
         }}
         sx={{

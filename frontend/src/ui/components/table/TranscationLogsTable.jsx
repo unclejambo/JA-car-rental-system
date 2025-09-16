@@ -191,7 +191,7 @@ const TransactionLogsTable = ({ activeTab, rows, loading }) => {
         disableColumnResize
         initialState={{
           pagination: {
-            paginationModel: { pageSize: 5, page: 0 },
+            paginationModel: { pageSize: 10, page: 0 },
           },
         }}
         sx={{

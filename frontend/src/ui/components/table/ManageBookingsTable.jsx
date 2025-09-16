@@ -2,7 +2,31 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Box, Select, MenuItem } from '@mui/material';
 
 const ManageBookingsTable = ({ activeTab, rows, loading }) => {
-    // const isSmallScreen = useMediaQuery('(max-width:600px)');
+    // Helper: return YYYY-MM-DD from an ISO datetime or Date
+    const formatDateString = (value) => {
+        if (!value && value !== 0) return '';
+        if (typeof value === 'string' && value.includes('T')) {
+            return value.split('T')[0];
+        }
+        if (value instanceof Date && !isNaN(value)) {
+            return value.toISOString().split('T')[0];
+        }
+        // fallback to string conversion
+        try {
+            return String(value).split('T')[0];
+        } catch {
+            return '';
+        }
+    };
+
+    // create a display copy so original rows remain unchanged
+    const displayRows = (rows || []).map((r, idx) => ({
+        ...r,
+        booking_date: formatDateString(r.booking_date),
+        start_date: formatDateString(r.start_date),
+        end_date: formatDateString(r.end_date),
+        id: r.id ?? r.booking_id ?? r.customer_id ?? `row-${idx}`,
+    }));
 
     // Define columns that are common to all tabs
     const commonColumns = [
@@ -53,13 +77,13 @@ const ManageBookingsTable = ({ activeTab, rows, loading }) => {
                 minWidth: 80,
             },
              {
-                field: 'paymentStatus',
+                field: 'payment_status',
                 headerName: 'Payment Status',
                 flex: 1.2,
                 minWidth: 100,
             },
             {
-                field: 'bookingStatus',
+                field: 'booking_status',
                 headerName: 'Booking Status',
                 flex: 1.2,
                 minWidth: 100,
@@ -67,7 +91,7 @@ const ManageBookingsTable = ({ activeTab, rows, loading }) => {
         ],
         CANCELLATION: [
             {
-                field: 'cancellationDate',
+                field: 'cancellation_date',
                 headerName: 'Cancellation Date',
                 flex: 1.5,
                 minWidth: 120,
@@ -133,7 +157,7 @@ const ManageBookingsTable = ({ activeTab, rows, loading }) => {
             }}
         >
             <DataGrid
-                rows={rows}
+                rows={displayRows}
                 columns={columns.filter((col) => !col.hide)}
                 loading={loading}
                 autoHeight={false}
@@ -148,7 +172,7 @@ const ManageBookingsTable = ({ activeTab, rows, loading }) => {
                 disableColumnResize
                 initialState={{
                     pagination: {
-                        paginationModel: { pageSize: 5, page: 0 },
+                        paginationModel: { pageSize: 10, page: 0 },
                     },
                 }}
                 sx={{

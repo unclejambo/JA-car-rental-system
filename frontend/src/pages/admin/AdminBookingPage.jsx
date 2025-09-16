@@ -61,7 +61,17 @@ export default function AdminBookingPage() {
           mobileOpen={mobileOpen}
           onClose={() => setMobileOpen(false)}
         />
-        <Loading />
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+          }}
+        >
+          <Loading />
+        </Box>
       </Box>
     );
   }
@@ -117,7 +127,10 @@ export default function AdminBookingPage() {
             flexDirection: 'column',
           }}
         >
-          <ManageBookingsHeader activeTab={activeTab} onTabChange={setActiveTab} />
+          <ManageBookingsHeader
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
           <Box
             sx={{
               flexGrow: 1,

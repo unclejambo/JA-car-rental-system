@@ -90,6 +90,7 @@ export default function AdminTransactionPage() {
 
   return (
     <Box sx={{ display: 'flex' }}>
+      <title>Transactions</title>
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar
         mobileOpen={mobileOpen}

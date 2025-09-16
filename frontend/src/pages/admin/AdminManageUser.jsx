@@ -106,6 +106,7 @@ export default function AdminManageUser() {
 
   return (
     <Box sx={{ display: 'flex' }}>
+      <title>Manage Users</title>
       <AddStaffModal show={showAddStaffModal} onClose={closeAddStaffModal} />
       <AddDriverModal show={showAddDriverModal} onClose={closeAddDriverModal} />
 

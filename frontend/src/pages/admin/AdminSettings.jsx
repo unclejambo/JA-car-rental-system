@@ -61,6 +61,7 @@ export default function AdminReportAnalytics() {
 
   return (
     <Box sx={{ display: 'flex' }}>
+      <title>Settings</title>
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar
         mobileOpen={mobileOpen}

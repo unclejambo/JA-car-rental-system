@@ -5,6 +5,9 @@ import Header from '../../ui/components/Header';
 import Loading from '../../ui/components/Loading';
 import ManageBookingsTable from '../../ui/components/table/ManageBookingsTable';
 import ManageBookingsHeader from '../../ui/components/header/ManageBookingsHeader';
+import { HiBookOpen, HiCurrencyDollar } from 'react-icons/hi2';
+import ManageFeesModal from '../../ui/components/modal/ManageFeesModal';
+
 
 export default function AdminBookingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -12,6 +15,10 @@ export default function AdminBookingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('BOOKINGS');
+  const [showManageFeesModal, setShowManageFeesModal] = useState(false);
+
+  const openManageFeesModal = () => setShowManageFeesModal(true);
+  const closeManageFeesModal = () => setShowManageFeesModal(false);
 
   useEffect(() => {
     setLoading(true);
@@ -95,6 +102,8 @@ export default function AdminBookingPage() {
 
   return (
     <Box sx={{ display: 'flex' }}>
+      <title>Booking Management</title>
+      <ManageFeesModal show={showManageFeesModal} onClose={closeManageFeesModal} />
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar
         mobileOpen={mobileOpen}
@@ -162,8 +171,41 @@ export default function AdminBookingPage() {
                   },
                 }}
               >
+                <HiBookOpen style={{ verticalAlign: '-5px', marginRight: '5px' }} />
                 {activeTab}
               </Typography>
+
+              {activeTab === 'BOOKINGS' && (
+                <Button
+                  variant="outlined"
+                  startIcon={
+                    <HiCurrencyDollar
+                      sx={{ width: '18px', height: '18px', mt: '-2px' }}
+                    />
+                  }
+                  onClick={openManageFeesModal}
+                  sx={{
+                    color: '#fff',
+                    p: 1,
+                    pb: 0.5,
+                    height: 36,
+                    border: 'none',
+                    backgroundColor: '#c10007',
+                    '&:hover': {
+                      backgroundColor: '#a00006',
+                      color: '#fff',
+                      fontWeight: 600,
+                      borderColor: '#4a4a4a',
+                      boxShadow: 'none',
+                    },
+                    '@media (max-width: 600px)': {
+                      height: 28,
+                    },
+                  }}
+                >
+                  Manage Fees
+                </Button>
+              )}
             </Box>
             <Box
               sx={{

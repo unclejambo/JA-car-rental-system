@@ -120,6 +120,7 @@ export default function AdminSchedulePage() {
 
   return (
     <Box sx={{ display: 'flex' }}>
+      <title>Schedule</title>
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar
         mobileOpen={mobileOpen}

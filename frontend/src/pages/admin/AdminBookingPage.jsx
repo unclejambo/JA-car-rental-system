@@ -16,7 +16,10 @@ export default function AdminBookingPage() {
   useEffect(() => {
     setLoading(true);
 
-    fetch('https://68b2fd5cc28940c9e69de1ab.mockapi.io/bookings')
+    const API_BASE = import.meta.env.VITE_API_URL;
+    const bookingsUrl = `${API_BASE.replace(/\/$/, '')}/bookings`;
+
+    fetch(bookingsUrl, { headers: { Accept: 'application/json' } })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

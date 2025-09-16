@@ -7,35 +7,35 @@ const ManageBookingsTable = ({ activeTab, rows, loading }) => {
     // Define columns that are common to all tabs
     const commonColumns = [
         {
-            field: 'customerName',
+            field: 'customer_name',
             headerName: 'Customer Name',
             flex: 1.5,
             minWidth: 120,
             editable: false,
         },
         {
-            field: 'carModel',
+            field: 'car_model',
             headerName: 'Car Model',
             flex: 1.5,
             minWidth: 70,
             editable: false,
         },
         {
-            field: 'bookingDate',
+            field: 'booking_date',
             headerName: 'Booking Date',
             flex: 1.5,
             minWidth: 100,
             editable: false,
         },
         {
-            field: 'startDate',
+            field: 'start_date',
             headerName: 'Start Date',
             flex: 1.5,
             minWidth: 100,
             editable: false,
         },
         {
-            field: 'endDate',
+            field: 'end_date',
             headerName: 'End Date',
             flex: 1.5,
             minWidth: 100,

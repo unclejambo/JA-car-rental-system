@@ -2,22 +2,47 @@ import prisma from '../config/prisma.js';
 
 export const getBookings = async (req, res) => {
   try {
-    const bookings = await prisma.booking.findMany();
-    res.json(bookings);
+    const bookings = await prisma.booking.findMany({
+      include: {
+        customer: { select: { first_name: true, last_name: true } },
+        car: { select: { make: true, model: true, year: true } },
+      },
+    });
+
+    const shaped = bookings.map(({ customer, car, ...rest }) => ({
+      ...rest,
+      customer_name: `${customer?.first_name ?? ''} ${customer?.last_name ?? ''}`.trim(),
+      car_model: [car?.make, car?.model].filter(Boolean).join(' '),
+    }));
+
+    res.json(shaped);
   } catch (error) {
     console.error('Error fetching bookings:', error);
     res.status(500).json({ error: 'Failed to fetch bookings' });
   }
 };
 
-
-
 export const getBookingById = async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
-    const booking = await prisma.booking.findUnique({ where: { booking_id: bookingId } });
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+      include: {
+        customer: { select: { first_name: true, last_name: true } },
+        car: { select: { make: true, model: true, year: true } },
+      },
+    });
+
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
-    res.json(booking);
+
+    const { customer, car, ...rest } = booking;
+    const shaped = {
+      ...rest,
+      customer_name: `${customer?.first_name ?? ''} ${customer?.last_name ?? ''}`.trim(),
+      car_model: [car?.make, car?.model].filter(Boolean).join(' '),
+    };
+
+    res.json(shaped);
   } catch (error) {
     console.error('Error fetching booking:', error);
     res.status(500).json({ error: 'Failed to fetch booking' });

@@ -320,8 +320,9 @@ export default function AdminReportAnalytics() {
               <Box
                 sx={{
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
+                  flexDirection: { xs: 'column', md: 'row' },
+                  alignItems: { md: 'center' },
+                  gap: 1.5,
                   mb: 2,
                 }}
               >
@@ -335,7 +336,15 @@ export default function AdminReportAnalytics() {
                     {formatCurrency(income)}
                   </span>
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    alignItems: { md: 'center' },
+                    gap: 1,
+                    width: { xs: '100%', md: 'auto' },
+                  }}
+                >
                   <Typography variant="body2" sx={{ color: '#555' }}>
                     Month:
                   </Typography>
@@ -343,7 +352,11 @@ export default function AdminReportAnalytics() {
                     size="small"
                     value={selectedMonthIndex}
                     onChange={(e) => setSelectedMonthIndex(e.target.value)}
-                    sx={{ minWidth: 140, backgroundColor: '#fff' }}
+                    sx={{
+                      backgroundColor: '#fff',
+                      minWidth: { md: 140 },
+                      width: { xs: '100%', md: 160 },
+                    }}
                   >
                     {Array.from({ length: 12 }).map((_, i) => (
                       <MenuItem key={i} value={i}>
@@ -367,7 +380,6 @@ export default function AdminReportAnalytics() {
                 {/* Most Rented Car */}
                 <Box
                   sx={{
-                    display: 'flex',
                     bgcolor: '#fff',
                     borderRadius: 1,
                     overflow: 'hidden',
@@ -376,29 +388,28 @@ export default function AdminReportAnalytics() {
                 >
                   <Box
                     sx={{
-                      width: { xs: '36%', sm: 220 },
-                      bgcolor: '#e5e5e5',
-                      p: 2,
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
+                      gap: 1,
+                      p: 2,
+                      borderBottom: '1px solid #eee',
+                      bgcolor: '#f3f4f6',
                     }}
                   >
-                    <DirectionsCarIcon
-                      sx={{ fontSize: 40, color: '#333', mb: 1 }}
-                    />
-                    <Typography
-                      className="font-pathway"
-                      sx={{ fontWeight: 700 }}
-                    >
-                      Most Rented Car
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#666' }}>
-                      BAR GRAPH
-                    </Typography>
+                    <DirectionsCarIcon sx={{ fontSize: 28, color: '#333' }} />
+                    <Box>
+                      <Typography
+                        className="font-pathway"
+                        sx={{ fontWeight: 700 }}
+                      >
+                        Most Rented Car
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#666' }}>
+                        BAR GRAPH
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Box sx={{ flex: 1, p: 2 }}>
+                  <Box sx={{ p: 2 }}>
                     <div
                       ref={carChartRef}
                       style={{ width: '100%', height: 260 }}
@@ -409,7 +420,6 @@ export default function AdminReportAnalytics() {
                 {/* Top Customer */}
                 <Box
                   sx={{
-                    display: 'flex',
                     bgcolor: '#fff',
                     borderRadius: 1,
                     overflow: 'hidden',
@@ -418,27 +428,28 @@ export default function AdminReportAnalytics() {
                 >
                   <Box
                     sx={{
-                      width: { xs: '36%', sm: 220 },
-                      bgcolor: '#e5e5e5',
-                      p: 2,
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
+                      gap: 1,
+                      p: 2,
+                      borderBottom: '1px solid #eee',
+                      bgcolor: '#f3f4f6',
                     }}
                   >
-                    <PersonIcon sx={{ fontSize: 40, color: '#333', mb: 1 }} />
-                    <Typography
-                      className="font-pathway"
-                      sx={{ fontWeight: 700 }}
-                    >
-                      Top Customer
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#666' }}>
-                      BAR GRAPH
-                    </Typography>
+                    <PersonIcon sx={{ fontSize: 28, color: '#333' }} />
+                    <Box>
+                      <Typography
+                        className="font-pathway"
+                        sx={{ fontWeight: 700 }}
+                      >
+                        Top Customer
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#666' }}>
+                        BAR GRAPH
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Box sx={{ flex: 1, p: 2 }}>
+                  <Box sx={{ p: 2 }}>
                     <div
                       ref={customerChartRef}
                       style={{ width: '100%', height: 260 }}

@@ -15,7 +15,7 @@ import AdminReportAnalytics from "./pages/admin/AdminReportAnalytics";
 import AdminSettings from "./pages/admin/AdminSettings";
 import RegisterPage from "./pages/RegisterPage.jsx";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import ProtectedRoute from "./ui/components/modal/ProtectedRoute.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

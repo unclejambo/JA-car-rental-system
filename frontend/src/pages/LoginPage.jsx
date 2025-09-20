@@ -5,10 +5,19 @@ import {
   EyeIcon as EyeSolid,
   EyeSlashIcon as EyeSlashSolid,
 } from '@heroicons/react/24/solid';
+import { useNavigate } from 'react-router-dom';
 
 function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = () => {
+    // Add your login logic here
+    // On successful login, navigate to the desired page
+    navigate('/'); // Navigate to the home page or dashboard after login
+  };
+
   return (
     <>
       <Header />
@@ -125,6 +134,7 @@ function LoginPage() {
           <br />
           <button
             id="login"
+            onClick={handleLogin}
             style={{
               backgroundColor: '#3F86F1',
               fontFamily: '"Pathway Gothic One", sans-serif',
@@ -135,6 +145,7 @@ function LoginPage() {
               width: '320px',
               marginBottom: '10px',
               boxShadow: '0 2px 2px rgba(0, 0, 0, .7)',
+              cursor: 'pointer',
             }}
           >
             Login
@@ -146,6 +157,7 @@ function LoginPage() {
               fontFamily: '"Pathway Gothic One", sans-serif',
               textDecoration: 'none',
               color: 'rgb(0 0 0 / .7)',
+              cursor: 'pointer',
             }}
           >
             Forgot your password?
@@ -161,6 +173,7 @@ function LoginPage() {
           </p>
           <button
             id="createAccount"
+            onClick={() => navigate('/register')}
             style={{
               backgroundColor: '#F13F3F',
               fontFamily: '"Pathway Gothic One", sans-serif',
@@ -171,6 +184,7 @@ function LoginPage() {
               width: '320px',
               marginBottom: '30px',
               boxShadow: '0 2px 2px rgba(0, 0, 0, .7)',
+              cursor: 'pointer',
             }}
           >
             Create an Account

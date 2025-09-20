@@ -13,12 +13,14 @@ import AdminSchedulePage from "./pages/admin/AdminSchedulePage";
 import AdminTransactionPage from "./pages/admin/AdminTransactionPage";
 import AdminReportAnalytics from "./pages/admin/AdminReportAnalytics";
 import AdminSettings from "./pages/admin/AdminSettings";
+import RegisterPage from "./pages/RegisterPage.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<AdminDashboard />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/manage-booking" element={<AdminBookingPage />} />
         <Route path="/manage-car" element={<AdminCarPage />} />
         <Route path="/manage-user" element={<AdminManageUser />} />

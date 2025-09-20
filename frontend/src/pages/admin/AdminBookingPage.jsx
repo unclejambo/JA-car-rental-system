@@ -8,7 +8,6 @@ import ManageBookingsHeader from '../../ui/components/header/ManageBookingsHeade
 import { HiBookOpen, HiCurrencyDollar } from 'react-icons/hi2';
 import ManageFeesModal from '../../ui/components/modal/ManageFeesModal';
 
-
 export default function AdminBookingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [rows, setRows] = useState([]);
@@ -88,14 +87,24 @@ export default function AdminBookingPage() {
 
   if (error) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-        color="error.main"
-      >
-        <Typography>{error}</Typography>
+      <Box sx={{ display: 'flex' }}>
+        <Header onMenuClick={() => setMobileOpen(true)} />
+        <AdminSideBar
+          mobileOpen={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+        />
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+          }}
+          color="error.main"
+        >
+          <Typography>{error}</Typography>
+        </Box>
       </Box>
     );
   }
@@ -103,7 +112,10 @@ export default function AdminBookingPage() {
   return (
     <Box sx={{ display: 'flex' }}>
       <title>Booking Management</title>
-      <ManageFeesModal show={showManageFeesModal} onClose={closeManageFeesModal} />
+      <ManageFeesModal
+        show={showManageFeesModal}
+        onClose={closeManageFeesModal}
+      />
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar
         mobileOpen={mobileOpen}
@@ -171,7 +183,9 @@ export default function AdminBookingPage() {
                   },
                 }}
               >
-                <HiBookOpen style={{ verticalAlign: '-5px', marginRight: '5px' }} />
+                <HiBookOpen
+                  style={{ verticalAlign: '-5px', marginRight: '5px' }}
+                />
                 {activeTab}
               </Typography>
 

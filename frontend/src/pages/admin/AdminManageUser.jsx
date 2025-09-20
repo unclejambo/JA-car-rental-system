@@ -27,15 +27,13 @@ export default function AdminManageUser() {
   const closeAddDriverModal = () => setShowAddDriverModal(false);
 
   // use Vite env var, fallback to localhost; remove trailing slash if present
-  const API_BASE = (import.meta.env.VITE_API_URL).replace(/\/$/, '');
+  const API_BASE = import.meta.env.VITE_API_URL.replace(/\/$/, '');
 
   const fetchData = async () => {
     setLoading(true);
-    
+
     try {
-      const response = await fetch(
-        `${API_BASE}/customers`
-      );
+      const response = await fetch(`${API_BASE}/customers`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -92,14 +90,24 @@ export default function AdminManageUser() {
 
   if (error) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-        color="error.main"
-      >
-        <Typography>{error}</Typography>
+      <Box sx={{ display: 'flex' }}>
+        <Header onMenuClick={() => setMobileOpen(true)} />
+        <AdminSideBar
+          mobileOpen={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+        />
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+          }}
+          color="error.main"
+        >
+          <Typography>{error}</Typography>
+        </Box>
       </Box>
     );
   }

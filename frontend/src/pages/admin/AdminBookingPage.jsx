@@ -204,9 +204,9 @@ export default function AdminBookingPage() {
                     pb: 0.5,
                     height: 36,
                     border: 'none',
-                    backgroundColor: '#c10007',
+                    backgroundColor: '#3895d3',
                     '&:hover': {
-                      backgroundColor: '#a00006',
+                      backgroundColor: '#1261a0',
                       color: '#fff',
                       fontWeight: 600,
                       borderColor: '#4a4a4a',

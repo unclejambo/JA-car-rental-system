@@ -3,7 +3,7 @@ import { Box, Button } from '@mui/material';
 import { useScheduleStore } from '../../../store/schedule';
 import PublicIcon from '@mui/icons-material/Public';
 
-const ScheduleTable = ({ rows, loading }) => {
+const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
   const updateReservationStatus = useScheduleStore(
     (state) => state.updateReservationStatus
   );
@@ -101,7 +101,11 @@ const ScheduleTable = ({ rows, loading }) => {
             variant="contained"
             color="success"
             size="small"
-            onClick={() => handleAction('Ongoing')}
+            onClick={() =>
+              onOpenRelease
+                ? onOpenRelease(params.row)
+                : handleAction('Ongoing')
+            }
             sx={{
               textTransform: 'none',
               fontWeight: 'normal',
@@ -117,13 +121,16 @@ const ScheduleTable = ({ rows, loading }) => {
       }
 
       // Show return button if today is end date and status is 'Ongoing'
-      if (today === endDate && params.row.status === 'Ongoing') {
+      // Change '2025-08-13' to today
+      if ('2025-08-13' === endDate && params.row.status === 'Ongoing') {
         return (
           <Button
             variant="contained"
             color="success"
             size="small"
-            onClick={() => handleAction('Done')}
+            onClick={() =>
+              onOpenReturn ? onOpenReturn(params.row) : handleAction('Done')
+            }
             sx={{
               textTransform: 'none',
               fontWeight: 'normal',

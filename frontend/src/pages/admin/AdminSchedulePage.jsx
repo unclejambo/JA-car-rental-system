@@ -26,19 +26,19 @@ export default function AdminSchedulePage() {
   //   );
   // }, [reservations, searchTerm]);
 
-  // const [showReleaseModal, setShowReleaseModal] = useState(false);
-  // const [showReturnModal, setShowReturnModal] = useState(false);
-  // const [selectedReservation, setSelectedReservation] = useState(null);
+  const [showReleaseModal, setShowReleaseModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState(null);
 
-  // const handleReleaseClick = (reservation) => {
-  //   setSelectedReservation(reservation);
-  //   setShowReleaseModal(true);
-  // };
+  const handleReleaseClick = (reservation) => {
+    setSelectedReservation(reservation);
+    setShowReleaseModal(true);
+  };
 
-  // const handleReturnClick = (reservation) => {
-  //   setSelectedReservation(reservation);
-  //   setShowReturnModal(true);
-  // };
+  const handleReturnClick = (reservation) => {
+    setSelectedReservation(reservation);
+    setShowReturnModal(true);
+  };
 
   // const columns = useMemo(
   //   () => scheduleColumns(handleReleaseClick, handleReturnClick),
@@ -126,6 +126,20 @@ export default function AdminSchedulePage() {
         mobileOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
       />
+      {showReleaseModal && (
+        <ReleaseModal
+          show={showReleaseModal}
+          onClose={() => setShowReleaseModal(false)}
+          reservation={selectedReservation}
+        />
+      )}
+      {showReturnModal && (
+        <ReturnModal
+          show={showReturnModal}
+          onClose={() => setShowReturnModal(false)}
+          reservation={selectedReservation}
+        />
+      )}
       <Box
         component="main"
         sx={{
@@ -214,7 +228,12 @@ export default function AdminSchedulePage() {
                   <pre style={{ display: 'none' }}>
                     {JSON.stringify(reservations, null, 2)}
                   </pre>
-                  <ScheduleTable rows={reservations} loading={loading} />
+                  <ScheduleTable
+                    rows={reservations}
+                    loading={loading}
+                    onOpenRelease={handleReleaseClick}
+                    onOpenReturn={handleReturnClick}
+                  />
                 </>
               )}
             </Box>

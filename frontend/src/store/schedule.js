@@ -48,7 +48,7 @@ export const useScheduleStore = create((set) => ({
       dropOffTime: '17:00',
       dropOffLocation: 'Ayala',
       selfDrive: 'Yes',
-      status: 'Confirmed',
+      status: 'Ongoing',
     },
     {
       reservationId: 5,

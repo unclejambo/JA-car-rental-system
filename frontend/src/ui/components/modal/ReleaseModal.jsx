@@ -295,7 +295,14 @@ export default function ReleaseModal({ show, onClose }) {
                 </div>
               )}
             </form>
-            <div className="btn-container">
+            <div
+              className="btn-container"
+              style={{
+                display: 'flex',
+                gap: '10px',
+                marginTop: '15px',
+              }}
+            >
               <button className="font-pathway save-btn">Release</button>
               <button className="font-pathway cancel-btn" onClick={onClose}>
                 Cancel

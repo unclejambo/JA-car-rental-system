@@ -56,7 +56,9 @@ export default function ManageFeesModal({ show, onClose }) {
               />
             </div>
             <div className="field-row">
-              <label className="field-label font-pathway">Equipment Loss Fee</label>
+              <label className="field-label font-pathway">
+                Equipment Loss Fee
+              </label>
               <input
                 className="font-pathway"
                 onChange={handleInputChange}
@@ -85,7 +87,14 @@ export default function ManageFeesModal({ show, onClose }) {
                 required
               />
             </div>
-            <div className="btn-container">
+            <div
+              className="btn-container"
+              style={{
+                display: 'flex',
+                gap: '10px',
+                marginTop: '15px',
+              }}
+            >
               <button className="font-pathway save-btn">Save</button>
               <button className="font-pathway cancel-btn" onClick={onClose}>
                 Cancel

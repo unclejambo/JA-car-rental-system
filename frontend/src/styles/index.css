@@ -249,7 +249,6 @@ table tbody tr {
 
 .save-btn {
   cursor: pointer;
-  margin-left: 45px;
   font-size: 24px;
   padding: 5px 20px;
   border: none;
@@ -275,6 +274,12 @@ table tbody tr {
   background-color: #e91b1b;
 }
 
+.save-btn,
+.cancel-btn {
+  flex: 1;
+  text-align: center;
+}
+
 /* Modal */
 .modal-overlay {
   position: fixed;
@@ -283,7 +288,7 @@ table tbody tr {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 1500;
 }
 .modal {
   background: #fff;

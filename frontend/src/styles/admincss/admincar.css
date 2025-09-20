@@ -83,9 +83,8 @@
 
 /* Tabs CSS */
 .btn-container {
-  margin-top: var(--space-md);
+  margin-top: 10px;
   display: flex;
-  gap: 150px;
 }
 
 .cars-container {

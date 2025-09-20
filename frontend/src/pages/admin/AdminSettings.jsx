@@ -127,7 +127,7 @@ export default function AdminReportAnalytics() {
           '@media (max-width: 1024px)': {
             ml: '0px',
           },
-          mt: { xs: '64px', sm: '64px', md: '56px', lg: '56px' }, // Adjust based on your header height
+          mt: { xs: '70px', sm: '70px', md: '56px', lg: '56px' }, // Adjust based on your header height
           height: '100%',
           overflow: 'hidden',
           display: 'flex',

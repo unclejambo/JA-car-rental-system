@@ -185,7 +185,14 @@ export default function AddCarModal({ show, onClose }) {
                 placeholder="Image URL"
               />
             </div>
-            <div className="btn-container">
+            <div
+              className="btn-container"
+              style={{
+                display: 'flex',
+                gap: '10px',
+                marginTop: '15px',
+              }}
+            >
               <button
                 type="submit"
                 className="font-pathway save-btn"

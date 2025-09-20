@@ -4,27 +4,16 @@ import { Box, Typography } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 import { HiCalendarDays, HiMagnifyingGlass } from 'react-icons/hi2';
 import ScheduleTable from '../../ui/components/table/ScheduleTable';
-import { useScheduleStore } from '../../store/schedule.js';
 import Loading from '../../ui/components/Loading';
 import ReleaseModal from '../../ui/components/modal/ReleaseModal.jsx';
 import ReturnModal from '../../ui/components/modal/ReturnModal.jsx';
 
 export default function AdminSchedulePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  // const [searchTerm, setSearchTerm] = useState('');
-  const reservations = useScheduleStore((state) => state.reservations);
+  const [schedule, setSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  console.log('AdminSchedulePage - Reservations:', reservations); // Debug log
-
-  // Filter data based on search term
-  // const filteredData = useMemo(() => {
-  //   if (!searchTerm.trim()) return reservations;
-  //   const term = searchTerm.toLowerCase();
-  //   return reservations.filter((item) =>
-  //     (item.customerName && item.customerName.toLowerCase().includes(term))
-  //   );
-  // }, [reservations, searchTerm]);
+  console.log('AdminSchedulePage - Schedule:', schedule); // Debug log
 
   const [showReleaseModal, setShowReleaseModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -40,54 +29,19 @@ export default function AdminSchedulePage() {
     setShowReturnModal(true);
   };
 
-  // const columns = useMemo(
-  //   () => scheduleColumns(handleReleaseClick, handleReturnClick),
-  //   [handleReleaseClick, handleReturnClick]
-  // );
-
-  // <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
-  //     <AdminSideBar
-  //       mobileOpen={mobileOpen}
-  //       onClose={() => setMobileOpen(false)}
-  //     />
-  // {showReleaseModal && (
-  //   <ReleaseModal
-  //     show={showReleaseModal}
-  //     onClose={() => setShowReleaseModal(false)}
-  //     reservation={selectedReservation}
-  //   />
-  // )}
-
-  // {showReturnModal && (
-  //   <ReturnModal
-  //     show={showReturnModal}
-  //     onClose={() => setShowReturnModal(false)}
-  //     reservation={selectedReservation}
-  //   />
-  // )}
-
-  // <div className="flex justify-between items-center mb-4">
-  //         <div className="relative">
-  //           <input
-  //             type="text"
-  //             placeholder="Search by name..."
-  //             className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-  //             value={searchTerm}
-  //             onChange={(e) => setSearchTerm(e.target.value)}
-  //           />
-  //           <HiMagnifyingGlass className="absolute left-3 top-3 text-gray-400" />
-  //         </div>
-  //       </div>
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Since we're using Zustand, the data is already in the store
-        // We'll just add a small delay to simulate network request
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        setLoading(false);
+        const res = await fetch('http://localhost:3001/schedules');
+        if (!res.ok) {
+          throw new Error(`Failed to fetch schedules: ${res.status} ${res.statusText}`);
+        }
+        const data = await res.json();
+        setSchedule(data);
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error fetching schedules:', error);
+        setSchedule([]); // fallback to empty list so UI can render
+      } finally {
         setLoading(false);
       }
     };
@@ -95,7 +49,7 @@ export default function AdminSchedulePage() {
     fetchData();
   }, []);
 
-  if (loading || !reservations) {
+  if (loading || schedule === null) {
     return (
       <Box sx={{ display: 'flex' }}>
         <Header onMenuClick={() => setMobileOpen(true)} />
@@ -212,7 +166,7 @@ export default function AdminSchedulePage() {
                 overflow: 'hidden',
               }}
             >
-              {reservations.length === 0 ? (
+              {(!schedule || schedule.length === 0) ? (
                 <Box
                   sx={{
                     display: 'flex',
@@ -221,15 +175,15 @@ export default function AdminSchedulePage() {
                     height: '50vh',
                   }}
                 >
-                  <Typography variant="h6">No reservations found</Typography>
+                  <Typography variant="h6">No schedule found</Typography>
                 </Box>
               ) : (
                 <>
                   <pre style={{ display: 'none' }}>
-                    {JSON.stringify(reservations, null, 2)}
+                    {JSON.stringify(schedule, null, 2)}
                   </pre>
                   <ScheduleTable
-                    rows={reservations}
+                    rows={schedule}
                     loading={loading}
                     onOpenRelease={handleReleaseClick}
                     onOpenReturn={handleReturnClick}

@@ -3,6 +3,7 @@ import cors from 'cors';
 import carRoutes from './routes/carRoutes.js';
 import customerRoutes from './routes/customerRoute.js';
 import bookingRoutes from './routes/bookingRoute.js';
+import scheduleRoutes from './routes/scheduleRoute.js'; // <--- added
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -20,6 +21,7 @@ app.get('/', (req, res) => {
 app.use('/cars', carRoutes);
 app.use('/customers', customerRoutes);
 app.use('/bookings', bookingRoutes);
+app.use('/schedules', scheduleRoutes); // <--- added
 
 
 // Error handling middleware

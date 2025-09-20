@@ -10,63 +10,144 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
 
   console.log('ScheduleTable - Rows:', rows); // Debug log
 
-  // Define columns that are common to all tabs
+  const formatDate = (iso) => {
+    if (!iso) return '';
+    // If the incoming value is an ISO datetime string, return only the date part (YYYY-MM-DD)
+    if (typeof iso === 'string' && iso.includes('T')) {
+      return iso.split('T')[0];
+    }
+    const d = new Date(iso);
+    if (isNaN(d)) return String(iso);
+    return d.toISOString().split('T')[0];
+  };
+
+  const formatTime = (iso) => {
+    if (!iso) return '';
+    // handle ISO datetime strings like "2025-08-21T23:28:18.025Z"
+    if (typeof iso === 'string' && iso.includes('T')) {
+      try {
+        const t = new Date(iso);
+        if (!isNaN(t)) {
+          // show only time in local HH:MM:SS (or HH:MM) format
+          return t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: undefined });
+        }
+      } catch (e) {
+        // fall through
+      }
+    }
+    const d = new Date(iso);
+    if (isNaN(d)) return String(iso);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: undefined });
+  };
+  // Normalize incoming rows so the DataGrid and renderCell logic can rely on consistent keys
+  const normalizedRows = Array.isArray(rows)
+    ? rows.map((r) => {
+        const resolvedId = r.reservationId ?? r.booking_id ?? r.id;
+        return {
+          // keep original data
+          ...r,
+          // ensure DataGrid has an `id`
+          id: resolvedId,
+          // id used by other logic
+          reservationId: resolvedId,
+          // status field used in render logic
+          status: r.status ?? r.booking_status,
+          // date fields expected by render logic
+          startDate: r.start_date ?? r.startDate,
+          endDate: r.end_date ?? r.endDate,
+          // pickup/dropoff location keys expected by columns
+          pickup_location: r.pickup_location ?? r.pickup_loc,
+          dropoff_location: r.dropoff_location ?? r.dropoff_loc,
+          // keep pickup/dropoff times if present
+          pickup_time: r.pickup_time ?? r.start_time,
+          dropoff_time: r.dropoff_time ?? r.end_time,
+        };
+      })
+    : [];
+
+  // Define columns that are common to all tabs (use normalized field names)
   const commonColumns = [
     {
-      field: 'customerName',
+      field: 'customer_name',
       headerName: 'Customer Name',
       flex: 1.5,
       minWidth: 120,
       editable: false,
     },
     {
-      field: 'startDate',
+      field: 'start_date',
       headerName: 'Start Date',
       flex: 1.5,
-      minWidth: 100,
+      minWidth: 140,
       editable: false,
+      renderCell: (params) => {
+        const iso = params?.row?.start_date ?? params?.row?.startDate ?? params?.value;
+        return <span>{formatDate(iso)}</span>;
+      },
     },
     {
-      field: 'pickupTime',
+      field: 'pickup_time',
       headerName: 'Pickup Time',
       flex: 1,
       minWidth: 90,
       editable: false,
+      renderCell: (params) => {
+        const iso = params?.row?.pickup_time ?? params?.value;
+        return <span>{formatTime(iso)}</span>;
+      },
     },
     {
-      field: 'pickupLocation',
+      field: 'pickup_location',
       headerName: 'Pickup Location',
       flex: 1,
       minWidth: 90,
       editable: false,
+      renderCell: (params) => (
+        <span>{params?.row?.pickup_location ?? params?.row?.pickup_loc ?? params?.value ?? ''}</span>
+      ),
     },
     {
-      field: 'endDate',
+      field: 'end_date',
       headerName: 'End Date',
       flex: 1,
-      minWidth: 100,
+      minWidth: 140,
       editable: false,
+      renderCell: (params) => {
+        const iso = params?.row?.end_date ?? params?.row?.endDate ?? params?.value;
+        return <span>{formatDate(iso)}</span>;
+      },
     },
     {
-      field: 'dropOffTime',
+      field: 'dropoff_time',
       headerName: 'Drop Off Time',
       flex: 1,
       minWidth: 90,
       editable: false,
+      renderCell: (params) => {
+        const iso = params?.row?.dropoff_time ?? params?.value;
+        return <span>{formatTime(iso)}</span>;
+      },
     },
     {
-      field: 'dropOffLocation',
+      field: 'dropoff_location',
       headerName: 'Drop Off Location',
       flex: 1,
       minWidth: 90,
       editable: false,
+      renderCell: (params) => (
+        <span>{params?.row?.dropoff_location ?? params?.row?.dropoff_loc ?? params?.value ?? ''}</span>
+      ),
     },
     {
-      field: 'selfDrive',
+      field: 'isSelfDriver',
       headerName: 'Self Drive',
       flex: 1,
       minWidth: 80,
       editable: false,
+      renderCell: (params) => {
+        const val = params?.row?.isSelfDriver ?? params?.value;
+        return <span>{val ? 'Yes' : 'No'}</span>;
+      },
     },
   ];
 
@@ -81,30 +162,33 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
     headerAlign: 'left',
     align: 'left',
     renderCell: (params) => {
+      // compare only date parts
       const today = new Date().toISOString().split('T')[0];
-      const startDate = params.row.startDate?.split('T')[0];
-      const endDate = params.row.endDate?.split('T')[0];
+      const startIso = params.row.start_date ?? params.row.startDate ?? '';
+      const endIso = params.row.end_date ?? params.row.endDate ?? '';
+      const startDate = startIso ? new Date(startIso).toISOString().split('T')[0] : null;
+      const endDate = endIso ? new Date(endIso).toISOString().split('T')[0] : null;
 
       const handleAction = async (actionType) => {
         try {
-          await updateReservationStatus(params.row.reservationId, actionType);
+          await updateReservationStatus(
+            params.row.reservationId ?? params.row.booking_id,
+            actionType
+          );
         } catch (error) {
           console.error('Error updating status:', error);
         }
       };
 
       // Show release button if today is start date and status is 'Confirmed'
-      // Change '2025-07-06' to today
-      if ('2025-07-06' === startDate && params.row.status === 'Confirmed') {
+      if (today === startDate && params.row.status === 'Confirmed') {
         return (
           <Button
             variant="contained"
             color="success"
             size="small"
             onClick={() =>
-              onOpenRelease
-                ? onOpenRelease(params.row)
-                : handleAction('Ongoing')
+              onOpenRelease ? onOpenRelease(params.row) : handleAction('Ongoing')
             }
             sx={{
               textTransform: 'none',
@@ -121,8 +205,7 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       }
 
       // Show return button if today is end date and status is 'Ongoing'
-      // Change '2025-08-13' to today
-      if ('2025-08-13' === endDate && params.row.status === 'Ongoing') {
+      if (today === endDate && params.row.status === 'Ongoing') {
         return (
           <Button
             variant="contained"
@@ -145,11 +228,11 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
         );
       }
 
-      // Default to showing status with button
+      // Default to showing status with optional GPS button
       return (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <span>{params.row.status || 'Pending'}</span>
-          {params.row.status === 'Ongoing' && (
+          <span>{params.row.status ?? params.row.booking_status ?? 'Pending'}</span>
+          {(params.row.status === 'Ongoing' || params.row.booking_status === 'Ongoing') && (
             <Button
               variant="contained"
               color="success"
@@ -214,9 +297,9 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       }}
     >
       <DataGrid
-        rows={Array.isArray(rows) ? rows : []}
+        rows={normalizedRows}
         columns={columns}
-        getRowId={(row) => row.reservationId}
+        getRowId={(row) => row.reservationId ?? row.booking_id ?? row.id}
         loading={loading}
         autoHeight
         hideFooterSelectedRowCount

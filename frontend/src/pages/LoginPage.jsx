@@ -6,16 +6,72 @@ import {
   EyeSlashIcon as EyeSlashSolid,
 } from '@heroicons/react/24/solid';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.js';
 
 function LoginPage() {
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleLogin = () => {
-    // Add your login logic here
-    // On successful login, navigate to the desired page
-    navigate('/'); // Navigate to the home page or dashboard after login
+  const API_BASE = 
+    import.meta.env.VITE_API_URL?.replace(/\/$/, '') || 'http://localhost:3001';
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    if (!identifier || !password) {
+      setError('Please enter both username/email and password');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          identifier,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.ok) {
+        // Use auth context login method
+        login(data.token, data.role, data.user);
+
+        // Role-based routing
+        switch (data.role) {
+          case 'admin':
+            navigate('/admindashboard');
+            break;
+          case 'customer':
+            navigate('/dashboard');
+            break;
+          case 'driver':
+            navigate('/driverdashboard');
+            break;
+          default:
+            navigate('/');
+        }
+      } else {
+        setError(data.message || 'Login failed');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -66,12 +122,25 @@ function LoginPage() {
           >
             LOGIN
           </h2>
+          {error && (
+            <div style={{
+              color: '#F13F3F',
+              fontSize: '14px',
+              marginBottom: '10px',
+              textAlign: 'center'
+            }}>
+              {error}
+            </div>
+          )}
           <input
             type="text"
-            id="username"
-            placeholder="Username"
+            id="identifier"
+            placeholder="Username or Email"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            disabled={isLoading}
             style={{
-              backgroundColor: '#D9D9D9',
+              backgroundColor: isLoading ? '#E5E5E5' : '#D9D9D9',
               fontFamily: '"Pathway Gothic One", sans-serif',
               fontSize: '18px',
               textAlign: 'center',
@@ -91,8 +160,9 @@ function LoginPage() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
               style={{
-                backgroundColor: '#D9D9D9',
+                backgroundColor: isLoading ? '#E5E5E5' : '#D9D9D9',
                 fontFamily: '"Pathway Gothic One", sans-serif',
                 fontSize: '18px',
                 textAlign: 'center',
@@ -135,8 +205,9 @@ function LoginPage() {
           <button
             id="login"
             onClick={handleLogin}
+            disabled={isLoading}
             style={{
-              backgroundColor: '#3F86F1',
+              backgroundColor: isLoading ? '#7BA3F5' : '#3F86F1',
               fontFamily: '"Pathway Gothic One", sans-serif',
               fontSize: '18px',
               border: 'none',
@@ -145,10 +216,11 @@ function LoginPage() {
               width: '320px',
               marginBottom: '10px',
               boxShadow: '0 2px 2px rgba(0, 0, 0, .7)',
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              color: 'white',
             }}
           >
-            Login
+            {isLoading ? 'Logging in...' : 'Login'}
           </button>
           <br />
           <a

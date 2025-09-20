@@ -12,12 +12,19 @@ import { HiDocumentCurrencyDollar } from 'react-icons/hi2';
 import { HiTruck } from 'react-icons/hi2';
 import { HiMiniSquaresPlus } from 'react-icons/hi2';
 import { HiArrowLeftStartOnRectangle } from 'react-icons/hi2';
+import { useAuth } from '../../hooks/useAuth.js';
 
 export default function AdminSideBar({
   mobileOpen = false,
   onClose = () => {},
 }) {
   const isMobile = useMediaQuery('(max-width: 1024px)');
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    onClose();
+    logout();
+  };
 
   const SidebarContent = (
     <div id="admin-sidebar" className="admin-sidebar" role="navigation">
@@ -67,10 +74,8 @@ export default function AdminSideBar({
         SETTINGS
       </NavLink>
       <hr />
-      <NavLink to="/login" onClick={onClose}>
-        <HiArrowLeftStartOnRectangle
-          style={{ verticalAlign: '-3px', marginRight: '5px' }}
-        />
+      <NavLink onClick={handleLogout}>
+        <HiArrowLeftStartOnRectangle style={{ verticalAlign: '-3px', marginRight: '5px' }}/>
         LOGOUT
       </NavLink>
     </div>

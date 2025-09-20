@@ -4,6 +4,7 @@ import carRoutes from './routes/carRoutes.js';
 import customerRoutes from './routes/customerRoute.js';
 import bookingRoutes from './routes/bookingRoute.js';
 import scheduleRoutes from './routes/scheduleRoute.js'; // <--- added
+import authRoutes from './routes/authRoutes.js'; // <--- added
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -11,6 +12,7 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // <--- added
 
 // Test route
 app.get('/', (req, res) => {
@@ -22,6 +24,7 @@ app.use('/cars', carRoutes);
 app.use('/customers', customerRoutes);
 app.use('/bookings', bookingRoutes);
 app.use('/schedules', scheduleRoutes); // <--- added
+app.use('/api/auth', authRoutes); // <--- added
 
 
 // Error handling middleware

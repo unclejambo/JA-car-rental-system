@@ -1,8 +1,6 @@
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
 import React, { useState, useEffect } from 'react';
-import { useCarStore } from '../../store/cars.js';
-import { useMaintenanceStore } from '../../store/maintenance.js';
 import AddCarModal from '../../ui/components/modal/AddCarModal.jsx';
 import EditCarModal from '../../ui/components/modal/EditCarModal.jsx';
 import { HiTruck, HiWrenchScrewdriver } from 'react-icons/hi2';
@@ -10,29 +8,41 @@ import { Box, Typography, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ManageCarsHeader from '../../ui/components/header/ManageCarsHeader.jsx';
 import ManageCarsTable from '../../ui/components/table/ManageCarsTable.jsx';
+import { useAuth } from '../../hooks/useAuth.js';
+import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
 
 export default function AdminCarPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { cars, init } = useCarStore();
+  const { logout } = useAuth();
+  const authenticatedFetch = createAuthenticatedFetch(logout);
+  const API_BASE = getApiBase();
 
-  // new UI state for the table fetch
-  const [rows, setRows] = useState([]);
+  // UI state for the table fetch
+  const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadCars = async () => {
+      setLoading(true);
       try {
-        await init();
+        const response = await authenticatedFetch(`${API_BASE}/api/cars`);
+        if (response.ok) {
+          const data = await response.json();
+          setCars(data || []);
+        } else {
+          setError('Failed to load cars');
+        }
       } catch (error) {
         console.error('Failed to load cars:', error);
+        setError('Failed to load cars');
+      } finally {
+        setLoading(false);
       }
     };
 
     loadCars();
-  }, [init]);
-  const carsData = useCarStore((state) => state.cars);
-  const maintenanceData = useMaintenanceStore((state) => state.maintenances);
+  }, [API_BASE, authenticatedFetch]);
 
   const [activeTab, setActiveTab] = useState('CARS');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -41,12 +51,20 @@ export default function AdminCarPage() {
   const openAddModal = () => setShowAddModal(true);
   const closeAddModal = () => setShowAddModal(false);
   const closeEditModal = () => setEditCar(null);
-  const { deleteCar } = useCarStore();
 
   const handleDelete = async (carId) => {
     if (window.confirm('Are you sure you want to delete this car?')) {
       try {
-        await deleteCar(carId);
+        const response = await authenticatedFetch(`${API_BASE}/api/cars/${carId}`, {
+          method: 'DELETE'
+        });
+        
+        if (response.ok) {
+          // Remove car from local state
+          setCars(cars.filter(car => car.car_id !== carId));
+        } else {
+          console.error('Failed to delete car');
+        }
       } catch (error) {
         console.error('Failed to delete car:', error);
       }
@@ -64,61 +82,36 @@ export default function AdminCarPage() {
     if (id != null) handleDelete(id);
   };
 
-  const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+  // Format data for the table
+  const formattedData = (cars || []).map((item) => {
+    const rawStatus = String(item.car_status ?? item.status ?? '').toLowerCase();
 
-  const fetchData = async () => {
-    setLoading(true);
-    setError(null);
+    const status =
+      rawStatus.includes('rent') || rawStatus === 'rented' || rawStatus === 'r'
+        ? 'Rented'
+        : rawStatus.includes('maint') || rawStatus.includes('maintenance') || rawStatus === 'm'
+          ? 'Maintenance'
+          : rawStatus.includes('avail') || rawStatus === 'available' || rawStatus === 'true' || rawStatus === '1' || item.is_available === true
+            ? 'Available'
+            : 'Available';
 
-    try {
-      const response = await fetch(`${API_BASE}/cars`, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      const formattedData = (data || []).map((item, idx) => {
-        const rawStatus = String(item.car_status ?? item.status ?? (item.status?.toString ? item.status.toString() : '')).toLowerCase();
-
-        const status =
-          rawStatus.includes('rent') || rawStatus === 'rented' || rawStatus === 'r'
-            ? 'Rented'
-            : rawStatus.includes('maint') || rawStatus.includes('maintenance') || rawStatus === 'm'
-              ? 'Maintenance'
-              : rawStatus.includes('avail') || rawStatus === 'available' || rawStatus === 'true' || rawStatus === '1' || item.is_available === true
-                ? 'Available'
-                : 'Available';
-
-        return {
-          id: item.car_id,
-          transactionId: item.car_id,
-          car_id: item.car_id,
-          make: item.make ?? '',
-          model: item.model ?? '',
-          type: item.type ?? item.car_status ?? '',
-          year: item.year ?? '',
-          mileage: item.mileage ?? '',
-          no_of_seat: item.no_of_seat ?? item.no_of_seat,
-          rent_price: item.rent_price ?? item.rent_price,
-          license_plate: item.license_plate ?? item.license_plate,
-          image: item.car_img_url ?? item.image ?? '',
-          status,
-          raw: item,
-        };
-      });
-      setRows(formattedData);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Failed to load data. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
+    return {
+      id: item.car_id,
+      transactionId: item.car_id,
+      car_id: item.car_id,
+      make: item.make ?? '',
+      model: item.model ?? '',
+      type: item.type ?? item.car_status ?? '',
+      year: item.year ?? '',
+      mileage: item.mileage ?? '',
+      no_of_seat: item.no_of_seat ?? item.no_of_seat,
+      rent_price: item.rent_price ?? item.rent_price,
+      license_plate: item.license_plate ?? item.license_plate,
+      image: item.car_img_url ?? item.image ?? '',
+      status,
+      raw: item,
+    };
+  });
 
 
 
@@ -249,12 +242,17 @@ export default function AdminCarPage() {
 
 
               <ManageCarsTable
-                rows={rows}
+                rows={formattedData}
                 loading={loading}
                 activeTab={activeTab}
                 onEdit={handleEditRow}
                 onDelete={handleDeleteRow}
               />
+              {error && (
+                <Box sx={{ p: 2, color: 'error.main' }}>
+                  {error}
+                </Box>
+              )}
 
 
             </Box>

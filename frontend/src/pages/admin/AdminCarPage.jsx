@@ -64,7 +64,9 @@ export default function AdminCarPage() {
     if (id != null) handleDelete(id);
   };
 
-  const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+  const API_BASE = (
+    import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  ).replace(/\/$/, '');
 
   const fetchData = async () => {
     setLoading(true);
@@ -79,14 +81,26 @@ export default function AdminCarPage() {
       }
       const data = await response.json();
       const formattedData = (data || []).map((item, idx) => {
-        const rawStatus = String(item.car_status ?? item.status ?? (item.status?.toString ? item.status.toString() : '')).toLowerCase();
+        const rawStatus = String(
+          item.car_status ??
+            item.status ??
+            (item.status?.toString ? item.status.toString() : '')
+        ).toLowerCase();
 
         const status =
-          rawStatus.includes('rent') || rawStatus === 'rented' || rawStatus === 'r'
+          rawStatus.includes('rent') ||
+          rawStatus === 'rented' ||
+          rawStatus === 'r'
             ? 'Rented'
-            : rawStatus.includes('maint') || rawStatus.includes('maintenance') || rawStatus === 'm'
+            : rawStatus.includes('maint') ||
+                rawStatus.includes('maintenance') ||
+                rawStatus === 'm'
               ? 'Maintenance'
-              : rawStatus.includes('avail') || rawStatus === 'available' || rawStatus === 'true' || rawStatus === '1' || item.is_available === true
+              : rawStatus.includes('avail') ||
+                  rawStatus === 'available' ||
+                  rawStatus === 'true' ||
+                  rawStatus === '1' ||
+                  item.is_available === true
                 ? 'Available'
                 : 'Available';
 
@@ -119,10 +133,6 @@ export default function AdminCarPage() {
   useEffect(() => {
     fetchData();
   }, []);
-
-
-
-
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -191,18 +201,19 @@ export default function AdminCarPage() {
                   fontSize: '1.8rem',
                   color: '#000',
                   '@media (max-width: 1024px)': {
-                    fontSize: '2rem',
+                    fontSize: '1.5rem',
                   },
                 }}
               >
-                {activeTab === 'CARS' ?
+                {activeTab === 'CARS' ? (
                   <HiTruck
                     style={{ verticalAlign: '-3px', marginRight: '5px' }}
-                  /> :
+                  />
+                ) : (
                   <HiWrenchScrewdriver
                     style={{ verticalAlign: '-3px', marginRight: '5px' }}
                   />
-                }
+                )}
 
                 {activeTab}
               </Typography>
@@ -246,8 +257,6 @@ export default function AdminCarPage() {
                 overflow: 'hidden',
               }}
             >
-
-
               <ManageCarsTable
                 rows={rows}
                 loading={loading}
@@ -255,8 +264,6 @@ export default function AdminCarPage() {
                 onEdit={handleEditRow}
                 onDelete={handleDeleteRow}
               />
-
-
             </Box>
           </Box>
         </Box>

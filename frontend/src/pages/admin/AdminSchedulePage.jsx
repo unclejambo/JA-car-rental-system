@@ -40,32 +40,6 @@ export default function AdminSchedulePage() {
     setShowReturnModal(true);
   };
 
-  // const columns = useMemo(
-  //   () => scheduleColumns(handleReleaseClick, handleReturnClick),
-  //   [handleReleaseClick, handleReturnClick]
-  // );
-
-  // <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
-  //     <AdminSideBar
-  //       mobileOpen={mobileOpen}
-  //       onClose={() => setMobileOpen(false)}
-  //     />
-  // {showReleaseModal && (
-  //   <ReleaseModal
-  //     show={showReleaseModal}
-  //     onClose={() => setShowReleaseModal(false)}
-  //     reservation={selectedReservation}
-  //   />
-  // )}
-
-  // {showReturnModal && (
-  //   <ReturnModal
-  //     show={showReturnModal}
-  //     onClose={() => setShowReturnModal(false)}
-  //     reservation={selectedReservation}
-  //   />
-  // )}
-
   // <div className="flex justify-between items-center mb-4">
   //         <div className="relative">
   //           <input
@@ -194,7 +168,7 @@ export default function AdminSchedulePage() {
                   fontSize: '1.8rem',
                   color: '#000',
                   '@media (max-width: 1024px)': {
-                    fontSize: '2rem',
+                    fontSize: '1.5rem',
                   },
                 }}
               >

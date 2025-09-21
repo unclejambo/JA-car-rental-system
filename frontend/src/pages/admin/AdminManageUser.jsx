@@ -178,7 +178,7 @@ export default function AdminManageUser() {
                   fontSize: '1.8rem',
                   color: '#000',
                   '@media (max-width: 1024px)': {
-                    fontSize: '2rem',
+                    fontSize: '1.5rem',
                   },
                 }}
               >

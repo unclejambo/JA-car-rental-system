@@ -7,6 +7,8 @@ import {
 } from '@heroicons/react/24/solid';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
+import { getApiBase } from '../utils/api.js';
+
 
 function LoginPage() {
   const [identifier, setIdentifier] = useState('');
@@ -17,8 +19,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const API_BASE = 
-    import.meta.env.VITE_API_URL?.replace(/\/$/, '') || 'http://localhost:3001';
+  const API_BASE = getApiBase();
 
   const handleLogin = async (e) => {
     e.preventDefault();

@@ -17,7 +17,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const API_BASE = 
+  const API_BASE =
     import.meta.env.VITE_API_URL?.replace(/\/$/, '') || 'http://localhost:3001';
 
   const handleLogin = async (e) => {
@@ -55,7 +55,7 @@ function LoginPage() {
             navigate('/admindashboard');
             break;
           case 'customer':
-            navigate('/dashboard');
+            navigate('/customer-dashboard');
             break;
           case 'driver':
             navigate('/driverdashboard');
@@ -78,7 +78,7 @@ function LoginPage() {
     <>
       <Header />
       <div
-        className="m-0 p-0 h-screen overflow-hidden"
+        className="m-0 p-0 h-screen overflow-auto"
         style={{
           backgroundImage: `url(${carImage})`,
           backgroundSize: 'cover',
@@ -94,9 +94,10 @@ function LoginPage() {
           style={{
             backgroundColor: '#f2f2f2',
             borderRadius: '5px',
-            padding: '20px',
+            padding: '0',
             width: '360px',
-            height: '390px',
+            minHeight: '390px', // default size
+            // grows automatically with content (e.g., error text)
             marginTop: '145px',
             placeContent: 'center',
             justifyItems: 'center',
@@ -123,12 +124,14 @@ function LoginPage() {
             LOGIN
           </h2>
           {error && (
-            <div style={{
-              color: '#F13F3F',
-              fontSize: '14px',
-              marginBottom: '10px',
-              textAlign: 'center'
-            }}>
+            <div
+              style={{
+                color: '#F13F3F',
+                fontSize: '14px',
+                marginBottom: '10px',
+                textAlign: 'center',
+              }}
+            >
               {error}
             </div>
           )}

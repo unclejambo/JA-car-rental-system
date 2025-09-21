@@ -44,27 +44,6 @@
     width: calc(100vw - 29vw);
     height: calc(100vh - 20.5vh);
   }
-
-  .admin-sidebar a {
-    text-decoration: none;
-    color: #000;
-    font-size: 14px;
-    padding-left: 10px;
-  }
-
-  .admin-sidebar a:hover {
-    text-decoration: none;
-    color: #797979;
-    font-size: 14px;
-    padding-left: 10px;
-  }
-
-  .admin-sidebar .active {
-    text-decoration: none;
-    color: #797979;
-    font-size: 14px;
-    padding-left: 10px;
-  }
 }
 
 @media (max-width: 300px) {
@@ -73,27 +52,6 @@
     left: 21vw;
     width: calc(100vw - 37vw);
     height: calc(100vh - 20.5vh);
-  }
-
-  .admin-sidebar a {
-    text-decoration: none;
-    color: #000;
-    font-size: 9px;
-    padding-left: 2px;
-  }
-
-  .admin-sidebar a:hover {
-    text-decoration: none;
-    color: #797979;
-    font-size: 9px;
-    padding-left: 2px;
-  }
-
-  .admin-sidebar .active {
-    text-decoration: none;
-    color: #797979;
-    font-size: 9px;
-    padding-left: 2px;
   }
 }
 

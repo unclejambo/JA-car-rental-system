@@ -3,18 +3,19 @@ import { NavLink } from 'react-router-dom';
 import Drawer from '@mui/material/Drawer';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import '../../styles/admincss/adminsidebar.css';
-import { HiCalendar } from 'react-icons/hi2';
-import { HiChartBar } from 'react-icons/hi2';
+import {
+  HiCalendar,
+  HiOutlineClipboardDocumentCheck,
+  HiOutlineUserCircle,
+} from 'react-icons/hi2';
 import { HiBookOpen } from 'react-icons/hi2';
-import { HiOutlineUserGroup } from 'react-icons/hi2';
 import { HiCog8Tooth } from 'react-icons/hi2';
-import { HiDocumentCurrencyDollar } from 'react-icons/hi2';
 import { HiTruck } from 'react-icons/hi2';
 import { HiMiniSquaresPlus } from 'react-icons/hi2';
 import { HiArrowLeftStartOnRectangle } from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth.js';
 
-export default function AdminSideBar({
+export default function CustomerSideBar({
   mobileOpen = false,
   onClose = () => {},
 }) {
@@ -27,53 +28,56 @@ export default function AdminSideBar({
   };
 
   const SidebarContent = (
-    <div id="admin-sidebar" className="admin-sidebar" role="navigation">
-      <NavLink to="/#" onClick={onClose}>
+    <div id="customer-sidebar" className="admin-sidebar" role="navigation">
+      <NavLink to="/customer-dashboard" onClick={onClose}>
         <HiMiniSquaresPlus
           style={{ verticalAlign: '-3px', marginRight: '5px' }}
         />
         DASHBOARD
       </NavLink>
+      <br />
       <hr />
-      <NavLink to="/manage-booking" onClick={onClose}>
-        <HiBookOpen style={{ verticalAlign: '-3px', marginRight: '5px' }} />
-        MANAGE BOOKINGS
-      </NavLink>
-      <hr />
-      <NavLink to="/manage-car" onClick={onClose}>
-        <HiTruck style={{ verticalAlign: '-3px', marginRight: '5px' }} />
-        MANAGE CARS
-      </NavLink>
-      <hr />
-      <NavLink to="/manage-user" onClick={onClose}>
-        <HiOutlineUserGroup
+      <NavLink to="/customer-profile" onClick={onClose}>
+        <HiOutlineUserCircle
           style={{ verticalAlign: '-3px', marginRight: '5px' }}
         />
-        MANAGE USERS
+        MY PROFILE
       </NavLink>
+      <br />
       <hr />
-      <NavLink to="/schedule" onClick={onClose}>
+      <NavLink to="/customer-bookings" onClick={onClose}>
+        <HiBookOpen style={{ verticalAlign: '-3px', marginRight: '5px' }} />
+        MY BOOKINGS
+      </NavLink>
+      <br />
+      <hr />
+      <NavLink to="/customer-history" onClick={onClose}>
+        <HiOutlineClipboardDocumentCheck
+          style={{ verticalAlign: '-3px', marginRight: '5px' }}
+        />
+        BOOKING HISTORY
+      </NavLink>
+      <br />
+      <hr />
+      <NavLink to="/customer-cars" onClick={onClose}>
+        <HiTruck style={{ verticalAlign: '-3px', marginRight: '5px' }} />
+        CARS
+      </NavLink>
+      <br />
+      <hr />
+      <NavLink to="/customer-schedule" onClick={onClose}>
         <HiCalendar style={{ verticalAlign: '-3px', marginRight: '5px' }} />
         SCHEDULE
       </NavLink>
+      <br />
       <hr />
-      <NavLink to="/transaction-logs" onClick={onClose}>
-        <HiDocumentCurrencyDollar
-          style={{ verticalAlign: '-3px', marginRight: '5px' }}
-        />
-        TRANSACTION LOGS
-      </NavLink>
-      <hr />
-      <NavLink to="/report-analytics" onClick={onClose}>
-        <HiChartBar style={{ verticalAlign: '-3px', marginRight: '5px' }} />
-        REPORT & ANALYTICS
-      </NavLink>
-      <hr />
-      <NavLink to="/settings" onClick={onClose}>
+      <NavLink to="/customer-account" onClick={onClose}>
         <HiCog8Tooth style={{ verticalAlign: '-3px', marginRight: '5px' }} />
-        SETTINGS
+        ACCOUNT SETTINGS
       </NavLink>
+      <br />
       <hr />
+
       <NavLink onClick={handleLogout}>
         <HiArrowLeftStartOnRectangle
           style={{ verticalAlign: '-3px', marginRight: '5px' }}

@@ -5,16 +5,26 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "start": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@amcharts/amcharts5": "^5.13.6",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@heroicons/react": "^2.2.0",
+    "@mui/icons-material": "^7.3.2",
+    "@mui/material": "^7.3.2",
+    "@mui/styles": "^6.5.0",
+    "@mui/x-data-grid": "^8.11.2",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-table-devtools": "^8.21.3",
+    "axios": "^1.11.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-icons": "^5.5.0",
     "react-router-dom": "^7.6.3",
     "table-js": "^9.2.0",
     "zustand": "^5.0.6"
@@ -22,6 +32,7 @@
   "devDependencies": {
     "@eslint/js": "^9.29.0",
     "@tailwindcss/postcss": "^4.1.11",
+    "@tailwindcss/vite": "^4.1.12",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.5.2",
@@ -31,7 +42,8 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.2.0",
     "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.11",
+    "prettier": "^3.6.2",
+    "tailwindcss": "^4.1.12",
     "vite": "^7.0.0"
   }
 }

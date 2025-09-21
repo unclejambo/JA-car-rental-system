@@ -1,0 +1,123 @@
+/* Add a subtle backdrop blur so the background image is blurred behind the card.
+   Use a translucent card background so the blur is visible. */
+.register-card {
+  max-width: 520px !important;
+  width: 100% !important;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 22px !important;
+  border-radius: 12px !important;
+
+  /* New blur + translucent background */
+  background: rgba(255, 255, 255, 0.78) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+
+  /* keep shadow and border for contrast */
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.35);
+}
+
+/* Form card sizing and centered layout */
+.register-card,
+.register-card * { box-sizing: border-box; }
+
+/* Ensure inputs are constrained and properly aligned */
+.register-card .register-form input,
+.register-card .register-form textarea,
+.register-card .register-form select {
+  width: 100% !important;
+  max-width: 100%;
+  display: block;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #f3f4f6;
+  color: #111827;
+  margin: 0;
+}
+
+/* ------------ Added: don't force checkbox to be full width ------------ */
+.register-card .register-form input[type="checkbox"] {
+  width: auto !important;
+  height: auto !important;
+  display: inline-block !important;
+  margin: 4px 10px 0 0 !important;
+  vertical-align: middle !important;
+  transform: none !important;
+  box-sizing: content-box !important;
+}
+
+/* Keep the checkbox+label row layout intact */
+.register-card .register-form .flex.items-start {
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* File upload label and buttons properly aligned */
+.register-card .register-form label[for="licenseUpload"],
+.register-card .register-form .flex.items-center > label {
+  width: 100%;
+  display: block;
+}
+
+/* Two-column name row: keep side-by-side on desktop, stacked on mobile */
+.register-card .two-col {
+  gap: 12px;
+  align-items: stretch;
+}
+.register-card .two-col > .w-full {
+  flex: 1 1 0%;
+}
+.register-card .two-col input {
+  max-width: 100% !important;
+}
+
+/* Submit button properly aligned */
+.register-card .register-form button[type="submit"] {
+  width: 100%;
+  padding: 12px;
+  border-radius: 6px;
+  margin: 0;
+}
+
+/* Small adjustments for headings and spacing */
+.register-card h1 {
+  margin-bottom: 8px;
+  letter-spacing: 0.6px;
+}
+
+/* Responsive: on small screens let inputs be full width (edge to edge of card) */
+@media (max-width: 640px) {
+  .register-card {
+    margin: 12px;
+    padding: 18px !important;
+    max-width: calc(100% - 24px);
+    background: rgba(255,255,255,0.88) !important;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+  .register-card .register-form input,
+  .register-card .register-form textarea,
+  .register-card .register-form select,
+  .register-card .register-form button[type="submit"],
+  .register-card .register-form label[for="licenseUpload"] {
+    max-width: 100%;
+    width: 100%;
+  }
+  .register-card .two-col { 
+    flex-direction: column; 
+  }
+  .register-card .two-col input {
+    max-width: 100% !important;
+  }
+}
+
+/* Accessibility focus */
+.register-card .register-form input:focus,
+.register-card .register-form textarea:focus,
+.register-card .register-form select:focus,
+.register-card .register-form button:focus {
+  outline: 2px solid rgba(59,130,246,0.3);
+  outline-offset: 2px;
+}

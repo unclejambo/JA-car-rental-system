@@ -1,0 +1,120 @@
+.page-content-booking {
+  margin-top: 115px;
+  margin-left: 25vw;
+  margin-right: 1vw;
+  width: calc(100vw - 17vw);
+  height: calc(100vh - 22vh);
+  padding: var(--space-sm);
+  background: var(--background-dark);
+  box-shadow: 0 0 3px var(--text-primary);
+}
+
+.req-div {
+  display: flex;
+  gap: var(--space-md);
+  margin-left: 16vw;
+  margin-right: 1vw;
+}
+
+.page-content-req {
+  flex: 1;
+  width: auto;
+  height: calc(100vh - 60vh);
+  padding: var(--space-md);
+  background: var(--background-dark);
+  box-shadow: 0 0 3px var(--text-primary);
+}
+
+.requests-container {
+  display: inline-flex;
+  margin-top: 80px;
+  margin-left: 19.7vw;
+  gap: 1px;
+}
+
+.requests-container button {
+  font-family: var(--font-secondary);
+  font-size: var(--fs-xl);
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  background-color: var(--border-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.requests-container button:hover {
+  background-color: #c9c9c9; /* A slightly darker shade for hover */
+}
+
+.requests-container button.active {
+  background-color: var(--secondary-color);
+  color: var(--text-secondary);
+  font-weight: bold;
+  cursor: default;
+}
+
+.manage-fees-btn {
+  font-family: var(--font-secondary);
+  font-size: var(--fs-lg);
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-radius: 20px;
+  background-color: var(--primary-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  position: fixed;
+  overflow: hidden;
+  right: var(--space-sm);
+  top: 75px;
+}
+
+.manage-fees-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Mobile-first responsive layout for Booking page */
+@media (max-width: 1024px) {
+  .page-content-booking {
+    position: static;
+    margin: 90px var(--space-md) var(--space-md);
+    width: 100% !important;
+    height: auto;
+    padding: var(--space-md);
+    box-sizing: border-box;
+  }
+
+  .req-div {
+    flex-direction: column;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .page-content-req {
+    width: 100% !important;
+    height: auto;
+    box-sizing: border-box;
+  }
+
+  .requests-container {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 0 var(--space-sm) 0;
+    gap: var(--space-sm);
+  }
+
+  .requests-container button {
+    font-size: var(--fs-lg);
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .manage-fees-btn {
+    position: static;
+    right: auto;
+    top: auto;
+    margin: var(--space-sm) 0;
+    font-size: var(--fs-lg);
+  }
+}

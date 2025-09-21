@@ -1,0 +1,66 @@
+/* Styles for Admin Schedule Page */
+
+.page-content {
+  position: fixed;
+  margin-top: 115px;
+  margin-left: 15.7vw;
+  margin-right: 1vw;
+  width: calc(100vw - 17vw);
+  height: calc(100vh - 22vh);
+  padding: var(--space-sm);
+  background: var(--background-dark);
+  box-shadow: 0 0 3px var(--text-primary);
+}
+
+/* Search bar area */
+.page-content .flex {
+  display: flex;
+}
+
+.page-content .justify-between {
+  justify-content: space-between;
+}
+
+.page-content .items-center {
+  align-items: center;
+}
+
+/* Table wrapper override to ensure spacing aligns with other admin pages */
+.admin-table-wrapper {
+  margin-left: 19.1vw;
+  background: var(--background-light);
+  border-radius: var(--space-xs);
+  padding: var(--space-sm);
+}
+
+/* Pagination button baseline for consistency */
+.pagination-btn {
+  font-family: var(--font-secondary);
+  font-size: var(--fs-base);
+  padding: var(--space-xs) var(--space-md);
+  border: none;
+  background-color: var(--border-color);
+  cursor: pointer;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Mobile-first responsive layout for Schedule page */
+@media (max-width: 1024px) {
+  .page-content {
+    position: static;
+    margin: 90px var(--space-md) var(--space-md);
+    width: 100% !important;
+    height: auto;
+    padding: var(--space-md);
+    box-sizing: border-box;
+  }
+
+  .page-content .flex {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+}

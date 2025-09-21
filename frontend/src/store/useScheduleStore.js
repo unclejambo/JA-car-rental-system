@@ -1,16 +1,14 @@
 import { create } from "zustand";
 
-// Global schedule store – holds reservation records used by AdminSchedulePage.
-// You can later load real data from your backend and call setReservations().
-
 export const useScheduleStore = create((set) => ({
   reservations: [
+    // FOR TESTING SA FRONT END NI... WILL REPLACE WITH ACTUAL DATABASE... SEE PRISMA SCHEMA (../prisma/schema.prisma) or run npx prisma studio sud sa backend
     {
       reservationId: 1,
       carPlate: "ABC-1234",
       customerName: "Juan Dela Cruz",
-      pickupDate: "2025-07-06T08:00:00Z",
-      returnDate: "2025-07-07T17:00:00Z",
+      pickupDate: "2025-07-6T08:00:00Z",
+      returnDate: "2025-07-7T17:00:00Z",
       status: "Confirmed",
     },
     {
@@ -25,8 +23,8 @@ export const useScheduleStore = create((set) => ({
       reservationId: 3,
       carPlate: "LAD-1234",
       customerName: "Juan Dela Cruz",
-      pickupDate: "2025-07-02T08:00:00Z",
-      returnDate: "2025-07-03T17:00:00Z",
+      pickupDate: "2025-07-2T08:00:00Z",
+      returnDate: "2025-07-3T17:00:00Z",
       status: "Done",
     },
     {
@@ -51,38 +49,6 @@ export const useScheduleStore = create((set) => ({
       customerName: "Elijah Go",
       pickupDate: "2025-09-10T08:00:00Z",
       returnDate: "2025-010-13T17:00:00Z",
-      status: "Confirmed",
-    },
-    {
-      reservationId: 7,
-      carPlate: "ABC-4321",
-      customerName: "John Goy",
-      pickupDate: "2025-09-10T08:00:00Z",
-      returnDate: "2025-010-13T17:00:00Z",
-      status: "Confirmed",
-    },
-    {
-      reservationId: 8,
-      carPlate: "GBC-4322",
-      customerName: "Fein Geer",
-      pickupDate: "2025-010-10T08:00:00Z",
-      returnDate: "2025-010-13T17:00:00Z",
-      status: "Confirmed",
-    },
-    {
-      reservationId: 9,
-      carPlate: "GBC-4322",
-      customerName: "Fein Geer",
-      pickupDate: "2025-010-15T08:00:00Z",
-      returnDate: "2025-010-18T17:00:00Z",
-      status: "Confirmed",
-    },
-    {
-      reservationId: 10,
-      carPlate: "GBC-4322",
-      customerName: "Fein Geer",
-      pickupDate: "2025-010-21T08:00:00Z",
-      returnDate: "2025-010-23T17:00:00Z",
       status: "Confirmed",
     },
   ],

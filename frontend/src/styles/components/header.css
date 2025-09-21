@@ -1,0 +1,72 @@
+/* --- Header Component Styles --- */
+
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4.375rem; /* 70px */
+  background-color: #000;
+  z-index: 10;
+  display: flex;
+  overflow: hidden;
+}
+
+.header-content {
+  padding: 0 1rem; /* 16px */
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 0.5rem; /* 8px */
+}
+
+.menu-button {
+  background: transparent;
+  border: none;
+  color: #fff;
+  height: 3rem; /* 48px */
+  width: 3rem;  /* 48px */
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-button:disabled {
+  cursor: default;
+}
+
+.menu-button:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.logo-link {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.logo-main-text {
+  font-family: "Merriweather", serif;
+  font-size: 1.875rem; /* 30px */
+  color: #ff0000;
+  font-style: italic;
+  font-weight: bolder;
+  text-shadow: 0.125rem 0.125rem 0 rgba(255, 255, 255, 0.85);
+  line-height: 1;
+}
+
+.logo-sub-text {
+  font-family: "Merriweather", serif;
+  font-size: 1.125rem; /* 18px */
+  color: #ff0000;
+  font-style: italic;
+  font-weight: bolder;
+  text-shadow: 0.125rem 0.125rem 0 rgba(255, 255, 255, 0.85);
+  line-height: 1;
+  margin-top: -0.25rem; /* -4px */
+}

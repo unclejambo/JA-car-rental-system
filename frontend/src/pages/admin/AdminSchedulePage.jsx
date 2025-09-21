@@ -7,6 +7,7 @@ import ScheduleTable from '../../ui/components/table/ScheduleTable';
 import Loading from '../../ui/components/Loading';
 import ReleaseModal from '../../ui/components/modal/ReleaseModal.jsx';
 import ReturnModal from '../../ui/components/modal/ReturnModal.jsx';
+import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 
 export default function AdminSchedulePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -31,8 +32,16 @@ export default function AdminSchedulePage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
+      const authFetch = createAuthenticatedFetch(() => {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+      });
+      const API_BASE = getApiBase().replace(/\/$/, '');
       try {
-        const res = await fetch('http://localhost:3001/schedules');
+        const res = await authFetch(`${API_BASE}/schedules`, {
+          headers: { Accept: 'application/json' },
+        });
         if (!res.ok) {
           throw new Error(`Failed to fetch schedules: ${res.status} ${res.statusText}`);
         }

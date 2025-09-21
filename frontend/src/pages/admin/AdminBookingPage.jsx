@@ -7,6 +7,7 @@ import ManageBookingsTable from '../../ui/components/table/ManageBookingsTable';
 import ManageBookingsHeader from '../../ui/components/header/ManageBookingsHeader';
 import { HiBookOpen, HiCurrencyDollar } from 'react-icons/hi2';
 import ManageFeesModal from '../../ui/components/modal/ManageFeesModal';
+import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 
 export default function AdminBookingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -22,10 +23,14 @@ export default function AdminBookingPage() {
   useEffect(() => {
     setLoading(true);
 
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-    const bookingsUrl = `${API_BASE.replace(/\/$/, '')}/bookings`;
+    const authFetch = createAuthenticatedFetch(() => {
+      localStorage.removeItem('authToken');
+      window.location.href = '/login';
+    });
+    const API_BASE = getApiBase().replace(/\/$/, '');
+    const bookingsUrl = `${API_BASE}/bookings`;
 
-    fetch(bookingsUrl, { headers: { Accept: 'application/json' } })
+    authFetch(bookingsUrl, { headers: { Accept: 'application/json' } })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

@@ -9,6 +9,7 @@ import Loading from '../../ui/components/Loading';
 import AddStaffModal from '../../ui/components/modal/AddStaffModal';
 import AddDriverModal from '../../ui/components/modal/AddDriverModal';
 import { HiOutlineUserGroup } from 'react-icons/hi2';
+import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 
 export default function AdminManageUser() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -26,14 +27,20 @@ export default function AdminManageUser() {
   const openAddDriverModal = () => setShowAddDriverModal(true);
   const closeAddDriverModal = () => setShowAddDriverModal(false);
 
-  // use Vite env var, fallback to localhost; remove trailing slash if present
-  const API_BASE = import.meta.env.VITE_API_URL.replace(/\/$/, '');
+  // create auth-aware fetch and API base
+  const authFetch = createAuthenticatedFetch(() => {
+    localStorage.removeItem('authToken');
+    window.location.href = '/login';
+  });
+  const API_BASE = getApiBase().replace(/\/$/, '');
 
   const fetchData = async () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/customers`);
+      const response = await authFetch(`${API_BASE}/customers`, {
+        headers: { Accept: 'application/json' },
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -61,6 +68,7 @@ export default function AdminManageUser() {
     }
   };
 
+  // Ensure we call fetchData on mount so setLoading shows the Loading UI while fetching
   useEffect(() => {
     fetchData();
   }, []);

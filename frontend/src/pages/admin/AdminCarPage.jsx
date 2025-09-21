@@ -19,14 +19,12 @@ export default function AdminCarPage() {
 
   // UI state for the table fetch
   const [cars, setCars] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadCars = async () => {
-      setLoading(true);
       try {
-        const response = await authenticatedFetch(`${API_BASE}/api/cars`);
+        const response = await authenticatedFetch(`${API_BASE}/cars`);
         if (response.ok) {
           const data = await response.json();
           setCars(data || []);
@@ -36,8 +34,6 @@ export default function AdminCarPage() {
       } catch (error) {
         console.error('Failed to load cars:', error);
         setError('Failed to load cars');
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -112,9 +108,6 @@ export default function AdminCarPage() {
       raw: item,
     };
   });
-
-
-
 
 
   return (
@@ -243,7 +236,6 @@ export default function AdminCarPage() {
 
               <ManageCarsTable
                 rows={formattedData}
-                loading={loading}
                 activeTab={activeTab}
                 onEdit={handleEditRow}
                 onDelete={handleDeleteRow}

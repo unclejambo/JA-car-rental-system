@@ -3,7 +3,9 @@ import { Box, IconButton } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-const ManageCarsTable = ({ activeTab, rows, loading, onEdit, onDelete }) => {
+const NullLoadingOverlay = () => null;
+
+const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
   const commonColumns = [
     {
       field: 'model',
@@ -228,7 +230,9 @@ const ManageCarsTable = ({ activeTab, rows, loading, onEdit, onDelete }) => {
         rows={rows}
         columns={columns.filter((col) => !col.hide)}
         getRowId={(row) => row.transactionId}
-        loading={loading}
+        // loading={loading}
+        components={{ LoadingOverlay: NullLoadingOverlay }}
+        componentsProps={{ loadingOverlay: { sx: { display: 'none !important' } } }}
         autoHeight={false}
         hideFooterSelectedRowCount
         disableColumnMenu

@@ -22,6 +22,47 @@ import {
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
 
+// Philippine phone number formatting function
+const formatPhoneNumber = (value) => {
+  // Remove all non-numeric characters
+  const numbers = value.replace(/\D/g, '');
+
+  // Handle different input scenarios
+  if (numbers.length === 0) return '';
+
+  // If starts with 63, format as +63 9XX XXX XXXX
+  if (numbers.startsWith('63')) {
+    const withoutCountryCode = numbers.slice(2);
+    if (withoutCountryCode.length <= 3) {
+      return `+63 ${withoutCountryCode}`;
+    } else if (withoutCountryCode.length <= 6) {
+      return `+63 ${withoutCountryCode.slice(0, 3)} ${withoutCountryCode.slice(3)}`;
+    } else {
+      return `+63 ${withoutCountryCode.slice(0, 3)} ${withoutCountryCode.slice(3, 6)} ${withoutCountryCode.slice(6, 10)}`;
+    }
+  }
+
+  // If starts with 9 (mobile number), format as +63 9XX XXX XXXX
+  if (numbers.startsWith('9')) {
+    if (numbers.length <= 3) {
+      return `+63 ${numbers}`;
+    } else if (numbers.length <= 6) {
+      return `+63 ${numbers.slice(0, 3)} ${numbers.slice(3)}`;
+    } else {
+      return `+63 ${numbers.slice(0, 3)} ${numbers.slice(3, 6)} ${numbers.slice(6, 10)}`;
+    }
+  }
+
+  // For other numbers, just format with +63 prefix
+  if (numbers.length <= 3) {
+    return `+63 ${numbers}`;
+  } else if (numbers.length <= 6) {
+    return `+63 ${numbers.slice(0, 3)} ${numbers.slice(3)}`;
+  } else {
+    return `+63 ${numbers.slice(0, 3)} ${numbers.slice(3, 6)} ${numbers.slice(6, 10)}`;
+  }
+};
+
 export default function RegisterPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -50,9 +91,16 @@ export default function RegisterPage() {
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
+    let processedValue = type === 'checkbox' ? checked : value;
+
+    // Apply phone number formatting for contactNumber field
+    if (name === 'contactNumber' && type !== 'checkbox') {
+      processedValue = formatPhoneNumber(value);
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: processedValue,
     }));
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
@@ -220,7 +268,7 @@ export default function RegisterPage() {
               CREATE A NEW ACCOUNT
             </Typography>
             <Box component="form" noValidate onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
+              <Grid container spacing={1.5} sx={{ width: '100%' }}>
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
@@ -322,9 +370,10 @@ export default function RegisterPage() {
                     name="contactNumber"
                     value={formData.contactNumber}
                     onChange={onChange}
-                    placeholder="Enter your contact number"
+                    placeholder="Enter your contact number (e.g., 09XX XXX XXXX)"
                     error={!!errors.contactNumber}
                     helperText={errors.contactNumber}
+                    inputMode="numeric"
                     required
                   />
                 </Grid>
@@ -467,13 +516,19 @@ export default function RegisterPage() {
                   </Grid>
                 )}
 
-                <Grid item xs={12}>
+                <Grid item xs={12} sm={12}>
                   <Button
                     type="submit"
                     variant="contained"
                     color="success"
                     fullWidth
                     disabled={loading}
+                    sx={{
+                      py: 1.5,
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      mt: 1,
+                    }}
                   >
                     {loading ? 'Registering...' : 'Register'}
                   </Button>

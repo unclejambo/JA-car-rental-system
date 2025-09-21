@@ -29,7 +29,11 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
         const t = new Date(iso);
         if (!isNaN(t)) {
           // show only time in local HH:MM:SS (or HH:MM) format
-          return t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: undefined });
+          return t.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: undefined,
+          });
         }
       } catch (e) {
         // fall through
@@ -37,7 +41,11 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
     }
     const d = new Date(iso);
     if (isNaN(d)) return String(iso);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: undefined });
+    return d.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: undefined,
+    });
   };
   // Normalize incoming rows so the DataGrid and renderCell logic can rely on consistent keys
   const normalizedRows = Array.isArray(rows)
@@ -81,7 +89,8 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       minWidth: 140,
       editable: false,
       renderCell: (params) => {
-        const iso = params?.row?.start_date ?? params?.row?.startDate ?? params?.value;
+        const iso =
+          params?.row?.start_date ?? params?.row?.startDate ?? params?.value;
         return <span>{formatDate(iso)}</span>;
       },
     },
@@ -103,7 +112,12 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       minWidth: 90,
       editable: false,
       renderCell: (params) => (
-        <span>{params?.row?.pickup_location ?? params?.row?.pickup_loc ?? params?.value ?? ''}</span>
+        <span>
+          {params?.row?.pickup_location ??
+            params?.row?.pickup_loc ??
+            params?.value ??
+            ''}
+        </span>
       ),
     },
     {
@@ -113,7 +127,8 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       minWidth: 140,
       editable: false,
       renderCell: (params) => {
-        const iso = params?.row?.end_date ?? params?.row?.endDate ?? params?.value;
+        const iso =
+          params?.row?.end_date ?? params?.row?.endDate ?? params?.value;
         return <span>{formatDate(iso)}</span>;
       },
     },
@@ -135,7 +150,12 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       minWidth: 90,
       editable: false,
       renderCell: (params) => (
-        <span>{params?.row?.dropoff_location ?? params?.row?.dropoff_loc ?? params?.value ?? ''}</span>
+        <span>
+          {params?.row?.dropoff_location ??
+            params?.row?.dropoff_loc ??
+            params?.value ??
+            ''}
+        </span>
       ),
     },
     {
@@ -166,8 +186,12 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       const today = new Date().toISOString().split('T')[0];
       const startIso = params.row.start_date ?? params.row.startDate ?? '';
       const endIso = params.row.end_date ?? params.row.endDate ?? '';
-      const startDate = startIso ? new Date(startIso).toISOString().split('T')[0] : null;
-      const endDate = endIso ? new Date(endIso).toISOString().split('T')[0] : null;
+      const startDate = startIso
+        ? new Date(startIso).toISOString().split('T')[0]
+        : null;
+      const endDate = endIso
+        ? new Date(endIso).toISOString().split('T')[0]
+        : null;
 
       const handleAction = async (actionType) => {
         try {
@@ -188,7 +212,9 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
             color="success"
             size="small"
             onClick={() =>
-              onOpenRelease ? onOpenRelease(params.row) : handleAction('Ongoing')
+              onOpenRelease
+                ? onOpenRelease(params.row)
+                : handleAction('Ongoing')
             }
             sx={{
               textTransform: 'none',
@@ -231,8 +257,12 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       // Default to showing status with optional GPS button
       return (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <span>{params.row.status ?? params.row.booking_status ?? 'Pending'}</span>
-          {(params.row.status === 'Ongoing' || params.row.booking_status === 'Ongoing') && (
+          <span>
+            {params.row.status ?? params.row.booking_status ?? 'Pending'}
+          </span>
+          {/* change 'In Progress' to 'Ongoing' */}
+          {(params.row.status === 'In Progress' ||
+            params.row.booking_status === 'In Progress') && (
             <Button
               variant="contained"
               color="success"

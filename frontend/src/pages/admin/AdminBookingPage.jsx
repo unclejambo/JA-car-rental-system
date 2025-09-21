@@ -22,8 +22,12 @@ export default function AdminBookingPage() {
   useEffect(() => {
     setLoading(true);
 
-    const API_BASE = import.meta.env.VITE_API_URL;
-    const bookingsUrl = `${API_BASE.replace(/\/$/, '')}/bookings`;
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const cleanApiBase =
+      typeof API_BASE === 'string'
+        ? API_BASE.replace(/\/$/, '')
+        : 'http://localhost:5000';
+    const bookingsUrl = `${cleanApiBase}/bookings`;
 
     fetch(bookingsUrl, { headers: { Accept: 'application/json' } })
       .then((response) => {

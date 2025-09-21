@@ -110,6 +110,7 @@ export default function AdminCarPage() {
   });
 
 
+
   return (
     <Box sx={{ display: 'flex' }}>
       <title>Car Management</title>
@@ -177,18 +178,19 @@ export default function AdminCarPage() {
                   fontSize: '1.8rem',
                   color: '#000',
                   '@media (max-width: 1024px)': {
-                    fontSize: '2rem',
+                    fontSize: '1.5rem',
                   },
                 }}
               >
-                {activeTab === 'CARS' ?
+                {activeTab === 'CARS' ? (
                   <HiTruck
                     style={{ verticalAlign: '-3px', marginRight: '5px' }}
-                  /> :
+                  />
+                ) : (
                   <HiWrenchScrewdriver
                     style={{ verticalAlign: '-3px', marginRight: '5px' }}
                   />
-                }
+                )}
 
                 {activeTab}
               </Typography>
@@ -232,8 +234,6 @@ export default function AdminCarPage() {
                 overflow: 'hidden',
               }}
             >
-
-
               <ManageCarsTable
                 rows={formattedData}
                 activeTab={activeTab}
@@ -245,6 +245,7 @@ export default function AdminCarPage() {
                   {error}
                 </Box>
               )}
+
 
 
             </Box>

@@ -6,25 +6,67 @@ import { useNavigate } from "react-router-dom";
 import "../styles/register.css";
 import SuccessModal from '../ui/components/modal/SuccessModal.jsx';
 
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_FILE_TYPES = ["image/png", "image/jpeg", "image/jpg"];
+const ALLOWED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
+
+// Philippine phone number formatting function
+const formatPhoneNumber = (value) => {
+  // Remove all non-numeric characters
+  const numbers = value.replace(/\D/g, '');
+
+  // Handle different input scenarios
+  if (numbers.length === 0) return '';
+
+  // If starts with 63, format as +63 9XX XXX XXXX
+  if (numbers.startsWith('63')) {
+    const withoutCountryCode = numbers.slice(2);
+    if (withoutCountryCode.length <= 3) {
+      return `+63 ${withoutCountryCode}`;
+    } else if (withoutCountryCode.length <= 6) {
+      return `+63 ${withoutCountryCode.slice(0, 3)} ${withoutCountryCode.slice(3)}`;
+    } else {
+      return `+63 ${withoutCountryCode.slice(0, 3)} ${withoutCountryCode.slice(3, 6)} ${withoutCountryCode.slice(6, 10)}`;
+    }
+  }
+
+  // If starts with 9 (mobile number), format as +63 9XX XXX XXXX
+  if (numbers.startsWith('9')) {
+    if (numbers.length <= 3) {
+      return `+63 ${numbers}`;
+    } else if (numbers.length <= 6) {
+      return `+63 ${numbers.slice(0, 3)} ${numbers.slice(3)}`;
+    } else {
+      return `+63 ${numbers.slice(0, 3)} ${numbers.slice(3, 6)} ${numbers.slice(6, 10)}`;
+    }
+  }
+
+  // For other numbers, just format with +63 prefix
+  if (numbers.length <= 3) {
+    return `+63 ${numbers}`;
+  } else if (numbers.length <= 6) {
+    return `+63 ${numbers.slice(0, 3)} ${numbers.slice(3)}`;
+  } else {
+    return `+63 ${numbers.slice(0, 3)} ${numbers.slice(3, 6)} ${numbers.slice(6, 10)}`;
+  }
+};
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
-    email: "",
-    username: "",
-    password: "",
-    confirmPassword: "",
-    firstName: "",
-    lastName: "",
-    address: "",
-    contactNumber: "",
-    licenseNumber: "",
-    licenseExpiry: "",
-    restrictions: "",
+    email: '',
+    username: '',
+    password: '',
+    confirmPassword: '',
+    firstName: '',
+    lastName: '',
+    address: '',
+    contactNumber: '',
+    licenseNumber: '',
+    licenseExpiry: '',
+    restrictions: '',
     licenseFile: null,
     agreeTerms: false,
   });
@@ -59,9 +101,16 @@ const RegisterPage = () => {
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
+    let processedValue = type === 'checkbox' ? checked : value;
+
+    // Apply phone number formatting for contactNumber field
+    if (name === 'contactNumber' && type !== 'checkbox') {
+      processedValue = formatPhoneNumber(value);
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: processedValue,
     }));
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
@@ -75,11 +124,14 @@ const RegisterPage = () => {
     }
 
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      setErrors((prev) => ({ ...prev, licenseFile: "Unsupported file type." }));
+      setErrors((prev) => ({ ...prev, licenseFile: 'Unsupported file type.' }));
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      setErrors((prev) => ({ ...prev, licenseFile: "File exceeds 5MB limit." }));
+      setErrors((prev) => ({
+        ...prev,
+        licenseFile: 'File exceeds 5MB limit.',
+      }));
       return;
     }
 
@@ -93,13 +145,14 @@ const RegisterPage = () => {
     setFormData((p) => ({ ...p, licenseFile: null }));
     setPreviewUrl(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      fileInputRef.current.value = '';
     }
   };
 
   const handleCloseSuccess = () => {
     setShowSuccess(false);
     navigate('/login');
+
   };
 
   const handleSubmit = async (e) => {
@@ -155,6 +208,7 @@ const RegisterPage = () => {
       setShowSuccess(true);
     } catch {
       setServerError('Network error. Please check your connection and try again.');
+
     } finally {
       setLoading(false);
     }
@@ -168,9 +222,16 @@ const RegisterPage = () => {
   return (
     <>
       <Header />
-      <div
-        className="min-h-screen bg-cover bg-center flex justify-center items-center p-4 relative"
-        style={{ backgroundImage: `url(${carImage})` }}
+      <Box
+        sx={{
+          minHeight: '100vh',
+          backgroundImage: `url(${carImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          position: 'relative',
+          pt: 12,
+          pb: { xs: 2, md: 1, lg: 1 },
+        }}
       >
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 w-full max-w-md bg-white rounded-xl shadow-md p-6 overflow-y-auto max-h-[90vh] register-card">
@@ -253,143 +314,193 @@ const RegisterPage = () => {
                 <div className="w-full">
                   <input
                     id="firstName"
+
                     name="firstName"
                     value={formData.firstName}
                     onChange={onChange}
-                    type="text"
                     placeholder="First name"
-                    className="w-full p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none"
+                    error={!!errors.firstName}
+                    helperText={errors.firstName}
                     required
-                    aria-invalid={!!errors.firstName}
                   />
-                  {errors.firstName && <p className="text-xs text-red-600 mt-1">{errors.firstName}</p>}
-                </div>
-                <div className="w-full">
-                  <input
-                    id="lastName"
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Last name"
                     name="lastName"
                     value={formData.lastName}
                     onChange={onChange}
-                    type="text"
                     placeholder="Last name"
-                    className="w-full p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none"
+                    error={!!errors.lastName}
+                    helperText={errors.lastName}
                     required
-                    aria-invalid={!!errors.lastName}
                   />
-                  {errors.lastName && <p className="text-xs text-red-600 mt-1">{errors.lastName}</p>}
-                </div>
-              </div>
-            </div>
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Address"
+                    name="address"
+                    value={formData.address}
+                    onChange={onChange}
+                    placeholder="Enter your address"
+                    error={!!errors.address}
+                    helperText={errors.address}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Contact number"
+                    name="contactNumber"
+                    value={formData.contactNumber}
+                    onChange={onChange}
+                    placeholder="Enter your contact number (e.g., 09XX XXX XXXX)"
+                    error={!!errors.contactNumber}
+                    helperText={errors.contactNumber}
+                    inputMode="numeric"
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Driver's license number"
+                    name="licenseNumber"
+                    value={formData.licenseNumber}
+                    onChange={onChange}
+                    placeholder="License number"
+                    error={!!errors.licenseNumber}
+                    helperText={errors.licenseNumber}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="License expiry date"
+                    name="licenseExpiry"
+                    type="date"
+                    value={formData.licenseExpiry}
+                    onChange={onChange}
+                    InputLabelProps={{ shrink: true }}
+                    error={!!errors.licenseExpiry}
+                    helperText={errors.licenseExpiry}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Restrictions (optional)"
+                    name="restrictions"
+                    value={formData.restrictions}
+                    onChange={onChange}
+                    placeholder="CODE (optional)"
+                  />
+                </Grid>
 
-            {/* Address */}
-            <div>
-              <label htmlFor="address" className="block text-sm font-semibold mb-1">ADDRESS</label>
-              <input
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={onChange}
-                type="text"
-                placeholder="Enter your address"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
-                required
-                aria-invalid={!!errors.address}
-              />
-              {errors.address && <p className="text-xs text-red-600 mt-1">{errors.address}</p>}
-            </div>
+                <Grid item xs={12}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 0.5, fontWeight: 600 }}
+                  >
+                    License image
+                  </Typography>
+                  <Button variant="outlined" component="label" sx={{ mr: 1 }}>
+                    <FaUpload style={{ marginRight: 6 }} />
+                    {formData.licenseFile ? 'Change file' : 'Upload License ID'}
+                    <input
+                      ref={fileInputRef}
+                      id="licenseUpload"
+                      name="licenseFile"
+                      type="file"
+                      accept={ALLOWED_FILE_TYPES.join(',')}
+                      hidden
+                      onChange={handleFileChange}
+                    />
+                  </Button>
+                  {formData.licenseFile && (
+                    <>
+                      <Typography
+                        variant="body2"
+                        component="span"
+                        sx={{ mr: 1 }}
+                      >
+                        {formData.licenseFile.name} (
+                        {(formData.licenseFile.size / 1024).toFixed(0)} KB)
+                      </Typography>
+                      <Button size="small" color="error" onClick={removeFile}>
+                        Remove
+                      </Button>
+                    </>
+                  )}
+                  {previewUrl && (
+                    <Box sx={{ mt: 1 }}>
+                      <Box
+                        component="img"
+                        src={previewUrl}
+                        alt="License preview"
+                        sx={{
+                          width: 128,
+                          height: 80,
+                          objectFit: 'contain',
+                          borderRadius: 1,
+                          border: '1px solid #e5e7eb',
+                        }}
+                      />
+                    </Box>
+                  )}
+                  {errors.licenseFile && (
+                    <Typography
+                      variant="caption"
+                      color="error"
+                      display="block"
+                      sx={{ mt: 0.5 }}
+                    >
+                      {errors.licenseFile}
+                    </Typography>
+                  )}
+                </Grid>
 
-            {/* Contact Number */}
-            <div>
-              <label htmlFor="contactNumber" className="block text-sm font-semibold mb-1">CONTACT NUMBER</label>
-              <input
-                id="contactNumber"
-                name="contactNumber"
-                value={formData.contactNumber}
-                onChange={onChange}
-                type="text"
-                placeholder="Enter your contact number"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
-                required
-                aria-invalid={!!errors.contactNumber}
-              />
-              {errors.contactNumber && <p className="text-xs text-red-600 mt-1">{errors.contactNumber}</p>}
-            </div>
+                <Grid item xs={12}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        name="agreeTerms"
+                        checked={formData.agreeTerms}
+                        onChange={onChange}
+                      />
+                    }
+                    label={
+                      <Typography variant="body2">
+                        I agree to the{' '}
+                        <Button
+                          variant="text"
+                          size="small"
+                          onClick={() => setShowTerms(true)}
+                          sx={{ p: 0, minWidth: 0 }}
+                        >
+                          Terms and Conditions
+                        </Button>
+                      </Typography>
+                    }
+                  />
+                  {errors.agreeTerms && (
+                    <Typography variant="caption" color="error" display="block">
+                      {errors.agreeTerms}
+                    </Typography>
+                  )}
+                </Grid>
 
-            {/* Driver’s License Number */}
-            <div>
-              <label htmlFor="licenseNumber" className="block text-sm font-semibold mb-1">DRIVER'S LICENSE NUMBER</label>
-              <input
-                id="licenseNumber"
-                name="licenseNumber"
-                value={formData.licenseNumber}
-                onChange={onChange}
-                type="text"
-                placeholder="License number"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
-                required
-                aria-invalid={!!errors.licenseNumber}
-              />
-              {errors.licenseNumber && <p className="text-xs text-red-600 mt-1">{errors.licenseNumber}</p>}
-            </div>
-
-            {/* Driver’s License Expiry Date */}
-            <div>
-              <label htmlFor="licenseExpiry" className="block text-sm font-semibold mb-1">DRIVER'S LICENSE EXPIRY DATE</label>
-              <input
-                id="licenseExpiry"
-                name="licenseExpiry"
-                value={formData.licenseExpiry}
-                onChange={onChange}
-                type="date"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
-                required
-                aria-invalid={!!errors.licenseExpiry}
-              />
-              {errors.licenseExpiry && <p className="text-xs text-red-600 mt-1">{errors.licenseExpiry}</p>}
-            </div>
-
-            {/* Restrictions */}
-            <div>
-              <label htmlFor="restrictions" className="block text-sm font-semibold mb-1">RESTRICTIONS</label>
-              <input
-                id="restrictions"
-                name="restrictions"
-                value={formData.restrictions}
-                onChange={onChange}
-                type="text"
-                placeholder="CODE (optional)"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
-              />
-            </div>
-
-            {/* License Image Upload */}
-            <div>
-              <label className="block text-sm font-semibold mb-1">LICENSE IMAGE</label>
-              <div className="flex items-center space-x-2">
-                <input
-                  ref={fileInputRef}
-                  id="licenseUpload"
-                  name="licenseFile"
-                  type="file"
-                  onChange={handleFileChange}
-                  accept={ALLOWED_FILE_TYPES.join(",")}
-                  className="hidden"
-                />
-                <label
-                  htmlFor="licenseUpload"
-                  className="flex items-center space-x-2 p-2 bg-gray-200 rounded cursor-pointer hover:bg-gray-300"
-                >
-                  <FaUpload />
-                  <span>{formData.licenseFile ? "Change file" : "Upload License ID"}</span>
-                </label>
-                {formData.licenseFile && (
-                  <div className="flex items-center space-x-2">
-                    <div className="text-sm">
-                      <div className="font-medium">{formData.licenseFile.name}</div>
-                      <div className="text-xs text-gray-600">{(formData.licenseFile.size / 1024).toFixed(0)} KB</div>
-                    </div>
-                    <button type="button" onClick={removeFile} className="text-sm text-red-600 hover:underline">Remove</button>
-                  </div>
+                {serverError && (
+                  <Grid item xs={12}>
+                    <Typography color="error" variant="body2">
+                      {serverError}
+                    </Typography>
+                  </Grid>
                 )}
               </div>
               {previewUrl && (

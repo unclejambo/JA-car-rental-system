@@ -4,7 +4,7 @@ import Header from '../../ui/components/Header';
 import '../../styles/customercss/customerdashboard.css';
 import { Box } from '@mui/material';
 
-function CustomerBookings() {
+function CustomerCars() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   return (
@@ -35,17 +35,8 @@ function CustomerBookings() {
           boxSizing: 'border-box',
         }}
       >
-        <title>Bookings</title>
+        <title>Cars</title>
         {/* START OF CONTENT */}
-
-
-
-
-
-
-
-
-
 
         {/* END OF CONTENT */}
       </Box>
@@ -53,4 +44,4 @@ function CustomerBookings() {
   );
 }
 
-export default CustomerBookings;
+export default CustomerCars;

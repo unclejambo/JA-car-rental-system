@@ -16,7 +16,12 @@ import AdminSettings from './pages/admin/AdminSettings';
 import RegisterPage from './pages/RegisterPage.jsx';
 import CustomerDashboard from './pages/customer/CustomerDashboard.jsx';
 import ProtectedRoute from './ui/components/modal/ProtectedRoute.jsx';
+import CustomerProfile from './pages/customer/CustomerProfile.jsx';
 import CustomerBookings from './pages/customer/CustomerBookings.jsx';
+import CustomerBookingHistory from './pages/customer/CustomerBookingHistory.jsx';
+import CustomerCars from './pages/customer/CustomerCars.jsx';
+import CustomerSchedule from './pages/customer/CustomerSchedule.jsx';
+import CustomerSettings from './pages/customer/CustomerSettings.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 
 createRoot(document.getElementById('root')).render(
@@ -102,8 +107,11 @@ createRoot(document.getElementById('root')).render(
             }
           />
 
+
+       
+
           <Route
-            path="/"
+            path="/customer-dashboard"
             element={
               <ProtectedRoute requiredRole="customer">
                 <CustomerDashboard />
@@ -112,10 +120,10 @@ createRoot(document.getElementById('root')).render(
           />
 
           <Route
-            path="/customer-dashboard"
+            path="/customer-profile"
             element={
               <ProtectedRoute requiredRole="customer">
-                <CustomerDashboard />
+                <CustomerProfile />
               </ProtectedRoute>
             }
           />
@@ -128,6 +136,44 @@ createRoot(document.getElementById('root')).render(
               </ProtectedRoute>
             }
           />
+
+          
+          <Route
+            path="/customer-history"
+            element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerBookingHistory />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/customer-cars"
+            element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerCars />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/customer-schedule"
+            element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerSchedule />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/customer-account"
+            element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerSettings />
+              </ProtectedRoute>
+            }
+          />
+
 
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

@@ -1,0 +1,151 @@
+.page-container.dashboard-container {
+  margin-top: 55px;
+  margin-left: 19vw;
+  height: auto;
+  width: auto;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.dashboard-card-content {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding-inline-start: 80px;
+  margin-top: -20px;
+}
+
+.dashboard-card-image {
+  width: 200px;
+  height: 120px;
+}
+
+.div-1,
+.div-2 {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.topmost-1,
+.topmost-2 {
+  flex: 1;
+  background-color: var(--background-dark);
+  height: 250px;
+  width: 200px;
+  box-shadow: 0 0 3px var(--text-primary);
+  padding: var(--space-sm);
+  position: relative;
+}
+
+.request-1,
+.request-2 {
+  flex: 1;
+  background-color: var(--background-dark);
+  height: 200px;
+  width: auto;
+  box-shadow: 0 0 3px var(--text-primary);
+  padding: var(--space-sm);
+  position: relative;
+}
+
+.topmost-1 h1,
+.topmost-1 h3,
+.topmost-2 h1,
+.topmost-2 h3,
+.request-1 h1,
+.request-2 h1 {
+  margin: 0;
+}
+
+.total {
+  position: absolute;
+  bottom: var(--space-lg);
+  left: var(--space-sm);
+}
+
+.no-req {
+  text-align: center;
+  color: var(--secondary-color);
+}
+
+.more-details {
+  position: absolute;
+  right: var(--space-sm);
+  bottom: var(--space-sm);
+  font-family: var(--font-secondary);
+  color: var(--primary-color);
+  font-size: var(--fs-base);
+}
+
+.more-details:hover {
+  color: var(--primary-hover);
+}
+
+.more-details-req {
+  position: absolute;
+  right: var(--space-sm);
+  top: var(--space-md);
+  font-family: var(--font-secondary);
+  color: var(--primary-color);
+  font-size: var(--fs-base);
+}
+
+.more-details-req:hover {
+  color: var(--primary-hover);
+}
+
+/* Mobile-first: stack dashboard widgets and use fluid sizing */
+@media (max-width: 1024px) {
+  .page-container.dashboard-container {
+    margin: 70px 0 0 0;
+    width: 100%;
+    height: auto;
+    padding: var(--space-md);
+    box-sizing: border-box;
+  }
+
+  .div-1,
+  .div-2 {
+    flex-direction: column;
+  }
+
+  .topmost-1,
+  .topmost-2,
+  .request-1,
+  .request-2 {
+    width: 100%;
+    height: auto;
+    min-height: 160px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--space-md);
+  }
+
+  /* Ensure content inside cards is centered and fluid */
+  .dashboard-card-content {
+    padding-inline-start: 0 !important; /* Override inline style */
+    margin-top: 0 !important;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .dashboard-card-image {
+    max-width: 150px;
+    height: auto;
+  }
+
+  .topmost-2 h2 {
+    font-size: clamp(2.5rem, 10vw, 4rem); /* Fluid typography */
+  }
+
+  .more-details,
+  .more-details-req,
+  .total {
+    position: static;
+    margin-top: var(--space-md);
+    display: block; /* Ensure links take up full width for easier tapping */
+  }
+}

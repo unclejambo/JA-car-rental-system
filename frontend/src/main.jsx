@@ -15,8 +15,9 @@ import AdminReportAnalytics from './pages/admin/AdminReportAnalytics';
 import AdminSettings from './pages/admin/AdminSettings';
 import RegisterPage from './pages/RegisterPage.jsx';
 import CustomerDashboard from './pages/customer/CustomerDashboard.jsx';
-import { AuthProvider } from './contexts/AuthContext.jsx';
 import ProtectedRoute from './ui/components/modal/ProtectedRoute.jsx';
+import CustomerBookings from './pages/customer/CustomerBookings.jsx';
+import { AuthProvider } from './contexts/AuthContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -115,6 +116,15 @@ createRoot(document.getElementById('root')).render(
             element={
               <ProtectedRoute requiredRole="customer">
                 <CustomerDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/customer-bookings"
+            element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerBookings />
               </ProtectedRoute>
             }
           />

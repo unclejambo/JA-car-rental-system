@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext.js';
+import { getApiBase } from '../utils/api.js';
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -9,8 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  const API_BASE = 
-    import.meta.env.VITE_API_URL?.replace(/\/$/, '') || 'http://localhost:3001';
+  const API_BASE = getApiBase();
 
   const logout = useCallback(() => {
     localStorage.removeItem('authToken');

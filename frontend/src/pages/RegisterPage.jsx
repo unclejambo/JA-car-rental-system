@@ -1,23 +1,11 @@
-import React, { useState, useRef } from 'react';
-import { FaUpload } from 'react-icons/fa';
-import Header from '../ui/components/Header';
-import carImage from '/carImage.png';
-import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Container,
-  Paper,
-  Grid,
-  TextField,
-  Button,
-  Typography,
-  Checkbox,
-  FormControlLabel,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-} from '@mui/material';
+import React, { useState, useRef } from "react";
+import { FaUpload } from "react-icons/fa";
+import Header from "../ui/components/Header";
+import carImage from "/carImage.png";
+import { useNavigate } from "react-router-dom";
+import "../styles/register.css";
+import SuccessModal from '../ui/components/modal/SuccessModal.jsx';
+
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
@@ -63,7 +51,7 @@ const formatPhoneNumber = (value) => {
   }
 };
 
-export default function RegisterPage() {
+const RegisterPage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
@@ -88,6 +76,28 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState(null);
   const [showTerms, setShowTerms] = useState(false);
+  const [termsContent, setTermsContent] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Fetch terms and conditions from backend
+  const fetchTerms = async () => {
+    if (termsContent) return; // Already loaded
+
+    try {
+      const response = await fetch("/api/registration/terms");
+      if (response.ok) {
+        const data = await response.json();
+        setTermsContent(data.content || "");
+      } else {
+        console.warn("Failed to fetch terms, using fallback");
+        setTermsContent("Terms and conditions not available. Please contact support.");
+      }
+    } catch (error) {
+      console.warn("Error fetching terms:", error);
+      setTermsContent("Terms and conditions not available. Please contact support.");
+    }
+  };
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -125,7 +135,6 @@ export default function RegisterPage() {
       return;
     }
 
-    // create an object URL for preview
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
     setFormData((prev) => ({ ...prev, licenseFile: file }));
@@ -140,101 +149,74 @@ export default function RegisterPage() {
     }
   };
 
-  const validateForm = (data) => {
-    const errs = {};
-    if (!data.email) errs.email = 'Email is required.';
-    else {
-      // simple email regex
-      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!re.test(data.email)) errs.email = 'Invalid email address.';
-    }
-    if (!data.username) errs.username = 'Username is required.';
-    if (!data.password) errs.password = 'Password is required.';
-    if (data.password && data.password.length < 6)
-      errs.password = 'Password must be at least 6 characters.';
-    if (data.password !== data.confirmPassword)
-      errs.confirmPassword = 'Passwords do not match.';
-    if (!data.firstName) errs.firstName = 'First name is required.';
-    if (!data.lastName) errs.lastName = 'Last name is required.';
-    if (!data.address) errs.address = 'Address is required.';
-    if (!data.contactNumber) errs.contactNumber = 'Contact number is required.';
-    else {
-      const phoneRe = /^[0-9+\-\s()]{7,20}$/;
-      if (!phoneRe.test(data.contactNumber))
-        errs.contactNumber = 'Invalid contact number.';
-    }
-    if (!data.licenseNumber) errs.licenseNumber = 'License number is required.';
-    if (!data.licenseExpiry) errs.licenseExpiry = 'Expiry date is required.';
-    else {
-      const expiry = new Date(data.licenseExpiry);
-      const now = new Date();
-      if (expiry <= now)
-        errs.licenseExpiry = 'Expiry date must be in the future.';
-    }
-    if (!data.licenseFile) errs.licenseFile = 'License image is required.';
-    if (!data.agreeTerms) errs.agreeTerms = 'You must accept the terms.';
-    return errs;
-  };
+  const handleCloseSuccess = () => {
+    setShowSuccess(false);
+    navigate('/login');
 
-  const prepareFormData = (data) => {
-    const fd = new FormData();
-    fd.append('email', data.email);
-    fd.append('username', data.username);
-    fd.append('password', data.password);
-    fd.append('firstName', data.firstName);
-    fd.append('lastName', data.lastName);
-    fd.append('address', data.address);
-    fd.append('contactNumber', data.contactNumber);
-    fd.append('licenseNumber', data.licenseNumber);
-    fd.append('licenseExpiry', data.licenseExpiry);
-    fd.append('restrictions', data.restrictions);
-    // rename file to make unique: license_<licenseNumber>_<timestamp>.<ext>
-    if (data.licenseFile) {
-      const original = data.licenseFile;
-      const ext = original.name.split('.').pop();
-      const safeLicense = data.licenseNumber.replace(/[^a-z0-9_-]/gi, '_');
-      const newName = `license_${safeLicense}_${Date.now()}.${ext}`;
-      const renamedFile = new File([original], newName, {
-        type: original.type,
-      });
-      fd.append('licenseFile', renamedFile);
-    }
-    return fd;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setServerError(null);
-    const validation = validateForm(formData);
-    if (Object.keys(validation).length) {
-      setErrors(validation);
-      // focus first error field could be added
-      return;
-    }
+    const form = e.target;
+    const fd = new FormData(form);
 
+    // Clear previous errors
+    setErrors({});
+    setServerError(null);
     setLoading(true);
+
     try {
-      const fd = prepareFormData(formData);
-      // Replace with your production endpoint
-      const res = await fetch('/api/register', {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${API_BASE}/api/registration/register`, {
         method: 'POST',
-        body: fd,
+        body: fd
       });
 
+      const text = await res.text();
+      let body;
+      try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+
       if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(json?.message || 'Server error during registration.');
+        // Handle validation or server errors
+        if (body && body.errors) {
+          setErrors(body.errors);
+        } else {
+          setServerError(body && body.message ? body.message : 'Registration failed. Please try again.');
+        }
+        return;
       }
 
-      // success
-      // optionally read response for details
-      alert('Account created. Please log in.');
-      navigate('/login');
-    } catch (err) {
-      setServerError(err.message || 'Registration failed.');
+      // Success
+      form.reset();
+      setFormData({
+        email: "",
+        username: "",
+        password: "",
+        confirmPassword: "",
+        firstName: "",
+        lastName: "",
+        address: "",
+        contactNumber: "",
+        licenseNumber: "",
+        licenseExpiry: "",
+        restrictions: "",
+        licenseFile: null,
+        agreeTerms: false,
+      });
+      setPreviewUrl(null);
+      setSuccessMessage(body && body.message ? body.message : 'Account created successfully.');
+      setShowSuccess(true);
+    } catch {
+      setServerError('Network error. Please check your connection and try again.');
+
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleShowTerms = () => {
+    setShowTerms(true);
+    fetchTerms();
   };
 
   return (
@@ -251,83 +233,88 @@ export default function RegisterPage() {
           pb: { xs: 2, md: 1, lg: 1 },
         }}
       >
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            bgcolor: 'rgba(0,0,0,0.4)',
-          }}
-        />
-        <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
-          <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
-            <Typography
-              variant="h5"
-              align="center"
-              sx={{ fontWeight: 700, mb: 2 }}
-            >
-              CREATE A NEW ACCOUNT
-            </Typography>
-            <Box component="form" noValidate onSubmit={handleSubmit}>
-              <Grid container spacing={1.5} sx={{ width: '100%' }}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Email Address"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={onChange}
-                    placeholder="Enter your email address"
-                    error={!!errors.email}
-                    helperText={errors.email}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Username"
-                    name="username"
-                    value={formData.username}
-                    onChange={onChange}
-                    placeholder="Enter your username"
-                    error={!!errors.username}
-                    helperText={errors.username}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Password"
-                    name="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={onChange}
-                    placeholder="Enter a strong password"
-                    error={!!errors.password}
-                    helperText={errors.password}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Confirm Password"
-                    name="confirmPassword"
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={onChange}
-                    placeholder="Confirm your password"
-                    error={!!errors.confirmPassword}
-                    helperText={errors.confirmPassword}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="First name"
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="relative z-10 w-full max-w-md bg-white rounded-xl shadow-md p-6 overflow-y-auto max-h-[90vh] register-card">
+          {/* add `register-card` class so custom CSS can target the card */}
+          <form className="register-form flex flex-col space-y-4" id="regForm" onSubmit={handleSubmit} noValidate encType="multipart/form-data">
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-semibold mb-1">
+                EMAIL ADDRESS
+              </label>
+              <input
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={onChange}
+                type="email"
+                placeholder="Enter your email address"
+                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
+                aria-invalid={!!errors.email}
+                required
+              />
+              {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
+            </div>
+
+            {/* Username */}
+            <div>
+              <label htmlFor="username" className="block text-sm font-semibold mb-1">USERNAME</label>
+              <input
+                id="username"
+                name="username"
+                value={formData.username}
+                onChange={onChange}
+                type="text"
+                placeholder="Enter your username"
+                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
+                required
+                aria-invalid={!!errors.username}
+              />
+              {errors.username && <p className="text-xs text-red-600 mt-1">{errors.username}</p>}
+            </div>
+
+            {/* Password */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-semibold mb-1">PASSWORD</label>
+              <input
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={onChange}
+                type="password"
+                placeholder="Enter a strong password"
+                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
+                required
+                aria-invalid={!!errors.password}
+              />
+              {errors.password && <p className="text-xs text-red-600 mt-1">{errors.password}</p>}
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-semibold mb-1">CONFIRM PASSWORD</label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={onChange}
+                type="password"
+                placeholder="Confirm your password"
+                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
+                required
+                aria-invalid={!!errors.confirmPassword}
+              />
+              {errors.confirmPassword && <p className="text-xs text-red-600 mt-1">{errors.confirmPassword}</p>}
+            </div>
+
+            {/* Name */}
+            <div>
+              <label className="block text-sm font-semibold mb-1">NAME</label>
+              <div className="two-col flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
+                <div className="w-full">
+                  <input
+                    id="firstName"
+
                     name="firstName"
                     value={formData.firstName}
                     onChange={onChange}
@@ -515,98 +502,98 @@ export default function RegisterPage() {
                     </Typography>
                   </Grid>
                 )}
+              </div>
+              {previewUrl && (
+                <div className="mt-2">
+                  <img src={previewUrl} alt="License preview" className="w-32 h-20 object-contain rounded border" />
+                </div>
+              )}
+              {errors.licenseFile && <p className="text-xs text-red-600 mt-1">{errors.licenseFile}</p>}
+            </div>
 
-                <Grid item xs={12} sm={12}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="success"
-                    fullWidth
-                    disabled={loading}
-                    sx={{
-                      py: 1.5,
-                      fontSize: '1rem',
-                      fontWeight: 600,
-                      mt: 1,
-                    }}
-                  >
-                    {loading ? 'Registering...' : 'Register'}
-                  </Button>
-                </Grid>
-              </Grid>
-            </Box>
-          </Paper>
-        </Container>
-      </Box>
+            {/* Terms and Conditions */}
+            <div className="flex items-start space-x-2">
+              <input id="agreeTerms" name="agreeTerms" type="checkbox" checked={formData.agreeTerms} onChange={onChange} />
+              <label htmlFor="agreeTerms" className="text-sm">
+                I agree to the{" "}
+                <button
+                  type="button"
+                  onClick={handleShowTerms}
+                  className="text-blue-600 underline hover:text-blue-800"
+                >
+                  Terms and Conditions
+                </button>
+              </label>
+            </div>
+            {errors.agreeTerms && <p className="text-xs text-red-600 mt-1">{errors.agreeTerms}</p>}
 
-      <Dialog
-        open={showTerms}
-        onClose={() => setShowTerms(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Terms and Conditions</DialogTitle>
-        <DialogContent dividers>
-          <Typography paragraph variant="subtitle1" sx={{ fontWeight: 600 }}>
-            Cancellation Policy
-          </Typography>
-          <Typography paragraph variant="body2">
-            For any Cancellation or No-Show, the following fees apply:
-            <br />• 1 month or more ahead of rental: FREE
-            <br />• 30 – 10 days ahead of rental: 1-day rental fee*
-            <br />• 9 – 3 days ahead of rental: 50% of the total rental fee*
-            <br />• 3 days or less & no show: 100% of rental fee*
-            <br />
-            Minimum cancellation fee is 1,000 pesos for any rule, and in any
-            case, if the calculated cancellation fee is below 1,000 PHP.
-          </Typography>
-          <Typography paragraph variant="subtitle1" sx={{ fontWeight: 600 }}>
-            Identification of the Rental Vehicle & Vehicle Classes
-          </Typography>
-          <Typography paragraph variant="body2">
-            The customer has the right to reserve and book any class of car,
-            confirmed by Butuan Car Rental, but no right on a specific make,
-            model, car, or color. The right is limited to the booked class of
-            vehicle. BCR can switch between cars of the same class or upgrade
-            the customer to the next higher class as follows:
-            <br />• Compact Manual (KIA RIO)
-            <br />• Compact Automatic (MIRAGE G4)
-            <br />• Pick-up 5-seater Manual (NISSAN NAVARA)
-            <br />• SUV 7-Seater Automatic (NISSAN TERRA)
-            <br />• SUV 7-Seater Automatic (TOYOTA AVANZA)
-          </Typography>
-          <Typography paragraph variant="subtitle1" sx={{ fontWeight: 600 }}>
-            Rental Term
-          </Typography>
-          <Typography paragraph variant="body2">
-            The term of this Car Rental Agreement runs from the date and hour of
-            vehicle pickup as indicated in the individual Car Rental Agreement
-            until the return of the vehicle to Owner and completion of all terms
-            of this Car Rental Agreement by both Parties. The Parties may
-            shorten or extend the estimated term of rental by mutual consent. A
-            refund for early return is not applicable. In case of delayed return
-            without prior notice of at least 6 hours ahead of the scheduled
-            return time according to this agreement, the owner is eligible to
-            consider the car as stolen. Furthermore, a fee of 250 PHP per hour
-            will be imposed starting from the minute of the latest agreed return
-            time. If the return delay exceeds more than 2 hours, a full daily
-            rate as well as possible compensation for the loss of a following
-            booking, at exactly the value of the lost booking, will be charged.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowTerms(false)}>Close</Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              setFormData((p) => ({ ...p, agreeTerms: true }));
-              setShowTerms(false);
-            }}
-          >
-            I Agree
-          </Button>
-        </DialogActions>
-      </Dialog>
+            {/* Server error */}
+            {serverError && <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200">{serverError}</div>}
+
+            {/* Submit Button */}
+            <div className="flex justify-center">
+              <button
+                type="submit"
+                disabled={loading}
+                className={`mt-4 p-3 ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"} text-white rounded font-bold transition-colors w-full flex items-center justify-center`}
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Registering...
+                  </>
+                ) : "REGISTER"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Terms and Conditions Modal */}
+      {showTerms && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4" role="dialog" aria-modal="true">
+          <div className="bg-white p-6 rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto relative">
+            <h2 className="text-xl font-bold mb-4 text-center">Terms and Conditions</h2>
+            <div className="text-sm space-y-4 text-justify">
+              {termsContent ? (
+                <div dangerouslySetInnerHTML={{ __html: termsContent.replace(/\n/g, '<br />') }} />
+              ) : (
+                <p>Loading terms and conditions...</p>
+              )}
+            </div>
+
+            <button
+              onClick={() => setShowTerms(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-black text-lg"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+            <button
+              onClick={() => {
+                setFormData((p) => ({ ...p, agreeTerms: true }));
+                setShowTerms(false);
+              }}
+              className="mt-4 p-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors w-full"
+              disabled={!termsContent}
+            >
+              I Agree
+            </button>
+          </div>
+        </div>
+      )}
+
+      <SuccessModal
+        open={showSuccess}
+        message={successMessage}
+        onNavigate={handleCloseSuccess}
+        buttonText="Back to Login"
+      />
     </>
   );
-}
+};
+
+export default RegisterPage;

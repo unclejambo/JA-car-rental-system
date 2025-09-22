@@ -110,77 +110,53 @@ const RegisterPage = () => {
         agreeTerms,
       } = formData;
 
-      // Basic required validation (use trim to avoid whitespace-only)
-      const missingInitial =
-        !email?.trim() ||
-        !username?.trim() ||
-        !password ||
-        !confirmPassword ||
-        !firstName?.trim() ||
-        !lastName?.trim() ||
-        !address?.trim() ||
-        !contactNumber?.trim() ||
-        !licenseNumber?.trim() ||
-        !licenseExpiry?.trim() ||
-        !licenseFile ||
-        !agreeTerms;
-
-      if (missingInitial) {
+      // Basic validation
+      if (!email?.trim() || !username?.trim() || !password || !confirmPassword ||
+          !firstName?.trim() || !lastName?.trim() || !address?.trim() ||
+          !contactNumber?.trim() || !licenseNumber?.trim() || !licenseExpiry?.trim() ||
+          !licenseFile || !agreeTerms) {
         throw new Error('All required fields must be provided');
       }
 
       if (password !== confirmPassword) {
-        throw new Error('All required fields must be provided');
+        throw new Error('Passwords do not match');
       }
 
       setLoading(true);
 
-      // 1) Upload license image first to storage endpoint
-      const BASE = (
-        import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL
-      ).replace(/\/+$/, '');
+      // 1) Upload license image first
+      const BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL).replace(/\/+$/, '');
+      
       const uploadUrl = new URL('/api/storage/licenses', BASE).toString();
-
       const uploadFd = new FormData();
-      uploadFd.append('file', licenseFile, licenseFile.name);
-      // optional filename hint (server will rename to licenseNumber_customerId later if needed)
-      uploadFd.append(
-        'filename',
-        `${licenseNumber}_${Date.now()}_${licenseFile.name}`
-      );
+      uploadFd.append('file', licenseFile);
+      uploadFd.append('licenseNumber', licenseNumber.trim());
+      uploadFd.append('username', username.trim());
 
+      console.log('Uploading file to:', uploadUrl);
+      
       const uploadRes = await fetch(uploadUrl, {
         method: 'POST',
         body: uploadFd,
       });
 
-      const uploadJson = await uploadRes.json().catch(() => ({}));
+      const uploadJson = await uploadRes.json();
+      console.log('Upload response:', uploadJson);
+      
       if (!uploadRes.ok) {
-        throw new Error(
-          uploadJson?.message || uploadJson?.error || 'File upload failed'
-        );
+        throw new Error(uploadJson?.message || uploadJson?.error || 'File upload failed');
       }
 
-      // try to extract a public URL or stored path from response
-      let dl_img_url =
-        uploadJson?.publicURL ||
-        uploadJson?.publicUrl ||
-        uploadJson?.publicUrl ||
-        uploadJson?.publicURL ||
-        uploadJson?.data?.publicUrl ||
-        uploadJson?.data?.publicURL ||
-        uploadJson?.data?.path ||
-        uploadJson?.data?.Key ||
-        uploadJson?.path ||
-        uploadJson?.key ||
-        null;
+      // Extract the URL from response
+      const dl_img_url = uploadJson.filePath || uploadJson.path || uploadJson.url || uploadJson.publicUrl;
+      console.log('Extracted dl_img_url:', dl_img_url);
 
-      // if no URL but upload returned data with path/key, use that as dl_img_url
-      if (!dl_img_url && uploadJson?.data) {
-        dl_img_url = uploadJson.data.path || uploadJson.data.key || null;
+      if (!dl_img_url) {
+        console.error('No URL found in response:', uploadJson);
+        throw new Error('File upload succeeded but no URL returned');
       }
 
-      // 2) Build registration payload including dl_img_url
+      // 2) Send registration data as JSON
       const payload = {
         email: email.trim(),
         username: username.trim(),
@@ -193,28 +169,11 @@ const RegisterPage = () => {
         licenseExpiry: licenseExpiry.trim(),
         restrictions: restrictions?.trim() || '',
         dl_img_url: dl_img_url,
-        agreeTerms: !!agreeTerms,
+        agreeTerms: true,
       };
 
-      // Validate final required fields (including dl_img_url)
-      const missingFinal =
-        !payload.email ||
-        !payload.username ||
-        !payload.password ||
-        !payload.firstName ||
-        !payload.lastName ||
-        !payload.address ||
-        !payload.contactNumber ||
-        !payload.licenseNumber ||
-        !payload.licenseExpiry ||
-        !payload.dl_img_url ||
-        !payload.agreeTerms;
+      console.log('Sending registration payload:', payload);
 
-      if (missingFinal) {
-        throw new Error('All required fields must be provided');
-      }
-
-      // 3) Send registration (JSON) to backend register route
       const regUrl = new URL('/api/auth/register', BASE).toString();
       const regRes = await fetch(regUrl, {
         method: 'POST',
@@ -222,19 +181,19 @@ const RegisterPage = () => {
         body: JSON.stringify(payload),
       });
 
-      const regJson = await regRes.json().catch(() => ({}));
+      const regJson = await regRes.json();
+      console.log('Registration response:', regJson);
+      
       if (!regRes.ok) {
-        throw new Error(
-          regJson?.message || regJson?.error || 'Registration failed'
-        );
+        throw new Error(regJson?.message || regJson?.error || 'Registration failed');
       }
 
-      setSuccessMessage(regJson?.message || 'Registered successfully');
+      setSuccessMessage(regJson?.message || 'Registration successful');
       setShowSuccess(true);
-      // optionally navigate on success
-      // navigate('/login');
+      
     } catch (err) {
-      setServerError(err.message || 'All required fields must be provided');
+      console.error('Registration error:', err);
+      setServerError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }

@@ -7,27 +7,73 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 export async function uploadLicense(req, res, next) {
   try {
-    if (!req.file) return res.status(400).json({ ok: false, message: 'No file uploaded' });
+    console.log('--- LICENSE UPLOAD ROUTE CALLED ---');
+    console.log('File received:', req.file ? 'YES' : 'NO');
+    console.log('Body:', req.body);
 
-    const file = req.file; // multer memory buffer
-    const filename = req.body.filename || `${Date.now()}_${file.originalname}`;
+    if (!req.file) {
+      return res.status(400).json({ 
+        ok: false, 
+        error: 'No file uploaded',
+        message: 'No file uploaded' 
+      });
+    }
+
+    const file = req.file;
+    const { licenseNumber, username } = req.body;
+    
+    const timestamp = Date.now();
+    const fileExt = file.originalname.split('.').pop();
+    const filename = `${licenseNumber || 'license'}_${username || 'user'}_${timestamp}.${fileExt}`;
+    
     const bucket = 'licenses';
     const path = filename;
 
+    console.log('Uploading to Supabase:', { bucket, path, size: file.size });
+
     const { data, error } = await supabase.storage
       .from(bucket)
-      .upload(path, file.buffer, { contentType: file.mimetype, upsert: false });
+      .upload(path, file.buffer, { 
+        contentType: file.mimetype, 
+        upsert: false 
+      });
 
     if (error) {
-      console.error('Supabase upload error', error);
-      return res.status(500).json({ ok: false, message: error.message || error });
+      console.error('Supabase upload error:', error);
+      return res.status(500).json({ 
+        ok: false, 
+        error: error.message || error,
+        message: error.message || 'Upload failed'
+      });
     }
 
-    // If bucket is public you can form a public URL:
-    const { publicURL } = supabase.storage.from(bucket).getPublicUrl(path);
+    const { data: publicUrlData } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(path);
 
-    return res.json({ ok: true, data, publicURL });
+    const responseData = { 
+      ok: true,
+      message: 'File uploaded successfully',
+      filePath: publicUrlData.publicUrl,
+      path: publicUrlData.publicUrl,
+      url: publicUrlData.publicUrl,
+      publicUrl: publicUrlData.publicUrl,  // Add this field
+      filename: filename,
+      originalName: file.originalname,
+      size: file.size,
+      supabaseData: data
+    };
+
+    console.log('Upload response being sent:', responseData);
+    
+    return res.status(200).json(responseData);
+
   } catch (err) {
-    next(err);
+    console.error('Storage controller error:', err);
+    return res.status(500).json({
+      ok: false,
+      error: err.message || 'Upload failed',
+      message: err.message || 'Upload failed'
+    });
   }
 }

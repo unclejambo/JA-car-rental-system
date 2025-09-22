@@ -158,34 +158,10 @@ async function validateToken(req, res, next) {
 
 async function register(req, res, next) {
   try {
-    // Debug: inspect incoming request to verify multer ran and multipart arrived
     console.log('--- REGISTER ROUTE CALLED ---');
     console.log('Request URL:', req.originalUrl || req.url);
     console.log('Headers (content-type):', req.headers['content-type'] || req.headers['Content-Type']);
-    try {
-      console.log('Body keys:', Object.keys(req.body || {}));
-    } catch (e) {
-      console.log('Body read error', e);
-    }
-    // multer single: req.file expected
-    if (req.file) {
-      console.log('multer req.file:', {
-        fieldname: req.file.fieldname,
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        bufferPresent: !!req.file.buffer,
-      });
-    } else {
-      console.log('multer req.file is MISSING');
-    }
-    // sometimes req.files used
-    if (req.files) {
-      console.log('multer req.files keys:', Object.keys(req.files));
-    }
-
-    // Proceed with existing registration logic...
-    // ...existing code...
+    console.log('Body:', req.body);
 
     // Accept field variants from frontend
     const {
@@ -199,10 +175,14 @@ async function register(req, res, next) {
       licenseNumber: licenseNumberBody,
       licenseExpiry,
       restrictions,
+      dl_img_url, // This comes from the separate file upload
+      agreeTerms,
     } = req.body;
 
     const licenseNumber =
       licenseNumberBody || req.body.license_number || req.body.driver_license_no;
+
+    console.log('Extracted dl_img_url:', dl_img_url);
 
     // Basic validation
     if (
@@ -214,9 +194,27 @@ async function register(req, res, next) {
       !address ||
       !contactNumber ||
       !licenseNumber ||
-      !licenseExpiry
+      !licenseExpiry ||
+      !dl_img_url || // Require the image URL
+      !agreeTerms
     ) {
-      return res.status(400).json({ ok: false, message: 'Missing required fields' });
+      return res.status(400).json({ 
+        ok: false, 
+        message: 'Missing required fields',
+        missing: {
+          email: !email,
+          username: !username,
+          password: !password,
+          firstName: !firstName,
+          lastName: !lastName,
+          address: !address,
+          contactNumber: !contactNumber,
+          licenseNumber: !licenseNumber,
+          licenseExpiry: !licenseExpiry,
+          dl_img_url: !dl_img_url,
+          agreeTerms: !agreeTerms
+        }
+      });
     }
 
     // Check existing
@@ -236,13 +234,13 @@ async function register(req, res, next) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create driverLicense record first (dl_img_url null for now)
+    // Create driverLicense record with the uploaded image URL
     await prisma.driverLicense.create({
       data: {
         driver_license_no: licenseNumber,
         expiry_date: new Date(licenseExpiry),
         restrictions: restrictions || 'None',
-        dl_img_url: null,
+        dl_img_url: dl_img_url, // Store the Supabase URL
       },
     });
 
@@ -262,52 +260,11 @@ async function register(req, res, next) {
       },
     });
 
-    // If a file was uploaded via multer (upload.single('file')), upload to Supabase
-    if (req.file && req.file.buffer) {
-      try {
-        const file = req.file;
-        const original = file.originalname || 'upload.jpg';
-        const extMatch = original.match(/\.[^.]+$/);
-        const ext = extMatch ? extMatch[0] : '.jpg';
-        const filename = `${licenseNumber}_${customer.customer_id}${ext}`;
-        const bucket = 'licenses';
-        const path = filename;
-
-        console.log('Uploading license to supabase:', { bucket, path });
-
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from(bucket)
-          .upload(path, file.buffer, {
-            contentType: file.mimetype,
-            upsert: true,
-          });
-
-        if (uploadError) {
-          console.error('Supabase upload error:', uploadError);
-        } else {
-          // get public url (if bucket is public) or store path
-          let publicUrl = null;
-          try {
-            // supabase v1/v2 return shapes differ; attempt both
-            const publicRes = supabase.storage.from(bucket).getPublicUrl(path);
-            publicUrl = publicRes?.data?.publicUrl || publicRes?.publicURL || publicRes?.publicUrl || null;
-          } catch (err) {
-            // ignore; we'll store path if public url cannot be obtained
-          }
-
-          await prisma.driverLicense.update({
-            where: { driver_license_no: licenseNumber },
-            data: { dl_img_url: publicUrl || path },
-          });
-
-          console.log('Uploaded license and updated DB:', { licenseNumber, customerId: customer.customer_id, publicUrl });
-        }
-      } catch (err) {
-        console.error('Error during file upload flow:', err);
-      }
-    } else {
-      console.log('No file in request (req.file missing)');
-    }
+    console.log('Registration successful:', {
+      customerId: customer.customer_id,
+      licenseNumber,
+      dl_img_url
+    });
 
     return res.status(201).json({
       ok: true,

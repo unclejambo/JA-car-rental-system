@@ -204,8 +204,12 @@ const RegisterPage = () => {
   };
 
   const handleAgreeTerms = () => {
-    setFormData((p) => ({ ...p, agreeTerms: true }));
     setShowTerms(false);
+    setFormData(prev => ({ ...prev, agreeTerms: true }));
+    // Remove focus from any previously focused element
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
   };
 
   return (
@@ -689,8 +693,9 @@ const RegisterPage = () => {
                     <button
                       type="button"
                       onClick={handleShowTerms}
-                      className="text-blue-600 underline hover:text-blue-800"
-                      style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
+                      className="text-blue-600 underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={showTerms} // Disable when modal is open
+                      tabIndex={showTerms ? -1 : 0} // Remove from tab order when modal is open
                     >
                       Terms and Conditions
                     </button>

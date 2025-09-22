@@ -1,12 +1,7 @@
 import { DataGrid } from '@mui/x-data-grid';
 import { Box, Button } from '@mui/material';
-import { useScheduleStore } from '../../../store/schedule';
-import PublicIcon from '@mui/icons-material/Public';
 
-const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
-  const updateReservationStatus = useScheduleStore(
-    (state) => state.updateReservationStatus
-  );
+const ScheduleTable = ({ rows, loading }) => {
 
   console.log('ScheduleTable - Rows:', rows); // Debug log
 
@@ -76,17 +71,10 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
   // Define columns that are common to all tabs (use normalized field names)
   const commonColumns = [
     {
-      field: 'customer_name',
-      headerName: 'Customer Name',
-      flex: 1.5,
-      minWidth: 120,
-      editable: false,
-    },
-    {
       field: 'start_date',
       headerName: 'Start Date',
       flex: 1.5,
-      minWidth: 140,
+      minWidth: 120,
       editable: false,
       renderCell: (params) => {
         const iso =
@@ -97,38 +85,31 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
     {
       field: 'pickup_time',
       headerName: 'Pickup Time',
-      flex: 1,
-      minWidth: 90,
+      flex: 1.5,
+      minWidth: 140,
       editable: false,
       renderCell: (params) => {
-        const iso = params?.row?.pickup_time ?? params?.value;
+        const iso =
+          params?.row?.pickup_time ?? params?.row?.pickupTime ?? params?.value;
         return <span>{formatTime(iso)}</span>;
       },
     },
     {
-      field: 'pickup_location',
+      field: 'pickup_loc',
       headerName: 'Pickup Location',
       flex: 1,
       minWidth: 90,
       editable: false,
-      renderCell: (params) => (
-        <span>
-          {params?.row?.pickup_location ??
-            params?.row?.pickup_loc ??
-            params?.value ??
-            ''}
-        </span>
-      ),
     },
     {
       field: 'end_date',
       headerName: 'End Date',
       flex: 1,
-      minWidth: 140,
+      minWidth: 90,
       editable: false,
       renderCell: (params) => {
         const iso =
-          params?.row?.end_date ?? params?.row?.endDate ?? params?.value;
+          params?.row?.start_date ?? params?.row?.startDate ?? params?.value;
         return <span>{formatDate(iso)}</span>;
       },
     },
@@ -149,144 +130,19 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       flex: 1,
       minWidth: 90,
       editable: false,
-      renderCell: (params) => (
-        <span>
-          {params?.row?.dropoff_location ??
-            params?.row?.dropoff_loc ??
-            params?.value ??
-            ''}
-        </span>
-      ),
     },
     {
-      field: 'isSelfDriver',
-      headerName: 'Self Drive',
+      field: 'car_model',
+      headerName: 'Car Model',
       flex: 1,
       minWidth: 80,
       editable: false,
-      renderCell: (params) => {
-        const val = params?.row?.isSelfDriver ?? params?.value;
-        return <span>{val ? 'Yes' : 'No'}</span>;
-      },
     },
   ];
 
   // Status column (common to all tabs)
-  const statusColumn = {
-    field: 'status',
-    headerName: 'Status',
-    flex: 1,
-    minWidth: 150,
-    editable: false,
-    sortable: false,
-    headerAlign: 'left',
-    align: 'left',
-    renderCell: (params) => {
-      // compare only date parts
-      const today = new Date().toISOString().split('T')[0];
-      const startIso = params.row.start_date ?? params.row.startDate ?? '';
-      const endIso = params.row.end_date ?? params.row.endDate ?? '';
-      const startDate = startIso
-        ? new Date(startIso).toISOString().split('T')[0]
-        : null;
-      const endDate = endIso
-        ? new Date(endIso).toISOString().split('T')[0]
-        : null;
 
-      const handleAction = async (actionType) => {
-        try {
-          await updateReservationStatus(
-            params.row.reservationId ?? params.row.booking_id,
-            actionType
-          );
-        } catch (error) {
-          console.error('Error updating status:', error);
-        }
-      };
-
-      // Show release button if today is start date and status is 'Confirmed'
-      if (today === startDate && params.row.status === 'Confirmed') {
-        return (
-          <Button
-            variant="contained"
-            color="success"
-            size="small"
-            onClick={() =>
-              onOpenRelease
-                ? onOpenRelease(params.row)
-                : handleAction('Ongoing')
-            }
-            sx={{
-              textTransform: 'none',
-              fontWeight: 'normal',
-              backgroundColor: '#2e7d32',
-              '&:hover': {
-                backgroundColor: '#1b5e20',
-              },
-            }}
-          >
-            Release
-          </Button>
-        );
-      }
-
-      // Show return button if today is end date and status is 'Ongoing'
-      if (today === endDate && params.row.status === 'Ongoing') {
-        return (
-          <Button
-            variant="contained"
-            color="success"
-            size="small"
-            onClick={() =>
-              onOpenReturn ? onOpenReturn(params.row) : handleAction('Done')
-            }
-            sx={{
-              textTransform: 'none',
-              fontWeight: 'normal',
-              backgroundColor: '#2e7d32',
-              '&:hover': {
-                backgroundColor: '#1b5e20',
-              },
-            }}
-          >
-            Return
-          </Button>
-        );
-      }
-
-      // Default to showing status with optional GPS button
-      return (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <span>
-            {params.row.status ?? params.row.booking_status ?? 'Pending'}
-          </span>
-          {/* change 'In Progress' to 'Ongoing' */}
-          {(params.row.status === 'In Progress' ||
-            params.row.booking_status === 'In Progress') && (
-            <Button
-              variant="contained"
-              color="success"
-              onClick={() => console.log('GPS Clicked!')}
-              size="small"
-              sx={{
-                borderRadius: '50%',
-                minWidth: 'auto',
-                padding: '2px',
-                backgroundColor: '#2e7d32',
-                '&:hover': {
-                  backgroundColor: '#1b5e20',
-                },
-              }}
-            >
-              <PublicIcon />
-            </Button>
-          )}
-        </Box>
-      );
-    },
-  };
-
-  const columns = [...commonColumns, statusColumn];
+  const columns = [...commonColumns];
   console.log('ScheduleTable - Columns:', columns); // Debug log
 
   return (

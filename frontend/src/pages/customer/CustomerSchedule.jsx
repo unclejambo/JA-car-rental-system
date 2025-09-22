@@ -33,7 +33,8 @@ function CustomerSchedule() {
           return;
         }
 
-        if (!res.ok) throw new Error(`Failed to fetch schedules: ${res.status}`);
+        if (!res.ok)
+          throw new Error(`Failed to fetch schedules: ${res.status}`);
         const data = await res.json();
         setSchedule(Array.isArray(data) ? data : []);
       } catch (err) {
@@ -50,7 +51,10 @@ function CustomerSchedule() {
   if (loading || schedule === null) {
     return (
       <>
-        <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
+        <Header
+          onMenuClick={() => setMobileOpen(true)}
+          isMenuOpen={mobileOpen}
+        />
         <CustomerSideBar
           mobileOpen={mobileOpen}
           onClose={() => setMobileOpen(false)}
@@ -85,7 +89,8 @@ function CustomerSchedule() {
   }
 
   return (
-    <>
+    <Box sx={{ display: 'flex' }}>
+      <title>Schedule</title>
       <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
       <CustomerSideBar
         mobileOpen={mobileOpen}
@@ -109,33 +114,82 @@ function CustomerSchedule() {
           },
           mt: { xs: '64px', sm: '64px', md: '56px', lg: '56px' },
           height: '100%',
-          boxSizing: 'border-box',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        <title>Schedule</title>
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+        <Box
+          sx={{
+            width: '100%',
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <Box
+            sx={{
+              flexGrow: 1,
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: '#f9f9f9',
+              p: { xs: 1, sm: 2, md: 2, lg: 2 },
+              boxShadow:
+                '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 4px 0 6px -1px rgba(0, 0, 0, 0.1), -4px 0 6px -1px rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+              height: 'auto',
+              boxSizing: 'border-box',
+            }}
           >
-            <HiCalendarDays style={{ verticalAlign: '-3px' }} />
-            SCHEDULE
-          </Typography>
-        </Box>
-
-        <Box sx={{ height: 'calc(100% - 64px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          {(!schedule || schedule.length === 0) ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-              <Typography variant="h6">No schedule found</Typography>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}
+            >
+              <Typography
+                variant="h4"
+                component="h1"
+                gutterBottom
+                sx={{
+                  fontSize: '1.8rem',
+                  color: '#000',
+                  '@media (max-width: 1024px)': {
+                    fontSize: '1.5rem',
+                  },
+                }}
+              >
+                <HiCalendarDays
+                  style={{ verticalAlign: '-3px', marginRight: '5px' }}
+                />
+                SCHEDULE
+              </Typography>
             </Box>
-          ) : (
-            <CustomerScheduleTable rows={schedule} loading={loading} />
-          )}
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
+            >
+              {!schedule || schedule.length === 0 ? (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '50vh',
+                  }}
+                >
+                  <Typography variant="h6">No schedule found</Typography>
+                </Box>
+              ) : (
+                <CustomerScheduleTable rows={schedule} loading={loading} />
+              )}
+            </Box>
+          </Box>
         </Box>
       </Box>
-    </>
+    </Box>
   );
 }
 

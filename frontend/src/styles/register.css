@@ -26,6 +26,7 @@
 .register-card .register-form {
   max-height: 72vh; /* tune this to taste */
   overflow-y: auto;
+  padding-right: 8px; /* Add padding for better scroll experience */
 }
 
 /* Form card sizing and centered layout */
@@ -46,7 +47,7 @@
   border: 1px solid #e2e8f0;
   background: #f3f4f6;
   color: #111827;
-  margin: 0;
+  margin: 0 0 4px 0; /* Add small bottom margin for distinction */
 }
 
 /* ------------ Added: don't force checkbox to be full width ------------ */
@@ -71,6 +72,17 @@
 .register-card .register-form .flex.items-center > label {
   width: 100%;
   display: block;
+}
+
+/* File upload specific styling for horizontal layout */
+.register-card .register-form .flex.items-center.space-x-2.flex-wrap {
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.register-card .register-form .flex.items-center.space-x-2.flex-wrap button {
+  flex-shrink: 0;
 }
 
 /* Two-column name row: keep side-by-side on desktop, stacked on mobile */

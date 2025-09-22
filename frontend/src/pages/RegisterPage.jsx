@@ -48,11 +48,9 @@ const RegisterPage = () => {
         const data = await response.json();
         setTermsContent(data.content || "");
       } else {
-        console.warn("Failed to fetch terms, using fallback");
         setTermsContent("Terms and conditions not available. Please contact support.");
       }
     } catch (error) {
-      console.warn("Error fetching terms:", error);
       setTermsContent("Terms and conditions not available. Please contact support.");
     }
   };
@@ -102,59 +100,143 @@ const RegisterPage = () => {
     navigate('/login');
   };
 
-  const handleSubmit = async (e) => {
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    const form = e.target;
-    const fd = new FormData(form);
-
-    // Clear previous errors
-    setErrors({});
     setServerError(null);
-    setLoading(true);
 
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const res = await fetch(`${API_BASE}/api/registration/register`, {
-        method: 'POST',
-        body: fd
-      });
+      const {
+        email,
+        username,
+        password,
+        confirmPassword,
+        firstName,
+        lastName,
+        address,
+        contactNumber,
+        licenseNumber,
+        licenseExpiry,
+        restrictions,
+        licenseFile,
+        agreeTerms,
+      } = formData;
 
-      const text = await res.text();
-      let body;
-      try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+      // Basic required validation (use trim to avoid whitespace-only)
+      const missingInitial =
+        !email?.trim() ||
+        !username?.trim() ||
+        !password ||
+        !confirmPassword ||
+        !firstName?.trim() ||
+        !lastName?.trim() ||
+        !address?.trim() ||
+        !contactNumber?.trim() ||
+        !licenseNumber?.trim() ||
+        !licenseExpiry?.trim() ||
+        !licenseFile ||
+        !agreeTerms;
 
-      if (!res.ok) {
-        // Handle validation or server errors
-        if (body && body.errors) {
-          setErrors(body.errors);
-        } else {
-          setServerError(body && body.message ? body.message : 'Registration failed. Please try again.');
-        }
-        return;
+      if (missingInitial) {
+        throw new Error('All required fields must be provided');
       }
 
-      // Success
-      form.reset();
-      setFormData({
-        email: "",
-        username: "",
-        password: "",
-        confirmPassword: "",
-        firstName: "",
-        lastName: "",
-        address: "",
-        contactNumber: "",
-        licenseNumber: "",
-        licenseExpiry: "",
-        restrictions: "",
-        licenseFile: null,
-        agreeTerms: false,
+      if (password !== confirmPassword) {
+        throw new Error('All required fields must be provided');
+      }
+
+      setLoading(true);
+
+      // 1) Upload license image first to storage endpoint
+      const BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL).replace(/\/+$/, '');
+      const uploadUrl = new URL('/api/storage/licenses', BASE).toString();
+
+      const uploadFd = new FormData();
+      uploadFd.append('file', licenseFile, licenseFile.name);
+      // optional filename hint (server will rename to licenseNumber_customerId later if needed)
+      uploadFd.append('filename', `${licenseNumber}_${Date.now()}_${licenseFile.name}`);
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'POST',
+        body: uploadFd,
       });
-      setPreviewUrl(null);
-      setSuccessMessage(body && body.message ? body.message : 'Account created successfully.');
+
+      const uploadJson = await uploadRes.json().catch(() => ({}));
+      if (!uploadRes.ok) {
+        throw new Error(uploadJson?.message || uploadJson?.error || 'File upload failed');
+      }
+
+      // try to extract a public URL or stored path from response
+      let dl_img_url =
+        uploadJson?.publicURL ||
+        uploadJson?.publicUrl ||
+        uploadJson?.publicUrl ||
+        uploadJson?.publicURL ||
+        uploadJson?.data?.publicUrl ||
+        uploadJson?.data?.publicURL ||
+        uploadJson?.data?.path ||
+        uploadJson?.data?.Key ||
+        uploadJson?.path ||
+        uploadJson?.key ||
+        null;
+
+      // if no URL but upload returned data with path/key, use that as dl_img_url
+      if (!dl_img_url && uploadJson?.data) {
+        dl_img_url = uploadJson.data.path || uploadJson.data.key || null;
+      }
+
+      // 2) Build registration payload including dl_img_url
+      const payload = {
+        email: email.trim(),
+        username: username.trim(),
+        password,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        address: address.trim(),
+        contactNumber: contactNumber.trim(),
+        licenseNumber: licenseNumber.trim(),
+        licenseExpiry: licenseExpiry.trim(),
+        restrictions: restrictions?.trim() || '',
+        dl_img_url: dl_img_url,
+        agreeTerms: !!agreeTerms,
+      };
+
+      // Validate final required fields (including dl_img_url)
+      const missingFinal =
+        !payload.email ||
+        !payload.username ||
+        !payload.password ||
+        !payload.firstName ||
+        !payload.lastName ||
+        !payload.address ||
+        !payload.contactNumber ||
+        !payload.licenseNumber ||
+        !payload.licenseExpiry ||
+        !payload.dl_img_url ||
+        !payload.agreeTerms;
+
+      if (missingFinal) {
+        throw new Error('All required fields must be provided');
+      }
+
+      // 3) Send registration (JSON) to backend register route
+      const regUrl = new URL('/api/auth/register', BASE).toString();
+      const regRes = await fetch(regUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const regJson = await regRes.json().catch(() => ({}));
+      if (!regRes.ok) {
+        throw new Error(regJson?.message || regJson?.error || 'Registration failed');
+      }
+
+      setSuccessMessage(regJson?.message || 'Registered successfully');
       setShowSuccess(true);
-    } catch {
-      setServerError('Network error. Please check your connection and try again.');
+      // optionally navigate on success
+      // navigate('/login');
+    } catch (err) {
+      setServerError(err.message || 'All required fields must be provided');
     } finally {
       setLoading(false);
     }
@@ -175,7 +257,7 @@ const RegisterPage = () => {
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 w-full max-w-md bg-white rounded-xl shadow-md p-6 overflow-y-auto max-h-[90vh] register-card">
           {/* add `register-card` class so custom CSS can target the card */}
-          <form className="register-form flex flex-col space-y-4" id="regForm" onSubmit={handleSubmit} noValidate encType="multipart/form-data">
+          <form className="register-form flex flex-col space-y-4" id="regForm" onSubmit={handleRegisterSubmit} noValidate encType="multipart/form-data">
             {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-semibold mb-1">
@@ -369,7 +451,7 @@ const RegisterPage = () => {
                 <input
                   ref={fileInputRef}
                   id="licenseUpload"
-                  name="licenseFile"
+                  name="file" // <- match multer upload.single('file')
                   type="file"
                   onChange={handleFileChange}
                   accept={ALLOWED_FILE_TYPES.join(",")}

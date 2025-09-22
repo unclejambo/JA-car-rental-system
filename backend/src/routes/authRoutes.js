@@ -1,16 +1,18 @@
 import express from 'express';
-import { login, validateToken, register } from '../controllers/authController.js';
-import { verifyToken } from '../middleware/authMiddleware.js';
+import multer from 'multer';
+import { login, register, validateToken } from '../controllers/authController.js';
 
 const router = express.Router();
+const upload = multer(); // memory storage
 
 // POST /api/auth/login
 router.post('/login', login);
 
 // POST /api/auth/register
-router.post('/register', register);
+// attach multer middleware so register can receive multipart/form-data with key "file"
+router.post('/register', upload.single('file'), register);
 
 // GET /api/auth/validate - Protected route to validate token
-router.get('/validate', verifyToken, validateToken);
+router.get('/validate', validateToken);
 
 export default router;

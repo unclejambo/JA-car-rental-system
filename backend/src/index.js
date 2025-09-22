@@ -8,6 +8,7 @@ import bookingRoutes from './routes/bookingRoute.js';
 import scheduleRoutes from './routes/scheduleRoute.js'; // <--- added
 import authRoutes from './routes/authRoutes.js'; // <--- added
 import registrationRoutes from './routes/registrationRoutes.js'; // <--- added
+import storageRouter from './routes/storage.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,7 +36,7 @@ app.use('/bookings', bookingRoutes);
 app.use('/schedules', scheduleRoutes); // <--- added
 app.use('/api/auth', authRoutes); // <--- added
 app.use('/api/registration', registrationRoutes); // <--- added
-
+app.use('/api/storage', storageRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

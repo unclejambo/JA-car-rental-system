@@ -1,11 +1,16 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { createClient } from '@supabase/supabase-js';
 
 const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-jwt-secret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function login(req, res, next) {
   try {
@@ -153,6 +158,36 @@ async function validateToken(req, res, next) {
 
 async function register(req, res, next) {
   try {
+    // Debug: inspect incoming request to verify multer ran and multipart arrived
+    console.log('--- REGISTER ROUTE CALLED ---');
+    console.log('Request URL:', req.originalUrl || req.url);
+    console.log('Headers (content-type):', req.headers['content-type'] || req.headers['Content-Type']);
+    try {
+      console.log('Body keys:', Object.keys(req.body || {}));
+    } catch (e) {
+      console.log('Body read error', e);
+    }
+    // multer single: req.file expected
+    if (req.file) {
+      console.log('multer req.file:', {
+        fieldname: req.file.fieldname,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        bufferPresent: !!req.file.buffer,
+      });
+    } else {
+      console.log('multer req.file is MISSING');
+    }
+    // sometimes req.files used
+    if (req.files) {
+      console.log('multer req.files keys:', Object.keys(req.files));
+    }
+
+    // Proceed with existing registration logic...
+    // ...existing code...
+
+    // Accept field variants from frontend
     const {
       email,
       username,
@@ -161,64 +196,57 @@ async function register(req, res, next) {
       lastName,
       address,
       contactNumber,
-      licenseNumber,
+      licenseNumber: licenseNumberBody,
       licenseExpiry,
       restrictions,
-      licenseFile, // This would be handled separately for file upload
     } = req.body;
 
-    // Validation
-    if (!email || !username || !password || !firstName || !lastName || 
-        !address || !contactNumber || !licenseNumber || !licenseExpiry) {
-      return res.status(400).json({ 
-        ok: false, 
-        message: 'All required fields must be provided' 
-      });
+    const licenseNumber =
+      licenseNumberBody || req.body.license_number || req.body.driver_license_no;
+
+    // Basic validation
+    if (
+      !email ||
+      !username ||
+      !password ||
+      !firstName ||
+      !lastName ||
+      !address ||
+      !contactNumber ||
+      !licenseNumber ||
+      !licenseExpiry
+    ) {
+      return res.status(400).json({ ok: false, message: 'Missing required fields' });
     }
 
-    // Check if user already exists
+    // Check existing
     const existingCustomer = await prisma.customer.findFirst({
-      where: {
-        OR: [
-          { email },
-          { username },
-        ],
-      },
+      where: { OR: [{ email }, { username }] },
     });
-
     if (existingCustomer) {
-      return res.status(409).json({
-        ok: false,
-        message: 'User with this email or username already exists',
-      });
+      return res.status(409).json({ ok: false, message: 'Account already exists' });
     }
 
-    // Check if license number already exists
     const existingLicense = await prisma.driverLicense.findUnique({
       where: { driver_license_no: licenseNumber },
     });
-
     if (existingLicense) {
-      return res.status(409).json({
-        ok: false,
-        message: 'Driver license number already exists',
-      });
+      return res.status(409).json({ ok: false, message: 'Driver license already registered' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create driver license first
-    const driverLicense = await prisma.driverLicense.create({
+    // Create driverLicense record first (dl_img_url null for now)
+    await prisma.driverLicense.create({
       data: {
         driver_license_no: licenseNumber,
         expiry_date: new Date(licenseExpiry),
         restrictions: restrictions || 'None',
-        dl_img_url: licenseFile ? `/uploads/licenses/${licenseFile}` : null,
+        dl_img_url: null,
       },
     });
 
-    // Create customer with the license reference
+    // Create customer
     const customer = await prisma.customer.create({
       data: {
         first_name: firstName,
@@ -234,8 +262,52 @@ async function register(req, res, next) {
       },
     });
 
-    // Remove password from response
-    const { password: _pw, ...safeCustomer } = customer;
+    // If a file was uploaded via multer (upload.single('file')), upload to Supabase
+    if (req.file && req.file.buffer) {
+      try {
+        const file = req.file;
+        const original = file.originalname || 'upload.jpg';
+        const extMatch = original.match(/\.[^.]+$/);
+        const ext = extMatch ? extMatch[0] : '.jpg';
+        const filename = `${licenseNumber}_${customer.customer_id}${ext}`;
+        const bucket = 'licenses';
+        const path = filename;
+
+        console.log('Uploading license to supabase:', { bucket, path });
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(path, file.buffer, {
+            contentType: file.mimetype,
+            upsert: true,
+          });
+
+        if (uploadError) {
+          console.error('Supabase upload error:', uploadError);
+        } else {
+          // get public url (if bucket is public) or store path
+          let publicUrl = null;
+          try {
+            // supabase v1/v2 return shapes differ; attempt both
+            const publicRes = supabase.storage.from(bucket).getPublicUrl(path);
+            publicUrl = publicRes?.data?.publicUrl || publicRes?.publicURL || publicRes?.publicUrl || null;
+          } catch (err) {
+            // ignore; we'll store path if public url cannot be obtained
+          }
+
+          await prisma.driverLicense.update({
+            where: { driver_license_no: licenseNumber },
+            data: { dl_img_url: publicUrl || path },
+          });
+
+          console.log('Uploaded license and updated DB:', { licenseNumber, customerId: customer.customer_id, publicUrl });
+        }
+      } catch (err) {
+        console.error('Error during file upload flow:', err);
+      }
+    } else {
+      console.log('No file in request (req.file missing)');
+    }
 
     return res.status(201).json({
       ok: true,
@@ -250,15 +322,9 @@ async function register(req, res, next) {
     });
   } catch (err) {
     console.error('Registration error:', err);
-    
-    // Handle Prisma unique constraint errors
     if (err.code === 'P2002') {
-      return res.status(409).json({
-        ok: false,
-        message: 'A record with this information already exists',
-      });
+      return res.status(409).json({ ok: false, message: 'Unique constraint failed' });
     }
-    
     next(err);
   }
 }

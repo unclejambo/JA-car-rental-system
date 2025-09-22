@@ -8,6 +8,8 @@ import TransactionLogsHeader from '../../ui/components/header/TransactionLogsHea
 import TransactionLogsTable from '../../ui/components/table/TranscationLogsTable';
 import Loading from '../../ui/components/Loading';
 import { useTransactionStore } from '../../store/transactions';
+import AddPaymentModal from '../../ui/components/modal/AddPaymentModal';
+import AddRefundModal from '../../ui/components/modal/AddRefundModal';
 
 // const formatDate = (dateString) => {
 //   if (!dateString) return 'N/A';
@@ -23,6 +25,14 @@ export default function AdminTransactionPage() {
   const [activeTab, setActiveTab] = useState('TRANSACTIONS');
 
   console.log('AdminTransactionPage - Transactions:', transactions);
+
+  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
+  const openAddPaymentModal = () => setShowAddPaymentModal(true);
+  const closeAddPaymentModal = () => setShowAddPaymentModal(false);
+
+  const [showAddRefundModal, setShowAddRefundModal] = useState(false);
+  const openAddRefundModal = () => setShowAddRefundModal(true);
+  const closeAddRefundModal = () => setShowAddRefundModal(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -91,11 +101,18 @@ export default function AdminTransactionPage() {
   return (
     <Box sx={{ display: 'flex' }}>
       <title>Transactions</title>
+      <AddPaymentModal
+        show={showAddPaymentModal}
+        onClose={closeAddPaymentModal}
+      />
+      <AddRefundModal show={showAddRefundModal} onClose={closeAddRefundModal} />
+
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar
         mobileOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
       />
+
       <Box
         component="main"
         sx={{
@@ -171,7 +188,7 @@ export default function AdminTransactionPage() {
                       sx={{ width: '18px', height: '18px', mt: '-2px' }}
                     />
                   }
-                  onClick={() => console.log('ADD PAYMENT!')}
+                  onClick={openAddPaymentModal}
                   sx={{
                     color: '#fff',
                     p: 1,
@@ -202,7 +219,7 @@ export default function AdminTransactionPage() {
                       sx={{ width: '18px', height: '18px', mt: '-2px' }}
                     />
                   }
-                  onClick={() => console.log('ADD REFUND!')}
+                  onClick={openAddRefundModal}
                   sx={{
                     color: '#fff',
                     p: 1,

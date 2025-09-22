@@ -30,7 +30,6 @@ export default function AdminSchedulePage() {
     setShowReturnModal(true);
   };
 
-
   // <div className="flex justify-between items-center mb-4">
   //         <div className="relative">
   //           <input
@@ -43,7 +42,7 @@ export default function AdminSchedulePage() {
   //           <HiMagnifyingGlass className="absolute left-3 top-3 text-gray-400" />
   //         </div>
   //       </div>
-  
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -57,7 +56,9 @@ export default function AdminSchedulePage() {
           headers: { Accept: 'application/json' },
         });
         if (!res.ok) {
-          throw new Error(`Failed to fetch schedules: ${res.status} ${res.statusText}`);
+          throw new Error(
+            `Failed to fetch schedules: ${res.status} ${res.statusText}`
+          );
         }
         const data = await res.json();
         setSchedule(data);
@@ -189,7 +190,7 @@ export default function AdminSchedulePage() {
                 overflow: 'hidden',
               }}
             >
-              {(!schedule || schedule.length === 0) ? (
+              {!schedule || schedule.length === 0 ? (
                 <Box
                   sx={{
                     display: 'flex',

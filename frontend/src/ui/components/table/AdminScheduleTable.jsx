@@ -3,7 +3,7 @@ import { Box, Button } from '@mui/material';
 import { useScheduleStore } from '../../../store/schedule';
 import PublicIcon from '@mui/icons-material/Public';
 
-const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
+const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
   const updateReservationStatus = useScheduleStore(
     (state) => state.updateReservationStatus
   );
@@ -392,4 +392,4 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
   );
 };
 
-export default ScheduleTable;
+export default AdminScheduleTable;

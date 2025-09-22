@@ -3,7 +3,7 @@ import Header from '../../ui/components/Header';
 import { Box, Typography } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 import { HiCalendarDays, HiMagnifyingGlass } from 'react-icons/hi2';
-import ScheduleTable from '../../ui/components/table/ScheduleTable';
+import AdminScheduleTable from '../../ui/components/table/AdminScheduleTable';
 import Loading from '../../ui/components/Loading';
 import ReleaseModal from '../../ui/components/modal/ReleaseModal.jsx';
 import ReturnModal from '../../ui/components/modal/ReturnModal.jsx';
@@ -205,7 +205,7 @@ export default function AdminSchedulePage() {
                   <pre style={{ display: 'none' }}>
                     {JSON.stringify(schedule, null, 2)}
                   </pre>
-                  <ScheduleTable
+                  <AdminScheduleTable
                     rows={schedule}
                     loading={loading}
                     onOpenRelease={handleReleaseClick}

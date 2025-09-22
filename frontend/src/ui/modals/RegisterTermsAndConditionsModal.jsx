@@ -3,12 +3,33 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, 
 import { Close as CloseIcon } from '@mui/icons-material';
 
 const RegisterTermsAndConditionsModal = ({ open, onClose, onAgree }) => {
+  const handleAgree = () => {
+    onAgree();
+    // Ensure focus is properly managed
+    setTimeout(() => {
+      if (document.activeElement) {
+        document.activeElement.blur();
+      }
+    }, 100);
+  };
+
+  const handleClose = () => {
+    onClose();
+    // Ensure focus is properly managed
+    setTimeout(() => {
+      if (document.activeElement) {
+        document.activeElement.blur();
+      }
+    }, 100);
+  };
+
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       maxWidth="md"
       fullWidth
+      disableRestoreFocus={true} // Prevent focus restoration issues
       PaperProps={{
         sx: {
           borderRadius: 2,
@@ -21,12 +42,12 @@ const RegisterTermsAndConditionsModal = ({ open, onClose, onAgree }) => {
         justifyContent: 'space-between', 
         alignItems: 'center',
         borderBottom: '1px solid #e0e0e0',
-        pb: 2
+        pb: 2,
+        fontSize: '1.5rem',
+        fontWeight: 'bold'
       }}>
-        <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
-          Terms and Conditions
-        </Typography>
-        <IconButton onClick={onClose} size="small">
+        Terms and Conditions
+        <IconButton onClick={handleClose} size="small">
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -118,10 +139,10 @@ const RegisterTermsAndConditionsModal = ({ open, onClose, onAgree }) => {
       </DialogContent>
       
       <DialogActions sx={{ p: 3, borderTop: '1px solid #e0e0e0' }}>
-        <Button onClick={onClose} variant="outlined" color="secondary">
+        <Button onClick={handleClose} variant="outlined" color="secondary">
           Close
         </Button>
-        <Button onClick={onAgree} variant="contained" color="primary">
+        <Button onClick={handleAgree} variant="contained" color="primary">
           I Agree
         </Button>
       </DialogActions>

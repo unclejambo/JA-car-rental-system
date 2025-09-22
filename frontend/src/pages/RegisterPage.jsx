@@ -1,12 +1,18 @@
 import React, { useState, useRef } from 'react';
 import { FaUpload } from 'react-icons/fa';
 import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Header from '../ui/components/Header';
 import carImage from '/carImage.png';
 import { useNavigate } from 'react-router-dom';
 import '../styles/register.css';
 import SuccessModal from '../ui/components/modal/SuccessModal.jsx';
+import RegisterTermsAndConditionsModal from '../ui/modals/RegisterTermsAndConditionsModal.jsx';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
@@ -32,34 +38,11 @@ const RegisterPage = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState(null);
   const [showTerms, setShowTerms] = useState(false);
-  const [termsContent, setTermsContent] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-
-  // Fetch terms and conditions from backend
-  const fetchTerms = async () => {
-    if (termsContent) return; // Already loaded
-
-    try {
-      const response = await fetch('/api/registration/terms');
-      if (response.ok) {
-        const data = await response.json();
-        setTermsContent(data.content || '');
-      } else {
-        setTermsContent(
-          'Terms and conditions not available. Please contact support.'
-        );
-      }
-    } catch (error) {
-      setTermsContent(
-        'Terms and conditions not available. Please contact support.'
-      );
-    }
-  };
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -74,7 +57,6 @@ const RegisterPage = () => {
     const file = e.target.files?.[0] ?? null;
     if (!file) {
       setFormData((p) => ({ ...p, licenseFile: null }));
-      setPreviewUrl(null);
       return;
     }
 
@@ -90,15 +72,13 @@ const RegisterPage = () => {
       return;
     }
 
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+    // Only store the File object — do not create an object URL or show an image preview.
     setFormData((prev) => ({ ...prev, licenseFile: file }));
     setErrors((prev) => ({ ...prev, licenseFile: undefined }));
   };
 
   const removeFile = () => {
     setFormData((p) => ({ ...p, licenseFile: null }));
-    setPreviewUrl(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -262,7 +242,11 @@ const RegisterPage = () => {
 
   const handleShowTerms = () => {
     setShowTerms(true);
-    fetchTerms();
+  };
+
+  const handleAgreeTerms = () => {
+    setFormData((p) => ({ ...p, agreeTerms: true }));
+    setShowTerms(false);
   };
 
   return (
@@ -279,14 +263,14 @@ const RegisterPage = () => {
         >
           {/* add `register-card` class so custom CSS can target the card */}
           <form
-            className="register-form flex flex-col space-y-4"
+            className="register-form flex flex-col space-y-3"
             id="regForm"
             onSubmit={handleRegisterSubmit}
             noValidate
             encType="multipart/form-data"
           >
             {/* Back to Login (MUI) */}
-            <div>
+            <Box sx={{ mb: 1 }}>
               <Button
                 variant="text"
                 color="primary"
@@ -297,369 +281,509 @@ const RegisterPage = () => {
               >
                 Back to Login
               </Button>
-            </div>
-            <br />
+            </Box>
+
             {/* Email */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-semibold mb-1"
-              >
-                EMAIL ADDRESS
-              </label>
-              <input
+            <Box sx={{ mb: 2 }}>
+              <TextField
                 id="email"
                 name="email"
+                label="EMAIL ADDRESS"
                 value={formData.email}
                 onChange={onChange}
                 type="email"
                 placeholder="Enter your email address"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
-                aria-invalid={!!errors.email}
+                fullWidth
+                variant="outlined"
+                size="medium"
                 required
+                error={!!errors.email}
+                helperText={errors.email}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                    '& fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.5)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                  },
+                }}
               />
-              {errors.email && (
-                <p className="text-xs text-red-600 mt-1">{errors.email}</p>
-              )}
-            </div>
+            </Box>
 
             {/* Username */}
-            <div>
-              <label
-                htmlFor="username"
-                className="block text-sm font-semibold mb-1"
-              >
-                USERNAME
-              </label>
-              <input
+            <Box sx={{ mb: 2 }}>
+              <TextField
                 id="username"
                 name="username"
+                label="USERNAME"
                 value={formData.username}
                 onChange={onChange}
                 type="text"
                 placeholder="Enter your username"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
+                fullWidth
+                variant="outlined"
+                size="medium"
                 required
-                aria-invalid={!!errors.username}
+                error={!!errors.username}
+                helperText={errors.username}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                    '& fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.5)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                  },
+                }}
               />
-              {errors.username && (
-                <p className="text-xs text-red-600 mt-1">{errors.username}</p>
-              )}
-            </div>
+            </Box>
 
             {/* Password */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-semibold mb-1"
-              >
-                PASSWORD
-              </label>
-              <input
+            <Box sx={{ mb: 2 }}>
+              <TextField
                 id="password"
                 name="password"
+                label="PASSWORD"
                 value={formData.password}
                 onChange={onChange}
                 type="password"
                 placeholder="Enter a strong password"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
+                fullWidth
+                variant="outlined"
+                size="medium"
                 required
-                aria-invalid={!!errors.password}
+                error={!!errors.password}
+                helperText={errors.password}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                    '& fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.5)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                  },
+                }}
               />
-              {errors.password && (
-                <p className="text-xs text-red-600 mt-1">{errors.password}</p>
-              )}
-            </div>
+            </Box>
 
             {/* Confirm Password */}
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-semibold mb-1"
-              >
-                CONFIRM PASSWORD
-              </label>
-              <input
+            <Box sx={{ mb: 2 }}>
+              <TextField
                 id="confirmPassword"
                 name="confirmPassword"
+                label="CONFIRM PASSWORD"
                 value={formData.confirmPassword}
                 onChange={onChange}
                 type="password"
                 placeholder="Confirm your password"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
+                fullWidth
+                variant="outlined"
+                size="medium"
                 required
-                aria-invalid={!!errors.confirmPassword}
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                    '& fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.5)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                  },
+                }}
               />
-              {errors.confirmPassword && (
-                <p className="text-xs text-red-600 mt-1">
-                  {errors.confirmPassword}
-                </p>
-              )}
-            </div>
+            </Box>
 
             {/* Name */}
-            <div>
-              <label className="block text-sm font-semibold mb-1">NAME</label>
-              <div className="two-col flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
-                <div className="w-full">
-                  <input
-                    id="firstName"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={onChange}
-                    type="text"
-                    placeholder="First name"
-                    className="w-full p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none"
-                    required
-                    aria-invalid={!!errors.firstName}
-                  />
-                  {errors.firstName && (
-                    <p className="text-xs text-red-600 mt-1">
-                      {errors.firstName}
-                    </p>
-                  )}
-                </div>
-                <div className="w-full">
-                  <input
-                    id="lastName"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={onChange}
-                    type="text"
-                    placeholder="Last name"
-                    className="w-full p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none"
-                    required
-                    aria-invalid={!!errors.lastName}
-                  />
-                  {errors.lastName && (
-                    <p className="text-xs text-red-600 mt-1">
-                      {errors.lastName}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: '600', mb: 1 }}>
+                NAME
+              </Typography>
+              <Box className="two-col flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
+                <TextField
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={onChange}
+                  type="text"
+                  placeholder="First name"
+                  fullWidth
+                  variant="outlined"
+                  size="medium"
+                  required
+                  error={!!errors.firstName}
+                  helperText={errors.firstName}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                      '& fieldset': {
+                        borderColor: 'rgba(156, 163, 175, 0.5)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(156, 163, 175, 0.8)',
+                      },
+                    },
+                  }}
+                />
+                <TextField
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={onChange}
+                  type="text"
+                  placeholder="Last name"
+                  fullWidth
+                  variant="outlined"
+                  size="medium"
+                  required
+                  error={!!errors.lastName}
+                  helperText={errors.lastName}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                      '& fieldset': {
+                        borderColor: 'rgba(156, 163, 175, 0.5)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(156, 163, 175, 0.8)',
+                      },
+                    },
+                  }}
+                />
+              </Box>
+            </Box>
 
             {/* Address */}
-            <div>
-              <label
-                htmlFor="address"
-                className="block text-sm font-semibold mb-1"
-              >
-                ADDRESS
-              </label>
-              <input
+            <Box sx={{ mb: 2 }}>
+              <TextField
                 id="address"
                 name="address"
+                label="ADDRESS"
                 value={formData.address}
                 onChange={onChange}
                 type="text"
                 placeholder="Enter your address"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
+                fullWidth
+                variant="outlined"
+                size="medium"
                 required
-                aria-invalid={!!errors.address}
+                error={!!errors.address}
+                helperText={errors.address}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                    '& fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.5)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                  },
+                }}
               />
-              {errors.address && (
-                <p className="text-xs text-red-600 mt-1">{errors.address}</p>
-              )}
-            </div>
+            </Box>
 
             {/* Contact Number */}
-            <div>
-              <label
-                htmlFor="contactNumber"
-                className="block text-sm font-semibold mb-1"
-              >
-                CONTACT NUMBER
-              </label>
-              <input
+            <Box sx={{ mb: 2 }}>
+              <TextField
                 id="contactNumber"
                 name="contactNumber"
+                label="CONTACT NUMBER"
                 value={formData.contactNumber}
                 onChange={onChange}
                 type="text"
                 placeholder="Enter your contact number"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
+                fullWidth
+                variant="outlined"
+                size="medium"
                 required
-                aria-invalid={!!errors.contactNumber}
+                error={!!errors.contactNumber}
+                helperText={errors.contactNumber}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                    '& fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.5)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                  },
+                }}
               />
-              {errors.contactNumber && (
-                <p className="text-xs text-red-600 mt-1">
-                  {errors.contactNumber}
-                </p>
-              )}
-            </div>
+            </Box>
 
-            {/* Driver’s License Number */}
-            <div>
-              <label
-                htmlFor="licenseNumber"
-                className="block text-sm font-semibold mb-1"
-              >
-                DRIVER'S LICENSE NUMBER
-              </label>
-              <input
+            {/* Driver's License Number */}
+            <Box sx={{ mb: 2 }}>
+              <TextField
                 id="licenseNumber"
                 name="licenseNumber"
+                label="DRIVER'S LICENSE NUMBER"
                 value={formData.licenseNumber}
                 onChange={onChange}
                 type="text"
                 placeholder="License number"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
+                fullWidth
+                variant="outlined"
+                size="medium"
                 required
-                aria-invalid={!!errors.licenseNumber}
+                error={!!errors.licenseNumber}
+                helperText={errors.licenseNumber}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                    '& fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.5)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                  },
+                }}
               />
-              {errors.licenseNumber && (
-                <p className="text-xs text-red-600 mt-1">
-                  {errors.licenseNumber}
-                </p>
-              )}
-            </div>
+            </Box>
 
-            {/* Driver’s License Expiry Date */}
-            <div>
-              <label
-                htmlFor="licenseExpiry"
-                className="block text-sm font-semibold mb-1"
-              >
-                DRIVER'S LICENSE EXPIRY DATE
-              </label>
-              <input
+            {/* Driver's License Expiry Date */}
+            <Box sx={{ mb: 2 }}>
+              <TextField
                 id="licenseExpiry"
                 name="licenseExpiry"
+                label="DRIVER'S LICENSE EXPIRY DATE"
                 value={formData.licenseExpiry}
                 onChange={onChange}
                 type="date"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
+                fullWidth
+                variant="outlined"
+                size="medium"
                 required
-                aria-invalid={!!errors.licenseExpiry}
+                error={!!errors.licenseExpiry}
+                helperText={errors.licenseExpiry}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                    '& fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.5)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                  },
+                }}
               />
-              {errors.licenseExpiry && (
-                <p className="text-xs text-red-600 mt-1">
-                  {errors.licenseExpiry}
-                </p>
-              )}
-            </div>
+            </Box>
 
             {/* Restrictions */}
-            <div>
-              <label
-                htmlFor="restrictions"
-                className="block text-sm font-semibold mb-1"
-              >
-                RESTRICTIONS
-              </label>
-              <input
+            <Box sx={{ mb: 2 }}>
+              <TextField
                 id="restrictions"
                 name="restrictions"
+                label="RESTRICTIONS"
                 value={formData.restrictions}
                 onChange={onChange}
                 type="text"
                 placeholder="CODE (optional)"
-                className="p-2 rounded bg-gray-200 placeholder-gray-600 focus:outline-none w-full"
+                fullWidth
+                variant="outlined"
+                size="medium"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                    '& fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.5)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                  },
+                }}
               />
-            </div>
+            </Box>
 
             {/* License Image Upload */}
-            <div>
-              <label className="block text-sm font-semibold mb-1">
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: '600', mb: 1 }}>
                 LICENSE IMAGE
-              </label>
-              <div className="flex items-center space-x-2">
+              </Typography>
+              <Box>
                 <input
                   ref={fileInputRef}
                   id="licenseUpload"
-                  name="file" // <- match multer upload.single('file')
+                  name="file"
                   type="file"
                   onChange={handleFileChange}
                   accept={ALLOWED_FILE_TYPES.join(',')}
-                  className="hidden"
+                  style={{ display: 'none' }}
                 />
-                <label
+                <Button
+                  variant="outlined"
+                  component="label"
                   htmlFor="licenseUpload"
-                  className="flex items-center space-x-2 p-2 bg-gray-200 rounded cursor-pointer hover:bg-gray-300"
-                >
-                  <FaUpload />
-                  <span>
-                    {formData.licenseFile ? 'Change file' : 'Upload License ID'}
-                  </span>
-                </label>
-                {formData.licenseFile && (
-                  <div className="flex items-center space-x-2">
-                    <div className="text-sm">
-                      <div className="font-medium">
-                        {formData.licenseFile.name}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {(formData.licenseFile.size / 1024).toFixed(0)} KB
-                      </div>
-                    </div>
-                    <button
+                  startIcon={<FaUpload />}
+                  sx={{
+                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                    borderColor: 'rgba(156, 163, 175, 0.5)',
+                    color: 'rgba(75, 85, 99, 1)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(209, 213, 219, 0.8)',
+                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                    },
+                  }}>
+
+                  {formData.licenseFile ? 'Change file' : 'Upload License ID'}
+
+                  {formData.licenseFile && (
+                  <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'rgba(75, 85, 99, 1)', flex: 1 }}>
+                      {formData.licenseFile.name}
+                    </Typography>
+                    <Button
                       type="button"
                       onClick={removeFile}
-                      className="text-sm text-red-600 hover:underline"
+                      variant="text"
+                      color="error"
+                      size="small"
+                      sx={{ fontSize: '0.875rem', textDecoration: 'underline', minWidth: 'auto' }}
                     >
                       Remove
-                    </button>
-                  </div>
+                    </Button>
+                  </Box>
                 )}
-              </div>
-              {previewUrl && (
-                <div className="mt-2">
-                  <img
-                    src={previewUrl}
-                    alt="License preview"
-                    className="w-32 h-20 object-contain rounded border"
-                  />
-                </div>
-              )}
+
+                </Button>
+            
+              </Box>
               {errors.licenseFile && (
-                <p className="text-xs text-red-600 mt-1">
+                <Typography variant="body2" color="error" sx={{ fontSize: '0.75rem', mt: 1 }}>
                   {errors.licenseFile}
-                </p>
+                </Typography>
               )}
-            </div>
+            </Box>
 
             {/* Terms and Conditions */}
-            <div className="flex items-start space-x-2">
-              <input
-                id="agreeTerms"
-                name="agreeTerms"
-                type="checkbox"
-                checked={formData.agreeTerms}
-                onChange={onChange}
+            <Box className="flex items-start space-x-2" sx={{ mb: 2 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    id="agreeTerms"
+                    name="agreeTerms"
+                    checked={formData.agreeTerms}
+                    onChange={onChange}
+                    sx={{
+                      color: 'rgba(156, 163, 175, 0.8)',
+                      '&.Mui-checked': {
+                        color: '#2563eb',
+                      },
+                    }}
+                  />
+                }
+                label={
+                  <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                    I agree to the{' '}
+                    <button
+                      type="button"
+                      onClick={handleShowTerms}
+                      className="text-blue-600 underline hover:text-blue-800"
+                      style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
+                    >
+                      Terms and Conditions
+                    </button>
+                  </Typography>
+                }
               />
-              <label htmlFor="agreeTerms" className="text-sm">
-                I agree to the{' '}
-                <button
-                  type="button"
-                  onClick={handleShowTerms}
-                  className="text-blue-600 underline hover:text-blue-800"
-                >
-                  Terms and Conditions
-                </button>
-              </label>
-            </div>
+            </Box>
             {errors.agreeTerms && (
               <p className="text-xs text-red-600 mt-1">{errors.agreeTerms}</p>
             )}
 
             {/* Server error */}
             {serverError && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200">
+              <Box sx={{ 
+                fontSize: '0.875rem', 
+                color: '#DC2626', 
+                backgroundColor: '#FEF2F2', 
+                p: 1.5, 
+                borderRadius: 1, 
+                border: '1px solid #FECACA',
+                mb: 2
+              }}>
                 {serverError}
-              </div>
+              </Box>
             )}
 
             {/* Submit Button */}
-            <div className="flex justify-center">
-              <button
+            <Box className="flex justify-center" sx={{ pt: 1 }}>
+              <Button
                 type="submit"
                 disabled={loading}
-                className={`mt-4 p-3 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} text-white rounded font-bold transition-colors w-full flex items-center justify-center`}
+                variant="contained"
+                fullWidth
+                size="large"
+                sx={{
+                  mt: 2,
+                  py: 1.5,
+                  backgroundColor: loading ? '#9CA3AF' : '#16A34A',
+                  '&:hover': {
+                    backgroundColor: loading ? '#9CA3AF' : '#15803D',
+                  },
+                  '&:disabled': {
+                    backgroundColor: '#9CA3AF',
+                    cursor: 'not-allowed',
+                  },
+                  color: 'white',
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase',
+                }}
               >
                 {loading ? (
-                  <>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <svg
                       className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
                       xmlns="http://www.w3.org/2000/svg"
@@ -681,59 +805,21 @@ const RegisterPage = () => {
                       ></path>
                     </svg>
                     Registering...
-                  </>
+                  </Box>
                 ) : (
                   'REGISTER'
                 )}
-              </button>
-            </div>
+              </Button>
+            </Box>
           </form>
         </div>
       </div>
 
-      {/* Terms and Conditions Modal */}
-      {showTerms && (
-        <div
-          className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="bg-white p-6 rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto relative">
-            <h2 className="text-xl font-bold mb-4 text-center">
-              Terms and Conditions
-            </h2>
-            <div className="text-sm space-y-4 text-justify">
-              {termsContent ? (
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: termsContent.replace(/\n/g, '<br />'),
-                  }}
-                />
-              ) : (
-                <p>Loading terms and conditions...</p>
-              )}
-            </div>
-
-            <button
-              onClick={() => setShowTerms(false)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-black text-lg"
-              aria-label="Close"
-            >
-              ✕
-            </button>
-            <button
-              onClick={() => {
-                setFormData((p) => ({ ...p, agreeTerms: true }));
-                setShowTerms(false);
-              }}
-              className="mt-4 p-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors w-full"
-              disabled={!termsContent}
-            >
-              I Agree
-            </button>
-          </div>
-        </div>
-      )}
+      <RegisterTermsAndConditionsModal
+        open={showTerms}
+        onClose={() => setShowTerms(false)}
+        onAgree={handleAgreeTerms}
+      />
 
       <SuccessModal
         open={showSuccess}

@@ -10,61 +10,10 @@ import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 
 function CustomerSchedule() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
-
-  // new state for schedule + loading
   const [schedule, setSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const parseNumber = (v) => {
-      if (v == null) return null;
-      const s = String(v).trim();
-      return /^\d+$/.test(s) ? Number(s) : null;
-    };
-
-    const getCustomerIdFromStorage = () => {
-      // 1) direct numeric keys
-      const numericKeys = ['customerId', 'userId', 'id'];
-      for (const k of numericKeys) {
-        const v = localStorage.getItem(k);
-        const n = parseNumber(v);
-        if (n) return n;
-      }
-
-      // 2) stored user object
-      try {
-        const userRaw = localStorage.getItem('user');
-        if (userRaw) {
-          const parsed = JSON.parse(userRaw);
-          const possible = parsed?.customer_id ?? parsed?.id ?? parsed?.userId ?? parsed?.user_id;
-          const n = parseNumber(possible);
-          if (n) return n;
-        }
-      } catch (e) {
-        /* ignore */
-      }
-
-      // 3) decode JWT (common token keys)
-      const tokenKeys = ['authToken', 'token'];
-      for (const tk of tokenKeys) {
-        const t = localStorage.getItem(tk);
-        if (!t) continue;
-        try {
-          const payload = t.split('.')[1];
-          if (!payload) continue;
-          const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-          const json = JSON.parse(atob(b64));
-          const possible = json?.customer_id ?? json?.id ?? json?.sub;
-          const n = parseNumber(possible);
-          if (n) return n;
-        } catch (e) {
-          /* ignore invalid token */
-        }
-      }
-
-      return null;
-    };
-
     const fetchData = async () => {
       setLoading(true);
       const authFetch = createAuthenticatedFetch(() => {
@@ -74,13 +23,11 @@ function CustomerSchedule() {
       const API_BASE = getApiBase().replace(/\/$/, '');
 
       try {
-        // Call protected endpoint that returns the current user's schedules
         const res = await authFetch(`${API_BASE}/schedules/me`, {
           headers: { Accept: 'application/json' },
         });
 
         if (res.status === 401) {
-          // not authenticated
           localStorage.removeItem('authToken');
           window.location.href = '/login';
           return;

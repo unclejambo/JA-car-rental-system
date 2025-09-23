@@ -227,17 +227,20 @@ function LoginPage() {
             {isLoading ? 'Logging in...' : 'Login'}
           </button>
           <br />
-          <a
-            href="#"
+          <button
+            onClick={() => navigate('/forgot-password')}
             style={{
               fontFamily: '"Pathway Gothic One", sans-serif',
               textDecoration: 'none',
               color: 'rgb(0 0 0 / .7)',
               cursor: 'pointer',
+              background: 'none',
+              border: 'none',
+              fontSize: 'inherit'
             }}
           >
             Forgot your password?
-          </a>
+          </button>
           <br />
           <p
             style={{

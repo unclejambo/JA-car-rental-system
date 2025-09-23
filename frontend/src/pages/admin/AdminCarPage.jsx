@@ -51,7 +51,7 @@ export default function AdminCarPage() {
   const handleDelete = async (carId) => {
     if (window.confirm('Are you sure you want to delete this car?')) {
       try {
-        const response = await authenticatedFetch(`${API_BASE}/api/cars/${carId}`, {
+        const response = await authenticatedFetch(`${API_BASE}/cars/${carId}`, {
           method: 'DELETE'
         });
         
@@ -245,9 +245,6 @@ export default function AdminCarPage() {
                   {error}
                 </Box>
               )}
-
-
-
             </Box>
           </Box>
         </Box>

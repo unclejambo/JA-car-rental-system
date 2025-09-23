@@ -188,3 +188,33 @@ model Release {
   booking        Booking @relation(fields: [booking_id], references: [booking_id])
   driver         Driver  @relation(fields: [drivers_id], references: [drivers_id])
 }
+
+// Password Reset and Verification Models
+model PasswordResetToken {
+  id           Int       @id @default(autoincrement())
+  user_id      Int       
+  user_type    String    // 'customer', 'admin', 'driver'
+  email        String
+  token        String    @unique
+  code         String    // 6-digit verification code
+  expires_at   DateTime
+  used         Boolean   @default(false)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+}
+
+model VerificationCode {
+  id           Int       @id @default(autoincrement())
+  user_id      Int       
+  user_type    String    // 'customer', 'admin', 'driver'
+  identifier   String    // email or phone number
+  code         String    // 6-digit code
+  type         String    // 'email' or 'sms'
+  purpose      String    // 'password_reset', 'account_verification', etc.
+  attempts     Int       @default(0)
+  max_attempts Int       @default(3)
+  expires_at   DateTime
+  verified     Boolean   @default(false)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+}

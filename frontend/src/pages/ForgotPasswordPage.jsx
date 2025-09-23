@@ -41,6 +41,8 @@ import {
   CircularProgress
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import Header from '../ui/components/Header';
+import carImage from '/carImage.png';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
@@ -289,273 +291,286 @@ function ForgotPasswordPage() {
   };
 
   return (
-    <Box
-      component="main"
-      sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 2
-      }}
-    >
-      <Paper
-        elevation={10}
-        sx={{
-          width: '100%',
-          maxWidth: 500,
-          padding: 4,
-          borderRadius: 2,
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(10px)'
-        }}
+    <>
+      <Header />
+      <div
+        className="min-h-screen bg-cover bg-center flex items-center justify-center p-4"
+        style={{ backgroundImage: `url(${carImage})` }}
       >
-        {/* Header */}
-        <Box sx={{ textAlign: 'center', marginBottom: 3 }}>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2', marginBottom: 1 }}>
-            Forgot Password
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#666' }}>
-            Reset your password in just a few steps
-          </Typography>
-        </Box>
+        {/* dark overlay like RegisterPage */}
+        <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)' }} />
 
-        {/* Stepper */}
-        <Stepper activeStep={currentStep} alternativeLabel sx={{ marginBottom: 3 }}>
-          <Step>
-            <StepLabel>Identify Account</StepLabel>
-          </Step>
-          <Step>
-            <StepLabel>Verify Code</StepLabel>
-          </Step>
-          <Step>
-            <StepLabel>Reset Password</StepLabel>
-          </Step>
-          <Step>
-            <StepLabel>Complete</StepLabel>
-          </Step>
-        </Stepper>
+        <Box
+          component="main"
+          sx={{
+            position: 'relative',
+            zIndex: 10,
+            width: '100%',
+            maxWidth: 500,
+            padding: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Paper
+            elevation={10}
+            sx={{
+              width: '100%',
+              maxWidth: 500,
+              padding: 4,
+              borderRadius: 2,
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)'
+            }}
+          >
+            {/* Header */}
+            <Box sx={{ textAlign: 'center', marginBottom: 3 }}>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2', marginBottom: 1 }}>
+                Forgot Password
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                Reset your password in just a few steps
+              </Typography>
+            </Box>
 
-        {/* Error Alert */}
-        {error && (
-          <Alert severity="error" sx={{ marginBottom: 2 }}>
-            {error}
-          </Alert>
-        )}
+            {/* Stepper */}
+            <Stepper activeStep={currentStep} alternativeLabel sx={{ marginBottom: 3 }}>
+              <Step>
+                <StepLabel>Identify Account</StepLabel>
+              </Step>
+              <Step>
+                <StepLabel>Verify Code</StepLabel>
+              </Step>
+              <Step>
+                <StepLabel>Reset Password</StepLabel>
+              </Step>
+              <Step>
+                <StepLabel>Complete</StepLabel>
+              </Step>
+            </Stepper>
 
-        {/* Success Alert */}
-        {success && (
-          <Alert severity="success" sx={{ marginBottom: 2 }}>
-            {success}
-          </Alert>
-        )}
+            {/* Error Alert */}
+            {error && (
+              <Alert severity="error" sx={{ marginBottom: 2 }}>
+                {error}
+              </Alert>
+            )}
 
-        {/* Step Content */}
-        {currentStep === STEPS.IDENTIFY && (
-          <Box component="form" onSubmit={handleSendCode}>
-            <Typography variant="h6" sx={{ marginBottom: 2 }}>
-              Enter your account information
-            </Typography>
-            
-            <TextField
-              fullWidth
-              label="Email, Username, or Phone"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="e.g., john@example.com or john123"
-              sx={{ marginBottom: 2 }}
-              autoFocus
-            />
+            {/* Success Alert */}
+            {success && (
+              <Alert severity="success" sx={{ marginBottom: 2 }}>
+                {success}
+              </Alert>
+            )}
 
-            <FormControl fullWidth sx={{ marginBottom: 3 }}>
-              <InputLabel>Verification Method</InputLabel>
-              <Select
-                value={verificationType}
-                onChange={(e) => setVerificationType(e.target.value)}
-                label="Verification Method"
-              >
-                <MenuItem value="email">Email</MenuItem>
-                <MenuItem value="sms">SMS</MenuItem>
-              </Select>
-            </FormControl>
-
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              disabled={isLoading}
-              sx={{
-                padding: 1.5,
-                backgroundColor: '#1976d2',
-                '&:hover': { backgroundColor: '#1565c0' }
-              }}
-            >
-              {isLoading ? <CircularProgress size={24} /> : 'Send Verification Code'}
-            </Button>
-
-            <Box sx={{ textAlign: 'center', marginTop: 2 }}>
-              <Link to="/login" style={{ textDecoration: 'none' }}>
-                <Typography variant="body2" sx={{ color: '#1976d2' }}>
-                  Back to Login
+            {/* Step Content */}
+            {currentStep === STEPS.IDENTIFY && (
+              <Box component="form" onSubmit={handleSendCode}>
+                <Typography variant="h6" sx={{ marginBottom: 2 }}>
+                  Enter your account information
                 </Typography>
-              </Link>
-            </Box>
-          </Box>
-        )}
+                
+                <TextField
+                  fullWidth
+                  label="Email, Username, or Phone"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="e.g., john@example.com or john123"
+                  sx={{ marginBottom: 2 }}
+                  autoFocus
+                />
 
-        {currentStep === STEPS.VERIFY && (
-          <Box component="form" onSubmit={handleVerifyCode}>
-            <Typography variant="h6" sx={{ marginBottom: 1 }}>
-              Enter verification code
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#666', marginBottom: 2 }}>
-              We sent a 6-digit code to {maskedIdentifier}
-            </Typography>
+                <FormControl fullWidth sx={{ marginBottom: 3 }}>
+                  <InputLabel>Verification Method</InputLabel>
+                  <Select
+                    value={verificationType}
+                    onChange={(e) => setVerificationType(e.target.value)}
+                    label="Verification Method"
+                  >
+                    <MenuItem value="email">Email</MenuItem>
+                    <MenuItem value="sms">SMS</MenuItem>
+                  </Select>
+                </FormControl>
 
-            <TextField
-              fullWidth
-              label="Verification Code"
-              value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="000000"
-              inputProps={{ 
-                maxLength: 6,
-                style: { textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem' }
-              }}
-              sx={{ marginBottom: 2 }}
-              autoFocus
-            />
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  disabled={isLoading}
+                  sx={{
+                    padding: 1.5,
+                    backgroundColor: '#1976d2',
+                    '&:hover': { backgroundColor: '#1565c0' }
+                  }}
+                >
+                  {isLoading ? <CircularProgress size={24} /> : 'Send Verification Code'}
+                </Button>
 
-            {countdown > 0 && (
-              <Typography variant="body2" sx={{ color: '#666', marginBottom: 1 }}>
-                Code expires in: {formatCountdown(countdown)}
-              </Typography>
+                <Box sx={{ textAlign: 'center', marginTop: 2 }}>
+                  <Link to="/login" style={{ textDecoration: 'none' }}>
+                    <Typography variant="body2" sx={{ color: '#1976d2' }}>
+                      Back to Login
+                    </Typography>
+                  </Link>
+                </Box>
+              </Box>
             )}
 
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              disabled={isLoading || verificationCode.length !== 6}
-              sx={{
-                padding: 1.5,
-                marginBottom: 2,
-                backgroundColor: '#1976d2',
-                '&:hover': { backgroundColor: '#1565c0' }
-              }}
-            >
-              {isLoading ? <CircularProgress size={24} /> : 'Verify Code'}
-            </Button>
+            {currentStep === STEPS.VERIFY && (
+              <Box component="form" onSubmit={handleVerifyCode}>
+                <Typography variant="h6" sx={{ marginBottom: 1 }}>
+                  Enter verification code
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#666', marginBottom: 2 }}>
+                  We sent a 6-digit code to {maskedIdentifier}
+                </Typography>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Button
-                variant="outlined"
-                onClick={handleGoBack}
-                disabled={isLoading}
-                sx={{ flex: 1, marginRight: 1 }}
-              >
-                Back
-              </Button>
-              <Button
-                variant="text"
-                onClick={handleResendCode}
-                disabled={!canResend || isLoading}
-                sx={{ flex: 1, marginLeft: 1 }}
-              >
-                Resend Code
-              </Button>
-            </Box>
-          </Box>
-        )}
+                <TextField
+                  fullWidth
+                  label="Verification Code"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  inputProps={{ 
+                    maxLength: 6,
+                    style: { textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem' }
+                  }}
+                  sx={{ marginBottom: 2 }}
+                  autoFocus
+                />
 
-        {currentStep === STEPS.RESET && (
-          <Box component="form" onSubmit={handleResetPassword}>
-            <Typography variant="h6" sx={{ marginBottom: 2 }}>
-              Create new password
-            </Typography>
-            
-            {userInfo && (
-              <Typography variant="body2" sx={{ color: '#666', marginBottom: 2 }}>
-                Resetting password for: {userInfo.email || userInfo.username}
-              </Typography>
+                {countdown > 0 && (
+                  <Typography variant="body2" sx={{ color: '#666', marginBottom: 1 }}>
+                    Code expires in: {formatCountdown(countdown)}
+                  </Typography>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  disabled={isLoading || verificationCode.length !== 6}
+                  sx={{
+                    padding: 1.5,
+                    marginBottom: 2,
+                    backgroundColor: '#1976d2',
+                    '&:hover': { backgroundColor: '#1565c0' }
+                  }}
+                >
+                  {isLoading ? <CircularProgress size={24} /> : 'Verify Code'}
+                </Button>
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Button
+                    variant="outlined"
+                    onClick={handleGoBack}
+                    disabled={isLoading}
+                    sx={{ flex: 1, marginRight: 1 }}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    variant="text"
+                    onClick={handleResendCode}
+                    disabled={!canResend || isLoading}
+                    sx={{ flex: 1, marginLeft: 1 }}
+                  >
+                    Resend Code
+                  </Button>
+                </Box>
+              </Box>
             )}
 
-            <TextField
-              fullWidth
-              type="password"
-              label="New Password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              sx={{ marginBottom: 2 }}
-              autoFocus
-            />
+            {currentStep === STEPS.RESET && (
+              <Box component="form" onSubmit={handleResetPassword}>
+                <Typography variant="h6" sx={{ marginBottom: 2 }}>
+                  Create new password
+                </Typography>
+                
+                {userInfo && (
+                  <Typography variant="body2" sx={{ color: '#666', marginBottom: 2 }}>
+                    Resetting password for: {userInfo.email || userInfo.username}
+                  </Typography>
+                )}
 
-            <TextField
-              fullWidth
-              type="password"
-              label="Confirm New Password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              sx={{ marginBottom: 2 }}
-            />
+                <TextField
+                  fullWidth
+                  type="password"
+                  label="New Password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  sx={{ marginBottom: 2 }}
+                  autoFocus
+                />
 
-            <Typography variant="caption" sx={{ color: '#666', marginBottom: 2, display: 'block' }}>
-              Password must be at least 6 characters long
-            </Typography>
+                <TextField
+                  fullWidth
+                  type="password"
+                  label="Confirm New Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  sx={{ marginBottom: 2 }}
+                />
 
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              disabled={isLoading || !newPassword || !confirmPassword}
-              sx={{
-                padding: 1.5,
-                marginBottom: 2,
-                backgroundColor: '#1976d2',
-                '&:hover': { backgroundColor: '#1565c0' }
-              }}
-            >
-              {isLoading ? <CircularProgress size={24} /> : 'Reset Password'}
-            </Button>
+                <Typography variant="caption" sx={{ color: '#666', marginBottom: 2, display: 'block' }}>
+                  Password must be at least 6 characters long
+                </Typography>
 
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={handleGoBack}
-              disabled={isLoading}
-            >
-              Back
-            </Button>
-          </Box>
-        )}
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  disabled={isLoading || !newPassword || !confirmPassword}
+                  sx={{
+                    padding: 1.5,
+                    marginBottom: 2,
+                    backgroundColor: '#1976d2',
+                    '&:hover': { backgroundColor: '#1565c0' }
+                  }}
+                >
+                  {isLoading ? <CircularProgress size={24} /> : 'Reset Password'}
+                </Button>
 
-        {currentStep === STEPS.SUCCESS && (
-          <Box sx={{ textAlign: 'center' }}>
-            <CheckCircleIcon sx={{ fontSize: 64, color: '#4caf50', marginBottom: 2 }} />
-            <Typography variant="h6" sx={{ marginBottom: 2 }}>
-              Password Reset Successful!
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#666', marginBottom: 3 }}>
-              Your password has been updated successfully. You can now log in with your new password.
-            </Typography>
-            
-            <Button
-              variant="contained"
-              fullWidth
-              onClick={() => navigate('/login')}
-              sx={{
-                padding: 1.5,
-                backgroundColor: '#1976d2',
-                '&:hover': { backgroundColor: '#1565c0' }
-              }}
-            >
-              Go to Login
-            </Button>
-          </Box>
-        )}
-      </Paper>
-    </Box>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={handleGoBack}
+                  disabled={isLoading}
+                >
+                  Back
+                </Button>
+              </Box>
+            )}
+
+            {currentStep === STEPS.SUCCESS && (
+              <Box sx={{ textAlign: 'center' }}>
+                <CheckCircleIcon sx={{ fontSize: 64, color: '#4caf50', marginBottom: 2 }} />
+                <Typography variant="h6" sx={{ marginBottom: 2 }}>
+                  Password Reset Successful!
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#666', marginBottom: 3 }}>
+                  Your password has been updated successfully. You can now log in with your new password.
+                </Typography>
+                
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={() => navigate('/login')}
+                  sx={{
+                    padding: 1.5,
+                    backgroundColor: '#1976d2',
+                    '&:hover': { backgroundColor: '#1565c0' }
+                  }}
+                >
+                  Go to Login
+                </Button>
+              </Box>
+            )}
+          </Paper>
+        </Box>
+      </div>
+    </>
   );
 }
 

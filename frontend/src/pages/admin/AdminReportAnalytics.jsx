@@ -1,78 +1,91 @@
-import React, {
-  useState,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useMemo,
-} from 'react';
-import { Box, Typography, Select, MenuItem } from '@mui/material';
-import Header from '../../ui/components/Header';
-import AdminSideBar from '../../ui/components/AdminSideBar';
-import Loading from '../../ui/components/Loading';
-import { HiChartBar } from 'react-icons/hi2';
-import * as am5 from '@amcharts/amcharts5';
-import * as am5xy from '@amcharts/amcharts5/xy';
-import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
-import { useTransactionStore } from '../../store/transactions';
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
-import PersonIcon from '@mui/icons-material/Person';
+import React, { useState, useMemo } from 'react';
+import { Box, Typography, Select, MenuItem, Chip, Stack } from '@mui/material';
+import Header from '../../ui/components/Header'; // Unused import removed
+import AdminSideBar from '../../ui/components/AdminSideBar'; // Unused import removed
+import Loading from '../../ui/components/Loading'; // Unused import removed
+import { HiChartBar } from 'react-icons/hi2'; // Unused import removed
+import { Line, Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title as ChartTitle,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ChartTitle,
+  Tooltip,
+  Legend
+);
+
+// ----- Static datasets for sketches (module scope to keep stable identities) -----
+const months = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+const staticIncome = [
+  12000, 15000, 9000, 18000, 22000, 14000, 11000, 16000, 13000, 19000, 23000,
+  25000,
+];
+const staticExpenses = [
+  8000, 7000, 6000, 9000, 10000, 9500, 8500, 9000, 9200, 10000, 11000, 12000,
+];
+const staticTopCars = [12, 9, 5, 14, 7, 6];
+const staticTopCarLabels = [
+  'Almera',
+  'Vios',
+  'City',
+  'Mirage',
+  'Wigo',
+  'Raize',
+];
+const staticTopCustomers = [7, 5, 4, 4, 3, 2];
+const staticTopCustomerLabels = [
+  'A. Cruz',
+  'B. Reyes',
+  'C. Santos',
+  'D. Lim',
+  'E. Tan',
+  'F. Dela Cruz',
+];
 
 export default function AdminReportAnalytics() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [loading, setLoading] = useState(false); // -----------------------------------> CHANGE TO TRUE WHEN CONTENT IS ADDED
-  const [error, setError] = useState(null);
-  const transactions = useTransactionStore((state) => state.transactions);
+  const [loading] = useState(false); // -----------------------------------> CHANGE TO TRUE WHEN CONTENT IS ADDED
+  const [error] = useState(null);
+
+  // View toggles from the sketches
+  const [primaryView, setPrimaryView] = useState('income'); // 'income' | 'expenses' | 'topCars' | 'topCustomers'
+  const [period, setPeriod] = useState('monthly'); // 'monthly' | 'quarterly' | 'yearly'
+  const [topCategory, setTopCategory] = useState('cars'); // for bar section switcher (cars/customers)
 
   // Month selector (default to current month)
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(
     new Date().getMonth()
   );
-  const monthName = useMemo(
-    () =>
-      new Date(2000, selectedMonthIndex, 1).toLocaleString(undefined, {
-        month: 'long',
-      }),
-    [selectedMonthIndex]
-  );
+  // monthName computation removed; not used in UI
 
-  const monthTransactions = useMemo(() => {
-    return (transactions || []).filter((t) => {
-      const d = new Date(t.bookingDate);
-      return !isNaN(d) && d.getMonth() === selectedMonthIndex;
-    });
-  }, [transactions, selectedMonthIndex]);
-
-  const carData = useMemo(() => {
-    const counts = {};
-    monthTransactions.forEach((t) => {
-      const key = t.carModel || 'Unknown';
-      counts[key] = (counts[key] || 0) + 1;
-    });
-    return Object.entries(counts).map(([category, value]) => ({
-      category,
-      value,
-    }));
-  }, [monthTransactions]);
-
-  const customerData = useMemo(() => {
-    const counts = {};
-    monthTransactions.forEach((t) => {
-      const key = t.customerName || 'Unknown';
-      counts[key] = (counts[key] || 0) + 1;
-    });
-    return Object.entries(counts).map(([category, value]) => ({
-      category,
-      value,
-    }));
-  }, [monthTransactions]);
-
-  const income = useMemo(() => {
-    // Sum totalAmount if present and numeric (you can refine this using paidDate/paymentStatus)
-    return monthTransactions.reduce((sum, t) => {
-      const amt = typeof t.totalAmount === 'number' ? t.totalAmount : 0;
-      return sum + amt;
-    }, 0);
-  }, [monthTransactions]);
+  const income = staticIncome[selectedMonthIndex] || 0; // Compute income from static data
 
   const formatCurrency = (n) =>
     `₱ ${Number(n || 0).toLocaleString('en-US', {
@@ -80,114 +93,76 @@ export default function AdminReportAnalytics() {
       maximumFractionDigits: 2,
     })}`;
 
-  const carChartRef = useRef(null);
-  const customerChartRef = useRef(null);
-
-  // Most Rented Car chart
-  useLayoutEffect(() => {
-    if (!carChartRef.current) return;
-    const root = am5.Root.new(carChartRef.current);
-    root.setThemes([am5themes_Animated.new(root)]);
-
-    const chart = root.container.children.push(
-      am5xy.XYChart.new(root, {
-        layout: root.verticalLayout,
-      })
-    );
-
-    const xAxis = chart.xAxes.push(
-      am5xy.CategoryAxis.new(root, {
-        categoryField: 'category',
-        renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 20 }),
-        tooltip: am5.Tooltip.new(root, {}),
-      })
-    );
-
-    const yAxis = chart.yAxes.push(
-      am5xy.ValueAxis.new(root, {
-        renderer: am5xy.AxisRendererY.new(root, {}),
-      })
-    );
-
-    const series = chart.series.push(
-      am5xy.ColumnSeries.new(root, {
-        xAxis,
-        yAxis,
-        valueYField: 'value',
-        categoryXField: 'category',
-        tooltip: am5.Tooltip.new(root, { labelText: '{valueY}' }),
-      })
-    );
-
-    series.columns.template.setAll({
-      cornerRadiusTL: 4,
-      cornerRadiusTR: 4,
-      strokeOpacity: 0,
-    });
-
-    xAxis.data.setAll(carData);
-    series.data.setAll(carData);
-
-    chart.appear(1000, 100);
-    series.appear();
-
-    return () => {
-      root.dispose();
+  // Line dataset builder
+  const lineData = useMemo(() => {
+    const series = primaryView === 'income' ? staticIncome : staticExpenses;
+    return {
+      labels: months,
+      datasets: [
+        {
+          label: primaryView === 'income' ? 'INCOME' : 'EXPENSES',
+          data: series,
+          borderColor: primaryView === 'income' ? '#2e7d32' : '#c62828',
+          backgroundColor:
+            primaryView === 'income'
+              ? 'rgba(46,125,50,0.2)'
+              : 'rgba(198,40,40,0.2)',
+          tension: 0.3,
+          fill: true,
+        },
+      ],
     };
-  }, [carData]);
+  }, [primaryView]);
 
-  // Top Customer chart
-  useLayoutEffect(() => {
-    if (!customerChartRef.current) return;
-    const root = am5.Root.new(customerChartRef.current);
-    root.setThemes([am5themes_Animated.new(root)]);
+  const lineOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top' },
+        tooltip: {
+          callbacks: { label: (ctx) => `₱ ${ctx.parsed.y.toLocaleString()}` },
+        },
+      },
+      scales: {
+        y: {
+          ticks: { callback: (v) => `₱ ${Number(v).toLocaleString()}` },
+          beginAtZero: true,
+        },
+        x: { grid: { display: false } },
+      },
+    }),
+    []
+  );
 
-    const chart = root.container.children.push(
-      am5xy.XYChart.new(root, {
-        layout: root.verticalLayout,
-      })
-    );
-
-    const xAxis = chart.xAxes.push(
-      am5xy.CategoryAxis.new(root, {
-        categoryField: 'category',
-        renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 20 }),
-        tooltip: am5.Tooltip.new(root, {}),
-      })
-    );
-
-    const yAxis = chart.yAxes.push(
-      am5xy.ValueAxis.new(root, {
-        renderer: am5xy.AxisRendererY.new(root, {}),
-      })
-    );
-
-    const series = chart.series.push(
-      am5xy.ColumnSeries.new(root, {
-        xAxis,
-        yAxis,
-        valueYField: 'value',
-        categoryXField: 'category',
-        tooltip: am5.Tooltip.new(root, { labelText: '{valueY}' }),
-      })
-    );
-
-    series.columns.template.setAll({
-      cornerRadiusTL: 4,
-      cornerRadiusTR: 4,
-      strokeOpacity: 0,
-    });
-
-    xAxis.data.setAll(customerData);
-    series.data.setAll(customerData);
-
-    chart.appear(1000, 100);
-    series.appear();
-
-    return () => {
-      root.dispose();
+  // Bar dataset builder (top cars/customers)
+  const barData = useMemo(() => {
+    const isCars = topCategory === 'cars';
+    return {
+      labels: isCars ? staticTopCarLabels : staticTopCustomerLabels,
+      datasets: [
+        {
+          label: isCars ? 'CARS' : 'CUSTOMERS',
+          data: isCars ? staticTopCars : staticTopCustomers,
+          backgroundColor: '#1976d2',
+          borderRadius: 6,
+        },
+      ],
     };
-  }, [customerData]);
+  }, [topCategory]);
+
+  const barOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'top' } },
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0 } },
+        x: { grid: { display: false } },
+      },
+    }),
+    []
+  );
 
   if (loading) {
     return (
@@ -307,6 +282,17 @@ export default function AdminReportAnalytics() {
                 />
                 REPORT & ANALYTICS
               </Typography>
+              <Select
+                size="small"
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+                sx={{ ml: 'auto', bgcolor: '#fff' }}
+                MenuProps={{ disableScrollLock: true }}
+              >
+                <MenuItem value="monthly">Monthly</MenuItem>
+                <MenuItem value="quarterly">Quarterly</MenuItem>
+                <MenuItem value="yearly">Yearly</MenuItem>
+              </Select>
             </Box>
             <Box
               sx={{
@@ -331,7 +317,7 @@ export default function AdminReportAnalytics() {
                   sx={{ fontWeight: 700, color: '#111' }}
                   className="font-pathway"
                 >
-                  TOTAL INCOME ({monthName}):{' '}
+                  TOTAL INCOME :{' '}
                   <span style={{ color: '#2e7d32' }}>
                     {formatCurrency(income)}
                   </span>
@@ -345,9 +331,6 @@ export default function AdminReportAnalytics() {
                     width: { xs: '100%', md: 'auto' },
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: '#555' }}>
-                    Month:
-                  </Typography>
                   <Select
                     size="small"
                     value={selectedMonthIndex}
@@ -357,6 +340,7 @@ export default function AdminReportAnalytics() {
                       minWidth: { md: 140 },
                       width: { xs: '100%', md: 160 },
                     }}
+                    MenuProps={{ disableScrollLock: true }}
                   >
                     {Array.from({ length: 12 }).map((_, i) => (
                       <MenuItem key={i} value={i}>
@@ -374,50 +358,127 @@ export default function AdminReportAnalytics() {
                 sx={{
                   display: 'grid',
                   gridTemplateColumns: { xs: '1fr', md: '1fr' },
-                  gap: 2,
+                  gap: 0.5,
                 }}
               >
-                {/* Most Rented Car */}
-                <Box
-                  sx={{
-                    bgcolor: '#fff',
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
-                  }}
+                {/* Summary chips and dropdowns like sketches */}
+                <Stack
+                  direction="row"
+                  spacing={0.3}
+                  sx={{ width: '100%', flexWrap: 'nowrap' }}
                 >
-                  <Box
+                  <Chip
+                    label="INCOME"
+                    clickable
+                    onClick={() => setPrimaryView('income')}
+                    aria-pressed={primaryView === 'income'}
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      p: 2,
-                      borderBottom: '1px solid #eee',
-                      bgcolor: '#f3f4f6',
+                      flex: 1,
+                      minWidth: 0,
+                      borderRadius: 0,
+                      borderTopLeftRadius: '8px',
+                      bgcolor: primaryView === 'income' ? '#28a745' : '#d9d9d9',
+                      color: primaryView === 'income' ? '#fff' : '#333',
+                      border: '1px solid',
+                      borderColor: '#ccc',
+                      '& .MuiChip-label': {
+                        fontWeight: primaryView === 'income' ? 600 : 400,
+                      },
+                      '&:hover': {
+                        bgcolor:
+                          primaryView === 'income' ? '#28a745' : '#4a4a4a',
+                        color: '#fff',
+                      },
+                      '&:focus': { outline: 'none' },
                     }}
-                  >
-                    <DirectionsCarIcon sx={{ fontSize: 28, color: '#333' }} />
-                    <Box>
-                      <Typography
-                        className="font-pathway"
-                        sx={{ fontWeight: 700 }}
-                      >
-                        Most Rented Car
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: '#666' }}>
-                        BAR GRAPH
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ p: 2 }}>
-                    <div
-                      ref={carChartRef}
-                      style={{ width: '100%', height: 260 }}
-                    />
-                  </Box>
-                </Box>
+                  />
+                  <Chip
+                    label="EXPENSES"
+                    clickable
+                    onClick={() => setPrimaryView('expenses')}
+                    aria-pressed={primaryView === 'expenses'}
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      borderRadius: 0,
+                      bgcolor:
+                        primaryView === 'expenses' ? '#c10007' : '#d9d9d9',
+                      color: primaryView === 'expenses' ? '#fff' : '#333',
+                      border: '1px solid',
+                      borderColor: '#ccc',
+                      '& .MuiChip-label': {
+                        fontWeight: primaryView === 'expenses' ? 600 : 400,
+                      },
+                      '&:hover': {
+                        bgcolor:
+                          primaryView === 'expenses' ? '#c10007' : '#4a4a4a',
+                        color: '#fff',
+                      },
+                      '&:focus': { outline: 'none' },
+                    }}
+                  />
+                  <Chip
+                    label="TOP CARS"
+                    clickable
+                    onClick={() => {
+                      setPrimaryView('topCars');
+                      setTopCategory('cars');
+                    }}
+                    aria-pressed={primaryView === 'topCars'}
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      borderRadius: 0,
+                      bgcolor:
+                        primaryView === 'topCars' ? '#1976d2' : '#d9d9d9',
+                      color: primaryView === 'topCars' ? '#fff' : '#333',
+                      border: '1px solid',
+                      borderColor: '#ccc',
+                      '& .MuiChip-label': {
+                        fontWeight: primaryView === 'topCars' ? 600 : 400,
+                      },
+                      '&:hover': {
+                        bgcolor:
+                          primaryView === 'topCars' ? '#1976d2' : '#4a4a4a',
+                        color: '#fff',
+                      },
+                      '&:focus': { outline: 'none' },
+                    }}
+                  />
+                  <Chip
+                    label="TOP CUSTOMERS"
+                    clickable
+                    onClick={() => {
+                      setPrimaryView('topCustomers');
+                      setTopCategory('customers');
+                    }}
+                    aria-pressed={primaryView === 'topCustomers'}
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      borderRadius: 0,
+                      borderTopRightRadius: '8px',
+                      bgcolor:
+                        primaryView === 'topCustomers' ? '#1976d2' : '#d9d9d9',
+                      color: primaryView === 'topCustomers' ? '#fff' : '#333',
+                      border: '1px solid',
+                      borderColor: '#ccc',
+                      '& .MuiChip-label': {
+                        fontWeight: primaryView === 'topCustomers' ? 600 : 400,
+                      },
+                      '&:hover': {
+                        bgcolor:
+                          primaryView === 'topCustomers'
+                            ? '#1976d2'
+                            : '#4a4a4a',
+                        color: '#fff',
+                      },
+                      '&:focus': { outline: 'none' },
+                    }}
+                  />
+                </Stack>
 
-                {/* Top Customer */}
+                {/* Chart area switch: line for income/expenses, bar for top cars/customers */}
                 <Box
                   sx={{
                     bgcolor: '#fff',
@@ -436,24 +497,40 @@ export default function AdminReportAnalytics() {
                       bgcolor: '#f3f4f6',
                     }}
                   >
-                    <PersonIcon sx={{ fontSize: 28, color: '#333' }} />
-                    <Box>
-                      <Typography
-                        className="font-pathway"
-                        sx={{ fontWeight: 700 }}
-                      >
-                        Top Customer
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: '#666' }}>
-                        BAR GRAPH
-                      </Typography>
-                    </Box>
+                    {primaryView === 'income' || primaryView === 'expenses' ? (
+                      <Box>
+                        <Typography
+                          className="font-pathway"
+                          sx={{ fontWeight: 700 }}
+                        >
+                          {primaryView === 'income' ? 'Income' : 'Expenses'}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#666' }}>
+                          BAR GRAPH
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Box>
+                        <Typography
+                          className="font-pathway"
+                          sx={{ fontWeight: 700 }}
+                        >
+                          {topCategory === 'cars'
+                            ? 'Top Cars'
+                            : 'Top Customers'}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#666' }}>
+                          LINE GRAPH
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
-                  <Box sx={{ p: 2 }}>
-                    <div
-                      ref={customerChartRef}
-                      style={{ width: '100%', height: 260 }}
-                    />
+                  <Box sx={{ p: 2, height: 320 }}>
+                    {primaryView === 'income' || primaryView === 'expenses' ? (
+                      <Line data={lineData} options={lineOptions} />
+                    ) : (
+                      <Bar data={barData} options={barOptions} />
+                    )}
                   </Box>
                 </Box>
               </Box>

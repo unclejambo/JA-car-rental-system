@@ -44,7 +44,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Header from '../ui/components/Header';
 import carImage from '/carImage.png';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_LOCAL;
 
 // Step constants
 const STEPS = {

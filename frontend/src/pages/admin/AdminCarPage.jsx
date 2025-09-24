@@ -1,6 +1,6 @@
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import AddCarModal from '../../ui/components/modal/AddCarModal.jsx';
 import EditCarModal from '../../ui/components/modal/EditCarModal.jsx';
 import { HiTruck, HiWrenchScrewdriver } from 'react-icons/hi2';

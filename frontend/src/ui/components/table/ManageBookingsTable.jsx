@@ -35,6 +35,13 @@ const ManageBookingsTable = ({ activeTab, rows, loading }) => {
   // Define columns that are common to all tabs
   const commonColumns = [
     {
+      field: 'id',
+      headerName: 'ID',
+      flex: 1,
+      minWidth: 70,
+      editable: false,
+    },
+    {
       field: 'customer_name',
       headerName: 'Customer Name',
       flex: 1.5,

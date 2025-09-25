@@ -26,9 +26,20 @@ const paymentSchema = z
       .number()
       .int()
       .gt(0, 'Amount must be a positive integer'),
+    gCashNumber: z.string().optional(),
     paymentReference: z.string().optional(),
   })
   .superRefine((data, ctx) => {
+    if (
+      data.paymentMethod === 'GCash' &&
+      (!data.gCashNumber || data.gCashNumber.trim() === '')
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['gCashNumber'],
+        message: 'GCash number is required for GCash',
+      });
+    }
     if (
       data.paymentMethod === 'GCash' &&
       (!data.paymentReference || data.paymentReference.trim() === '')
@@ -46,11 +57,12 @@ export default function AddPaymentModal({ show, onClose }) {
 
   const [formData, setFormData] = useState({
     startDate: '',
-    carName: 'Nissan',
-    customerName: 'Cisco Cisco',
+    carName: '',
+    customerName: '',
     description: '',
     paymentMethod: 'Cash',
     paymentAmount: '',
+    gCashNumber: '',
     paymentReference: '',
   });
 
@@ -206,17 +218,35 @@ export default function AddPaymentModal({ show, onClose }) {
             />
 
             {formData.paymentMethod === 'GCash' && (
-              <TextField
-                label="Reference No."
-                name="paymentReference"
-                value={formData.paymentReference}
-                onChange={handleInputChange}
-                placeholder="Reference Number"
-                required
-                error={!!errors.paymentReference}
-                helperText={errors.paymentReference}
-                fullWidth
-              />
+              <>
+                <TextField
+                  label="GCash Number"
+                  name="gCashNumber"
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.gCashNumber}
+                  onChange={handleInputChange}
+                  onKeyDown={blockNonNumericKeys}
+                  placeholder="e.g., 09XXXXXXXXX"
+                  fullWidth
+                  required
+                  error={!!errors.gCashNumber}
+                  helperText={errors.gCashNumber}
+                  inputProps={{ pattern: '[0-9]*' }}
+                />
+
+                <TextField
+                  label="Reference No."
+                  name="paymentReference"
+                  value={formData.paymentReference}
+                  onChange={handleInputChange}
+                  placeholder="Reference Number"
+                  required
+                  error={!!errors.paymentReference}
+                  helperText={errors.paymentReference}
+                  fullWidth
+                />
+              </>
             )}
           </Stack>
         </form>

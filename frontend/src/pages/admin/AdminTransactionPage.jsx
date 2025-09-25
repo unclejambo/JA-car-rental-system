@@ -21,10 +21,15 @@ export default function AdminTransactionPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const transactions = useTransactionStore((state) => state.transactions);
+  const loadTransactions = useTransactionStore((s) => s.loadTransactions);
+  const loadPayments = useTransactionStore((s) => s.loadPayments);
+  const loadRefunds = useTransactionStore((s) => s.loadRefunds);
+  const loaded = useTransactionStore((s) => s.loaded);
+  const storeLoading = useTransactionStore((s) => s.loading);
   const [activeTab, setActiveTab] = useState('TRANSACTIONS');
+  const rows = useTransactionStore((s) => s.getRowsForTab(activeTab));
 
-  console.log('AdminTransactionPage - Transactions:', transactions);
+  // console.log('AdminTransactionPage - Rows:', rows);
 
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
   const openAddPaymentModal = () => setShowAddPaymentModal(true);
@@ -34,22 +39,23 @@ export default function AdminTransactionPage() {
   const openAddRefundModal = () => setShowAddRefundModal(true);
   const closeAddRefundModal = () => setShowAddRefundModal(false);
 
+  // Initial & on-tab-change data loader
   useEffect(() => {
-    const fetchData = async () => {
+    const load = async () => {
       try {
-        // Since we're using Zustand, the data is already in the store
-        // We'll just add a small delay to simulate network request
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        if (activeTab === 'TRANSACTIONS' && !loaded.TRANSACTIONS)
+          await loadTransactions();
+        if (activeTab === 'PAYMENT' && !loaded.PAYMENT) await loadPayments();
+        if (activeTab === 'REFUND' && !loaded.REFUND) await loadRefunds();
         setLoading(false);
-      } catch (error) {
-        console.error('Error fetching data:', error);
+      } catch (e) {
+        console.error(e);
         setError('Failed to load data. Please try again later.');
         setLoading(false);
       }
     };
-
-    fetchData();
-  }, []);
+    load();
+  }, [activeTab, loaded, loadTransactions, loadPayments, loadRefunds]);
 
   if (loading) {
     return (
@@ -253,8 +259,8 @@ export default function AdminTransactionPage() {
             >
               <TransactionLogsTable
                 activeTab={activeTab}
-                rows={transactions}
-                loading={loading}
+                rows={rows}
+                loading={loading || storeLoading[activeTab]}
               />
             </Box>
           </Box>

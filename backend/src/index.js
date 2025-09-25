@@ -10,6 +10,9 @@ import authRoutes from './routes/authRoutes.js'; // <--- added
 import registrationRoutes from './routes/registrationRoutes.js'; // <--- added
 import forgotPasswordRoutes from './routes/forgotPasswordRoutes.js'; // <--- added forgot password routes
 import storageRouter from './routes/storage.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import refundRoutes from './routes/refundRoute.js';
+import transactionRoutes from './routes/transactionRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,6 +42,9 @@ app.use('/api/auth', authRoutes); // <--- added
 app.use('/api/auth', forgotPasswordRoutes); // <--- added forgot password routes
 app.use('/api/registration', registrationRoutes); // <--- added
 app.use('/api/storage', storageRouter);
+app.use('/payments', paymentRoutes);
+app.use('/refunds', refundRoutes);
+app.use('/transactions', transactionRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

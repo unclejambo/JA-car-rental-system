@@ -22,9 +22,20 @@ const refundSchema = z
       .number()
       .int()
       .gt(0, 'Amount must be a positive integer'),
+    gCashNumber: z.string().optional(),
     refundReference: z.string().optional(),
   })
   .superRefine((data, ctx) => {
+    if (
+      data.refundMethod === 'GCash' &&
+      (!data.gCashNumber || data.gCashNumber.trim() === '')
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['gCashNumber'],
+        message: 'GCash number is required for GCash',
+      });
+    }
     if (
       data.refundMethod === 'GCash' &&
       (!data.refundReference || data.refundReference.trim() === '')
@@ -44,6 +55,7 @@ export default function AddRefundModal({ show, onClose }) {
     description: '',
     refundMethod: 'Cash',
     refundAmount: '',
+    gCashNumber: '',
     refundReference: '',
   });
 
@@ -171,17 +183,35 @@ export default function AddRefundModal({ show, onClose }) {
             />
 
             {formData.refundMethod === 'GCash' && (
-              <TextField
-                label="Reference No."
-                name="refundReference"
-                value={formData.refundReference}
-                onChange={handleInputChange}
-                placeholder="Reference Number"
-                required
-                error={!!errors.refundReference}
-                helperText={errors.refundReference}
-                fullWidth
-              />
+              <>
+                <TextField
+                  label="GCash Number"
+                  name="gCashNumber"
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.gCashNumber}
+                  onChange={handleInputChange}
+                  onKeyDown={blockNonNumericKeys}
+                  placeholder="e.g., 09XXXXXXXXX"
+                  fullWidth
+                  required
+                  error={!!errors.gCashNumber}
+                  helperText={errors.gCashNumber}
+                  inputProps={{ pattern: '[0-9]*' }}
+                />
+
+                <TextField
+                  label="Reference No."
+                  name="refundReference"
+                  value={formData.refundReference}
+                  onChange={handleInputChange}
+                  placeholder="Reference Number"
+                  required
+                  error={!!errors.refundReference}
+                  helperText={errors.refundReference}
+                  fullWidth
+                />
+              </>
             )}
           </Stack>
         </form>

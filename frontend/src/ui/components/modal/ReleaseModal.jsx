@@ -1,316 +1,281 @@
 import React, { useState } from 'react';
-import { HiPhoto } from 'react-icons/hi2';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  FormControlLabel,
+  Checkbox,
+  RadioGroup,
+  Radio,
+  FormLabel,
+  Stack,
+  Grid,
+  MenuItem,
+  Box,
+  Typography,
+} from '@mui/material';
 
 export default function ReleaseModal({ show, onClose }) {
   const [formData, setFormData] = useState({
-    make: '',
-    model: '',
-    year: '',
-    mileage: '',
-    seats: '',
-    rentPrice: '',
-    licensePlate: '',
     images: {
       id1: { file: null, preview: '' },
       id2: { file: null, preview: '' },
-      carImage1: { file: null, preview: '' },
-      carImage2: { file: null, preview: '' },
-      carImage3: { file: null, preview: '' },
-      carImage4: { file: null, preview: '' },
+      front: { file: null, preview: '' },
+      back: { file: null, preview: '' },
+      right: { file: null, preview: '' },
+      left: { file: null, preview: '' },
     },
+    license: false,
     equipmentStatus: 'complete',
     equipmentDetails: '',
     paymentMethod: 'Cash',
+    paymentAmount: '',
     paymentReference: '',
   });
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
-  const handleImageChange = (e, id) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFormData((prev) => ({
-          ...prev,
-          images: {
-            ...prev.images,
-            [id]: {
-              file: file,
-              preview: event.target.result,
-            },
-          },
-        }));
-      };
-      reader.readAsDataURL(file);
+  const handleAmountChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, '');
+    setFormData((prev) => ({ ...prev, paymentAmount: digits }));
+  };
+
+  const blockNonNumericKeys = (e) => {
+    const allowed = [
+      'Backspace',
+      'Delete',
+      'Tab',
+      'Escape',
+      'Enter',
+      'ArrowLeft',
+      'ArrowRight',
+      'Home',
+      'End',
+    ];
+    if (e.ctrlKey || e.metaKey) return;
+    if (!/^[0-9]$/.test(e.key) && !allowed.includes(e.key)) {
+      e.preventDefault();
     }
+  };
+
+  const handleImageChange = (e, key) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setFormData((prev) => ({
+        ...prev,
+        images: {
+          ...prev.images,
+          [key]: { file, preview: ev.target.result },
+        },
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // TODO: Add return submission logic here
-    console.log('Release form submitted:', formData);
-    onClose();
+    // TODO: integrate with backend submission
+    console.log('Release submit', formData);
+    onClose?.();
   };
 
-  if (!show) return null;
-
   return (
-    <>
-      {show && (
-        <div className="modal-overlay" onClick={onClose}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h1 className="font-pathway" style={{ margin: '0 0 10px 0' }}>
-              RELEASE
-            </h1>
+    <Dialog open={!!show} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Release</DialogTitle>
+      <DialogContent dividers>
+        <Stack
+          component="form"
+          id="releaseForm"
+          onSubmit={handleSubmit}
+          spacing={3}
+        >
+          {/* Valid IDs */}
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              Valid IDs
+            </Typography>
+            <Grid container spacing={1}>
+              {['id1', 'id2'].map((id) => (
+                <Grid item xs={6} key={id}>
+                  <Button
+                    component="label"
+                    variant={
+                      formData.images[id].preview ? 'contained' : 'outlined'
+                    }
+                    color={formData.images[id].preview ? 'success' : 'primary'}
+                    fullWidth
+                    size="small"
+                  >
+                    {id.toUpperCase()}
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={(e) => handleImageChange(e, id)}
+                    />
+                  </Button>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
 
-            <form onSubmit={handleSubmit}>
-              <div className="field-row" style={{ gap: '10px' }}>
-                <label className="field-label font-pathway">Valid IDs</label>
-                <div
-                  className="flex items-center gap-2"
-                  style={{ marginLeft: '-40px' }}
-                >
-                  <label className="file-upload-button font-pathway">
-                    {/* <HiPhoto className="mr-2" /> */} ID 1
+          {/* Car Images */}
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              Car Images
+            </Typography>
+            <Grid container spacing={1}>
+              {[
+                ['front', 'Front'],
+                ['back', 'Back'],
+                ['right', 'Right'],
+                ['left', 'Left'],
+              ].map(([key, label]) => (
+                <Grid item xs={6} sm={3} key={key}>
+                  <Button
+                    component="label"
+                    variant={
+                      formData.images[key].preview ? 'contained' : 'outlined'
+                    }
+                    color={formData.images[key].preview ? 'success' : 'primary'}
+                    fullWidth
+                    size="small"
+                  >
+                    {label}
                     <input
                       type="file"
-                      onChange={(e) => handleImageChange(e, 'id1')}
+                      hidden
                       accept="image/*"
-                      className="hidden"
+                      onChange={(e) => handleImageChange(e, key)}
                     />
-                  </label>
-                  {formData.images.id1.preview && (
-                    <span
-                      className="text-sm text-green-600 font-pathway"
-                      style={{ marginLeft: '5px' }}
-                    >
-                      ✓ Selected
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="file-upload-button font-pathway">
-                    {/* <HiPhoto className="mr-2" /> */} ID 2
-                    <input
-                      type="file"
-                      onChange={(e) => handleImageChange(e, 'id2')}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                  </label>
-                  {formData.images.id2.preview && (
-                    <span
-                      className="text-sm text-green-600 font-pathway"
-                      style={{ marginLeft: '5px' }}
-                    >
-                      ✓ Selected
-                    </span>
-                  )}
-                </div>
-              </div>
-              <hr />
-              <div className="field-row" style={{ gap: '10px' }}>
-                <label className="field-label font-pathway">Car Images</label>
-                <div
-                  className="flex items-center gap-2"
-                  style={{ marginLeft: '-42px' }}
-                >
-                  <label className="file-upload-button font-pathway">
-                    Front
-                    <input
-                      type="file"
-                      onChange={(e) => handleImageChange(e, 'carImage1')}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                  </label>
-                  {formData.images.carImage1.preview && (
-                    <span
-                      className="text-sm text-green-600 font-pathway"
-                      style={{ marginLeft: '5px' }}
-                    >
-                      ✓ Selected
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="file-upload-button font-pathway">
-                    Back
-                    <input
-                      type="file"
-                      onChange={(e) => handleImageChange(e, 'carImage2')}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                  </label>
-                  {formData.images.carImage2.preview && (
-                    <span
-                      className="text-sm text-green-600 font-pathway"
-                      style={{ marginLeft: '5px' }}
-                    >
-                      ✓ Selected
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div
-                className="field-row"
-                style={{ gap: '10px', marginTop: '10px' }}
-              >
-                <div
-                  className="flex items-center gap-2"
-                  style={{ marginLeft: '118px' }}
-                >
-                  <label className="file-upload-button font-pathway">
-                    Right
-                    <input
-                      type="file"
-                      onChange={(e) => handleImageChange(e, 'carImage3')}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                  </label>
-                  {formData.images.carImage3.preview && (
-                    <span
-                      className="text-sm text-green-600 font-pathway"
-                      style={{ marginLeft: '5px' }}
-                    >
-                      ✓ Selected
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="file-upload-button font-pathway">
-                    Left
-                    <input
-                      type="file"
-                      onChange={(e) => handleImageChange(e, 'carImage4')}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                  </label>
-                  {formData.images.carImage4.preview && (
-                    <span
-                      className="text-sm text-green-600 font-pathway"
-                      style={{ marginLeft: '5px' }}
-                    >
-                      ✓ Selected
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="field-row">
-                <label className="field-label font-pathway">License</label>
-                <input
-                  className="font-pathway"
-                  name="license"
-                  value={formData.license}
-                  onChange={handleInputChange}
-                  type="checkbox"
-                  required
-                />
-              </div>
-              <div className="field-row">
-                <label className="field-label font-pathway">Equipment:</label>
-                <div className="items-center gap-4">
-                  <label className="flex items-center gap-2 font-pathway">
-                    <input
-                      type="radio"
-                      name="equipmentStatus"
-                      value="complete"
-                      checked={formData.equipmentStatus === 'complete'}
-                      onChange={handleInputChange}
-                      className="h-4 w-4"
-                    />
-                    Complete
-                  </label>
-                  <label className="flex items-center gap-2 font-pathway">
-                    <input
-                      type="radio"
-                      name="equipmentStatus"
-                      value="damaged"
-                      checked={formData.equipmentStatus === 'damaged'}
-                      onChange={handleInputChange}
-                      className="h-4 w-4"
-                    />
-                    Damaged
-                  </label>
-                </div>
-              </div>
-              {formData.equipmentStatus === 'damaged' && (
-                <div className="field-row">
-                  <input
-                    type="text"
-                    name="equipmentDetails"
-                    value={formData.equipmentDetails || ''}
-                    onChange={handleInputChange}
-                    className="font-pathway"
-                    placeholder="Please damaged equipment..."
-                    required
-                    style={{ marginLeft: '115px' }}
-                  />
-                </div>
-              )}
-              <div className="field-row" style={{ gap: '10px' }}>
-                <label className="field-label font-pathway">Payment</label>
-                <select
-                  className="select-payment-release font-pathway"
-                  name="paymentMethod"
-                  value={formData.paymentMethod}
-                  onChange={handleInputChange}
-                >
-                  <option value="Cash">Cash</option>
-                  <option value="GCash">GCash</option>
-                </select>
-                <input
-                  className="font-pathway"
-                  name="paymentAmount"
-                  value={formData.paymentAmount}
-                  onChange={handleInputChange}
-                  placeholder="Amount"
-                  required
-                />
-              </div>
-              {formData.paymentMethod === 'GCash' && (
-                <div
-                  className="field-row"
-                  style={{ marginLeft: '215px', width: '185px' }}
-                >
-                  <input
-                    type="text"
-                    name="paymentReference"
-                    value={formData.paymentReference}
-                    onChange={handleInputChange}
-                    className="font-pathway"
-                    placeholder="Reference Number"
-                    required={formData.paymentMethod === 'GCash'}
-                  />
-                </div>
-              )}
-            </form>
-            <div
-              className="btn-container"
-              style={{
-                display: 'flex',
-                gap: '10px',
-                marginTop: '15px',
-              }}
+                  </Button>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+
+          {/* License */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                name="license"
+                checked={formData.license}
+                onChange={handleInputChange}
+              />
+            }
+            label="License Presented"
+          />
+
+          {/* Equipment Status */}
+          <Box>
+            <FormLabel sx={{ fontWeight: 600 }}>Equipment</FormLabel>
+            <RadioGroup
+              row
+              name="equipmentStatus"
+              value={formData.equipmentStatus}
+              onChange={handleInputChange}
             >
-              <button className="font-pathway save-btn">Release</button>
-              <button className="font-pathway cancel-btn" onClick={onClose}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+              <FormControlLabel
+                value="complete"
+                control={<Radio />}
+                label="Complete"
+              />
+              <FormControlLabel
+                value="damaged"
+                control={<Radio />}
+                label="Damaged"
+              />
+            </RadioGroup>
+            {formData.equipmentStatus === 'damaged' && (
+              <TextField
+                name="equipmentDetails"
+                label="Equipment Details"
+                value={formData.equipmentDetails}
+                onChange={handleInputChange}
+                fullWidth
+                multiline
+                minRows={2}
+                required
+                sx={{ mt: 1 }}
+              />
+            )}
+          </Box>
+
+          {/* Payment */}
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                select
+                name="paymentMethod"
+                label="Payment Method"
+                value={formData.paymentMethod}
+                onChange={handleInputChange}
+                fullWidth
+                size="small"
+              >
+                <MenuItem value="Cash">Cash</MenuItem>
+                <MenuItem value="GCash">GCash</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                name="paymentAmount"
+                label="Amount"
+                value={formData.paymentAmount}
+                onChange={handleAmountChange}
+                onKeyDown={blockNonNumericKeys}
+                fullWidth
+                size="small"
+                inputMode="numeric"
+                placeholder="Amount"
+                required
+              />
+            </Grid>
+            {formData.paymentMethod === 'GCash' && (
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  name="paymentReference"
+                  label="Reference No."
+                  value={formData.paymentReference}
+                  onChange={handleInputChange}
+                  fullWidth
+                  size="small"
+                  required
+                />
+              </Grid>
+            )}
+          </Grid>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button
+          variant="contained"
+          color="success"
+          type="submit"
+          form="releaseForm"
+        >
+          Release
+        </Button>
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={onClose}
+          sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
+        >
+          Cancel
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

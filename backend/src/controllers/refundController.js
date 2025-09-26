@@ -13,6 +13,7 @@ function shapeRefund(r) {
 		referenceNo: rest.reference_no || null,
 		refundAmount: rest.refund_amount ?? null,
 		refundDate: rest.refund_date ? rest.refund_date.toISOString().split('T')[0] : null,
+		description: rest.description || null,
 	};
 }
 
@@ -34,7 +35,7 @@ export const getRefunds = async (req, res) => {
 
 export const createRefund = async (req, res) => {
 	try {
-		const { booking_id, customer_id, refund_method, gcash_no, reference_no, refund_amount, refund_date } = req.body;
+		const { booking_id, customer_id, refund_method, gcash_no, reference_no, refund_amount, refund_date, description } = req.body;
 
 		if (!booking_id || !customer_id || refund_amount == null) {
 			return res.status(400).json({ error: 'booking_id, customer_id and refund_amount are required' });
@@ -49,6 +50,7 @@ export const createRefund = async (req, res) => {
 				reference_no,
 				refund_amount: Number(refund_amount),
 				refund_date: refund_date ? new Date(refund_date) : new Date(),
+				description,
 			},
 			include: {
 				customer: { select: { first_name: true, last_name: true } },

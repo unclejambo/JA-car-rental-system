@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import {
   Dialog,
@@ -12,10 +12,12 @@ import {
   Box,
 } from '@mui/material';
 
-// Zod schema (GCash requires a reference)
+// Schema: bookingId required, customer must resolve, extra rules for GCash
 const refundSchema = z
   .object({
-    customerName: z.string().min(1, 'Select a customer'),
+    customerName: z.string().min(1, 'Customer name is required'),
+    customerId: z.number().positive().optional(),
+    bookingId: z.coerce.number().int().gt(0, 'Select a booking'),
     description: z.string().min(1, 'Description is required'),
     refundMethod: z.enum(['Cash', 'GCash']),
     refundAmount: z.coerce
@@ -26,38 +28,55 @@ const refundSchema = z
     refundReference: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    if (
-      data.refundMethod === 'GCash' &&
-      (!data.gCashNumber || data.gCashNumber.trim() === '')
-    ) {
+    if (!data.customerId) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['gCashNumber'],
-        message: 'GCash number is required for GCash',
+        path: ['customerName'],
+        message: 'Select a valid customer (exact full name)',
       });
     }
-    if (
-      data.refundMethod === 'GCash' &&
-      (!data.refundReference || data.refundReference.trim() === '')
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['refundReference'],
-        message: 'Reference number is required for GCash',
-      });
+    if (data.refundMethod === 'GCash') {
+      if (!data.gCashNumber || data.gCashNumber.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['gCashNumber'],
+          message: 'GCash number is required for GCash',
+        });
+      } else if (!/^09\d{9}$/.test(data.gCashNumber.trim())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['gCashNumber'],
+          message: 'GCash number must be 11 digits starting with 09',
+        });
+      }
+      if (!data.refundReference || data.refundReference.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['refundReference'],
+          message: 'Reference number is required for GCash',
+        });
+      }
     }
   });
 
 export default function AddRefundModal({ show, onClose }) {
   // Align field names with schema
   const [formData, setFormData] = useState({
-    customerName: 'Cisco Cisco',
+    customerName: '',
+    customerId: undefined,
+    bookingId: '',
     description: '',
     refundMethod: 'Cash',
     refundAmount: '',
     gCashNumber: '',
     refundReference: '',
   });
+
+  const [customers, setCustomers] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [bookingOptions, setBookingOptions] = useState([]);
+  const [loadingData, setLoadingData] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const [errors, setErrors] = useState({});
 
@@ -76,11 +95,38 @@ export default function AddRefundModal({ show, onClose }) {
     return true;
   };
 
+  const findCustomerByName = (full) => {
+    const t = full.trim().toLowerCase();
+    return customers.find(
+      (c) => `${c.first_name} ${c.last_name}`.toLowerCase() === t
+    );
+  };
+
+  const updateBookingOptions = (custId) => {
+    if (!custId) {
+      setBookingOptions([]);
+      setFormData((fd) => ({ ...fd, bookingId: '' }));
+      return;
+    }
+    const list = bookings.filter((b) => b.customer_id === custId);
+    setBookingOptions(list);
+    setFormData((fd) =>
+      list.some((b) => b.booking_id === Number(fd.bookingId))
+        ? fd
+        : { ...fd, bookingId: '' }
+    );
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    const next = { ...formData, [name]: value };
+    let next = { ...formData, [name]: value };
+    if (name === 'customerName') {
+      const match = findCustomerByName(value);
+      next.customerId = match ? match.customer_id : undefined;
+      updateBookingOptions(next.customerId);
+    }
     setFormData(next);
-    validate(next); // live validate
+    validate(next);
   };
 
   // Only allow digits while typing; keep empty string while editing
@@ -110,12 +156,74 @@ export default function AddRefundModal({ show, onClose }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate(formData)) return;
-    console.log('Added Refund:', formData);
-    onClose?.();
+    try {
+      setSubmitting(true);
+      const base =
+        import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL || '';
+      const payload = {
+        booking_id: Number(formData.bookingId),
+        customer_id: Number(formData.customerId),
+        refund_method: formData.refundMethod,
+        gcash_no: formData.gCashNumber || null,
+        reference_no: formData.refundReference || null,
+        refund_amount: Number(formData.refundAmount),
+        refund_date: new Date().toISOString(),
+        description: formData.description || null,
+      };
+      const res = await fetch(`${base}/refunds`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to create refund');
+      }
+      onClose?.();
+    } catch (err) {
+      console.error('Create refund failed', err);
+      setErrors((prev) => ({ ...prev, form: err.message }));
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  useEffect(() => {
+    if (!show) return;
+    let cancel = false;
+    const load = async () => {
+      try {
+        setLoadingData(true);
+        const base =
+          import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL || '';
+        const [cRes, bRes] = await Promise.all([
+          fetch(`${base}/customers`),
+          fetch(`${base}/bookings`),
+        ]);
+        const [cData, bData] = await Promise.all([cRes.json(), bRes.json()]);
+        if (!cancel) {
+          setCustomers(Array.isArray(cData) ? cData : []);
+          setBookings(Array.isArray(bData) ? bData : []);
+          if (formData.customerName) {
+            const match = findCustomerByName(formData.customerName);
+            updateBookingOptions(match?.customer_id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch customers/bookings', err);
+      } finally {
+        if (!cancel) setLoadingData(false);
+      }
+    };
+    load();
+    return () => {
+      cancel = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [show]);
 
   return (
     <Dialog open={!!show} onClose={onClose} fullWidth maxWidth="xs">
@@ -125,18 +233,47 @@ export default function AddRefundModal({ show, onClose }) {
         <form id="addRefundForm" onSubmit={handleSubmit}>
           <Stack spacing={2}>
             <TextField
-              select
               label="Customer Name"
               name="customerName"
               value={formData.customerName}
               onChange={handleInputChange}
               required
+              disabled={loadingData}
               error={!!errors.customerName}
-              helperText={errors.customerName}
+              helperText={
+                errors.customerName || 'Type exact full name (First Last)'
+              }
+              fullWidth
+              placeholder={loadingData ? 'Loading...' : 'e.g., Juan Dela Cruz'}
+            />
+            <TextField
+              select
+              label="Booking"
+              name="bookingId"
+              value={formData.bookingId}
+              onChange={handleInputChange}
+              required
+              disabled={!formData.customerId || bookingOptions.length === 0}
+              error={!!errors.bookingId}
+              helperText={
+                errors.bookingId ||
+                (formData.customerId && bookingOptions.length === 0
+                  ? 'No bookings for this customer'
+                  : '')
+              }
               fullWidth
             >
-              <MenuItem value="Cisco Cisco">Cisco Cisco</MenuItem>
-              <MenuItem value="John Morgan">John Morgan</MenuItem>
+              {bookingOptions.map((b) => {
+                const date = new Date(b.booking_date);
+                const dStr = isNaN(date.getTime())
+                  ? b.booking_date
+                  : date.toISOString().split('T')[0];
+                return (
+                  <MenuItem key={b.booking_id} value={b.booking_id}>
+                    {dStr} (ID #{b.booking_id})
+                  </MenuItem>
+                );
+              })}
             </TextField>
 
             <TextField
@@ -231,8 +368,9 @@ export default function AddRefundModal({ show, onClose }) {
             form="addRefundForm"
             variant="contained"
             color="success"
+            disabled={submitting || loadingData}
           >
-            Add
+            {submitting ? 'Saving...' : 'Add'}
           </Button>
           <Button
             onClick={onClose}

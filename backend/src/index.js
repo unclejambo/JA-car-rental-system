@@ -1,3 +1,4 @@
+import 'dotenv/config' // <-- MUST be first so process.env is populated for modules
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -13,6 +14,7 @@ import storageRouter from './routes/storage.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import refundRoutes from './routes/refundRoute.js';
 import transactionRoutes from './routes/transactionRoutes.js';
+import adminProfileRoutes from './routes/adminProfileRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,6 +47,7 @@ app.use('/api/storage', storageRouter);
 app.use('/payments', paymentRoutes);
 app.use('/refunds', refundRoutes);
 app.use('/transactions', transactionRoutes);
+app.use('/admin-profile', adminProfileRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

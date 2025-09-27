@@ -75,32 +75,53 @@ export const createCar = async (req, res) => {
 export const updateCar = async (req, res) => {
   try {
     const carId = parseInt(req.params.id);
-    const {
-      make,
-      model,
-      year,
-      license_plate,
-      no_of_seat,
-      rent_price,
-      car_status,
-      car_img_url,
-      mileage,
-    } = req.body;
+    const { ...carData } = req.body;
+
+    // Normalize numeric fields: if empty string, omit; else parse to int
+    const normalized = { ...carData };
+    const normalizeIntField = (obj, key) => {
+      if (obj[key] === '') {
+        delete obj[key];
+      } else if (obj[key] != null) {
+        const parsed = parseInt(obj[key], 10);
+        if (!Number.isNaN(parsed)) obj[key] = parsed;
+        else delete obj[key];
+      }
+    };
+
+    normalizeIntField(normalized, 'year');
+    normalizeIntField(normalized, 'mileage');
+    normalizeIntField(normalized, 'no_of_seat');
+    normalizeIntField(normalized, 'rent_price');
+
+    if (req.file) {
+      normalized.car_img_url = `/uploads/${req.file.filename}`;
+    }
+
+    // Whitelist allowed columns only
+    const allowed = [
+      'make',
+      'model',
+      'year',
+      'license_plate',
+      'no_of_seat',
+      'rent_price',
+      'car_status',
+      'car_img_url',
+      'mileage',
+    ];
+    const data = Object.fromEntries(
+      Object.entries(normalized).filter(([k, v]) => allowed.includes(k))
+    );
+
+    console.log('UpdateCar received body:', req.body);
+    console.log('UpdateCar normalized data:', data);
 
     const updatedCar = await prisma.car.update({
       where: { car_id: carId },
-      data: {
-        make,
-        model,
-        year,
-        license_plate,
-        no_of_seat,
-        rent_price,
-        car_status,
-        car_img_url,
-        mileage,
-      },
+      data,
     });
+
     res.json(updatedCar);
   } catch (error) {
     console.error('Error updating car:', error);

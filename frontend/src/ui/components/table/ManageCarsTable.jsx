@@ -1,11 +1,11 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, IconButton } from '@mui/material';
+import { Box, IconButton, Button, Select, MenuItem } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 const NullLoadingOverlay = () => null;
 
-const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
+const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete, onExtend, onSetAvailable, onStatusChange }) => {
   const commonColumns = [
     {
       field: 'model',
@@ -88,8 +88,28 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
         field: 'status',
         headerName: 'Status',
         flex: 1.5,
-        minWidth: 100,
-        editable: false,
+        minWidth: 140,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) => {
+          const value = params.row.status || 'Available';
+          return (
+            <Select
+              size="small"
+              value={value}
+              onChange={(e) => {
+                const newStatus = e.target.value;
+                // notify parent with the raw row
+                onStatusChange?.(params.row, newStatus);
+              }}
+              sx={{ fontSize: '0.875rem', minWidth: 120 }}
+            >
+              <MenuItem value="Available">Available</MenuItem>
+              <MenuItem value="Rented">Rented</MenuItem>
+              <MenuItem value="Maintenance">Maintenance</MenuItem>
+            </Select>
+          );
+        },
       },
       {
         field: 'action',
@@ -124,16 +144,26 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
     ],
     MAINTENANCE: [
       {
-        field: 'startDate',
+        field: 'maintenance_start_date',
         headerName: 'Start Date',
         flex: 1.5,
         minWidth: 120,
+        valueFormatter: (params) => {
+          if (!params.value) return 'N/A';
+          const d = new Date(params.value);
+          return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+        },
       },
       {
-        field: 'endDate',
+        field: 'maintenance_end_date',
         headerName: 'End Date',
         flex: 1.5,
         minWidth: 120,
+        valueFormatter: (params) => {
+          if (!params.value) return 'N/A';
+          const d = new Date(params.value);
+          return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+        },
       },
       {
         field: 'description',
@@ -142,13 +172,13 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
         minWidth: 120,
       },
       {
-        field: 'shopAssigned',
+        field: 'maintenance_shop_name',
         headerName: 'Shop Assigned',
         flex: 1.5,
         minWidth: 120,
       },
       {
-        field: 'maintenanceFee',
+        field: 'maintenance_cost',
         headerName: 'Maintenance Fee',
         flex: 1.5,
         minWidth: 120,
@@ -171,15 +201,21 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
         align: 'center',
         renderCell: (params) => (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton
+            <Button
               size="small"
-              color="primary"
-              aria-label="edit"
-              sx={{ p: 0.5 }}
-              onClick={() => onEdit?.(params.row)}
+              variant="outlined"
+              onClick={() => onExtend?.(params.row)}
             >
-              <EditIcon fontSize="small" />
-            </IconButton>
+              Extend
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              color="success"
+              onClick={() => onSetAvailable?.(params.row)}
+            >
+              Set to Available
+            </Button>
           </Box>
         ),
       },
@@ -229,7 +265,7 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
       <DataGrid
         rows={rows}
         columns={columns.filter((col) => !col.hide)}
-        getRowId={(row) => row.transactionId}
+        getRowId={(row) => row.maintenance_id ?? row.transactionId ?? row.id ?? row.car_id}
         // loading={loading}
         components={{ LoadingOverlay: NullLoadingOverlay }}
         componentsProps={{ loadingOverlay: { sx: { display: 'none !important' } } }}

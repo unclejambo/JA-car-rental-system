@@ -5,7 +5,7 @@ import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 
-const ManageBookingsTable = ({ activeTab, rows, loading }) => {
+const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
   // Helper: return YYYY-MM-DD from an ISO datetime or Date
   const formatDateString = (value) => {
     if (!value && value !== 0) return '';
@@ -23,23 +23,62 @@ const ManageBookingsTable = ({ activeTab, rows, loading }) => {
     }
   };
 
+  // Handle view details action
+  const handleViewDetails = (row) => {
+    if (onViewDetails && typeof onViewDetails === 'function') {
+      // Map the row data to match the expected booking object format
+      const bookingData = {
+        id: row.actualBookingId, // Use the actual booking ID from database
+        customerName: row.customer_name,
+        carModel: row.car_model,
+        carPlateNumber: row.car_plate_number || row.plate_number,
+        bookingDate: row.booking_date,
+        purpose: row.purpose,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        pickupTime: row.pickup_time,
+        dropoffTime: row.dropoff_time,
+        deliveryLocation: row.delivery_location,
+        dropoffLocation: row.dropoff_location,
+        selfDrive: row.self_drive || false,
+        driverName: row.driver_name,
+        phoneNumber: row.phone_number,
+        fbLink: row.fb_link,
+        reservationFee: row.reservation_fee,
+        driverFee: row.driver_fee,
+        deliveryFee: row.delivery_fee,
+        totalAmount: row.total_amount || row.total_rental_amount,
+        paymentStatus: row.payment_status,
+        bookingStatus: row.booking_status,
+        // Add any other fields that might be needed
+        ...row, // Spread the original row to include any additional fields
+      };
+      onViewDetails(bookingData);
+    }
+  };
+
   // create a display copy so original rows remain unchanged
   const displayRows = (rows || []).map((r, idx) => ({
     ...r,
     booking_date: formatDateString(r.booking_date),
     start_date: formatDateString(r.start_date),
     end_date: formatDateString(r.end_date),
-    id: r.id ?? r.booking_id ?? r.customer_id ?? `row-${idx}`,
+    // Use the actual booking ID from database for DataGrid's id requirement
+    id: r.booking_id || r.id || r.reservation_id || `row-${idx}`,
+    // Store the actual booking ID separately for display
+    actualBookingId: r.booking_id || r.id || r.reservation_id || idx,
   }));
 
   // Define columns that are common to all tabs
   const commonColumns = [
     {
-      field: 'id',
-      headerName: 'ID',
+      field: 'actualBookingId', // Changed from 'id' to show actual booking ID
+      headerName: 'Booking ID',
       flex: 1,
       minWidth: 70,
       editable: false,
+      headerAlign: 'center',
+      align: 'center',
     },
     {
       field: 'customer_name',
@@ -146,9 +185,14 @@ const ManageBookingsTable = ({ activeTab, rows, loading }) => {
         {activeTab === 'BOOKINGS' && (
           <IconButton
             size="small"
-            color="black"
-            aria-label="more details"
-            onClick={() => console.log('More Details!', params.row)}
+            color="primary"
+            aria-label="view details"
+            onClick={() => handleViewDetails(params.row)}
+            sx={{
+              '&:hover': {
+                backgroundColor: 'rgba(25, 118, 210, 0.08)',
+              },
+            }}
           >
             <MoreHorizIcon fontSize="small" />
           </IconButton>
@@ -157,7 +201,12 @@ const ManageBookingsTable = ({ activeTab, rows, loading }) => {
           size="small"
           color="success"
           aria-label="confirm"
-          onClick={() => console.log('Confirmed!')}
+          onClick={() => console.log('Confirmed!', params.row)}
+          sx={{
+            '&:hover': {
+              backgroundColor: 'rgba(46, 125, 50, 0.08)',
+            },
+          }}
         >
           <CheckCircleIcon fontSize="small" />
         </IconButton>
@@ -165,7 +214,12 @@ const ManageBookingsTable = ({ activeTab, rows, loading }) => {
           size="small"
           color="error"
           aria-label="cancel"
-          onClick={() => console.log('Cancelled!')}
+          onClick={() => console.log('Cancelled!', params.row)}
+          sx={{
+            '&:hover': {
+              backgroundColor: 'rgba(211, 47, 47, 0.08)',
+            },
+          }}
         >
           <CancelIcon fontSize="small" />
         </IconButton>

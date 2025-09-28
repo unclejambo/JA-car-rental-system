@@ -9,7 +9,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { getApiBase } from '../utils/api.js';
 
-
 function LoginPage() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -21,13 +20,55 @@ function LoginPage() {
 
   const API_BASE = getApiBase();
 
+  // Anti-SQL injection: Sanitize input function
+  const sanitizeInput = (input) => {
+    if (!input || typeof input !== 'string') return '';
+
+    // Remove or escape potentially dangerous characters and patterns
+    return input
+      .trim()
+      .replace(/[<>]/g, '') // Remove < and >
+      .replace(/'/g, "''") // Escape single quotes
+      .replace(/;/g, '') // Remove semicolons
+      .replace(/--/g, '') // Remove SQL comments
+      .replace(/\/\*/g, '') // Remove /* comments
+      .replace(/\*\//g, '') // Remove */ comments
+      .replace(/\bUNION\b/gi, '') // Remove UNION statements
+      .replace(/\bSELECT\b/gi, '') // Remove SELECT statements
+      .replace(/\bINSERT\b/gi, '') // Remove INSERT statements
+      .replace(/\bUPDATE\b/gi, '') // Remove UPDATE statements
+      .replace(/\bDELETE\b/gi, '') // Remove DELETE statements
+      .replace(/\bDROP\b/gi, '') // Remove DROP statements
+      .replace(/\bCREATE\b/gi, '') // Remove CREATE statements
+      .replace(/\bALTER\b/gi, '') // Remove ALTER statements
+      .replace(/\bEXEC\b/gi, '') // Remove EXEC statements
+      .replace(/\bEXECUTE\b/gi, ''); // Remove EXECUTE statements
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    if (!identifier || !password) {
+    // Sanitize inputs before validation
+    const sanitizedIdentifier = sanitizeInput(identifier);
+    const sanitizedPassword = sanitizeInput(password);
+
+    if (!sanitizedIdentifier || !sanitizedPassword) {
       setError('Please enter both username/email and password');
+      setIsLoading(false);
+      return;
+    }
+
+    // Additional validation: Check for minimum length and valid characters
+    if (sanitizedIdentifier.length < 3) {
+      setError('Username/email must be at least 3 characters long');
+      setIsLoading(false);
+      return;
+    }
+
+    if (sanitizedPassword.length < 6) {
+      setError('Password must be at least 6 characters long');
       setIsLoading(false);
       return;
     }
@@ -39,8 +80,8 @@ function LoginPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          identifier,
-          password,
+          identifier: sanitizedIdentifier,
+          password: sanitizedPassword,
         }),
       });
 
@@ -75,6 +116,13 @@ function LoginPage() {
     }
   };
 
+  // Handle Enter key press
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !isLoading && identifier && password) {
+      handleLogin(e);
+    }
+  };
+
   return (
     <>
       <Header />
@@ -97,8 +145,7 @@ function LoginPage() {
             borderRadius: '5px',
             padding: '0',
             width: '360px',
-            minHeight: '390px', // default size
-            // grows automatically with content (e.g., error text)
+            minHeight: '390px',
             marginTop: '145px',
             placeContent: 'center',
             justifyItems: 'center',
@@ -136,35 +183,16 @@ function LoginPage() {
               {error}
             </div>
           )}
-          <input
-            type="text"
-            id="identifier"
-            placeholder="Username or Email"
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            disabled={isLoading}
-            style={{
-              backgroundColor: isLoading ? '#E5E5E5' : '#D9D9D9',
-              fontFamily: '"Pathway Gothic One", sans-serif',
-              fontSize: '18px',
-              textAlign: 'center',
-              border: 'none',
-              borderRadius: '5px',
-              padding: '10px',
-              width: '300px',
-              marginBottom: '10px',
-              boxShadow: '0 2px 2px rgba(0, 0, 0, .7)',
-            }}
-          />
-          <br />
-          <div style={{ position: 'relative', display: 'inline-block' }}>
+          <form onSubmit={handleLogin}>
             <input
-              type={showPwd ? 'text' : 'password'}
-              id="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              type="text"
+              id="identifier"
+              placeholder="Username or Email"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              onKeyPress={handleKeyPress}
               disabled={isLoading}
+              maxLength="100"
               style={{
                 backgroundColor: isLoading ? '#E5E5E5' : '#D9D9D9',
                 fontFamily: '"Pathway Gothic One", sans-serif',
@@ -178,54 +206,87 @@ function LoginPage() {
                 boxShadow: '0 2px 2px rgba(0, 0, 0, .7)',
               }}
             />
-            {password && (
-              <button
-                type="button"
-                onClick={() => setShowPwd(!showPwd)}
+            <br />
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <input
+                type={showPwd ? 'text' : 'password'}
+                id="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyPress={handleKeyPress}
+                disabled={isLoading}
+                maxLength="100"
                 style={{
-                  position: 'absolute',
-                  right: '5px',
-                  top: '23px',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
+                  backgroundColor: isLoading ? '#E5E5E5' : '#D9D9D9',
+                  fontFamily: '"Pathway Gothic One", sans-serif',
+                  fontSize: '18px',
+                  textAlign: 'center',
                   border: 'none',
-                  cursor: 'pointer',
-                  zIndex: 100,
+                  borderRadius: '5px',
+                  padding: '10px',
+                  width: '300px',
+                  marginBottom: '10px',
+                  boxShadow: '0 2px 2px rgba(0, 0, 0, .7)',
                 }}
-              >
-                {showPwd ? (
-                  <EyeSlashSolid
-                    style={{ width: 18, height: 18, color: 'rgb(0 0 0 / .7)' }}
-                  />
-                ) : (
-                  <EyeSolid
-                    style={{ width: 18, height: 18, color: 'rgb(0 0 0 / .7)' }}
-                  />
-                )}
-              </button>
-            )}
-          </div>
-          <br />
-          <button
-            id="login"
-            onClick={handleLogin}
-            disabled={isLoading}
-            style={{
-              backgroundColor: isLoading ? '#7BA3F5' : '#3F86F1',
-              fontFamily: '"Pathway Gothic One", sans-serif',
-              fontSize: '18px',
-              border: 'none',
-              borderRadius: '5px',
-              padding: '10px',
-              width: '320px',
-              marginBottom: '10px',
-              boxShadow: '0 2px 2px rgba(0, 0, 0, .7)',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              color: 'white',
-            }}
-          >
-            {isLoading ? 'Logging in...' : 'Login'}
-          </button>
+              />
+              {password && (
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(!showPwd)}
+                  style={{
+                    position: 'absolute',
+                    right: '5px',
+                    top: '23px',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                  }}
+                >
+                  {showPwd ? (
+                    <EyeSlashSolid
+                      style={{
+                        width: 18,
+                        height: 18,
+                        color: 'rgb(0 0 0 / .7)',
+                      }}
+                    />
+                  ) : (
+                    <EyeSolid
+                      style={{
+                        width: 18,
+                        height: 18,
+                        color: 'rgb(0 0 0 / .7)',
+                      }}
+                    />
+                  )}
+                </button>
+              )}
+            </div>
+            <br />
+            <button
+              type="submit"
+              id="login"
+              disabled={isLoading}
+              style={{
+                backgroundColor: isLoading ? '#7BA3F5' : '#3F86F1',
+                fontFamily: '"Pathway Gothic One", sans-serif',
+                fontSize: '18px',
+                border: 'none',
+                borderRadius: '5px',
+                padding: '10px',
+                width: '320px',
+                marginBottom: '10px',
+                boxShadow: '0 2px 2px rgba(0, 0, 0, .7)',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                color: 'white',
+              }}
+            >
+              {isLoading ? 'Logging in...' : 'Login'}
+            </button>
+          </form>
           <br />
           <button
             onClick={() => navigate('/forgot-password')}
@@ -236,7 +297,7 @@ function LoginPage() {
               cursor: 'pointer',
               background: 'none',
               border: 'none',
-              fontSize: 'inherit'
+              fontSize: 'inherit',
             }}
           >
             Forgot your password?

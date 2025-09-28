@@ -7,6 +7,7 @@ import ManageBookingsTable from '../../ui/components/table/ManageBookingsTable';
 import ManageBookingsHeader from '../../ui/components/header/ManageBookingsHeader';
 import { HiBookOpen, HiCurrencyDollar } from 'react-icons/hi2';
 import ManageFeesModal from '../../ui/components/modal/ManageFeesModal';
+import BookingDetailsModal from '../../ui/components/modal/BookingDetailsModal';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 
 export default function AdminBookingPage() {
@@ -16,9 +17,21 @@ export default function AdminBookingPage() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('BOOKINGS');
   const [showManageFeesModal, setShowManageFeesModal] = useState(false);
+  const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   const openManageFeesModal = () => setShowManageFeesModal(true);
   const closeManageFeesModal = () => setShowManageFeesModal(false);
+
+  const openBookingDetailsModal = (booking) => {
+    setSelectedBooking(booking);
+    setShowBookingDetailsModal(true);
+  };
+
+  const closeBookingDetailsModal = () => {
+    setShowBookingDetailsModal(false);
+    setSelectedBooking(null);
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -120,6 +133,11 @@ export default function AdminBookingPage() {
       <ManageFeesModal
         show={showManageFeesModal}
         onClose={closeManageFeesModal}
+      />
+      <BookingDetailsModal
+        open={showBookingDetailsModal}
+        onClose={closeBookingDetailsModal}
+        booking={selectedBooking}
       />
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar
@@ -238,6 +256,7 @@ export default function AdminBookingPage() {
                 rows={rows}
                 loading={loading}
                 activeTab={activeTab}
+                onViewDetails={openBookingDetailsModal}
               />
             </Box>
           </Box>

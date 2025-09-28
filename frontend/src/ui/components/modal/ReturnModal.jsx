@@ -1,223 +1,271 @@
 import React, { useState } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  FormLabel,
+  Stack,
+  Box,
+  Typography,
+  useMediaQuery,
+  Divider,
+} from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 export default function ReturnModal({ show, onClose }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [showFees, setShowFees] = useState(!isMobile); // show fees side panel on desktop
   const [formData, setFormData] = useState({
-    make: '',
-    model: '',
-    year: '',
-    mileage: '',
-    seats: '',
-    rentPrice: '',
-    licensePlate: '',
-    image: '',
+    gasLevel: 'High',
+    odometer: '',
     damageStatus: 'noDamage',
     damageDetails: '',
     equipmentStatus: 'complete',
     equipmentDetails: '',
   });
 
+  // Static fee data (could be props later)
+  const fees = [
+    { label: 'Overdue Fee', amount: 200 },
+    { label: 'Damage Fee', amount: 10000 },
+    { label: 'Equipment Loss Fee', amount: 1000 },
+    { label: 'Gas Level Fee', amount: 300 },
+    { label: 'Cleaning Fee', amount: 200 },
+  ];
+  const total = fees.reduce((sum, f) => sum + f.amount, 0);
+
+  const currency = (v) =>
+    `₱ ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
-  // const handleImageChange = (e) => {
-  //     const file = e.target.files[0];
-  //     if (file) {
-  //         const reader = new FileReader();
-  //         reader.onload = (event) => {
-  //             setFormData((prev) => ({
-  //                 ...prev,
-  //                 image: event.target.result,
-  //             }));
-  //         };
-  //         reader.readAsDataURL(file);
-  //     }
-  // };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // TODO: Add return submission logic here
-    console.log('Release form submitted:', formData);
-    onClose();
+    console.log('Return submit', formData);
+    onClose?.();
   };
 
-  if (!show) return null;
-
   return (
-    <>
-      {show && (
-        <div
-          className="modal-overlay"
-          onClick={onClose}
-          style={{ gap: '10px' }}
-        >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h1 className="font-pathway" style={{ margin: '0 0 10px 0' }}>
-              RELEASE
-            </h1>
-            <hr />
-            <form onSubmit={handleSubmit}>
-              <div className="field-row" style={{ gap: '10px' }}>
-                <label className="field-label font-pathway">Gas Level</label>
-                <select className="gas-level-select">
-                  <option>High</option>
-                  <option>Medium</option>
-                  <option>Low</option>
-                </select>
-              </div>
-              <div className="field-row">
-                <label className="field-label font-pathway">Odometer</label>
-                <div className="odometer">
-                  <input
-                    className="font-pathway"
-                    name="odometer"
-                    value={formData.odometer}
-                    onChange={handleInputChange}
-                    type="number"
-                    placeholder="Odometer"
-                    required
+    <Dialog
+      open={!!show}
+      onClose={onClose}
+      fullWidth
+      maxWidth={isMobile ? 'sm' : 'md'}
+    >
+      <DialogTitle>Return</DialogTitle>
+      <DialogContent dividers sx={{ p: 0 }}>
+        <Stack direction={isMobile ? 'column' : 'row'} sx={{ minHeight: 320 }}>
+          {/* Form side */}
+          <Box sx={{ flex: 1, p: 2 }}>
+            <Stack
+              id="returnForm"
+              component="form"
+              spacing={2}
+              onSubmit={handleSubmit}
+            >
+              {/* Gas Level */}
+              <Box>
+                <FormLabel sx={{ fontWeight: 600 }}>Gas Level</FormLabel>
+                <RadioGroup
+                  row
+                  name="gasLevel"
+                  value={formData.gasLevel}
+                  onChange={handleInputChange}
+                >
+                  {['High', 'Medium', 'Low'].map((g) => (
+                    <FormControlLabel
+                      key={g}
+                      value={g}
+                      control={<Radio />}
+                      label={g}
+                    />
+                  ))}
+                </RadioGroup>
+              </Box>
+              {/* Odometer */}
+              <TextField
+                name="odometer"
+                label="Odometer"
+                value={formData.odometer}
+                onChange={handleInputChange}
+                required
+                size="small"
+                inputMode="numeric"
+              />
+              {/* Damage Check */}
+              <Box>
+                <FormLabel sx={{ fontWeight: 600 }}>Damage Check</FormLabel>
+                <RadioGroup
+                  row
+                  name="damageStatus"
+                  value={formData.damageStatus}
+                  onChange={handleInputChange}
+                >
+                  <FormControlLabel
+                    value="noDamage"
+                    control={<Radio />}
+                    label="No Damages"
                   />
-                </div>
-              </div>
-              <br />
-              <div className="field-row">
-                <label className="field-label font-pathway">
-                  Damage Check:
-                </label>
-                <div className="items-center gap-4">
-                  <label className="flex items-center gap-2 font-pathway">
-                    <input
-                      type="radio"
-                      name="damageStatus"
-                      value="noDamage"
-                      checked={formData.damageStatus === 'noDamage'}
-                      onChange={handleInputChange}
-                      className="h-4 w-4"
-                    />
-                    No Damages
-                  </label>
-                  <label className="flex items-center gap-2 font-pathway">
-                    <input
-                      type="radio"
-                      name="damageStatus"
-                      value="specify"
-                      checked={formData.damageStatus === 'specify'}
-                      onChange={handleInputChange}
-                      className="h-4 w-4"
-                    />
-                    Specify
-                  </label>
-                </div>
-              </div>
-              {formData.damageStatus === 'specify' && (
-                <div className="field-row">
-                  <input
-                    type="text"
+                  <FormControlLabel
+                    value="specify"
+                    control={<Radio />}
+                    label="Specify"
+                  />
+                </RadioGroup>
+                {formData.damageStatus === 'specify' && (
+                  <TextField
                     name="damageDetails"
-                    value={formData.damageDetails || ''}
+                    label="Damage Details"
+                    value={formData.damageDetails}
                     onChange={handleInputChange}
-                    className="font-pathway"
-                    placeholder="Please specify damages..."
+                    fullWidth
+                    multiline
+                    minRows={2}
                     required
-                    style={{ marginLeft: '115px' }}
+                    sx={{ mt: 1 }}
                   />
-                </div>
-              )}
-              <div className="field-row">
-                <label className="field-label font-pathway">
-                  Equipment Check:
-                </label>
-                <div className="items-center gap-4">
-                  <label className="flex items-center gap-2 font-pathway">
-                    <input
-                      type="radio"
-                      name="equipmentStatus"
-                      value="complete"
-                      checked={formData.equipmentStatus === 'complete'}
-                      onChange={handleInputChange}
-                      className="h-4 w-4"
-                    />
-                    Complete
-                  </label>
-                  <label className="flex items-center gap-2 font-pathway">
-                    <input
-                      type="radio"
-                      name="equipmentStatus"
-                      value="specify"
-                      checked={formData.equipmentStatus === 'specify'}
-                      onChange={handleInputChange}
-                      className="h-4 w-4"
-                    />
-                    Specify
-                  </label>
-                </div>
-              </div>
-              {formData.equipmentStatus === 'specify' && (
-                <div className="field-row">
-                  <input
-                    type="text"
+                )}
+              </Box>
+              {/* Equipment Check */}
+              <Box>
+                <FormLabel sx={{ fontWeight: 600 }}>Equipment Check</FormLabel>
+                <RadioGroup
+                  row
+                  name="equipmentStatus"
+                  value={formData.equipmentStatus}
+                  onChange={handleInputChange}
+                >
+                  <FormControlLabel
+                    value="complete"
+                    control={<Radio />}
+                    label="Complete"
+                  />
+                  <FormControlLabel
+                    value="specify"
+                    control={<Radio />}
+                    label="Specify"
+                  />
+                </RadioGroup>
+                {formData.equipmentStatus === 'specify' && (
+                  <TextField
                     name="equipmentDetails"
-                    value={formData.equipmentDetails || ''}
+                    label="Equipment Details"
+                    value={formData.equipmentDetails}
                     onChange={handleInputChange}
-                    className="font-pathway"
-                    placeholder="Please specify damages..."
+                    fullWidth
+                    multiline
+                    minRows={2}
                     required
-                    style={{ marginLeft: '115px' }}
+                    sx={{ mt: 1 }}
                   />
-                </div>
+                )}
+              </Box>
+              {isMobile && (
+                <Box sx={{ mt: 1 }}>
+                  <Divider sx={{ my: 1 }} />
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 600, mb: 0.5 }}
+                  >
+                    Fees Total
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => setShowFees(true)}
+                    fullWidth
+                  >
+                    {currency(total)} (tap to view breakdown)
+                  </Button>
+                </Box>
               )}
-            </form>
-            <div
-              className="btn-container"
-              style={{
-                display: 'flex',
-                gap: '10px',
-                marginTop: '15px',
+            </Stack>
+          </Box>
+
+          {/* Fees side (persistent on desktop, conditional overlay on mobile) */}
+          {(!isMobile || (isMobile && showFees)) && (
+            <Box
+              sx={{
+                width: { xs: '100%', sm: 300 },
+                borderLeft: { sm: '1px solid #eee' },
+                borderTop: { xs: '1px solid #eee', sm: 'none' },
+                p: 2,
+                bgcolor: '#fafafa',
+                position: isMobile ? 'absolute' : 'relative',
+                top: 0,
+                left: 0,
+                height: isMobile ? '100%' : 'auto',
+                zIndex: 10,
+                overflowY: 'auto',
               }}
             >
-              <button className="font-pathway save-btn">Return</button>
-              <button className="font-pathway cancel-btn" onClick={onClose}>
-                Cancel
-              </button>
-            </div>
-          </div>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h1 className="font-pathway" style={{ margin: '0 0 10px 0' }}>
-              FEES
-            </h1>
-            <hr />
-            <div className="flex justify-between font-pathway fee-row">
-              <h3>Overdue Fee</h3>
-              <p>₱ 200.00</p>
-            </div>
-            <div className="flex justify-between font-pathway fee-row">
-              <h3>Damage Fee</h3>
-              <p>₱ 10,000.00</p>
-            </div>
-            <div className="flex justify-between font-pathway fee-row">
-              <h3>Equipment Loss Fee</h3>
-              <p>₱ 1,000.00</p>
-            </div>
-            <div className="flex justify-between font-pathway fee-row">
-              <h3>Gas Level Fee</h3>
-              <p>₱ 300.00</p>
-            </div>
-            <div className="flex justify-between font-pathway fee-row">
-              <h3>Cleaning Fee</h3>
-              <p>₱ 200.00</p>
-            </div>
-            <hr />
-            <div className="flex justify-between font-pathway fee-row">
-              <h3 className="font-pathway">Total</h3>
-              <p>₱ 11,200.00</p>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+              {isMobile && (
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => setShowFees(false)}
+                  sx={{ mb: 1 }}
+                >
+                  Close Fees
+                </Button>
+              )}
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                Fees
+              </Typography>
+              <Stack spacing={1}>
+                {fees.map((f) => (
+                  <Box
+                    key={f.label}
+                    sx={{ display: 'flex', justifyContent: 'space-between' }}
+                  >
+                    <Typography variant="body2">{f.label}</Typography>
+                    <Typography variant="body2">
+                      {currency(f.amount)}
+                    </Typography>
+                  </Box>
+                ))}
+                <Divider />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Total
+                  </Typography>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    {currency(total)}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Box>
+          )}
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button
+          type="submit"
+          form="returnForm"
+          variant="contained"
+          color="success"
+        >
+          Return
+        </Button>
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={onClose}
+          sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
+        >
+          Cancel
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

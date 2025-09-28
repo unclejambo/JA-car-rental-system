@@ -1,6 +1,6 @@
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import AddCarModal from '../../ui/components/modal/AddCarModal.jsx';
 import EditCarModal from '../../ui/components/modal/EditCarModal.jsx';
 import { HiTruck, HiWrenchScrewdriver } from 'react-icons/hi2';
@@ -51,7 +51,7 @@ export default function AdminCarPage() {
   const handleDelete = async (carId) => {
     if (window.confirm('Are you sure you want to delete this car?')) {
       try {
-        const response = await authenticatedFetch(`${API_BASE}/api/cars/${carId}`, {
+        const response = await authenticatedFetch(`${API_BASE}/cars/${carId}`, {
           method: 'DELETE'
         });
         
@@ -245,9 +245,6 @@ export default function AdminCarPage() {
                   {error}
                 </Box>
               )}
-
-
-
             </Box>
           </Box>
         </Box>

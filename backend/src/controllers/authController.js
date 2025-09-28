@@ -1,11 +1,16 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { createClient } from '@supabase/supabase-js';
 
 const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-jwt-secret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function login(req, res, next) {
   try {
@@ -153,6 +158,12 @@ async function validateToken(req, res, next) {
 
 async function register(req, res, next) {
   try {
+    console.log('--- REGISTER ROUTE CALLED ---');
+    console.log('Request URL:', req.originalUrl || req.url);
+    console.log('Headers (content-type):', req.headers['content-type'] || req.headers['Content-Type']);
+    console.log('Body:', req.body);
+
+    // Accept field variants from frontend
     const {
       email,
       username,
@@ -161,64 +172,79 @@ async function register(req, res, next) {
       lastName,
       address,
       contactNumber,
-      licenseNumber,
+      licenseNumber: licenseNumberBody,
       licenseExpiry,
       restrictions,
-      licenseFile, // This would be handled separately for file upload
+      dl_img_url, // This comes from the separate file upload
+      agreeTerms,
     } = req.body;
 
-    // Validation
-    if (!email || !username || !password || !firstName || !lastName || 
-        !address || !contactNumber || !licenseNumber || !licenseExpiry) {
+    const licenseNumber =
+      licenseNumberBody || req.body.license_number || req.body.driver_license_no;
+
+    console.log('Extracted dl_img_url:', dl_img_url);
+
+    // Basic validation
+    if (
+      !email ||
+      !username ||
+      !password ||
+      !firstName ||
+      !lastName ||
+      !address ||
+      !contactNumber ||
+      !licenseNumber ||
+      !licenseExpiry ||
+      !dl_img_url || // Require the image URL
+      !agreeTerms
+    ) {
       return res.status(400).json({ 
         ok: false, 
-        message: 'All required fields must be provided' 
+        message: 'Missing required fields',
+        missing: {
+          email: !email,
+          username: !username,
+          password: !password,
+          firstName: !firstName,
+          lastName: !lastName,
+          address: !address,
+          contactNumber: !contactNumber,
+          licenseNumber: !licenseNumber,
+          licenseExpiry: !licenseExpiry,
+          dl_img_url: !dl_img_url,
+          agreeTerms: !agreeTerms
+        }
       });
     }
 
-    // Check if user already exists
+    // Check existing
     const existingCustomer = await prisma.customer.findFirst({
-      where: {
-        OR: [
-          { email },
-          { username },
-        ],
-      },
+      where: { OR: [{ email }, { username }] },
     });
-
     if (existingCustomer) {
-      return res.status(409).json({
-        ok: false,
-        message: 'User with this email or username already exists',
-      });
+      return res.status(409).json({ ok: false, message: 'Account already exists' });
     }
 
-    // Check if license number already exists
     const existingLicense = await prisma.driverLicense.findUnique({
       where: { driver_license_no: licenseNumber },
     });
-
     if (existingLicense) {
-      return res.status(409).json({
-        ok: false,
-        message: 'Driver license number already exists',
-      });
+      return res.status(409).json({ ok: false, message: 'Driver license already registered' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create driver license first
-    const driverLicense = await prisma.driverLicense.create({
+    // Create driverLicense record with the uploaded image URL
+    await prisma.driverLicense.create({
       data: {
         driver_license_no: licenseNumber,
         expiry_date: new Date(licenseExpiry),
         restrictions: restrictions || 'None',
-        dl_img_url: licenseFile ? `/uploads/licenses/${licenseFile}` : null,
+        dl_img_url: dl_img_url, // Store the Supabase URL
       },
     });
 
-    // Create customer with the license reference
+    // Create customer
     const customer = await prisma.customer.create({
       data: {
         first_name: firstName,
@@ -234,8 +260,11 @@ async function register(req, res, next) {
       },
     });
 
-    // Remove password from response
-    const { password: _pw, ...safeCustomer } = customer;
+    console.log('Registration successful:', {
+      customerId: customer.customer_id,
+      licenseNumber,
+      dl_img_url
+    });
 
     return res.status(201).json({
       ok: true,
@@ -250,15 +279,9 @@ async function register(req, res, next) {
     });
   } catch (err) {
     console.error('Registration error:', err);
-    
-    // Handle Prisma unique constraint errors
     if (err.code === 'P2002') {
-      return res.status(409).json({
-        ok: false,
-        message: 'A record with this information already exists',
-      });
+      return res.status(409).json({ ok: false, message: 'Unique constraint failed' });
     }
-    
     next(err);
   }
 }

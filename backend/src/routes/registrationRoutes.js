@@ -3,7 +3,7 @@ import { registerUser, getTermsAndConditions, upload } from '../controllers/regi
 
 const router = express.Router();
 
-// POST /api/registration/register - Create new user account
+// POST /api/registration/register - Create new user account with file upload
 router.post('/register', upload.single('licenseFile'), registerUser);
 
 // GET /api/registration/terms - Get terms and conditions

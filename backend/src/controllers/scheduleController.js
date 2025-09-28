@@ -45,6 +45,105 @@ export const getSchedules = async (req, res) => {
   }
 };
 
+// Get schedules for a specific customer
+export const getSchedulesByCustomer = async (req, res) => {
+  try {
+    const customerId = parseInt(req.params.id, 10);
+    if (Number.isNaN(customerId)) {
+      return res.status(400).json({ error: 'Invalid customer id' });
+    }
+
+    const schedules = await prisma.booking.findMany({
+      where: { customer_id: customerId },
+      select: {
+        booking_id: true,
+        start_date: true,
+        pickup_time: true,
+        pickup_loc: true,
+        end_date: true,
+        dropoff_time: true,
+        dropoff_loc: true,
+        car: {
+          select: {
+            make: true,
+            model: true,
+          },
+        },
+      },
+      orderBy: { start_date: 'desc' },
+    });
+
+    const mapped = schedules.map((s) => ({
+      booking_id: s.booking_id,
+      start_date: s.start_date,
+      pickup_time: s.pickup_time,
+      pickup_loc: s.pickup_loc,
+      end_date: s.end_date,
+      dropoff_time: s.dropoff_time,
+      dropoff_loc: s.dropoff_loc,
+      car_model: `${s.car?.make ?? ''}${s.car?.make && s.car?.model ? ' ' : ''}${s.car?.model ?? ''}`.trim(),
+    }));
+
+    res.json(mapped);
+  } catch (error) {
+    console.error('Error fetching customer schedules:', error);
+    res.status(500).json({ error: 'Failed to fetch customer schedules' });
+  }
+};
+
+// New: get schedules for the currently authenticated customer
+export const getMySchedules = async (req, res) => {
+  try {
+    // verifyToken sets req.user; adjust if your token uses a different claim
+    const customerId =
+      req.user?.customer_id ??
+      req.user?.customerId ??
+      req.user?.id ??
+      req.user?.sub ??
+      req.user?.userId;
+
+    if (!customerId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const schedules = await prisma.booking.findMany({
+      where: { customer_id: Number(customerId) },
+      select: {
+        booking_id: true,
+        start_date: true,
+        pickup_time: true,
+        pickup_loc: true,
+        end_date: true,
+        dropoff_time: true,
+        dropoff_loc: true,
+        booking_status: true,
+        car: {
+          select: {
+            make: true,
+            model: true,
+          },
+        },
+      },
+      orderBy: { start_date: 'desc' },
+    });
+
+    const mapped = schedules.map((s) => ({
+      booking_id: s.booking_id,
+      start_date: s.start_date,
+      pickup_time: s.pickup_time,
+      pickup_loc: s.pickup_loc,
+      end_date: s.end_date,
+      dropoff_time: s.dropoff_time,
+      dropoff_loc: s.dropoff_loc,
+      booking_status: s.booking_status,
+      car_model: `${s.car?.make ?? ''}${s.car?.make && s.car?.model ? ' ' : ''}${s.car?.model ?? ''}`.trim(),
+    }));
+
+    res.json(mapped);
+  } catch (error) {
+    console.error('Error fetching my schedules:', error);
+    res.status(500).json({ error: 'Failed to fetch schedules' });
+  }
+};
+
 // Get a schedule (booking) by ID
 export const getScheduleById = async (req, res) => {
   try {

@@ -1,139 +1,250 @@
 import React, { useState } from 'react';
+import { z } from 'zod';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  MenuItem,
+  Stack,
+  Box,
+} from '@mui/material';
+
+const staffSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  address: z.string().min(1, 'Address is required'),
+  phone: z
+    .string()
+    .min(7, 'Enter a valid phone number')
+    .max(15, 'Enter a valid phone number')
+    .regex(/^\d+$/, 'Digits only'),
+  email: z.string().email('Enter a valid email'),
+  role: z.enum(['staff', 'manager']),
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  status: z.enum(['Active', 'Inactive']),
+});
 
 export default function AddStaffModal({ show, onClose }) {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: '',
+    address: '',
     phone: '',
+    email: '',
     role: 'staff',
+    username: '',
+    password: '',
     status: 'Active',
   });
 
+  const [errors, setErrors] = useState({});
+
+  const validate = (data) => {
+    const res = staffSchema.safeParse(data);
+    if (!res.success) {
+      const fieldErrors = {};
+      for (const issue of res.error.issues) {
+        const key = issue.path[0] || 'form';
+        fieldErrors[key] = issue.message;
+      }
+      // setErrors(fieldErrors);
+      return false;
+    }
+    setErrors({});
+    return true;
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    const next = { ...formData, [name]: value };
+    setFormData(next);
+    validate(next);
+  };
+
+  const handlePhoneChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, '');
+    const next = { ...formData, phone: digits };
+    setFormData(next);
+    validate(next);
+  };
+
+  const blockNonNumericKeys = (e) => {
+    const allowed = [
+      'Backspace',
+      'Delete',
+      'Tab',
+      'Escape',
+      'Enter',
+      'ArrowLeft',
+      'ArrowRight',
+      'Home',
+      'End',
+    ];
+    if (e.ctrlKey || e.metaKey) return;
+    if (!/^\d$/.test(e.key) && !allowed.includes(e.key)) {
+      e.preventDefault();
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // TODO: Add staff submission logic here
-    console.log('Form submitted:', formData);
-    onClose();
+    if (!validate(formData)) return;
+    console.log('Add staff:', formData);
+    onClose?.();
   };
 
-  if (!show) return null;
-
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h1 className="font-pathway" style={{ margin: '0 0 20px 0' }}>
-          ADD STAFF MEMBER
-        </h1>
-
-        <form onSubmit={handleSubmit}>
-          <div className="field-row">
-            <label className="field-label font-pathway">First Name</label>
-            <input
-              className="font-pathway"
+    <Dialog
+      open={!!show}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      disableScrollLock
+    >
+      <DialogTitle>Add Staff Member</DialogTitle>
+      <DialogContent dividers>
+        <form id="addStaffForm" onSubmit={handleSubmit}>
+          <Stack spacing={2}>
+            <TextField
+              label="First Name"
               name="firstName"
               value={formData.firstName}
               onChange={handleInputChange}
-              placeholder="First Name"
               required
+              error={!!errors.firstName}
+              helperText={errors.firstName}
+              fullWidth
             />
-          </div>
-
-          <div className="field-row">
-            <label className="field-label font-pathway">Last Name</label>
-            <input
-              className="font-pathway"
+            <TextField
+              label="Last Name"
               name="lastName"
               value={formData.lastName}
               onChange={handleInputChange}
-              placeholder="Last Name"
               required
+              error={!!errors.lastName}
+              helperText={errors.lastName}
+              fullWidth
             />
-          </div>
-
-          <div className="field-row">
-            <label className="field-label font-pathway">Email</label>
-            <input
-              className="font-pathway"
-              type="email"
+            <TextField
+              label="Address"
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              required
+              error={!!errors.address}
+              helperText={errors.address}
+              fullWidth
+            />
+            <TextField
+              label="Phone"
+              name="phone"
+              type="text"
+              inputMode="numeric"
+              value={formData.phone}
+              onChange={handlePhoneChange}
+              onKeyDown={blockNonNumericKeys}
+              required
+              error={!!errors.phone}
+              helperText={errors.phone}
+              fullWidth
+              inputProps={{ pattern: '[0-9]*' }}
+            />
+            <TextField
+              label="Email"
               name="email"
+              type="email"
               value={formData.email}
               onChange={handleInputChange}
-              placeholder="Email"
               required
+              error={!!errors.email}
+              helperText={errors.email}
+              fullWidth
             />
-          </div>
-
-          <div className="field-row">
-            <label className="field-label font-pathway">Phone</label>
-            <input
-              className="font-pathway"
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              placeholder="Phone Number"
-              required
-            />
-          </div>
-
-          <div className="field-row">
-            <label className="field-label font-pathway">Role</label>
-            <select
-              className="font-pathway"
+            <TextField
+              select
+              label="Role"
               name="role"
               value={formData.role}
               onChange={handleInputChange}
               required
+              error={!!errors.role}
+              helperText={errors.role}
+              fullWidth
             >
-              <option value="staff">Staff</option>
-              <option value="manager">Manager</option>
-            </select>
-          </div>
-
-          <div className="field-row">
-            <label className="field-label font-pathway">Status</label>
-            <select
-              className="font-pathway"
+              <MenuItem value="staff">Staff</MenuItem>
+              <MenuItem value="manager">Manager</MenuItem>
+            </TextField>
+            <TextField
+              label="Username"
+              name="username"
+              value={formData.username}
+              onChange={handleInputChange}
+              required
+              error={!!errors.username}
+              helperText={errors.username}
+              fullWidth
+            />
+            <TextField
+              label="Password"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              required
+              error={!!errors.password}
+              helperText={errors.password}
+              fullWidth
+            />
+            <TextField
+              select
+              label="Status"
               name="status"
               value={formData.status}
               onChange={handleInputChange}
               required
+              error={!!errors.status}
+              helperText={errors.status}
+              fullWidth
             >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
-
-          <div
-            className="btn-container"
-            style={{
-              display: 'flex',
-              gap: '10px',
-              marginTop: '15px',
+              <MenuItem value="Active">Active</MenuItem>
+              <MenuItem value="Inactive">Inactive</MenuItem>
+            </TextField>
+          </Stack>
+        </form>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Box
+          sx={{
+            width: '100%',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            gap: 1,
+          }}
+        >
+          <Button
+            type="submit"
+            form="addStaffForm"
+            variant="contained"
+            color="success"
+          >
+            Save
+          </Button>
+          <Button
+            onClick={onClose}
+            color="error"
+            variant="outlined"
+            sx={{
+              '&:hover': { backgroundColor: 'error.main', color: 'white' },
             }}
           >
-            <button type="submit" className="font-pathway save-btn">
-              Save
-            </button>
-            <button
-              type="button"
-              className="font-pathway cancel-btn"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+            Cancel
+          </Button>
+        </Box>
+      </DialogActions>
+    </Dialog>
   );
 }

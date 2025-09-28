@@ -2,7 +2,9 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Box, Select, MenuItem, useMediaQuery } from '@mui/material';
 
 // use Vite env var, fallback to localhost; remove trailing slash if present
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+const API_BASE = (
+  import.meta.env.VITE_API_URL || 'http://localhost:3001'
+).replace(/\/$/, '');
 
 const ManageUserTable = ({ activeTab, rows, loading }) => {
   const isSmallScreen = useMediaQuery('(max-width:600px)');
@@ -56,7 +58,11 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              style={{ color: '#1976d2', textDecoration: 'none', fontWeight: 500 }}
+              style={{
+                color: '#1976d2',
+                textDecoration: 'none',
+                fontWeight: 500,
+              }}
             >
               Link
             </a>
@@ -141,19 +147,18 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         const bodyStatus = newStatusLabel.toLowerCase(); // send 'active'|'inactive' (backend normalizes)
 
         try {
-          const response = await fetch(
-            `${API_BASE}/customers/${params.id}`,
-            {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ status: bodyStatus }),
-            }
-          );
+          const response = await fetch(`${API_BASE}/customers/${params.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: bodyStatus }),
+          });
 
           const json = await response.json().catch(() => null);
           if (!response.ok) {
             console.error('Update failed:', response.status, json);
-            throw new Error(json?.error || json?.message || 'Failed to update status');
+            throw new Error(
+              json?.error || json?.message || 'Failed to update status'
+            );
           }
 
           // update only the status cell in the grid with the display label
@@ -179,6 +184,7 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
           onChange={handleStatusChange}
           sx={{ width: 90, height: 20, fontSize: 12 }}
           onClick={(e) => e.stopPropagation()}
+          MenuProps={{ disableScrollLock: true }}
         >
           <MenuItem value="Active" sx={{ fontSize: 12 }}>
             Active

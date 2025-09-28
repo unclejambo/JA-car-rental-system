@@ -3,6 +3,7 @@
 .register-card {
   max-width: 520px !important;
   width: 100% !important;
+  margin-top: 80px;
   margin-left: auto;
   margin-right: auto;
   padding: 22px !important;
@@ -14,13 +15,25 @@
   backdrop-filter: blur(8px);
 
   /* keep shadow and border for contrast */
-  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
-  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+
+  max-height: 86vh; /* adjust as needed */
+  overflow-y: auto; /* scroll inside the card when content exceeds */
+}
+
+/* If you prefer to limit only the form area and keep headers/buttons static */
+.register-card .register-form {
+  max-height: 72vh; /* tune this to taste */
+  overflow-y: auto;
+  padding-right: 8px; /* Add padding for better scroll experience */
 }
 
 /* Form card sizing and centered layout */
 .register-card,
-.register-card * { box-sizing: border-box; }
+.register-card * {
+  box-sizing: border-box;
+}
 
 /* Ensure inputs are constrained and properly aligned */
 .register-card .register-form input,
@@ -34,11 +47,11 @@
   border: 1px solid #e2e8f0;
   background: #f3f4f6;
   color: #111827;
-  margin: 0;
+  margin: 0 0 4px 0; /* Add small bottom margin for distinction */
 }
 
 /* ------------ Added: don't force checkbox to be full width ------------ */
-.register-card .register-form input[type="checkbox"] {
+.register-card .register-form input[type='checkbox'] {
   width: auto !important;
   height: auto !important;
   display: inline-block !important;
@@ -55,10 +68,21 @@
 }
 
 /* File upload label and buttons properly aligned */
-.register-card .register-form label[for="licenseUpload"],
+.register-card .register-form label[for='licenseUpload'],
 .register-card .register-form .flex.items-center > label {
   width: 100%;
   display: block;
+}
+
+/* File upload specific styling for horizontal layout */
+.register-card .register-form .flex.items-center.space-x-2.flex-wrap {
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.register-card .register-form .flex.items-center.space-x-2.flex-wrap button {
+  flex-shrink: 0;
 }
 
 /* Two-column name row: keep side-by-side on desktop, stacked on mobile */
@@ -74,7 +98,7 @@
 }
 
 /* Submit button properly aligned */
-.register-card .register-form button[type="submit"] {
+.register-card .register-form button[type='submit'] {
   width: 100%;
   padding: 12px;
   border-radius: 6px;
@@ -93,20 +117,20 @@
     margin: 12px;
     padding: 18px !important;
     max-width: calc(100% - 24px);
-    background: rgba(255,255,255,0.88) !important;
+    background: rgba(255, 255, 255, 0.88) !important;
     -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
   }
   .register-card .register-form input,
   .register-card .register-form textarea,
   .register-card .register-form select,
-  .register-card .register-form button[type="submit"],
-  .register-card .register-form label[for="licenseUpload"] {
+  .register-card .register-form button[type='submit'],
+  .register-card .register-form label[for='licenseUpload'] {
     max-width: 100%;
     width: 100%;
   }
-  .register-card .two-col { 
-    flex-direction: column; 
+  .register-card .two-col {
+    flex-direction: column;
   }
   .register-card .two-col input {
     max-width: 100% !important;
@@ -118,6 +142,12 @@
 .register-card .register-form textarea:focus,
 .register-card .register-form select:focus,
 .register-card .register-form button:focus {
-  outline: 2px solid rgba(59,130,246,0.3);
+  outline: 2px solid rgba(59, 130, 246, 0.3);
   outline-offset: 2px;
+}
+
+@media (max-width: 1024px) {
+  .register-card {
+    margin-top: 80px;
+  }
 }

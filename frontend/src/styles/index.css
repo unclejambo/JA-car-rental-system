@@ -371,6 +371,14 @@ input[type='radio'] {
   margin-left: -31px !important;
 }
 
+/* SELECT OPT --- Add Payment/Refund Modal */
+.select-add-payment-refund {
+  width: 210px;
+  font-size: 16px;
+  background-color: #d9d9d9;
+  cursor: pointer;
+}
+
 /* Remove the buttons in the input_type = number */
 input[type='number']::-webkit-outer-spin-button,
 input[type='number']::-webkit-inner-spin-button {

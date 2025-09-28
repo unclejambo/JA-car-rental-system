@@ -49,7 +49,7 @@ const TransactionLogsTable = ({ activeTab, rows, loading }) => {
         field: 'paymentMethod',
         headerName: 'Payment Method',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 100,
       },
       {
         field: 'referenceNo',
@@ -61,13 +61,13 @@ const TransactionLogsTable = ({ activeTab, rows, loading }) => {
         field: 'gCashNo',
         headerName: 'GCash No',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 100,
       },
       {
         field: 'totalAmount',
         headerName: 'Total Amount',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 100,
         renderCell: (params) => {
           return params.value
             ? '₱' +
@@ -79,14 +79,14 @@ const TransactionLogsTable = ({ activeTab, rows, loading }) => {
         },
       },
       {
-        field: 'description',
-        headerName: 'Description',
-        flex: 1.5,
-        minWidth: 120,
-      },
-      {
         field: 'paidDate',
         headerName: 'Paid Date',
+        flex: 1.5,
+        minWidth: 100,
+      },
+      {
+        field: 'description',
+        headerName: 'Description',
         flex: 1.5,
         minWidth: 120,
       },
@@ -96,7 +96,7 @@ const TransactionLogsTable = ({ activeTab, rows, loading }) => {
         field: 'refundMethod',
         headerName: 'Refund Method',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 100,
       },
       {
         field: 'referenceNo',
@@ -108,13 +108,13 @@ const TransactionLogsTable = ({ activeTab, rows, loading }) => {
         field: 'gCashNo',
         headerName: 'GCash No',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 100,
       },
       {
         field: 'refundAmount',
         headerName: 'Refund Amount',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 100,
         renderCell: (params) => {
           return params.value
             ? '₱' +
@@ -128,6 +128,12 @@ const TransactionLogsTable = ({ activeTab, rows, loading }) => {
       {
         field: 'refundDate',
         headerName: 'Refund Date',
+        flex: 1.5,
+        minWidth: 100,
+      },
+      {
+        field: 'description',
+        headerName: 'Description',
         flex: 1.5,
         minWidth: 120,
       },

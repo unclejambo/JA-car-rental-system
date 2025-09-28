@@ -148,9 +148,15 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete, onExtend, onSetAva
         headerName: 'Start Date',
         flex: 1.5,
         minWidth: 120,
-        valueFormatter: (params) => {
-          if (!params.value) return 'N/A';
-          const d = new Date(params.value);
+        renderCell: (params) => {
+          // Try multiple potential field names for start date
+          const value = params.row.maintenance_start_date || 
+                       params.row.start_date || 
+                       params.row.startDate || 
+                       params.row.start;
+          
+          if (!value) return 'N/A';
+          const d = new Date(value);
           return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
         },
       },
@@ -159,9 +165,15 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete, onExtend, onSetAva
         headerName: 'End Date',
         flex: 1.5,
         minWidth: 120,
-        valueFormatter: (params) => {
-          if (!params.value) return 'N/A';
-          const d = new Date(params.value);
+        renderCell: (params) => {
+          // Try multiple potential field names for end date
+          const value = params.row.maintenance_end_date || 
+                       params.row.end_date || 
+                       params.row.endDate || 
+                       params.row.end;
+          
+          if (!value) return 'N/A';
+          const d = new Date(value);
           return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
         },
       },
@@ -195,16 +207,21 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete, onExtend, onSetAva
       {
         field: 'action',
         headerName: 'Action',
-        flex: 1.5,
-        minWidth: 100,
+        flex: 2,
+        minWidth: 180,
         editable: false,
         align: 'center',
         renderCell: (params) => (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Button
               size="small"
               variant="outlined"
               onClick={() => onExtend?.(params.row)}
+              sx={{ 
+                minWidth: 'auto',
+                fontSize: '0.75rem',
+                padding: '4px 8px'
+              }}
             >
               Extend
             </Button>
@@ -213,8 +230,14 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete, onExtend, onSetAva
               variant="contained"
               color="success"
               onClick={() => onSetAvailable?.(params.row)}
+              sx={{ 
+                minWidth: 'auto',
+                fontSize: '0.70rem',
+                padding: '4px 6px',
+                whiteSpace: 'nowrap'
+              }}
             >
-              Set to Available
+              Set Available
             </Button>
           </Box>
         ),

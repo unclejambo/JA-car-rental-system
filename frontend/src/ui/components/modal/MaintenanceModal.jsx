@@ -111,13 +111,31 @@ export default function MaintenanceModal({ show, onClose, car, onSave }) {
           </div>
           <div className="field-row">
             <label className="field-label font-pathway">Maintenance Fee</label>
-            <input
-              type="number"
-              name="maintenance_fee"
-              value={formData.maintenance_fee}
-              onChange={handleChange}
-              className="font-pathway"
-            />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <span 
+                style={{ 
+                  position: 'absolute', 
+                  left: '10px', 
+                  zIndex: 1, 
+                  color: '#666',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}
+              >
+                ₱
+              </span>
+              <input
+                type="number"
+                name="maintenance_fee"
+                value={formData.maintenance_fee}
+                onChange={handleChange}
+                className="font-pathway"
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                style={{ paddingLeft: '25px' }}
+              />
+            </div>
           </div>
           <div className="btn-container">
             <button type="submit" className="font-pathway save-btn">

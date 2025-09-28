@@ -69,11 +69,17 @@ export default function AdminCarPage() {
     const loadData = async () => {
       try {
         if (activeTab === 'CARS') {
+          console.log('Fetching cars from:', `${API_BASE}/cars`);
           const response = await authenticatedFetch(`${API_BASE}/cars`);
+          console.log('Cars response status:', response.status);
           if (response.ok) {
             const data = await response.json();
+            console.log('Raw cars data received:', data);
+            console.log('Number of cars received:', (data || []).length);
             setCars(data || []);
           } else {
+            const errorText = await response.text();
+            console.error('Failed to load cars. Status:', response.status, 'Error:', errorText);
             setError('Failed to load cars');
           }
         } else if (activeTab === 'MAINTENANCE') {
@@ -97,6 +103,9 @@ export default function AdminCarPage() {
               maintenanceResponses.map((res) => res.json())
             );
 
+            // Debug log to check raw maintenance data from API
+            console.log('Raw maintenance data from API:', maintenanceDataArrays);
+
             // For each car, pick the latest maintenance record (by start date)
             const latestByCarId = new Map();
             maintenanceDataArrays.forEach((arr) => {
@@ -116,7 +125,10 @@ export default function AdminCarPage() {
 
             const rows = Array.from(latestByCarId.values()).map((m) => {
               const model = (maintenanceCars.find((c) => c.car_id === m.car_id)?.model) || '';
-              return normalizeMaintenanceRecord(m, model);
+              const normalized = normalizeMaintenanceRecord(m, model);
+              // Debug log to check the normalized data
+              console.log('Normalized maintenance record:', normalized);
+              return normalized;
             });
 
             setMaintenanceData(rows);
@@ -353,6 +365,7 @@ export default function AdminCarPage() {
   };
 
   const formattedData = (cars || []).map((item) => {
+    console.log('Raw car data from API:', item);
     const rawStatus = String(item.car_status ?? item.status ?? '').toLowerCase();
 
     const status =
@@ -376,7 +389,7 @@ export default function AdminCarPage() {
       car_id: item.car_id,
       make: item.make ?? '',
       model: item.model ?? '',
-      type: item.type ?? item.car_status ?? '',
+      type: item.make ?? 'N/A', // Use make field for type display since type column doesn't exist
       year: item.year ?? '',
       mileage: item.mileage ?? '',
       no_of_seat: item.no_of_seat ?? item.no_of_seat,

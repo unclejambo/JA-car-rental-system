@@ -3,7 +3,7 @@ import Header from '../../ui/components/Header';
 import { Box, Typography } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 import { HiCalendarDays, HiMagnifyingGlass } from 'react-icons/hi2';
-import ScheduleTable from '../../ui/components/table/ScheduleTable';
+import AdminScheduleTable from '../../ui/components/table/AdminScheduleTable';
 import Loading from '../../ui/components/Loading';
 import ReleaseModal from '../../ui/components/modal/ReleaseModal.jsx';
 import ReturnModal from '../../ui/components/modal/ReturnModal.jsx';
@@ -13,8 +13,6 @@ export default function AdminSchedulePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [schedule, setSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  console.log('AdminSchedulePage - Schedule:', schedule); // Debug log
 
   const [showReleaseModal, setShowReleaseModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -30,7 +28,6 @@ export default function AdminSchedulePage() {
     setShowReturnModal(true);
   };
 
-
   // <div className="flex justify-between items-center mb-4">
   //         <div className="relative">
   //           <input
@@ -43,7 +40,7 @@ export default function AdminSchedulePage() {
   //           <HiMagnifyingGlass className="absolute left-3 top-3 text-gray-400" />
   //         </div>
   //       </div>
-  
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -57,7 +54,9 @@ export default function AdminSchedulePage() {
           headers: { Accept: 'application/json' },
         });
         if (!res.ok) {
-          throw new Error(`Failed to fetch schedules: ${res.status} ${res.statusText}`);
+          throw new Error(
+            `Failed to fetch schedules: ${res.status} ${res.statusText}`
+          );
         }
         const data = await res.json();
         setSchedule(data);
@@ -189,7 +188,7 @@ export default function AdminSchedulePage() {
                 overflow: 'hidden',
               }}
             >
-              {(!schedule || schedule.length === 0) ? (
+              {!schedule || schedule.length === 0 ? (
                 <Box
                   sx={{
                     display: 'flex',
@@ -205,7 +204,7 @@ export default function AdminSchedulePage() {
                   <pre style={{ display: 'none' }}>
                     {JSON.stringify(schedule, null, 2)}
                   </pre>
-                  <ScheduleTable
+                  <AdminScheduleTable
                     rows={schedule}
                     loading={loading}
                     onOpenRelease={handleReleaseClick}

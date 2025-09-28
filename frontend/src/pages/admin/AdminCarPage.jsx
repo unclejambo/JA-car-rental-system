@@ -1,6 +1,6 @@
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import AddCarModal from '../../ui/components/modal/AddCarModal.jsx';
 import EditCarModal from '../../ui/components/modal/EditCarModal.jsx';
 import MaintenanceModal from '../../ui/components/modal/MaintenanceModal.jsx';
@@ -308,7 +308,8 @@ export default function AdminCarPage() {
     if (window.confirm('Are you sure you want to delete this car?')) {
       try {
         const response = await authenticatedFetch(`${API_BASE}/cars/${carId}`, {
-          method: 'DELETE',
+          method: 'DELETE'
+
         });
 
         if (response.ok) {
@@ -571,9 +572,6 @@ export default function AdminCarPage() {
                   {error}
                 </Box>
               )}
-
-
-
             </Box>
           </Box>
         </Box>

@@ -110,6 +110,7 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete, onExtend, onSetAva
             </Select>
           );
         },
+
       },
       {
         field: 'action',
@@ -185,12 +186,14 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete, onExtend, onSetAva
       },
       {
         field: 'maintenance_shop_name',
+
         headerName: 'Shop Assigned',
         flex: 1.5,
         minWidth: 120,
       },
       {
         field: 'maintenance_cost',
+
         headerName: 'Maintenance Fee',
         flex: 1.5,
         minWidth: 120,
@@ -289,6 +292,7 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete, onExtend, onSetAva
         rows={rows}
         columns={columns.filter((col) => !col.hide)}
         getRowId={(row) => row.maintenance_id ?? row.transactionId ?? row.id ?? row.car_id}
+
         // loading={loading}
         components={{ LoadingOverlay: NullLoadingOverlay }}
         componentsProps={{ loadingOverlay: { sx: { display: 'none !important' } } }}

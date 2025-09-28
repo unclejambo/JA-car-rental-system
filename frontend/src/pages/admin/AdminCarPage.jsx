@@ -18,7 +18,6 @@ export default function AdminCarPage() {
   const { logout } = useAuth();
   const authenticatedFetch = createAuthenticatedFetch(logout);
   const API_BASE = getApiBase();
-
   const [cars, setCars] = useState([]);
   const [maintenanceData, setMaintenanceData] = useState([]);
   const [error, setError] = useState(null);
@@ -304,6 +303,7 @@ export default function AdminCarPage() {
     }
   };
 
+
   const handleDelete = async (carId) => {
     if (window.confirm('Are you sure you want to delete this car?')) {
       try {
@@ -330,7 +330,6 @@ export default function AdminCarPage() {
     const id = row?.car_id ?? row?.transactionId ?? row?.id;
     if (id != null) handleDelete(id);
   };
-
   const handleTableStatusChange = async (row, newStatus) => {
     const carId = row?.car_id ?? row?.id;
     if (!carId) return;
@@ -437,6 +436,7 @@ export default function AdminCarPage() {
         maintenance={selectedMaintenance}
         onSave={handleExtendMaintenance}
       />
+
 
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar

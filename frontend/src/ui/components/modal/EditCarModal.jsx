@@ -33,6 +33,7 @@ export default function EditCarModal({ show, onClose, car, onStatusChange }) {
 
   const handleFileChange = (e) => {
     setImageFile(e.target.files[0]);
+
   };
 
   const handleSubmit = async (e) => {
@@ -54,6 +55,7 @@ export default function EditCarModal({ show, onClose, car, onStatusChange }) {
     } catch (error) {
       console.error('Failed to update car:', error);
       alert('Failed to update car. Please check your inputs.');
+
     }
   };
 
@@ -178,6 +180,7 @@ export default function EditCarModal({ show, onClose, car, onStatusChange }) {
                 </button>
               </div>
             </form>
+
           </div>
         </div>
       )}

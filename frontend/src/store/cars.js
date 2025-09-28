@@ -1,9 +1,7 @@
 import { create } from 'zustand';
 import axios from 'axios';
-
 const API_BASE = import.meta.env.VITE_LOCAL || 'http://localhost:3001';
 const CARS_URL = `${API_BASE}/cars`;
-
 export const useCarStore = create((set, get) => ({
   cars: [],
 

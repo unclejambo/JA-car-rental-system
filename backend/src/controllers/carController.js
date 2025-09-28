@@ -11,6 +11,7 @@ export const getCars = async (req, res) => {
     if (cars.length > 0) {
       console.log('Sample car data:', cars[0]);
     }
+
     res.json(cars);
   } catch (error) {
     console.error('Error fetching cars:', error);

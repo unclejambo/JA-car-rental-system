@@ -14,8 +14,6 @@ export default function AdminSchedulePage() {
   const [schedule, setSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  console.log('AdminSchedulePage - Schedule:', schedule); // Debug log
-
   const [showReleaseModal, setShowReleaseModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);

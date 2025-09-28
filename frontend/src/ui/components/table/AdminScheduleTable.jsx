@@ -8,8 +8,6 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
     (state) => state.updateReservationStatus
   );
 
-  console.log('ScheduleTable - Rows:', rows); // Debug log
-
   const formatDate = (iso) => {
     if (!iso) return '';
     // If the incoming value is an ISO datetime string, return only the date part (YYYY-MM-DD)
@@ -287,7 +285,6 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
   };
 
   const columns = [...commonColumns, statusColumn];
-  console.log('ScheduleTable - Columns:', columns); // Debug log
 
   return (
     <Box

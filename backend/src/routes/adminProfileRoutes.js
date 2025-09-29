@@ -7,6 +7,7 @@ const router = express.Router();
 // All routes require admin or staff authentication
 router.use(adminOrStaff);
 
+
 // GET /admin-profile - Get admin profile
 router.get('/', getAdminProfile);
 

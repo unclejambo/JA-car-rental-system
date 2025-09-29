@@ -336,7 +336,8 @@ export default function AdminCarPage() {
     if (window.confirm('Are you sure you want to delete this car?')) {
       try {
         const response = await authenticatedFetch(`${API_BASE}/cars/${carId}`, {
-          method: 'DELETE',
+          method: 'DELETE'
+
         });
 
         if (response.ok) {

@@ -154,6 +154,7 @@ model Refund {
   refund_amount Int
   refund_date   DateTime?
   description   String?
+
   booking       Booking   @relation(fields: [booking_id], references: [booking_id])
   customer      Customer  @relation(fields: [customer_id], references: [customer_id])
 }

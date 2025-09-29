@@ -74,6 +74,7 @@ export default function AddCarModal({ show, onClose }) {
       setError(
         'Unsupported file type. Please select a PNG, JPEG, or JPG image.'
       );
+
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -113,6 +114,7 @@ export default function AddCarModal({ show, onClose }) {
       }
     );
 
+
     const result = await response.json();
     console.log('Car image upload response:', result);
 
@@ -120,6 +122,7 @@ export default function AddCarModal({ show, onClose }) {
       throw new Error(
         result.error || result.message || 'Failed to upload car image'
       );
+
     }
 
     return result.filePath || result.path || result.url || result.publicUrl;

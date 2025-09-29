@@ -18,6 +18,7 @@ import {
   Tooltip,
   Legend,
   Filler,
+
 } from 'chart.js';
 
 ChartJS.register(
@@ -45,6 +46,7 @@ export default function AdminReportAnalytics() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
 
   // View toggles from the sketches
   const [primaryView, setPrimaryView] = useState('income'); // 'income' | 'expenses' | 'topCars' | 'topCustomers'
@@ -277,12 +279,12 @@ export default function AdminReportAnalytics() {
   // Use totalIncome from API data only
   const income = totalIncome || 0;
 
+
   const formatCurrency = (n) =>
     `₱ ${Number(n || 0).toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
-
   // Line dataset builder - API data only
   const lineData = useMemo(() => {
     const labels = chartLabels.length > 0 ? chartLabels : DEFAULT_MONTHS;
@@ -381,6 +383,7 @@ export default function AdminReportAnalytics() {
       ],
     };
   }, [topCategory, chartData, chartLabels]);
+
 
   const barOptions = useMemo(
     () => ({
@@ -555,7 +558,6 @@ export default function AdminReportAnalytics() {
                   {primaryView === 'expenses' && period === 'quarterly' && `EXPENSES FOR QUARTER ${selectedQuarter} :`}
                   {primaryView === 'expenses' && period === 'yearly' && `EXPENSES FOR ${selectedYear} :`}
                   {(primaryView === 'topCars' || primaryView === 'topCustomers') && `TOTAL BOOKINGS :`}{' '}
-                  
                   {primaryView === 'expenses' ? (
                     <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
                       <span style={{ color: '#ff6b35', fontSize: '0.85em' }}>

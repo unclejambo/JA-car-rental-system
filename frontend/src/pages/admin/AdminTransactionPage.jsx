@@ -99,7 +99,6 @@ export default function AdminTransactionPage() {
   };
 
   // console.log('AdminTransactionPage - Rows:', rows);
-
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
   const openAddPaymentModal = () => setShowAddPaymentModal(true);
   const closeAddPaymentModal = () => setShowAddPaymentModal(false);

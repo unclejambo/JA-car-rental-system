@@ -39,7 +39,23 @@ async function main() {
       email: 'admin@jacars.com',
       username: 'admin',
       password: await hash('admin123', 10),
-      user_type: 'superadmin',
+      user_type: 'admin',
+      isActive: true,
+    },
+  });
+
+  // Create Staff User
+  console.log('👨‍💼 Creating staff user...');
+  const staff = await prisma.admin.create({
+    data: {
+      first_name: 'Staff',
+      last_name: 'Member',
+      contact_no: '09123456790',
+      email: 'staff@jacars.com',
+      username: 'staff',
+      password: await hash('staff123', 10),
+      user_type: 'staff',
+      isActive: true,
     },
   });
 

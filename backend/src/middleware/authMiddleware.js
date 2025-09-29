@@ -20,12 +20,12 @@ export const verifyToken = (req, res, next) => {
   }
 };
 
-// Middleware to check if user is admin
+// Middleware to check if user is admin or staff
 export const requireAdmin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'staff')) {
     next();
   } else {
-    return res.status(403).json({ ok: false, message: 'Admin access required' });
+    return res.status(403).json({ ok: false, message: 'Admin or Staff access required' });
   }
 };
 
@@ -47,8 +47,32 @@ export const requireDriver = (req, res, next) => {
   }
 };
 
+// Middleware to check if user is staff
+export const requireStaff = (req, res, next) => {
+  if (req.user && req.user.role === 'staff') {
+    next();
+  } else {
+    return res.status(403).json({ ok: false, message: 'Staff access required' });
+  }
+};
+
+// Middleware for admin or staff access (same permissions)
+export const requireAdminOrStaff = (req, res, next) => {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'staff')) {
+    next();
+  } else {
+    return res.status(403).json({ ok: false, message: 'Admin or Staff access required' });
+  }
+};
+
 // Combined middleware for admin-only routes
 export const adminOnly = [verifyToken, requireAdmin];
+
+// Combined middleware for staff-only routes
+export const staffOnly = [verifyToken, requireStaff];
+
+// Combined middleware for admin or staff routes
+export const adminOrStaff = [verifyToken, requireAdminOrStaff];
 
 // Combined middleware for customer-only routes
 export const customerOnly = [verifyToken, requireCustomer];

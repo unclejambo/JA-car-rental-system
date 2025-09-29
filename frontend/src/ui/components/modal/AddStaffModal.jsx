@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useUserStore } from '../../../store/users';
+import { getApiBase } from '../../../utils/api';
 import { z } from 'zod';
 import {
   Dialog,
@@ -90,11 +92,54 @@ export default function AddStaffModal({ show, onClose }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const [submitting, setSubmitting] = useState(false);
+  const loadAdmins = useUserStore((s) => s.loadAdmins);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate(formData)) return;
-    console.log('Add staff:', formData);
-    onClose?.();
+    setSubmitting(true);
+    try {
+      const payload = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        address: formData.address,
+        contact_no: formData.phone,
+        email: formData.email,
+        username: formData.username,
+        password: formData.password,
+        user_type: formData.role,
+        isActive: formData.status === 'Active',
+      };
+      const resp = await fetch(`${getApiBase()}/admins`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) {
+        const errJson = await resp.json().catch(() => ({}));
+        throw new Error(errJson.message || 'Failed to create admin');
+      }
+      await loadAdmins();
+      onClose?.();
+      // reset
+      setFormData({
+        firstName: '',
+        lastName: '',
+        address: '',
+        phone: '',
+        email: '',
+        role: 'staff',
+        username: '',
+        password: '',
+        status: 'Active',
+      });
+    } catch (err) {
+      console.error('Create admin failed:', err);
+      setErrors((e) => ({ ...e, form: err.message }));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -109,6 +154,11 @@ export default function AddStaffModal({ show, onClose }) {
       <DialogContent dividers>
         <form id="addStaffForm" onSubmit={handleSubmit}>
           <Stack spacing={2}>
+            {errors.form && (
+              <Box sx={{ color: 'error.main', fontSize: 14 }}>
+                {errors.form}
+              </Box>
+            )}
             <TextField
               label="First Name"
               name="firstName"
@@ -230,8 +280,10 @@ export default function AddStaffModal({ show, onClose }) {
             form="addStaffForm"
             variant="contained"
             color="success"
+            disabled={submitting}
           >
-            Save
+            {submitting ? 'Saving...' : 'Save'}
+
           </Button>
           <Button
             onClick={onClose}

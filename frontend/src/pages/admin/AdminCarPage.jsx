@@ -1,6 +1,6 @@
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AddCarModal from '../../ui/components/modal/AddCarModal.jsx';
 import EditCarModal from '../../ui/components/modal/EditCarModal.jsx';
 import MaintenanceModal from '../../ui/components/modal/MaintenanceModal.jsx';
@@ -16,13 +16,18 @@ import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
 export default function AdminCarPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { logout } = useAuth();
-  const authenticatedFetch = createAuthenticatedFetch(logout);
+  // Memoize the authenticated fetch wrapper so it stays stable between renders
+  const authenticatedFetch = useMemo(
+    () => createAuthenticatedFetch(logout),
+    [logout]
+  );
   const API_BASE = getApiBase();
   const [cars, setCars] = useState([]);
   const [maintenanceData, setMaintenanceData] = useState([]);
   const [error, setError] = useState(null);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
-  const [showExtendMaintenanceModal, setShowExtendMaintenanceModal] = useState(false);
+  const [showExtendMaintenanceModal, setShowExtendMaintenanceModal] =
+    useState(false);
   const [selectedCar, setSelectedCar] = useState(null);
   const [selectedMaintenance, setSelectedMaintenance] = useState(null);
   const [reloadTick, setReloadTick] = useState(0);
@@ -40,9 +45,17 @@ export default function AdminCarPage() {
       return d.toISOString().slice(0, 10); // YYYY-MM-DD
     };
     const rawStart =
-      rec?.maintenance_start_date ?? rec?.start_date ?? rec?.startDate ?? rec?.start ?? null;
+      rec?.maintenance_start_date ??
+      rec?.start_date ??
+      rec?.startDate ??
+      rec?.start ??
+      null;
     const rawEnd =
-      rec?.maintenance_end_date ?? rec?.end_date ?? rec?.endDate ?? rec?.end ?? null;
+      rec?.maintenance_end_date ??
+      rec?.end_date ??
+      rec?.endDate ??
+      rec?.end ??
+      null;
     const startStr = pick(rawStart);
     const endStr = pick(rawEnd);
 
@@ -68,17 +81,19 @@ export default function AdminCarPage() {
     const loadData = async () => {
       try {
         if (activeTab === 'CARS') {
-          console.log('Fetching cars from:', `${API_BASE}/cars`);
+          // Fetch cars once per dependency change
           const response = await authenticatedFetch(`${API_BASE}/cars`);
-          console.log('Cars response status:', response.status);
           if (response.ok) {
             const data = await response.json();
-            console.log('Raw cars data received:', data);
-            console.log('Number of cars received:', (data || []).length);
             setCars(data || []);
           } else {
             const errorText = await response.text();
-            console.error('Failed to load cars. Status:', response.status, 'Error:', errorText);
+            console.error(
+              'Failed to load cars. Status:',
+              response.status,
+              'Error:',
+              errorText
+            );
             setError('Failed to load cars');
           }
         } else if (activeTab === 'MAINTENANCE') {
@@ -102,9 +117,6 @@ export default function AdminCarPage() {
               maintenanceResponses.map((res) => res.json())
             );
 
-            // Debug log to check raw maintenance data from API
-            console.log('Raw maintenance data from API:', maintenanceDataArrays);
-
             // For each car, pick the latest maintenance record (by start date)
             const latestByCarId = new Map();
             maintenanceDataArrays.forEach((arr) => {
@@ -113,9 +125,10 @@ export default function AdminCarPage() {
                 const recStart = rec.maintenance_start_date
                   ? new Date(rec.maintenance_start_date).getTime()
                   : 0;
-                const exStart = existing && existing.maintenance_start_date
-                  ? new Date(existing.maintenance_start_date).getTime()
-                  : 0;
+                const exStart =
+                  existing && existing.maintenance_start_date
+                    ? new Date(existing.maintenance_start_date).getTime()
+                    : 0;
                 if (!existing || recStart >= exStart) {
                   latestByCarId.set(rec.car_id, rec);
                 }
@@ -123,11 +136,9 @@ export default function AdminCarPage() {
             });
 
             const rows = Array.from(latestByCarId.values()).map((m) => {
-              const model = (maintenanceCars.find((c) => c.car_id === m.car_id)?.model) || '';
-              const normalized = normalizeMaintenanceRecord(m, model);
-              // Debug log to check the normalized data
-              console.log('Normalized maintenance record:', normalized);
-              return normalized;
+              const model =
+                maintenanceCars.find((c) => c.car_id === m.car_id)?.model || '';
+              return normalizeMaintenanceRecord(m, model);
             });
 
             setMaintenanceData(rows);
@@ -176,7 +187,11 @@ export default function AdminCarPage() {
               body: JSON.stringify({ car_status: 'Maintenance' }),
             });
             if (resp.ok) {
-              setCars((prev) => (prev || []).map((c) => (c.car_id === carId ? { ...c, car_status: 'Maintenance' } : c)));
+              setCars((prev) =>
+                (prev || []).map((c) =>
+                  c.car_id === carId ? { ...c, car_status: 'Maintenance' } : c
+                )
+              );
             }
           } catch {}
         }
@@ -194,14 +209,17 @@ export default function AdminCarPage() {
               const t = cur.maintenance_start_date
                 ? new Date(cur.maintenance_start_date).getTime()
                 : 0;
-              const ta = acc && acc.maintenance_start_date
-                ? new Date(acc.maintenance_start_date).getTime()
-                : 0;
+              const ta =
+                acc && acc.maintenance_start_date
+                  ? new Date(acc.maintenance_start_date).getTime()
+                  : 0;
               return t >= ta ? cur : acc;
             }, null);
             if (latest) {
               setMaintenanceData((prev) => {
-                const filtered = prev.filter((m) => m.car_id !== selectedCar.car_id);
+                const filtered = prev.filter(
+                  (m) => m.car_id !== selectedCar.car_id
+                );
                 return [
                   ...filtered,
                   normalizeMaintenanceRecord(
@@ -232,7 +250,11 @@ export default function AdminCarPage() {
       const { carId, previousStatus } = pendingStatus;
       // Map previousStatus back to car_status string
       const raw = previousStatus;
-      setCars((prev) => (prev || []).map((c) => (c.car_id === carId ? { ...c, car_status: raw } : c)));
+      setCars((prev) =>
+        (prev || []).map((c) =>
+          c.car_id === carId ? { ...c, car_status: raw } : c
+        )
+      );
       setPendingStatus(null);
     }
     setShowMaintenanceModal(false);
@@ -262,7 +284,10 @@ export default function AdminCarPage() {
         setMaintenanceData((prev) =>
           prev.map((m) =>
             m.maintenance_id === maintenanceId
-              ? normalizeMaintenanceRecord({ ...m, maintenance_end_date: newEnd }, m.model)
+              ? normalizeMaintenanceRecord(
+                  { ...m, maintenance_end_date: newEnd },
+                  m.model
+                )
               : m
           )
         );
@@ -293,8 +318,12 @@ export default function AdminCarPage() {
           const carsResponse = await authenticatedFetch(`${API_BASE}/cars`);
           const carsData = await carsResponse.json();
           setCars(carsData || []);
-        } catch { /* ignore */ }
-        setMaintenanceData((prev) => prev.filter((m) => m.car_id !== maintenance.car_id));
+        } catch {
+          /* ignore */
+        }
+        setMaintenanceData((prev) =>
+          prev.filter((m) => m.car_id !== maintenance.car_id)
+        );
       } else {
         console.error('Failed to set car to available');
       }
@@ -302,7 +331,6 @@ export default function AdminCarPage() {
       console.error('Failed to set car to available:', error);
     }
   };
-
 
   const handleDelete = async (carId) => {
     if (window.confirm('Are you sure you want to delete this car?')) {
@@ -354,7 +382,11 @@ export default function AdminCarPage() {
         if (!resp.ok) throw new Error('Failed to update status');
 
         // Update local cars state
-        setCars((prev) => (prev || []).map((c) => (c.car_id === carId ? { ...c, car_status: newStatus } : c)));
+        setCars((prev) =>
+          (prev || []).map((c) =>
+            c.car_id === carId ? { ...c, car_status: newStatus } : c
+          )
+        );
         // If leaving maintenance, remove from maintenanceData
         setMaintenanceData((prev) => prev.filter((m) => m.car_id !== carId));
       }
@@ -364,42 +396,49 @@ export default function AdminCarPage() {
     }
   };
 
-  const formattedData = (cars || []).map((item) => {
-    console.log('Raw car data from API:', item);
-    const rawStatus = String(item.car_status ?? item.status ?? '').toLowerCase();
+  const formattedData = useMemo(
+    () =>
+      (cars || []).map((item) => {
+        const rawStatus = String(
+          item.car_status ?? item.status ?? ''
+        ).toLowerCase();
 
-    const status =
-      rawStatus.includes('rent') || rawStatus === 'rented' || rawStatus === 'r'
-        ? 'Rented'
-        : rawStatus.includes('maint') ||
-          rawStatus.includes('maintenance') ||
-          rawStatus === 'm'
-        ? 'Maintenance'
-        : rawStatus.includes('avail') ||
-          rawStatus === 'available' ||
-          rawStatus === 'true' ||
-          rawStatus === '1' ||
-          item.is_available === true
-        ? 'Available'
-        : 'Available';
+        const status =
+          rawStatus.includes('rent') ||
+          rawStatus === 'rented' ||
+          rawStatus === 'r'
+            ? 'Rented'
+            : rawStatus.includes('maint') ||
+                rawStatus.includes('maintenance') ||
+                rawStatus === 'm'
+              ? 'Maintenance'
+              : rawStatus.includes('avail') ||
+                  rawStatus === 'available' ||
+                  rawStatus === 'true' ||
+                  rawStatus === '1' ||
+                  item.is_available === true
+                ? 'Available'
+                : 'Available';
 
-    return {
-      id: item.car_id,
-      transactionId: item.car_id,
-      car_id: item.car_id,
-      make: item.make ?? '',
-      model: item.model ?? '',
-      type: item.make ?? 'N/A', // Use make field for type display since type column doesn't exist
-      year: item.year ?? '',
-      mileage: item.mileage ?? '',
-      no_of_seat: item.no_of_seat ?? item.no_of_seat,
-      rent_price: item.rent_price ?? item.rent_price,
-      license_plate: item.license_plate ?? item.license_plate,
-      image: item.car_img_url ?? item.image ?? '',
-      status,
-      raw: item,
-    };
-  });
+        return {
+          id: item.car_id,
+          transactionId: item.car_id,
+          car_id: item.car_id,
+          make: item.make ?? '',
+          model: item.model ?? '',
+          type: item.make ?? 'N/A', // Use make field for type display since type column doesn't exist
+          year: item.year ?? '',
+          mileage: item.mileage ?? '',
+          no_of_seat: item.no_of_seat ?? item.no_of_seat,
+          rent_price: item.rent_price ?? item.rent_price,
+          license_plate: item.license_plate ?? item.license_plate,
+          image: item.car_img_url ?? item.image ?? '',
+          status,
+          raw: item,
+        };
+      }),
+    [cars]
+  );
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -437,7 +476,6 @@ export default function AdminCarPage() {
         maintenance={selectedMaintenance}
         onSave={handleExtendMaintenance}
       />
-
 
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar
@@ -567,11 +605,7 @@ export default function AdminCarPage() {
                 }}
                 onSetAvailable={handleSetAvailable}
               />
-              {error && (
-                <Box sx={{ p: 2, color: 'error.main' }}>
-                  {error}
-                </Box>
-              )}
+              {error && <Box sx={{ p: 2, color: 'error.main' }}>{error}</Box>}
             </Box>
           </Box>
         </Box>

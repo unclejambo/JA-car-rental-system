@@ -4,6 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import carRoutes from './routes/carRoutes.js';
+import driverRoutes from './routes/driverRoutes.js';
 import customerRoutes from './routes/customerRoute.js';
 import bookingRoutes from './routes/bookingRoute.js';
 import scheduleRoutes from './routes/scheduleRoute.js'; // <--- added
@@ -37,6 +38,7 @@ app.get('/', (req, res) => {
 
 // API Routes
 app.use('/cars', carRoutes);
+app.use('/drivers', driverRoutes);
 app.use('/customers', customerRoutes);
 app.use('/bookings', bookingRoutes);
 app.use('/schedules', scheduleRoutes); // <--- added

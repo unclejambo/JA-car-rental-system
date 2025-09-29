@@ -44,6 +44,7 @@ export default function BookingDetailsModal({ open, onClose, booking }) {
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      disableScrollLock
       sx={{
         '& .MuiDialog-paper': {
           borderRadius: '8px',

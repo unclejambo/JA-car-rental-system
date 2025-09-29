@@ -7,12 +7,13 @@ import {
   getTopCustomersData,
   getAvailableYears
 } from '../controllers/analyticsController.js';
-import { verifyToken } from '../middleware/authMiddleware.js';
+import { verifyToken, requireAdminOrStaff } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Protect all analytics routes with authentication
+// Protect all analytics routes with authentication and admin/staff authorization
 router.use(verifyToken);
+router.use(requireAdminOrStaff);
 
 // GET /analytics/income?period=monthly&year=2024&month=5
 router.get('/income', getIncomeData);

@@ -5,6 +5,14 @@ import { useAuth } from '../../../hooks/useAuth.js';
 const ProtectedRoute = ({ children, requiredRole = null }) => {
   const { isAuthenticated, userRole, isLoading } = useAuth();
   const location = useLocation();
+  
+  console.log('ProtectedRoute check:', { 
+    isAuthenticated, 
+    userRole, 
+    isLoading, 
+    requiredRole, 
+    location: location.pathname 
+  });
 
   // Show loading while checking authentication
   if (isLoading) {
@@ -28,9 +36,16 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
 
   // If a specific role is required and user doesn't have it
   if (requiredRole && userRole !== requiredRole) {
+    // Special case: staff should have same access as admin
+    if (requiredRole === 'admin' && userRole === 'staff') {
+      // Staff can access admin routes, so continue
+      return children;
+    }
+    
     // Redirect based on user's actual role
     const roleRedirects = {
       admin: '/admindashboard',
+      staff: '/admindashboard', // Staff uses same dashboard as admin
       customer: '/dashboard',
       driver: '/driverdashboard'
     };

@@ -108,6 +108,7 @@ model Booking {
   admin_id       Int?
   isDeliver      Boolean?      @default(false)
   deliver_loc    String?
+  balance        Int?
   admin          Admin?        @relation(fields: [admin_id], references: [admin_id])
   car            Car           @relation(fields: [car_id], references: [car_id])
   customer       Customer      @relation(fields: [customer_id], references: [customer_id])

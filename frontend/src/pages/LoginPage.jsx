@@ -86,14 +86,19 @@ function LoginPage() {
       });
 
       const data = await response.json();
+      console.log('Login response:', data);
 
       if (data.ok) {
         // Use auth context login method
         login(data.token, data.role, data.user);
 
         // Role-based routing
+        console.log('Redirecting user with role:', data.role);
         switch (data.role) {
           case 'admin':
+            navigate('/admindashboard');
+            break;
+          case 'staff':
             navigate('/admindashboard');
             break;
           case 'customer':

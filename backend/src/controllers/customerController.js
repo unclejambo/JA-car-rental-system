@@ -102,40 +102,23 @@ export const deleteCustomer = async (req, res) => {
 export const updateCustomer = async (req, res) => {
     try {
         const customerId = parseInt(req.params.id);
-        const {
-            first_name,
-            last_name,
-            address,
-            contact_no,
-            email,
-            username,
-            password,
-            fb_link,
-            date_created,
-            status,
-            driver_license_no,      // -> This must be an exisiting driver_license in the system (FK)
-        } = req.body;
+        const existing = await prisma.customer.findUnique({ where: { customer_id: customerId } });
+        if (!existing) return res.status(404).json({ error: 'Customer not found' });
+
+        // Accept partial updates; only include defined fields
+        const allowed = [
+            'first_name', 'last_name', 'address', 'contact_no', 'email', 'username', 'password', 'fb_link', 'date_created', 'status', 'driver_license_no'
+        ];
+        const data = {};
+        for (const key of allowed) {
+            if (req.body[key] !== undefined) data[key] = req.body[key];
+        }
 
         const updatedCustomer = await prisma.customer.update({
             where: { customer_id: customerId },
-            data: {
-                first_name,
-                last_name,
-                address,
-                contact_no,
-                email,
-                username,
-                password,
-                fb_link,
-                date_created,
-                status,
-                driver_license_no,
-            },
+            data,
         });
-
-        // remove password from response
         const { password: _pw, ...safeCustomer } = updatedCustomer;
-
         res.json(safeCustomer);
     } catch (error) {
         console.error('Error updating customer:', error);

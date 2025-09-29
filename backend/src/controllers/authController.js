@@ -37,7 +37,7 @@ async function login(req, res, next) {
         },
       });
       if (user) {
-        role = 'admin';
+        role = 'admin' || 'staff';
         foundIn = 'admin';
       }
     } catch (err) {
@@ -134,6 +134,7 @@ async function login(req, res, next) {
         name: `${user.first_name} ${user.last_name}`,
         email: user.email,
         username: user.username,
+        ...(foundIn === 'admin' && user.user_type ? { user_type: user.user_type } : {}),
       },
     });
   } catch (err) {

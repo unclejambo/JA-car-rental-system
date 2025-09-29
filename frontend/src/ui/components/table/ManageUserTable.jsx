@@ -137,7 +137,7 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
     headerName: 'Status',
     flex: 1,
     minWidth: 120,
-    editable: true,
+    editable: false,
     sortable: false,
     headerAlign: 'center',
     align: 'center',
@@ -145,8 +145,8 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
       // If STAFF tab and user_type is superadmin -> show static label 'ADMIN'
       if (
         activeTab === 'STAFF' &&
-        (params.row?.user_type === 'superadmin' ||
-          params.row?.userType === 'superadmin')
+        (params.row?.user_type === 'admin' ||
+          params.row?.userType === 'admin')
       ) {
         return (
           <Box

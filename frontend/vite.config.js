@@ -13,9 +13,6 @@ export default defineConfig({
       '@mui/styled-engine',
       '@emotion/react',
       '@emotion/styled',
-      '@amcharts/amcharts5',
-      '@amcharts/amcharts5/xy',
-      '@amcharts/amcharts5/themes/Animated'
     ]
   },
 });

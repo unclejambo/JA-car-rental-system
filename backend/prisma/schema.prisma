@@ -12,13 +12,13 @@ model Admin {
   admin_id   Int       @id @default(autoincrement())
   first_name String
   last_name  String
-  address    String?
   contact_no String?
   email      String
   username   String
   password   String
   user_type  String?
   isActive   Boolean?
+  address    String?
   bookings   Booking[]
 }
 
@@ -236,8 +236,15 @@ model Return {
   Booking      Booking?      @relation(fields: [booking_id], references: [booking_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ManageFees {
+  fee_id   BigInt @id @default(autoincrement())
+  fee_type String
+  amount   Int?
+}
+
 enum damage_level {
-  No_Damage @map("No Damage")
+  No_Damage
   Minor
   Major
 }

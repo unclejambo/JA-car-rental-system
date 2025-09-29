@@ -59,7 +59,7 @@ export default function AdminBookingPage() {
           return d.toISOString().split('T')[0];
         };
 
-        const formattedData = data.map((item, index) => ({
+        let formattedData = data.map((item, index) => ({
           ...item,
           id: item.customerId || item.reservationId || `row-${index}`, // Add unique id property
           status: item.status ? 'Active' : 'Inactive',
@@ -68,6 +68,14 @@ export default function AdminBookingPage() {
           endDate: formatDateOnly(item.endDate),
           bookingDate: formatDateOnly(item.bookingDate),
         }));
+        // Show only confirmed bookings per requirement (applies to BOOKINGS tab dataset)
+        formattedData = formattedData.filter((b) => {
+          const raw = (b.booking_status || b.status || '')
+            .toString()
+            .toLowerCase()
+            .trim();
+          return raw === 'confirmed';
+        });
         setRows(formattedData);
         setError(null);
       })

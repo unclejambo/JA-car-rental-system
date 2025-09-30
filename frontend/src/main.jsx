@@ -107,9 +107,6 @@ createRoot(document.getElementById('root')).render(
             }
           />
 
-
-       
-
           <Route
             path="/customer-dashboard"
             element={
@@ -137,7 +134,6 @@ createRoot(document.getElementById('root')).render(
             }
           />
 
-          
           <Route
             path="/customer-history"
             element={
@@ -173,7 +169,6 @@ createRoot(document.getElementById('root')).render(
               </ProtectedRoute>
             }
           />
-
 
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

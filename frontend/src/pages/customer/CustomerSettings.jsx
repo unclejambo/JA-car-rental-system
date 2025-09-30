@@ -22,6 +22,7 @@ import CustomerSettingsHeader from '../../ui/components/header/CustomerSettingsH
 import Loading from '../../ui/components/Loading';
 import { HiCog8Tooth } from 'react-icons/hi2';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
+import SaveCancelModal from '../../ui/components/modal/SaveCancelModal';
 
 export default function CustomerSettings() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -62,6 +63,13 @@ export default function CustomerSettings() {
     useState(licenseExpiration);
   const [openLicenseModal, setOpenLicenseModal] = useState(false);
 
+  // Modals
+  const [modalState, setModalState] = useState({
+    open: false,
+    section: 'info', // "info" or "license"
+    type: 'save', // "save" or "cancel"
+  });
+
   useEffect(() => {
     setDraft(profile);
   }, [isEditing, profile]);
@@ -70,15 +78,12 @@ export default function CustomerSettings() {
     setIsEditing(true);
   }
 
-  function handleCancel() {
-    setDraft(profile);
-    setIsEditing(false);
+  function handleSave() {
+    setModalState({ open: true, section: 'info', type: 'save' });
   }
 
-  function handleSave() {
-    // In real app, send update to server here. For now, update local state.
-    setProfile(draft);
-    setIsEditing(false);
+  function handleCancel() {
+    setModalState({ open: true, section: 'info', type: 'cancel' });
   }
 
   function handleChange(e) {
@@ -698,42 +703,46 @@ export default function CustomerSettings() {
                     {isEditingLicense && (
                       <Box
                         sx={{
-                          position: 'absolute',
-                          bottom: 10,
-                          left: '50%',
-                          transform: 'translateX(-50%)',
+                          position: { xs: 'static', md: 'absolute' }, // static on mobile, absolute on desktop
+                          mt: { xs: 3, md: 0 }, // ✅ add top margin on mobile
+                          bottom: { md: 10 }, // keep bottom positioning only for desktop
+                          left: { md: '50%' },
+                          transform: { md: 'translateX(-50%)' },
                           display: 'flex',
+                          justifyContent: 'center',
                           gap: 2,
+                          width: { xs: '100%', md: 'auto' }, // full-width buttons on mobile
                         }}
                       >
                         <Button
                           variant="contained"
                           color="primary"
+                          size="small"
                           startIcon={<SaveIcon />}
-                          onClick={() => {
-                            setLicenseNo(draftLicenseNo);
-                            setLicenseRestrictions(draftLicenseRestrictions);
-                            setLicenseExpiration(draftLicenseExpiration);
-                            if (draftLicenseImage) {
-                              setLicenseImage(previewLicenseImage);
-                            }
-                            setIsEditingLicense(false);
-                          }}
+                          fullWidth={true} // ✅ buttons expand to full width on mobile
+                          onClick={() =>
+                            setModalState({
+                              open: true,
+                              section: 'license',
+                              type: 'save',
+                            })
+                          }
                         >
                           Save
                         </Button>
                         <Button
                           variant="outlined"
                           color="inherit"
+                          size="small"
                           startIcon={<CloseIcon />}
-                          onClick={() => {
-                            setDraftLicenseNo(licenseNo);
-                            setDraftLicenseRestrictions(licenseRestrictions);
-                            setDraftLicenseExpiration(licenseExpiration);
-                            setPreviewLicenseImage(null);
-                            setDraftLicenseImage(null);
-                            setIsEditingLicense(false);
-                          }}
+                          fullWidth={true}
+                          onClick={() =>
+                            setModalState({
+                              open: true,
+                              section: 'license',
+                              type: 'cancel',
+                            })
+                          }
                         >
                           Cancel
                         </Button>
@@ -806,55 +815,96 @@ export default function CustomerSettings() {
         </Box>
       </Box>
 
-      {/* Avatar Modal — single instance kept at bottom (shows full-size) */}
-      <Modal open={avatarOpen} onClose={() => setAvatarOpen(false)}>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-            bgcolor: 'rgba(0,0,0,0.7)',
-          }}
-        >
+      {/* ✅ Wrap Avatar Modal + SaveCancelModal inside one React fragment */}
+      <>
+        {/* Avatar Modal — single instance kept at bottom (shows full-size) */}
+        <Modal open={avatarOpen} onClose={() => setAvatarOpen(false)}>
           <Box
             sx={{
-              position: 'relative',
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
-              maxWidth: '90vw',
-              maxHeight: '90vh',
+              height: '100vh',
+              bgcolor: 'rgba(0,0,0,0.7)',
             }}
-            onClick={(e) => e.stopPropagation()}
           >
-            <img
-              src="/jude.jpg"
-              alt="Profile"
-              style={{
+            <Box
+              sx={{
+                position: 'relative',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
                 maxWidth: '90vw',
                 maxHeight: '90vh',
-                borderRadius: '12px',
-                objectFit: 'contain',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
               }}
-            />
-            <IconButton
-              onClick={() => setAvatarOpen(false)}
-              sx={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                backgroundColor: 'rgba(0,0,0,0.6)',
-                color: '#fff',
-                '&:hover': { backgroundColor: 'rgba(0,0,0,0.8)' },
-              }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <CloseIcon />
-            </IconButton>
+              <img
+                src="/jude.jpg"
+                alt="Profile"
+                style={{
+                  maxWidth: '90vw',
+                  maxHeight: '90vh',
+                  borderRadius: '12px',
+                  objectFit: 'contain',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                }}
+              />
+              <IconButton
+                onClick={() => setAvatarOpen(false)}
+                sx={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  backgroundColor: 'rgba(0,0,0,0.6)',
+                  color: '#fff',
+                  '&:hover': { backgroundColor: 'rgba(0,0,0,0.8)' },
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Box>
           </Box>
-        </Box>
-      </Modal>
+        </Modal>
+
+        {/* Save/Cancel Modal */}
+        <SaveCancelModal
+          open={modalState.open}
+          type={modalState.type}
+          onClose={() => setModalState((s) => ({ ...s, open: false }))}
+          onSave={() => {
+            if (modalState.section === 'info') {
+              setProfile(draft);
+              setIsEditing(false);
+            } else {
+              setLicenseNo(draftLicenseNo);
+              setLicenseRestrictions(draftLicenseRestrictions);
+              setLicenseExpiration(draftLicenseExpiration);
+              if (draftLicenseImage) {
+                setLicenseImage(previewLicenseImage);
+                setDraftLicenseImage(null);
+                setPreviewLicenseImage(null);
+              }
+              setIsEditingLicense(false);
+            }
+            setModalState((s) => ({ ...s, open: false }));
+          }}
+          onCancel={() => {
+            if (modalState.section === 'info') {
+              setDraft(profile);
+              setIsEditing(false);
+            } else {
+              setDraftLicenseNo(licenseNo);
+              setDraftLicenseRestrictions(licenseRestrictions);
+              setDraftLicenseExpiration(licenseExpiration);
+              setDraftLicenseImage(null);
+              setPreviewLicenseImage(null);
+              setIsEditingLicense(false);
+            }
+            setModalState((s) => ({ ...s, open: false }));
+          }}
+        />
+      </>
     </Box>
   );
 }

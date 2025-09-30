@@ -6,14 +6,34 @@ export const getBookings = async (req, res) => {
       include: {
         customer: { select: { first_name: true, last_name: true } },
         car: { select: { make: true, model: true, year: true } },
+        payments: { select: { amount: true } },
       },
     });
 
-    const shaped = bookings.map(({ customer, car, ...rest }) => ({
-      ...rest,
-      customer_name: `${customer?.first_name ?? ''} ${customer?.last_name ?? ''}`.trim(),
-      car_model: [car?.make, car?.model].filter(Boolean).join(' '),
-    }));
+    // Update balances in database and shape response
+    const shaped = await Promise.all(
+      bookings.map(async ({ customer, car, payments, ...rest }) => {
+        const totalPaid = payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+        const remainingBalance = (rest.total_amount || 0) - totalPaid;
+        
+        // Update the balance in the database if it's different
+        if (rest.balance !== remainingBalance) {
+          await prisma.booking.update({
+            where: { booking_id: rest.booking_id },
+            data: { balance: remainingBalance },
+          });
+        }
+        
+        return {
+          ...rest,
+          balance: remainingBalance, // Use the calculated balance
+          customer_name: `${customer?.first_name ?? ''} ${customer?.last_name ?? ''}`.trim(),
+          car_model: [car?.make, car?.model].filter(Boolean).join(' '),
+          total_paid: totalPaid,
+          remaining_balance: remainingBalance,
+        };
+      })
+    );
 
     res.json(shaped);
   } catch (error) {
@@ -30,16 +50,31 @@ export const getBookingById = async (req, res) => {
       include: {
         customer: { select: { first_name: true, last_name: true } },
         car: { select: { make: true, model: true, year: true } },
+        payments: { select: { amount: true } },
       },
     });
 
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
-    const { customer, car, ...rest } = booking;
+    const { customer, car, payments, ...rest } = booking;
+    const totalPaid = payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+    const remainingBalance = (rest.total_amount || 0) - totalPaid;
+    
+    // Update the balance in the database if it's different
+    if (rest.balance !== remainingBalance) {
+      await prisma.booking.update({
+        where: { booking_id: rest.booking_id },
+        data: { balance: remainingBalance },
+      });
+    }
+    
     const shaped = {
       ...rest,
+      balance: remainingBalance, // Use the calculated balance
       customer_name: `${customer?.first_name ?? ''} ${customer?.last_name ?? ''}`.trim(),
       car_model: [car?.make, car?.model].filter(Boolean).join(' '),
+      total_paid: totalPaid,
+      remaining_balance: remainingBalance,
     };
 
     res.json(shaped);

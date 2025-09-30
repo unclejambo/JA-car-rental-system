@@ -33,7 +33,7 @@ export default function AdminBookingPage() {
     setSelectedBooking(null);
   };
 
-  useEffect(() => {
+  const fetchBookings = () => {
     setLoading(true);
 
     const authFetch = createAuthenticatedFetch(() => {
@@ -86,6 +86,31 @@ export default function AdminBookingPage() {
       .finally(() => {
         setLoading(false);
       });
+  };
+
+  const handlePaymentSuccess = () => {
+    fetchBookings(); // Refresh the bookings list
+    // Also refresh the selected booking if the modal is still open
+    if (selectedBooking) {
+      const authFetch = createAuthenticatedFetch(() => {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+      });
+      const API_BASE = getApiBase().replace(/\/$/, '');
+      
+      authFetch(`${API_BASE}/bookings/${selectedBooking.booking_id}`)
+        .then(response => response.json())
+        .then(updatedBooking => {
+          setSelectedBooking(updatedBooking);
+        })
+        .catch(err => console.error('Error refreshing booking:', err));
+    }
+  };
+
+  useEffect(() => {
+    fetchBookings();
+
+
   }, []);
 
   if (loading) {
@@ -146,6 +171,7 @@ export default function AdminBookingPage() {
         open={showBookingDetailsModal}
         onClose={closeBookingDetailsModal}
         booking={selectedBooking}
+        onPaymentSuccess={handlePaymentSuccess}
       />
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar

@@ -35,11 +35,13 @@ model Customer {
   date_created      DateTime?      @default(now())
   status            String?
   driver_license_no String?
+  isRecUpdate       String?
   bookings          Booking[]
   driver_license    DriverLicense? @relation("CustomerDriverLicense", fields: [driver_license_no], references: [driver_license_no])
   payments          Payment[]
   refunds           Refund[]
   transactions      Transaction[]
+  Waitlist          Waitlist[]
 }
 
 model DriverLicense {
@@ -65,6 +67,7 @@ model Driver {
   bookings          Booking[]
   driver_license    DriverLicense @relation(fields: [driver_license_no], references: [driver_license_no])
   releases          Release[]
+  Waitlist          Waitlist[]
 }
 
 model Car {
@@ -81,6 +84,7 @@ model Car {
   bookings      Booking[]
   maintenances  Maintenance[]
   transactions  Transaction[]
+  Waitlist      Waitlist[]
 }
 
 model Booking {
@@ -141,6 +145,7 @@ model Payment {
   reference_no   String?
   amount         Int
   paid_date      DateTime?
+  balance        Int?
   booking        Booking   @relation(fields: [booking_id], references: [booking_id])
   customer       Customer  @relation(fields: [customer_id], references: [customer_id])
 }
@@ -243,6 +248,34 @@ model ManageFees {
   fee_id   BigInt @id @default(autoincrement())
   fee_type String
   amount   Int?
+}
+
+model Waitlist {
+  waitlist_id          Int       @id @default(autoincrement())
+  customer_id          Int
+  car_id               Int
+  requested_start_date DateTime
+  requested_end_date   DateTime
+  purpose              String?
+  pickup_time          String?
+  dropoff_time         String?
+  pickup_location      String?
+  dropoff_location     String?
+  delivery_type        String?
+  is_self_drive        Boolean?  @default(true)
+  selected_driver_id   Int?
+  special_requests     String?
+  total_cost           Int?
+  status               String?   @default("waiting")
+  position             Int
+  date_created         DateTime  @default(now())
+  notified_date        DateTime?
+  Car                  Car       @relation(fields: [car_id], references: [car_id], onDelete: Cascade)
+  Customer             Customer  @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
+  Driver               Driver?   @relation(fields: [selected_driver_id], references: [drivers_id])
+
+  @@index([car_id, status, position])
+  @@index([customer_id])
 }
 
 enum damage_level {

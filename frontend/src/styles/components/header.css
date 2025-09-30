@@ -18,6 +18,7 @@
   align-items: center;
   height: 100%;
   gap: 0.5rem; /* 8px */
+  width: 100%;
 }
 
 .menu-button {
@@ -25,7 +26,7 @@
   border: none;
   color: #fff;
   height: 3rem; /* 48px */
-  width: 3rem;  /* 48px */
+  width: 3rem; /* 48px */
   margin: 0;
   padding: 0;
   cursor: pointer;
@@ -51,7 +52,7 @@
 }
 
 .logo-main-text {
-  font-family: "Merriweather", serif;
+  font-family: 'Merriweather', serif;
   font-size: 1.875rem; /* 30px */
   color: #ff0000;
   font-style: italic;
@@ -61,7 +62,7 @@
 }
 
 .logo-sub-text {
-  font-family: "Merriweather", serif;
+  font-family: 'Merriweather', serif;
   font-size: 1.125rem; /* 18px */
   color: #ff0000;
   font-style: italic;
@@ -69,4 +70,73 @@
   text-shadow: 0.125rem 0.125rem 0 rgba(255, 255, 255, 0.85);
   line-height: 1;
   margin-top: -0.25rem; /* -4px */
+}
+
+/* --- User Profile Panel Styles --- */
+
+.user-profile-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* 12px */
+  margin-left: auto;
+}
+
+.profile-avatar {
+  width: 2rem; /* 40px */
+  height: 2rem; /* 40px */
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #fff;
+  background-color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: #666;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ccc' viewBox='0 0 24 24'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E");
+  background-size: 60%;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.profile-name {
+  color: #fff;
+  font-family: 'Merriweather', serif;
+  font-size: 0.875rem; /* 14px */
+  font-weight: 600;
+  white-space: nowrap;
+  text-shadow: 0.0625rem 0.0625rem 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Mobile responsive adjustments */
+
+@media (max-width: 768px) {
+  .user-profile-panel {
+    gap: 0.5rem; /* 8px */
+  }
+
+  .profile-avatar {
+    width: 2rem; /* 32px */
+    height: 2rem; /* 32px */
+  }
+
+  .profile-name {
+    font-size: 0.75rem; /* 12px */
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .profile-name {
+    font-size: 0.7rem; /* 11.2px - smaller font for very small screens */
+    /* Removed display: none to show name on mobile */
+  }
 }

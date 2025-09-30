@@ -137,7 +137,7 @@ model Extension {
 
 model Payment {
   payment_id     Int       @id @default(autoincrement())
-  booking_id     Int
+  booking_id     Int?
   customer_id    Int
   description    String?
   payment_method String?
@@ -146,8 +146,10 @@ model Payment {
   amount         Int
   paid_date      DateTime?
   balance        Int?
-  booking        Booking   @relation(fields: [booking_id], references: [booking_id])
+  waitlist_id    Int?
+  booking        Booking?  @relation(fields: [booking_id], references: [booking_id], onDelete: Restrict)
   customer       Customer  @relation(fields: [customer_id], references: [customer_id])
+  Waitlist       Waitlist? @relation(fields: [waitlist_id], references: [waitlist_id])
 }
 
 model Refund {
@@ -270,12 +272,16 @@ model Waitlist {
   position             Int
   date_created         DateTime  @default(now())
   notified_date        DateTime?
+  payment_status       String?   @default("unpaid")
+  paid_date            DateTime?
+  Payment              Payment[]
   Car                  Car       @relation(fields: [car_id], references: [car_id], onDelete: Cascade)
   Customer             Customer  @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
   Driver               Driver?   @relation(fields: [selected_driver_id], references: [drivers_id])
 
   @@index([car_id, status, position])
   @@index([customer_id])
+  @@index([payment_status])
 }
 
 enum damage_level {

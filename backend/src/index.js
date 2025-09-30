@@ -19,6 +19,7 @@ import refundRoutes from './routes/refundRoute.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import adminProfileRoutes from './routes/adminProfileRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import manageFeesRoutes from './routes/manageFeesRoutes.js'; // <--- added manage fees routes
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -56,7 +57,7 @@ app.use('/refunds', refundRoutes);
 app.use('/transactions', transactionRoutes);
 app.use('/admin-profile', adminProfileRoutes);
 app.use('/analytics', analyticsRoutes);
-
+app.use('/manage-fees', manageFeesRoutes); // <--- added manage fees routes
 
 // Error handling middleware
 app.use((err, req, res, next) => {

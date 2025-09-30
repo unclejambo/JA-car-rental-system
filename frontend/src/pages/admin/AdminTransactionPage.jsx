@@ -13,12 +13,6 @@ import { useTransactionStore } from '../../store/transactions';
 import AddPaymentModal from '../../ui/components/modal/AddPaymentModal';
 import AddRefundModal from '../../ui/components/modal/AddRefundModal';
 
-// const formatDate = (dateString) => {
-//   if (!dateString) return 'N/A';
-//   const options = { year: 'numeric', month: 'short', day: 'numeric' };
-//   return new Date(dateString).toLocaleDateString(undefined, options);
-// };
-
 export default function AdminTransactionPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);

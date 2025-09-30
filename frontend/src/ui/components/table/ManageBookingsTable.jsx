@@ -73,9 +73,9 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
   const commonColumns = [
     {
       field: 'actualBookingId', // Changed from 'id' to show actual booking ID
-      headerName: 'Booking ID',
+      headerName: 'ID',
       flex: 1,
-      minWidth: 70,
+      minWidth: 30,
       editable: false,
       headerAlign: 'center',
       align: 'center',
@@ -86,14 +86,16 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
       flex: 1.5,
       minWidth: 120,
       editable: false,
+      resizable: true,
       headerAlign: 'center',
     },
     {
       field: 'car_model',
-      headerName: 'Car Model',
+      headerName: 'Car',
       flex: 1.5,
       minWidth: 70,
       editable: false,
+      resizable: true,
       headerAlign: 'center',
     },
     {
@@ -102,6 +104,7 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
       flex: 1.5,
       minWidth: 80,
       editable: false,
+      resizable: true,
       headerAlign: 'center',
       align: 'center',
     },
@@ -111,6 +114,7 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
       flex: 1.5,
       minWidth: 80,
       editable: false,
+      resizable: true,
       headerAlign: 'center',
       align: 'center',
     },
@@ -120,6 +124,7 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
       flex: 1.5,
       minWidth: 80,
       editable: false,
+      resizable: true,
       headerAlign: 'center',
       align: 'center',
     },
@@ -132,7 +137,17 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
         field: 'balance',
         headerName: 'Balance',
         flex: 1.2,
-        minWidth: 80,
+        minWidth: 100,
+        resizable: false,
+        renderCell: (params) => {
+          return (
+            '₱' +
+            Number(params.value).toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          );
+        },
       },
       {
         field: 'purpose',
@@ -145,12 +160,14 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
         headerName: 'Payment Status',
         flex: 1.2,
         minWidth: 100,
+        resizable: true,
       },
       {
         field: 'booking_status',
         headerName: 'Booking Status',
         flex: 1.2,
         minWidth: 100,
+        resizable: true,
       },
     ],
     CANCELLATION: [
@@ -159,12 +176,14 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
         headerName: 'Cancellation Date',
         flex: 1.5,
         minWidth: 120,
+        resizable: true,
       },
       {
         field: 'cancellationReason',
         headerName: 'Cancellation Reason',
         flex: 1.5,
         minWidth: 120,
+        resizable: true,
       },
     ],
     EXTENSION: [
@@ -172,6 +191,7 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
         field: 'newEndDate',
         headerName: 'New End Date',
         flex: 1.5,
+        resizable: true,
       },
     ],
   };
@@ -290,7 +310,6 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
         disableVirtualization
         pagination
         pageSizeOptions={[5, 10, 25]}
-        disableColumnResize
         initialState={{
           pagination: {
             paginationModel: { pageSize: 10, page: 0 },

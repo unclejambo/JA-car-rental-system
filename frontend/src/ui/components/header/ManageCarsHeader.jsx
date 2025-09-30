@@ -7,7 +7,7 @@ const ManageCarsHeader = ({ activeTab = 'CARS', onTabChange }) => {
     <Box
       sx={{
         display: 'flex',
-        gap: 0.3,
+        gap: 0.4,
         mb: -1,
         width: '100%',
         overflowX: 'auto',

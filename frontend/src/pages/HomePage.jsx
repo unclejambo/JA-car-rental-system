@@ -42,11 +42,6 @@ export default function HomePage() {
       title: 'Secure & Safe',
       description: 'All vehicles are inspected and insured for your safety',
     },
-    {
-      icon: <Support sx={{ fontSize: 40, color: '#F13F3F' }} />,
-      title: '24/7 Support',
-      description: 'Our team is always ready to assist you on your journey',
-    },
   ];
 
   return (
@@ -194,9 +189,9 @@ export default function HomePage() {
           >
             Why Choose J&A Car Rental?
           </Typography>
-          <Grid container spacing={4}>
+          <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
             {features.map((feature, index) => (
-              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
                 <Card
                   sx={{
                     height: '100%',
@@ -286,7 +281,7 @@ export default function HomePage() {
               variant="h6"
               sx={{ mb: 4, fontWeight: 300, opacity: 0.9 }}
             >
-              Join thousands of satisfied customers who trust J&A Car Rental
+              Join hundreds of satisfied customers who trust J&A Car Rental
             </Typography>
             <Box
               sx={{

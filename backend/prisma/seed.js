@@ -28,6 +28,7 @@ async function main() {
   await prisma.car.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.admin.deleteMany();
+  await prisma.manageFees.deleteMany();
 
   // Create Admin
   console.log('👨‍💼 Creating admin user...');
@@ -58,6 +59,26 @@ async function main() {
       isActive: true,
     },
   });
+
+  // Create Default Fees
+  console.log('💰 Creating default fees...');
+  const defaultFees = [
+    { fee_type: 'reservation_fee', amount: 500 },
+    { fee_type: 'cleaning_fee', amount: 200 },
+    { fee_type: 'driver_fee', amount: 1000 },
+    { fee_type: 'overdue_fee', amount: 100 },
+    { fee_type: 'damage_fee', amount: 10000 },
+    { fee_type: 'equipment_loss_fee', amount: 1000 },
+    { fee_type: 'gas_level_fee', amount: 300 },
+    { fee_type: 'stain_removal_fee', amount: 500 },
+    { fee_type: 'security_deposit_fee', amount: 5000 }
+  ];
+
+  for (const fee of defaultFees) {
+    await prisma.manageFees.create({
+      data: fee
+    });
+  }
 
   // Create Driver Licenses
   console.log('📝 Creating driver licenses...');
@@ -306,6 +327,7 @@ async function main() {
     extensions: await prisma.extension.count(),
     releases: await prisma.release.count(),
     maintenances: await prisma.maintenance.count(),
+    manageFees: await prisma.manageFees.count(),
   };
   console.log(JSON.stringify(counts, null, 2));
 }

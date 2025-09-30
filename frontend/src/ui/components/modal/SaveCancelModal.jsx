@@ -1,92 +1,81 @@
 import React from 'react';
-import {
-  Modal,
-  Box,
-  Typography,
-  Button,
-  Stack,
-  Fade,
-  Backdrop,
-} from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
-import CloseIcon from '@mui/icons-material/Close';
+import { Modal, Box, Typography, Button } from '@mui/material';
 
-export default function SaveCancelModal({
-  open,
-  onClose,
-  onSave,
-  onCancel,
-  type = 'save', // "save" or "cancel"
-}) {
-  const isSave = type === 'save';
+export default function SaveCancelModal({ open, onClose, onConfirm, type }) {
+  const titles = {
+    save: 'Save Changes?',
+    cancel: 'Discard Changes?',
+  };
+
+  const messages = {
+    save: 'Are you sure you want to save these changes?',
+    cancel: 'Are you sure you want to discard these changes?',
+  };
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      closeAfterTransition
-      BackdropComponent={Backdrop}
-      BackdropProps={{ timeout: 300 }}
-    >
-      <Fade in={open}>
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: { xs: '90%', sm: 400 },
-            bgcolor: 'background.paper',
-            borderRadius: 3,
-            boxShadow: 24,
-            p: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 3,
-          }}
+    <Modal open={open} onClose={onClose}>
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          bgcolor: 'background.paper',
+          p: 4,
+          borderRadius: 2,
+          boxShadow: 24,
+          width: type === 'cancel' ? 420 : 350, // wider for discard so text fits
+        }}
+      >
+        {/* Primary text centered */}
+        <Typography
+          variant="h6"
+          gutterBottom
+          sx={{ textAlign: 'center', fontWeight: 600 }}
         >
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 700, textAlign: 'center' }}
-          >
-            {isSave ? 'Save Changes?' : 'Discard Changes?'}
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{ color: 'text.secondary', textAlign: 'center' }}
-          >
-            {isSave
-              ? 'Are you sure you want to save your changes?'
-              : 'Are you sure you want to discard your changes? This action cannot be undone.'}
-          </Typography>
+          {titles[type]}
+        </Typography>
 
-          <Stack direction="row" spacing={2} justifyContent="center">
-            {isSave ? (
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<SaveIcon />}
-                onClick={onSave}
-              >
-                Save
-              </Button>
-            ) : (
-              <Button
-                variant="contained"
-                color="error"
-                startIcon={<CloseIcon />}
-                onClick={onCancel}
-              >
-                Discard
-              </Button>
-            )}
+        {/* Secondary text */}
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          gutterBottom
+          sx={{ textAlign: 'center', whiteSpace: 'nowrap' }}
+        >
+          {messages[type]}
+        </Typography>
 
-            <Button variant="outlined" color="inherit" onClick={onClose}>
-              Back
-            </Button>
-          </Stack>
+        {/* Footer with buttons - centered */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mt: 2 }}>
+          <Button
+            variant="contained"
+            onClick={onConfirm}
+            sx={{
+              backgroundColor: '#d32f2f',
+              '&:hover': {
+                backgroundColor: '#b71c1c',
+              },
+            }}
+          >
+            Yes
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={onClose}
+            sx={{
+              color: '#555',
+              borderColor: '#bbb',
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+                borderColor: '#999',
+              },
+            }}
+          >
+            No
+          </Button>
         </Box>
-      </Fade>
+      </Box>
     </Modal>
   );
 }

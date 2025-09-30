@@ -162,10 +162,10 @@ function LoginPage() {
             src="https://www.gravatar.com/avatar/?d=mp"
             alt="Default Avatar"
             style={{
-              width: '150px',
-              height: '150px',
+              width: '130px',
+              height: '130px',
               borderRadius: '50%',
-              marginTop: '-100px',
+              marginTop: '-80px',
             }}
           />
           <h2
@@ -173,6 +173,7 @@ function LoginPage() {
             style={{
               fontSize: '36px',
               marginTop: '0',
+              marginBottom: '10px',
             }}
           >
             LOGIN
@@ -328,7 +329,7 @@ function LoginPage() {
               borderRadius: '5px',
               padding: '10px',
               width: '320px',
-              marginBottom: '30px',
+              marginBottom: '23px',
               boxShadow: '0 2px 2px rgba(0, 0, 0, .7)',
               cursor: 'pointer',
             }}

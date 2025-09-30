@@ -49,6 +49,99 @@ export const getBookingById = async (req, res) => {
   }
 };
 
+// @desc    Create a booking request (for customers)
+// @route   POST /bookings
+// @access  Private/Customer
+export const createBookingRequest = async (req, res) => {
+  try {
+    const {
+      car_id,
+      customer_id,
+      booking_date,
+      purpose,
+      start_date,
+      end_date,
+      pickup_time,
+      pickup_loc,
+      dropoff_loc,
+      isSelfDriver,
+      drivers_id,
+      booking_type, // 'deliver' or 'pickup'
+      delivery_location,
+    } = req.body;
+
+    console.log('Creating booking request with data:', req.body);
+
+    // Validate required fields
+    if (!car_id || !customer_id || !start_date || !end_date || !purpose) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: car_id, customer_id, start_date, end_date, purpose' 
+      });
+    }
+
+    // Check if car exists and is available
+    const car = await prisma.car.findUnique({
+      where: { car_id: parseInt(car_id) }
+    });
+
+    if (!car) {
+      return res.status(404).json({ error: 'Car not found' });
+    }
+
+    // Create the booking
+    const newBooking = await prisma.booking.create({
+      data: {
+        car_id: parseInt(car_id),
+        customer_id: parseInt(customer_id),
+        booking_date: new Date(booking_date || new Date()),
+        purpose,
+        start_date: new Date(start_date),
+        end_date: new Date(end_date),
+        pickup_time: pickup_time ? new Date(pickup_time) : new Date(start_date),
+        pickup_loc: pickup_loc || delivery_location,
+        dropoff_loc,
+        isSelfDriver: Boolean(isSelfDriver),
+        drivers_id: isSelfDriver ? null : (drivers_id ? parseInt(drivers_id) : null),
+        booking_status: 'Pending', // Admin needs to approve
+        payment_status: 'Pending',
+        total_amount: null, // Will be calculated by admin
+        isExtend: false,
+        isCancel: false,
+        isRelease: false,
+        isReturned: false,
+      },
+      include: {
+        car: {
+          select: {
+            make: true,
+            model: true,
+            year: true,
+            rent_price: true,
+          }
+        },
+        customer: {
+          select: {
+            first_name: true,
+            last_name: true,
+            email: true,
+          }
+        }
+      }
+    });
+
+    console.log('Booking created successfully:', newBooking.booking_id);
+
+    res.status(201).json({
+      message: 'Booking request submitted successfully',
+      booking: newBooking,
+    });
+
+  } catch (error) {
+    console.error('Error creating booking request:', error);
+    res.status(500).json({ error: 'Failed to create booking request' });
+  }
+};
+
 export const createBooking = async (req, res) => {
   try {
     const {

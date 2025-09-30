@@ -37,11 +37,9 @@ export default function CustomerSideBar({
       </NavLink>
       <br />
       <hr />
-      <NavLink to="/customer-profile" onClick={onClose}>
-        <HiOutlineUserCircle
-          style={{ verticalAlign: '-3px', marginRight: '5px' }}
-        />
-        MY PROFILE
+      <NavLink to="/customer-cars" onClick={onClose}>
+        <HiTruck style={{ verticalAlign: '-3px', marginRight: '5px' }} />
+        CARS
       </NavLink>
       <br />
       <hr />
@@ -56,12 +54,6 @@ export default function CustomerSideBar({
           style={{ verticalAlign: '-3px', marginRight: '5px' }}
         />
         BOOKING HISTORY
-      </NavLink>
-      <br />
-      <hr />
-      <NavLink to="/customer-cars" onClick={onClose}>
-        <HiTruck style={{ verticalAlign: '-3px', marginRight: '5px' }} />
-        CARS
       </NavLink>
       <br />
       <hr />

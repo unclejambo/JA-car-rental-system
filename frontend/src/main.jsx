@@ -14,6 +14,7 @@ import AdminTransactionPage from './pages/admin/AdminTransactionPage';
 import AdminReportAnalytics from './pages/admin/AdminReportAnalytics';
 import AdminSettings from './pages/admin/AdminSettings';
 import RegisterPage from './pages/RegisterPage.jsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
 import CustomerDashboard from './pages/customer/CustomerDashboard.jsx';
 import ProtectedRoute from './ui/components/modal/ProtectedRoute.jsx';
 import CustomerProfile from './pages/customer/CustomerProfile.jsx';
@@ -31,6 +32,7 @@ createRoot(document.getElementById('root')).render(
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/home" element={<HomePage />} />
 
           {/* Protected Admin Routes */}

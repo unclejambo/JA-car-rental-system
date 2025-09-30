@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   getCars,
+  getAvailableCars,
   getCarGps,
   createCar,
   updateCar,
@@ -11,6 +12,7 @@ const router = express.Router();
 
 // Public routes
 router.get('/', getCars);
+router.get('/available', getAvailableCars);
 router.get('/:id/gps', getCarGps);
 
 // Protected routes (add authentication middleware later)

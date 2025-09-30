@@ -4,6 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { uploadBufferToSupabase } from './storageController.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -150,8 +151,44 @@ export const registerUser = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Prepare license image URL
-    const licenseImageUrl = req.file ? `/uploads/licenses/${req.file.filename}` : null;
+    // ONLY UPLOAD TO SUPABASE AFTER ALL VALIDATIONS PASS
+    // Prepare license image URL: upload local disk file to Supabase 'licenses/dl_img'
+    let licenseImageUrl = null;
+    if (req.file) {
+      try {
+        const file = req.file;
+        const fileBuffer = await fs.promises.readFile(file.path);
+        const timestamp = Date.now();
+        const fileExt = file.originalname.split('.').pop();
+        const filename = `${licenseNumber || 'license'}_${username || 'user'}_${timestamp}.${fileExt}`;
+        const pathInBucket = `dl_img/${filename}`;
+
+        const uploadResult = await uploadBufferToSupabase({
+          bucket: 'licenses',
+          path: pathInBucket,
+          buffer: fileBuffer,
+          contentType: file.mimetype,
+          upsert: false
+        });
+
+        licenseImageUrl = uploadResult.publicUrl;
+      } catch (uploadErr) {
+        console.error('Supabase upload failed for registration license:', uploadErr);
+        // Clean up local file and fail registration
+        if (req.file) {
+          fs.unlink(req.file.path, () => {});
+        }
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to upload license image'
+        });
+      } finally {
+        // remove local file (we don't need it after upload/fail)
+        if (req.file && fs.existsSync(req.file.path)) {
+          fs.unlink(req.file.path, () => {});
+        }
+      }
+    }
 
     // Create driver license record
     const driverLicense = await prisma.driverLicense.create({

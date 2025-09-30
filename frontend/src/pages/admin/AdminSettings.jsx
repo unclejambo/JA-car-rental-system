@@ -6,6 +6,8 @@ import {
   IconButton,
   TextField,
   Button,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
@@ -13,49 +15,228 @@ import CloseIcon from '@mui/icons-material/Close';
 import Header from '../../ui/components/Header';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Loading from '../../ui/components/Loading';
+import ConfirmationModal from '../../ui/components/modal/ConfirmationModal';
 import { HiCog8Tooth } from 'react-icons/hi2';
+import { useAuth } from '../../hooks/useAuth.js';
+import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
 
-export default function AdminReportAnalytics() {
+export default function AdminSettings() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [loading, _setLoading] = useState(false); // -----------------------------------> CHANGE TO TRUE WHEN CONTENT IS ADDED
-  const [error, _setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
+  
   // Profile state
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    firstName: 'Tom',
-    lastName: 'Rex',
-    address: 'Casuntingan, Mandaue City',
-    email: 'tommyrex@gmail.com',
-    birthdate: 'January 09, 1996',
-    username: 'AdminITRex',
-    password: '*************',
+  const [profile, setProfile] = useState({});
+  const [draft, setDraft] = useState({});
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
 
-  const [draft, setDraft] = useState(profile);
+  const { logout } = useAuth();
+  const authenticatedFetch = createAuthenticatedFetch(logout);
+  const API_BASE = getApiBase();
 
+  // Fetch admin profile data
   useEffect(() => {
-    setDraft(profile);
-  }, [isEditing, profile]);
+    fetchProfileData();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function handleEditToggle() {
+  const fetchProfileData = async () => {
+    setLoading(true);
+    try {
+      const response = await authenticatedFetch(`${API_BASE}/admin-profile`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          const adminData = {
+            firstName: result.data.first_name || '',
+            lastName: result.data.last_name || '',
+            contactNo: result.data.contact_no || '',
+            email: result.data.email || '',
+            username: result.data.username || '',
+            userType: result.data.user_type || '',
+          };
+          setProfile(adminData);
+          setDraft(adminData);
+        } else {
+          setError(result.message || 'Failed to load profile');
+        }
+      } else {
+        setError('Failed to load profile');
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      setError('Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditToggle = () => {
     setIsEditing(true);
-  }
+    setDraft({ ...profile });
+  };
 
-  function handleCancel() {
-    setDraft(profile);
+  const handleCancel = () => {
+    setDraft({ ...profile });
+    setPasswordData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    });
     setIsEditing(false);
-  }
+  };
 
-  function handleSave() {
-    // In real app, send update to server here. For now, update local state.
-    setProfile(draft);
-    setIsEditing(false);
-  }
-
-  function handleChange(e) {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setDraft((s) => ({ ...s, [name]: value }));
-  }
+    setDraft((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (error) setError(null);
+  };
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (error) setError(null);
+  };
+
+  const getChanges = () => {
+    const changes = [];
+    
+    Object.keys(draft).forEach((key) => {
+      if (draft[key] !== profile[key]) {
+        let fieldLabel = key;
+        switch (key) {
+          case 'firstName': fieldLabel = 'First Name'; break;
+          case 'lastName': fieldLabel = 'Last Name'; break;
+          case 'contactNo': fieldLabel = 'Contact Number'; break;
+          case 'email': fieldLabel = 'Email'; break;
+          case 'username': fieldLabel = 'Username'; break;
+        }
+        
+        changes.push({
+          field: fieldLabel,
+          from: profile[key],
+          to: draft[key],
+        });
+      }
+    });
+
+    // Check if password is being changed
+    if (passwordData.newPassword && passwordData.newPassword.trim() !== '') {
+      changes.push({
+        field: 'Password',
+        from: '(hidden)',
+        to: '(new password)',
+      });
+    }
+
+    return changes;
+  };
+
+  const validateForm = () => {
+    if (!draft.firstName?.trim()) return 'First name is required';
+    if (!draft.lastName?.trim()) return 'Last name is required';
+    if (!draft.email?.trim()) return 'Email is required';
+    if (!draft.username?.trim()) return 'Username is required';
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(draft.email)) return 'Please enter a valid email';
+    
+    // Password validation if changing
+    if (passwordData.newPassword && passwordData.newPassword.trim() !== '') {
+      if (!passwordData.currentPassword) return 'Current password is required to change password';
+      if (passwordData.newPassword.length < 6) return 'New password must be at least 6 characters';
+      if (passwordData.newPassword !== passwordData.confirmPassword) return 'Password confirmation does not match';
+    }
+    
+    return null;
+  };
+
+  const handleSaveClick = () => {
+    const validation = validateForm();
+    if (validation) {
+      setError(validation);
+      return;
+    }
+
+    const changes = getChanges();
+    if (changes.length === 0) {
+      setError('No changes detected');
+      return;
+    }
+
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSave = async () => {
+    setSaving(true);
+    try {
+      const updateData = {
+        first_name: draft.firstName,
+        last_name: draft.lastName,
+        contact_no: draft.contactNo,
+        email: draft.email,
+        username: draft.username,
+      };
+
+      // Add password data if changing password
+      if (passwordData.newPassword && passwordData.newPassword.trim() !== '') {
+        updateData.password = passwordData.newPassword;
+        updateData.currentPassword = passwordData.currentPassword;
+      }
+
+      const response = await authenticatedFetch(`${API_BASE}/admin-profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Update local state with new data
+        const updatedProfile = {
+          firstName: result.data.first_name || '',
+          lastName: result.data.last_name || '',
+          contactNo: result.data.contact_no || '',
+          email: result.data.email || '',
+          username: result.data.username || '',
+          userType: result.data.user_type || '',
+        };
+        
+        setProfile(updatedProfile);
+        setDraft(updatedProfile);
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
+        setIsEditing(false);
+        setSuccessMessage('Profile updated successfully!');
+        setShowSuccess(true);
+      } else {
+        setError(result.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setError('Failed to update profile');
+    } finally {
+      setSaving(false);
+      setShowConfirmModal(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -286,25 +467,27 @@ export default function AdminReportAnalytics() {
                             <TextField
                               label="First Name"
                               name="firstName"
-                              value={draft.firstName}
+                              value={draft.firstName || ''}
                               onChange={handleChange}
                               size="small"
                               fullWidth={false}
+                              required
                             />
                             <TextField
                               label="Last Name"
                               name="lastName"
-                              value={draft.lastName}
+                              value={draft.lastName || ''}
                               onChange={handleChange}
                               size="small"
                               fullWidth={false}
+                              required
                             />
                           </Box>
                         ) : (
                           <Typography sx={{ fontWeight: 700 }}>
                             First Name:{' '}
                             <span style={{ fontWeight: 400 }}>
-                              {profile.firstName}
+                              {profile.firstName || 'N/A'}
                             </span>
                           </Typography>
                         )}
@@ -313,24 +496,25 @@ export default function AdminReportAnalytics() {
                           <Typography sx={{ fontWeight: 700 }}>
                             Last Name:{' '}
                             <span style={{ fontWeight: 400 }}>
-                              {profile.lastName}
+                              {profile.lastName || 'N/A'}
                             </span>
                           </Typography>
                         )}
 
                         {isEditing ? (
                           <TextField
-                            label="Address"
-                            name="address"
-                            value={draft.address}
+                            label="Contact Number"
+                            name="contactNo"
+                            value={draft.contactNo || ''}
                             onChange={handleChange}
                             size="small"
+                            placeholder="e.g., 09123456789"
                           />
                         ) : (
                           <Typography sx={{ fontWeight: 700 }}>
-                            Address:{' '}
+                            Contact Number:{' '}
                             <span style={{ fontWeight: 400 }}>
-                              {profile.address}
+                              {profile.contactNo || 'N/A'}
                             </span>
                           </Typography>
                         )}
@@ -339,34 +523,27 @@ export default function AdminReportAnalytics() {
                           <TextField
                             label="Email"
                             name="email"
-                            value={draft.email}
+                            type="email"
+                            value={draft.email || ''}
                             onChange={handleChange}
                             size="small"
-                            sx={{ width: { xs: '100%', md: '50%' } }}
+                            sx={{ width: { xs: '100%', md: '70%' } }}
+                            required
                           />
                         ) : (
                           <Typography sx={{ fontWeight: 700 }}>
                             Email:{' '}
                             <span style={{ fontWeight: 400 }}>
-                              {profile.email}
+                              {profile.email || 'N/A'}
                             </span>
                           </Typography>
                         )}
 
-                        {isEditing ? (
-                          <TextField
-                            label="Birthdate"
-                            name="birthdate"
-                            value={draft.birthdate}
-                            onChange={handleChange}
-                            size="small"
-                            sx={{ width: { xs: '100%', md: '50%' } }}
-                          />
-                        ) : (
+                        {!isEditing && (
                           <Typography sx={{ fontWeight: 700 }}>
-                            Birthdate:{' '}
-                            <span style={{ fontWeight: 400 }}>
-                              {profile.birthdate}
+                            User Type:{' '}
+                            <span style={{ fontWeight: 400, textTransform: 'capitalize' }}>
+                              {profile.userType || 'N/A'}
                             </span>
                           </Typography>
                         )}
@@ -391,46 +568,66 @@ export default function AdminReportAnalytics() {
                         >
                           {isEditing ? (
                             <TextField
+                              label="Username"
                               name="username"
-                              value={draft.username}
+                              value={draft.username || ''}
                               onChange={handleChange}
                               size="small"
                               sx={{ flex: 1, background: 'transparent' }}
                               fullWidth={true}
+                              required
                             />
                           ) : (
                             <Typography sx={{ flex: 1, pl: 2 }}>
-                              {profile.username}
+                              <strong>Username:</strong> {profile.username || 'N/A'}
                             </Typography>
                           )}
-                          {/* per-field edit removed; use top-right edit button */}
                         </Box>
 
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            bgcolor: '#e9e9e9',
-                            borderRadius: 4,
-                            p: 1.2,
-                          }}
-                        >
-                          {isEditing ? (
-                            <TextField
-                              name="password"
-                              value={draft.password}
-                              onChange={handleChange}
-                              size="small"
-                              sx={{ flex: 1 }}
-                              fullWidth={true}
-                            />
-                          ) : (
-                            <Typography sx={{ flex: 1, pl: 2 }}>
-                              {profile.password}
+                        {isEditing && (
+                          <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
+                            <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                              Change Password (Optional)
                             </Typography>
-                          )}
-                          {/* per-field edit removed; use top-right edit button */}
-                        </Box>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <TextField
+                                label="Current Password"
+                                type="password"
+                                value={passwordData.currentPassword}
+                                onChange={handlePasswordChange}
+                                name="currentPassword"
+                                size="small"
+                                fullWidth
+                              />
+                              <TextField
+                                label="New Password"
+                                type="password"
+                                value={passwordData.newPassword}
+                                onChange={handlePasswordChange}
+                                name="newPassword"
+                                size="small"
+                                fullWidth
+                                helperText="Leave blank to keep current password"
+                              />
+                              <TextField
+                                label="Confirm New Password"
+                                type="password"
+                                value={passwordData.confirmPassword}
+                                onChange={handlePasswordChange}
+                                name="confirmPassword"
+                                size="small"
+                                fullWidth
+                              />
+                            </Box>
+                          </Box>
+                        )}
+
+                        {error && (
+                          <Alert severity="error" sx={{ mt: 2 }}>
+                            {error}
+                          </Alert>
+                        )}
+
                         {isEditing && (
                           <Box
                             sx={{
@@ -438,7 +635,7 @@ export default function AdminReportAnalytics() {
                               flexDirection: { xs: 'column', md: 'row' },
                               gap: 1,
                               width: '100%',
-                              mt: 1,
+                              mt: 2,
                             }}
                           >
                             <Button
@@ -446,10 +643,10 @@ export default function AdminReportAnalytics() {
                               color="primary"
                               size="small"
                               startIcon={<SaveIcon />}
-                              onClick={handleSave}
+                              onClick={handleSaveClick}
                               sx={{ width: { xs: '100%', md: '100%' } }}
                             >
-                              Save
+                              Save Changes
                             </Button>
                             <Button
                               variant="outlined"
@@ -472,6 +669,39 @@ export default function AdminReportAnalytics() {
           </Box>
         </Box>
       </Box>
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        open={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmSave}
+        options={{
+          title: 'Confirm Profile Changes',
+          message: 'Please review your changes before saving to the database.',
+          confirmText: 'Save Changes',
+          cancelText: 'Cancel',
+          confirmColor: 'primary',
+          changes: getChanges(),
+          loading: saving,
+          showWarning: true,
+        }}
+      />
+
+      {/* Success Message */}
+      <Snackbar 
+        open={showSuccess} 
+        autoHideDuration={4000} 
+        onClose={() => setShowSuccess(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setShowSuccess(false)} 
+          severity="success" 
+          sx={{ width: '100%' }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

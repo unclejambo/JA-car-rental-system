@@ -8,6 +8,8 @@ import TransactionLogsHeader from '../../ui/components/header/TransactionLogsHea
 import TransactionLogsTable from '../../ui/components/table/TranscationLogsTable';
 import Loading from '../../ui/components/Loading';
 import { useTransactionStore } from '../../store/transactions';
+import AddPaymentModal from '../../ui/components/modal/AddPaymentModal';
+import AddRefundModal from '../../ui/components/modal/AddRefundModal';
 
 // const formatDate = (dateString) => {
 //   if (!dateString) return 'N/A';
@@ -19,27 +21,41 @@ export default function AdminTransactionPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const transactions = useTransactionStore((state) => state.transactions);
+  const loadTransactions = useTransactionStore((s) => s.loadTransactions);
+  const loadPayments = useTransactionStore((s) => s.loadPayments);
+  const loadRefunds = useTransactionStore((s) => s.loadRefunds);
+  const loaded = useTransactionStore((s) => s.loaded);
+  const storeLoading = useTransactionStore((s) => s.loading);
   const [activeTab, setActiveTab] = useState('TRANSACTIONS');
+  const rows = useTransactionStore((s) => s.getRowsForTab(activeTab));
 
-  console.log('AdminTransactionPage - Transactions:', transactions);
+  // console.log('AdminTransactionPage - Rows:', rows);
 
+  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
+  const openAddPaymentModal = () => setShowAddPaymentModal(true);
+  const closeAddPaymentModal = () => setShowAddPaymentModal(false);
+
+  const [showAddRefundModal, setShowAddRefundModal] = useState(false);
+  const openAddRefundModal = () => setShowAddRefundModal(true);
+  const closeAddRefundModal = () => setShowAddRefundModal(false);
+
+  // Initial & on-tab-change data loader
   useEffect(() => {
-    const fetchData = async () => {
+    const load = async () => {
       try {
-        // Since we're using Zustand, the data is already in the store
-        // We'll just add a small delay to simulate network request
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        if (activeTab === 'TRANSACTIONS' && !loaded.TRANSACTIONS)
+          await loadTransactions();
+        if (activeTab === 'PAYMENT' && !loaded.PAYMENT) await loadPayments();
+        if (activeTab === 'REFUND' && !loaded.REFUND) await loadRefunds();
         setLoading(false);
-      } catch (error) {
-        console.error('Error fetching data:', error);
+      } catch (e) {
+        console.error(e);
         setError('Failed to load data. Please try again later.');
         setLoading(false);
       }
     };
-
-    fetchData();
-  }, []);
+    load();
+  }, [activeTab, loaded, loadTransactions, loadPayments, loadRefunds]);
 
   if (loading) {
     return (
@@ -91,11 +107,18 @@ export default function AdminTransactionPage() {
   return (
     <Box sx={{ display: 'flex' }}>
       <title>Transactions</title>
+      <AddPaymentModal
+        show={showAddPaymentModal}
+        onClose={closeAddPaymentModal}
+      />
+      <AddRefundModal show={showAddRefundModal} onClose={closeAddRefundModal} />
+
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar
         mobileOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
       />
+
       <Box
         component="main"
         sx={{
@@ -171,7 +194,7 @@ export default function AdminTransactionPage() {
                       sx={{ width: '18px', height: '18px', mt: '-2px' }}
                     />
                   }
-                  onClick={() => console.log('ADD PAYMENT!')}
+                  onClick={openAddPaymentModal}
                   sx={{
                     color: '#fff',
                     p: 1,
@@ -202,7 +225,7 @@ export default function AdminTransactionPage() {
                       sx={{ width: '18px', height: '18px', mt: '-2px' }}
                     />
                   }
-                  onClick={() => console.log('ADD REFUND!')}
+                  onClick={openAddRefundModal}
                   sx={{
                     color: '#fff',
                     p: 1,
@@ -236,8 +259,8 @@ export default function AdminTransactionPage() {
             >
               <TransactionLogsTable
                 activeTab={activeTab}
-                rows={transactions}
-                loading={loading}
+                rows={rows}
+                loading={loading || storeLoading[activeTab]}
               />
             </Box>
           </Box>

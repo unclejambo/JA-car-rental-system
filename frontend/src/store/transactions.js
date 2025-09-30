@@ -1,37 +1,49 @@
 import { create } from 'zustand';
+import { getApiBase } from '../utils/api';
 
-export const useTransactionStore = create((set) => ({
-  transactions: [
-    {
-      transactionId: 1,
-      bookingDate: '2025-06-06',
-      customerName: 'Juan Dela Cruz',
-      carModel: 'Nissan',
-      completionDate: '2025-07-06',
-      cancellationDate: '2025-07-07',
-      paymentStatus: 'Paid',
-    },
-    {
-      transactionId: 2,
-      bookingDate: '2025-07-06',
-      customerName: 'Juan Dela Cruz',
-      carModel: 'Nissan',
-      completionDate: '2025-08-06',
-      cancellationDate: '2025-08-07',
-      paymentStatus: 'Unpaid',
-    },
-    {
-      transactionId: 3,
-      bookingDate: '2025-07-15',
-      customerName: 'Maria Santos',
-      carModel: 'Toyota Vios',
-      completionDate: '2025-07-20',
-      cancellationDate: '2025-07-16',
-      paymentStatus: 'Refunded',
-      refundDate: '2025-07-17',
-      refundAmount: 5000,
-      refundReason: 'Early return',
-    },
-  ],
-  setTransactions: (rows) => set({ transactions: rows }),
+export const useTransactionStore = create((set, get) => ({
+  transactions: [],
+  payments: [],
+  refunds: [],
+  loading: { TRANSACTIONS: false, PAYMENT: false, REFUND: false },
+  loaded: { TRANSACTIONS: false, PAYMENT: false, REFUND: false },
+  error: null,
+
+  // Generic loader
+  _fetch: async (tab, url) => {
+    const { loading } = get();
+    if (loading[tab]) return; // prevent duplicate
+    set({ loading: { ...loading, [tab]: true }, error: null });
+    try {
+      const resp = await fetch(`${getApiBase()}${url}`);
+      if (!resp.ok) throw new Error(`${tab} request failed`);
+      const data = await resp.json();
+      if (tab === 'TRANSACTIONS') set({ transactions: data });
+      if (tab === 'PAYMENT') set({ payments: data });
+      if (tab === 'REFUND') set({ refunds: data });
+      set((s) => ({ loaded: { ...s.loaded, [tab]: true } }));
+    } catch (e) {
+      console.error(e);
+      set({ error: e.message });
+    } finally {
+      set((s) => ({ loading: { ...s.loading, [tab]: false } }));
+    }
+  },
+
+  loadTransactions: () => get()._fetch('TRANSACTIONS', '/transactions'),
+  loadPayments: () => get()._fetch('PAYMENT', '/payments'),
+  loadRefunds: () => get()._fetch('REFUND', '/refunds'),
+
+  getRowsForTab: (tab) => {
+    const { transactions, payments, refunds } = get();
+    switch (tab) {
+      case 'PAYMENT':
+        return payments;
+      case 'REFUND':
+        return refunds;
+      case 'TRANSACTIONS':
+      default:
+        return transactions;
+    }
+  },
 }));

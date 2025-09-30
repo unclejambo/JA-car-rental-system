@@ -5,11 +5,41 @@ import prisma from '../config/prisma.js';
 // @access  Public
 export const getCars = async (req, res) => {
   try {
+    console.log('getCars endpoint called');
     const cars = await prisma.car.findMany();
+    console.log('Found cars:', cars.length);
+    if (cars.length > 0) {
+      console.log('Sample car data:', cars[0]);
+    }
     res.json(cars);
   } catch (error) {
     console.error('Error fetching cars:', error);
     res.status(500).json({ error: 'Failed to fetch cars' });
+  }
+};
+
+// @desc    Get available cars for customers
+// @route   GET /cars/available
+// @access  Public
+export const getAvailableCars = async (req, res) => {
+  try {
+    console.log('getAvailableCars endpoint called');
+    const cars = await prisma.car.findMany({
+      where: {
+        car_status: {
+          in: ['Available', 'Rented', 'Maintenance'] // Include all except deleted/inactive
+        }
+      },
+      orderBy: {
+        car_id: 'asc'
+      }
+    });
+    
+    console.log('Found available cars:', cars.length);
+    res.json(cars);
+  } catch (error) {
+    console.error('Error fetching available cars:', error);
+    res.status(500).json({ error: 'Failed to fetch available cars' });
   }
 };
 

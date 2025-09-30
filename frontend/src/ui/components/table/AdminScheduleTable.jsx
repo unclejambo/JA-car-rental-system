@@ -3,12 +3,10 @@ import { Box, Button } from '@mui/material';
 import { useScheduleStore } from '../../../store/schedule';
 import PublicIcon from '@mui/icons-material/Public';
 
-const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
+const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
   const updateReservationStatus = useScheduleStore(
     (state) => state.updateReservationStatus
   );
-
-  console.log('ScheduleTable - Rows:', rows); // Debug log
 
   const formatDate = (iso) => {
     if (!iso) return '';
@@ -231,7 +229,7 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       }
 
       // Show return button if today is end date and status is 'Ongoing'
-      if (today === endDate && params.row.status === 'Ongoing') {
+      if (today === endDate && params.row.status === 'In Progress') {
         return (
           <Button
             variant="contained"
@@ -287,7 +285,6 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
   };
 
   const columns = [...commonColumns, statusColumn];
-  console.log('ScheduleTable - Columns:', columns); // Debug log
 
   return (
     <Box
@@ -392,4 +389,4 @@ const ScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
   );
 };
 
-export default ScheduleTable;
+export default AdminScheduleTable;

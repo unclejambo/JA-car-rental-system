@@ -12,7 +12,15 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
     if (userRole === 'admin') {
       return 'ADMIN';
     }
-    return user?.firstName || 'User';
+
+    // Try multiple possible property names for the first name
+    const firstName =
+      user?.firstName ||
+      user?.first_name ||
+      user?.name?.split(' ')[0] ||
+      user?.fullName?.split(' ')[0];
+
+    return firstName;
   };
 
   return (

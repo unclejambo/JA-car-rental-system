@@ -136,6 +136,7 @@
 /* Extra small screens */
 @media (max-width: 480px) {
   .profile-name {
-    display: none; /* Hide name on very small screens to save space */
+    font-size: 0.7rem; /* 11.2px - smaller font for very small screens */
+    /* Removed display: none to show name on mobile */
   }
 }

@@ -89,8 +89,8 @@ export default function CustomerSettings() {
         if (customer) {
           setLicenseNo(customer.driver_license_no || '');
           setLicenseRestrictions(customer.DriverLicense?.restrictions || '');
-          setLicenseExpiration(customer.expiry_date || '');
-          setLicenseImage(customer.driver_license_image || '/license.png');
+          setLicenseExpiration(customer.DriverLicense?.expiry_date || '');
+          setLicenseImage(customer.DriverLicense?.dl_img_url || '/license.png');
 
           setProfile((prev) => ({
             ...prev,

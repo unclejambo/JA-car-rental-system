@@ -44,8 +44,11 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
   const [currentStep, setCurrentStep] = useState(0); // 0 = Form, 1 = Confirmation
   const { logout } = useAuth();
   const API_BASE = getApiBase();
-  const authenticatedFetch = React.useMemo(() => createAuthenticatedFetch(logout), [logout]);
-  
+  const authenticatedFetch = React.useMemo(
+    () => createAuthenticatedFetch(logout),
+    [logout]
+  );
+
   // Form state
   const [formData, setFormData] = useState({
     bookingType: 'deliver', // 'deliver' or 'pickup'
@@ -121,7 +124,7 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
   // Handle tab change
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       bookingType: newValue === 0 ? 'deliver' : 'pickup',
       deliveryLocation: newValue === 1 ? '' : prev.deliveryLocation,
@@ -131,16 +134,16 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
 
   // Handle form input changes
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   // Validate form
   const isFormValid = () => {
     const required = ['startDate', 'endDate', 'dropoffLocation', 'purpose'];
-    
+
     if (formData.bookingType === 'deliver') {
       required.push('deliveryLocation');
     }
@@ -150,7 +153,7 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
       required.push('selectedDriver');
     }
 
-    return required.every(field => {
+    return required.every((field) => {
       const value = formData[field];
       return value !== null && value !== undefined && value !== '';
     });
@@ -179,21 +182,22 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
         year: car.year,
         license_plate: car.license_plate,
         rent_price: car.rent_price,
-      }
+      },
     };
     onSubmit(bookingData);
   };
 
   // Calculate total days and cost
   const calculateBookingDetails = () => {
-    if (!formData.startDate || !formData.endDate) return { days: 0, totalCost: 0 };
-    
+    if (!formData.startDate || !formData.endDate)
+      return { days: 0, totalCost: 0 };
+
     const start = new Date(formData.startDate);
     const end = new Date(formData.endDate);
     const diffTime = Math.abs(end - start);
     const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
     const totalCost = days * (car.rent_price || 0);
-    
+
     return { days, totalCost };
   };
 
@@ -204,9 +208,9 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
     <Box>
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs 
-          value={currentTab} 
-          onChange={handleTabChange} 
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
           centered
           variant="fullWidth"
           sx={{
@@ -214,14 +218,14 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
               fontWeight: 600,
               fontSize: '0.95rem',
               textTransform: 'none',
-              minHeight: '48px'
+              minHeight: '48px',
             },
             '& .Mui-selected': {
-              color: '#c10007 !important'
+              color: '#c10007 !important',
             },
             '& .MuiTabs-indicator': {
-              backgroundColor: '#c10007'
-            }
+              backgroundColor: '#c10007',
+            },
           }}
         >
           <Tab label="🚗 Delivery Service" />
@@ -234,7 +238,10 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {/* Date Fields */}
           <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#495057' }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ mb: 1, fontWeight: 600, color: '#495057' }}
+            >
               Rental Period *
             </Typography>
             <Grid container spacing={2}>
@@ -249,7 +256,7 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
                         fullWidth: true,
                         required: true,
                         variant: 'outlined',
-                        size: 'small'
+                        size: 'small',
                       },
                     }}
                     minDate={new Date()}
@@ -267,7 +274,7 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
                         fullWidth: true,
                         required: true,
                         variant: 'outlined',
-                        size: 'small'
+                        size: 'small',
                       },
                     }}
                     minDate={formData.startDate || new Date()}
@@ -279,14 +286,19 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
 
           {/* Location Fields */}
           <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#495057' }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ mb: 1, fontWeight: 600, color: '#495057' }}
+            >
               Location Details *
             </Typography>
             <TextField
               fullWidth
               label="Delivery Address"
               value={formData.deliveryLocation}
-              onChange={(e) => handleInputChange('deliveryLocation', e.target.value)}
+              onChange={(e) =>
+                handleInputChange('deliveryLocation', e.target.value)
+              }
               required
               variant="outlined"
               size="small"
@@ -297,7 +309,9 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
               fullWidth
               label="Return Location"
               value={formData.dropoffLocation}
-              onChange={(e) => handleInputChange('dropoffLocation', e.target.value)}
+              onChange={(e) =>
+                handleInputChange('dropoffLocation', e.target.value)
+              }
               required
               variant="outlined"
               size="small"
@@ -307,7 +321,10 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
 
           {/* Purpose Field */}
           <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#495057' }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ mb: 1, fontWeight: 600, color: '#495057' }}
+            >
               Booking Purpose *
             </Typography>
             <TextField
@@ -325,24 +342,28 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
           </Box>
 
           {/* Self-Drive Toggle */}
-          <Box sx={{ 
-            p: 2, 
-            backgroundColor: '#f8f9fa', 
-            borderRadius: 1,
-            border: '1px solid #dee2e6'
-          }}>
+          <Box
+            sx={{
+              p: 2,
+              backgroundColor: '#f8f9fa',
+              borderRadius: 1,
+              border: '1px solid #dee2e6',
+            }}
+          >
             <FormControlLabel
               control={
                 <Switch
                   checked={formData.isSelfDrive}
-                  onChange={(e) => handleInputChange('isSelfDrive', e.target.checked)}
+                  onChange={(e) =>
+                    handleInputChange('isSelfDrive', e.target.checked)
+                  }
                   sx={{
                     '& .MuiSwitch-switchBase.Mui-checked': {
-                      color: '#c10007'
+                      color: '#c10007',
                     },
                     '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#c10007'
-                    }
+                      backgroundColor: '#c10007',
+                    },
                   }}
                 />
               }
@@ -352,14 +373,21 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
                 </Typography>
               }
             />
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mt: 0.5 }}
+            >
               Toggle on if you will drive the vehicle yourself
             </Typography>
           </Box>
           {/* Driver Selection */}
           {!formData.isSelfDrive && (
             <Box>
-              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#495057' }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ mb: 1, fontWeight: 600, color: '#495057' }}
+              >
                 Professional Driver Selection *
               </Typography>
               <TextField
@@ -367,16 +395,18 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
                 select
                 label="Choose Your Driver"
                 value={formData.selectedDriver}
-                onChange={(e) => handleInputChange('selectedDriver', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange('selectedDriver', e.target.value)
+                }
                 required
                 variant="outlined"
                 size="small"
                 SelectProps={{
                   MenuProps: {
                     PaperProps: {
-                      sx: { maxHeight: 300 }
-                    }
-                  }
+                      sx: { maxHeight: 300 },
+                    },
+                  },
                 }}
                 helperText="Our professional drivers are licensed and experienced"
               >
@@ -386,11 +416,19 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
                 {drivers.map((driver) => (
                   <MenuItem key={driver.id} value={driver.id}>
                     <Box sx={{ width: '100%', py: 0.5 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 600, color: '#333' }}>
+                      <Typography
+                        variant="body1"
+                        sx={{ fontWeight: 600, color: '#333' }}
+                      >
                         {driver.name}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-                        License: {driver.license} • ⭐ {driver.rating.toFixed(2)} Rating
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: '0.85rem' }}
+                      >
+                        License: {driver.license} • ⭐{' '}
+                        {driver.rating.toFixed(2)} Rating
                       </Typography>
                     </Box>
                   </MenuItem>
@@ -406,7 +444,10 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {/* Date Fields */}
           <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#495057' }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ mb: 1, fontWeight: 600, color: '#495057' }}
+            >
               Rental Period *
             </Typography>
             <Grid container spacing={2}>
@@ -421,7 +462,7 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
                         fullWidth: true,
                         required: true,
                         variant: 'outlined',
-                        size: 'small'
+                        size: 'small',
                       },
                     }}
                     minDate={new Date()}
@@ -439,7 +480,7 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
                         fullWidth: true,
                         required: true,
                         variant: 'outlined',
-                        size: 'small'
+                        size: 'small',
                       },
                     }}
                     minDate={formData.startDate || new Date()}
@@ -450,14 +491,19 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
           </Box>
 
           {/* Pickup Information */}
-          <Box sx={{ 
-            p: 2, 
-            backgroundColor: '#e3f2fd', 
-            borderRadius: 1,
-            border: '1px solid #bbdefb',
-            textAlign: 'center'
-          }}>
-            <Typography variant="body1" sx={{ fontWeight: 500, color: '#1976d2' }}>
+          <Box
+            sx={{
+              p: 2,
+              backgroundColor: '#e3f2fd',
+              borderRadius: 1,
+              border: '1px solid #bbdefb',
+              textAlign: 'center',
+            }}
+          >
+            <Typography
+              variant="body1"
+              sx={{ fontWeight: 500, color: '#1976d2' }}
+            >
               🏢 Office Pickup Service
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -467,14 +513,19 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
 
           {/* Return Location */}
           <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#495057' }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ mb: 1, fontWeight: 600, color: '#495057' }}
+            >
               Return Information *
             </Typography>
             <TextField
               fullWidth
               label="Return Location"
               value={formData.dropoffLocation}
-              onChange={(e) => handleInputChange('dropoffLocation', e.target.value)}
+              onChange={(e) =>
+                handleInputChange('dropoffLocation', e.target.value)
+              }
               required
               variant="outlined"
               size="small"
@@ -484,7 +535,10 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
 
           {/* Purpose Field */}
           <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#495057' }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ mb: 1, fontWeight: 600, color: '#495057' }}
+            >
               Booking Purpose *
             </Typography>
             <TextField
@@ -502,24 +556,28 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
           </Box>
 
           {/* Self-Drive Toggle */}
-          <Box sx={{ 
-            p: 2, 
-            backgroundColor: '#f8f9fa', 
-            borderRadius: 1,
-            border: '1px solid #dee2e6'
-          }}>
+          <Box
+            sx={{
+              p: 2,
+              backgroundColor: '#f8f9fa',
+              borderRadius: 1,
+              border: '1px solid #dee2e6',
+            }}
+          >
             <FormControlLabel
               control={
                 <Switch
                   checked={formData.isSelfDrive}
-                  onChange={(e) => handleInputChange('isSelfDrive', e.target.checked)}
+                  onChange={(e) =>
+                    handleInputChange('isSelfDrive', e.target.checked)
+                  }
                   sx={{
                     '& .MuiSwitch-switchBase.Mui-checked': {
-                      color: '#c10007'
+                      color: '#c10007',
                     },
                     '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#c10007'
-                    }
+                      backgroundColor: '#c10007',
+                    },
                   }}
                 />
               }
@@ -529,7 +587,11 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
                 </Typography>
               }
             />
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mt: 0.5 }}
+            >
               Toggle on if you will drive the vehicle yourself
             </Typography>
           </Box>
@@ -537,7 +599,10 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
           {/* Driver Selection */}
           {!formData.isSelfDrive && (
             <Box>
-              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#495057' }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ mb: 1, fontWeight: 600, color: '#495057' }}
+              >
                 Professional Driver Selection *
               </Typography>
               <TextField
@@ -545,16 +610,18 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
                 select
                 label="Choose Your Driver"
                 value={formData.selectedDriver}
-                onChange={(e) => handleInputChange('selectedDriver', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange('selectedDriver', e.target.value)
+                }
                 required
                 variant="outlined"
                 size="small"
                 SelectProps={{
                   MenuProps: {
                     PaperProps: {
-                      sx: { maxHeight: 300 }
-                    }
-                  }
+                      sx: { maxHeight: 300 },
+                    },
+                  },
                 }}
                 helperText="Our professional drivers are licensed and experienced"
               >
@@ -564,11 +631,19 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
                 {drivers.map((driver) => (
                   <MenuItem key={driver.id} value={driver.id}>
                     <Box sx={{ width: '100%', py: 0.5 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 600, color: '#333' }}>
+                      <Typography
+                        variant="body1"
+                        sx={{ fontWeight: 600, color: '#333' }}
+                      >
                         {driver.name}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-                        License: {driver.license} • ⭐ {driver.rating.toFixed(2)} Rating
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: '0.85rem' }}
+                      >
+                        License: {driver.license} • ⭐{' '}
+                        {driver.rating.toFixed(2)} Rating
                       </Typography>
                     </Box>
                   </MenuItem>
@@ -587,38 +662,76 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
       <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
         Booking Confirmation
       </Typography>
-      
+
       <Card sx={{ mb: 2 }}>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 1 }}>Car Details</Typography>
-          <Typography variant="body2"><strong>Vehicle:</strong> {car.make} {car.model}</Typography>
-          <Typography variant="body2"><strong>Year:</strong> {car.year}</Typography>
-          <Typography variant="body2"><strong>License Plate:</strong> {car.license_plate}</Typography>
-          <Typography variant="body2"><strong>Daily Rate:</strong> ₱{car.rent_price?.toLocaleString()}</Typography>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Car Details
+          </Typography>
+          <Typography variant="body2">
+            <strong>Vehicle:</strong> {car.make} {car.model}
+          </Typography>
+          <Typography variant="body2">
+            <strong>Year:</strong> {car.year}
+          </Typography>
+          <Typography variant="body2">
+            <strong>License Plate:</strong> {car.license_plate}
+          </Typography>
+          <Typography variant="body2">
+            <strong>Daily Rate:</strong> ₱{car.rent_price?.toLocaleString()}
+          </Typography>
         </CardContent>
       </Card>
 
       <Card sx={{ mb: 2 }}>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 1 }}>Booking Details</Typography>
-          <Typography variant="body2"><strong>Service Type:</strong> {formData.bookingType === 'deliver' ? 'Delivery Service' : 'Pickup Service'}</Typography>
-          <Typography variant="body2"><strong>Start Date:</strong> {formData.startDate?.toLocaleDateString()}</Typography>
-          <Typography variant="body2"><strong>End Date:</strong> {formData.endDate?.toLocaleDateString()}</Typography>
-          <Typography variant="body2"><strong>Duration:</strong> {days} day{days > 1 ? 's' : ''}</Typography>
-          
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Booking Details
+          </Typography>
+          <Typography variant="body2">
+            <strong>Service Type:</strong>{' '}
+            {formData.bookingType === 'deliver'
+              ? 'Delivery Service'
+              : 'Pickup Service'}
+          </Typography>
+          <Typography variant="body2">
+            <strong>Start Date:</strong>{' '}
+            {formData.startDate?.toLocaleDateString()}
+          </Typography>
+          <Typography variant="body2">
+            <strong>End Date:</strong> {formData.endDate?.toLocaleDateString()}
+          </Typography>
+          <Typography variant="body2">
+            <strong>Duration:</strong> {days} day{days > 1 ? 's' : ''}
+          </Typography>
+
           {formData.bookingType === 'deliver' ? (
-            <Typography variant="body2"><strong>Delivery Location:</strong> {formData.deliveryLocation}</Typography>
+            <Typography variant="body2">
+              <strong>Delivery Location:</strong> {formData.deliveryLocation}
+            </Typography>
           ) : (
-            <Typography variant="body2"><strong>Pickup Location:</strong> {formData.pickupLocation}</Typography>
+            <Typography variant="body2">
+              <strong>Pickup Location:</strong> {formData.pickupLocation}
+            </Typography>
           )}
-          
-          <Typography variant="body2"><strong>Drop-off Location:</strong> {formData.dropoffLocation}</Typography>
-          <Typography variant="body2"><strong>Purpose:</strong> {formData.purpose}</Typography>
-          <Typography variant="body2"><strong>Drive Type:</strong> {formData.isSelfDrive ? 'Self-Drive' : 'With Driver'}</Typography>
-          
+
+          <Typography variant="body2">
+            <strong>Drop-off Location:</strong> {formData.dropoffLocation}
+          </Typography>
+          <Typography variant="body2">
+            <strong>Purpose:</strong> {formData.purpose}
+          </Typography>
+          <Typography variant="body2">
+            <strong>Drive Type:</strong>{' '}
+            {formData.isSelfDrive ? 'Self-Drive' : 'With Driver'}
+          </Typography>
+
           {!formData.isSelfDrive && (
             <Typography variant="body2">
-              <strong>Driver:</strong> {drivers.find(d => d.id.toString() === formData.selectedDriver.toString())?.name || 'Not selected'}
+              <strong>Driver:</strong>{' '}
+              {drivers.find(
+                (d) => d.id.toString() === formData.selectedDriver.toString()
+              )?.name || 'Not selected'}
             </Typography>
           )}
         </CardContent>
@@ -626,9 +739,15 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
 
       <Card>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 1 }}>Cost Summary</Typography>
-          <Typography variant="body2">Daily Rate: ₱{car.rent_price?.toLocaleString()}</Typography>
-          <Typography variant="body2">Duration: {days} day{days > 1 ? 's' : ''}</Typography>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Cost Summary
+          </Typography>
+          <Typography variant="body2">
+            Daily Rate: ₱{car.rent_price?.toLocaleString()}
+          </Typography>
+          <Typography variant="body2">
+            Duration: {days} day{days > 1 ? 's' : ''}
+          </Typography>
           <Divider sx={{ my: 1 }} />
           <Typography variant="h6" color="primary.main">
             <strong>Total Cost: ₱{totalCost.toLocaleString()}</strong>
@@ -639,65 +758,69 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
   );
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      maxWidth="xs" 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xs"
       fullWidth
       PaperProps={{
-        sx: { 
+        sx: {
           minHeight: '500px',
           maxHeight: '85vh',
           borderRadius: 2,
-          boxShadow: '0 10px 40px rgba(0,0,0,0.15)'
-        }
+          boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
+        },
       }}
     >
-      <DialogTitle sx={{ 
-        pb: 1, 
-        textAlign: 'center',
-        backgroundColor: '#f8f9fa',
-        borderBottom: '1px solid #dee2e6',
-        color: '#333',
-        fontWeight: 'bold',
-        fontSize: '1.3rem'
-      }}>
+      <DialogTitle
+        sx={{
+          pb: 1,
+          textAlign: 'center',
+          backgroundColor: '#f8f9fa',
+          borderBottom: '1px solid #dee2e6',
+          color: '#333',
+          fontWeight: 'bold',
+          fontSize: '1.3rem',
+        }}
+      >
         {currentStep === 0 ? 'Vehicle Booking Request' : 'Booking Confirmation'}
       </DialogTitle>
-      
+
       <DialogContent dividers sx={{ p: 3, backgroundColor: '#fff' }}>
         {currentStep === 0 ? renderFormContent() : renderConfirmationContent()}
       </DialogContent>
-      
-      <DialogActions sx={{ 
-        p: 2.5, 
-        backgroundColor: '#f8f9fa',
-        borderTop: '1px solid #dee2e6',
-        gap: 1
-      }}>
+
+      <DialogActions
+        sx={{
+          p: 2.5,
+          backgroundColor: '#f8f9fa',
+          borderTop: '1px solid #dee2e6',
+          gap: 1,
+        }}
+      >
         {currentStep === 0 ? (
           <>
-            <Button 
-              onClick={onClose} 
+            <Button
+              onClick={onClose}
               color="inherit"
-              sx={{ 
+              sx={{
                 color: '#6c757d',
                 fontWeight: 500,
-                '&:hover': { backgroundColor: '#e9ecef' }
+                '&:hover': { backgroundColor: '#e9ecef' },
               }}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleProceedToConfirmation} 
+            <Button
+              onClick={handleProceedToConfirmation}
               variant="contained"
               disabled={!isFormValid()}
-              sx={{ 
+              sx={{
                 backgroundColor: '#c10007',
                 fontWeight: 'bold',
                 px: 3,
                 '&:hover': { backgroundColor: '#a00006' },
-                '&:disabled': { backgroundColor: '#e0e0e0' }
+                '&:disabled': { backgroundColor: '#e0e0e0' },
               }}
             >
               Review Booking
@@ -705,36 +828,36 @@ export default function BookingModal({ open, onClose, car, onSubmit }) {
           </>
         ) : (
           <>
-            <Button 
-              onClick={handleBackToForm} 
+            <Button
+              onClick={handleBackToForm}
               color="inherit"
-              sx={{ 
+              sx={{
                 color: '#6c757d',
                 fontWeight: 500,
-                '&:hover': { backgroundColor: '#e9ecef' }
+                '&:hover': { backgroundColor: '#e9ecef' },
               }}
             >
               Edit Details
             </Button>
-            <Button 
-              onClick={onClose} 
+            <Button
+              onClick={onClose}
               color="inherit"
-              sx={{ 
+              sx={{
                 color: '#6c757d',
                 fontWeight: 500,
-                '&:hover': { backgroundColor: '#e9ecef' }
+                '&:hover': { backgroundColor: '#e9ecef' },
               }}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleConfirmBooking} 
+            <Button
+              onClick={handleConfirmBooking}
               variant="contained"
-              sx={{ 
+              sx={{
                 backgroundColor: '#28a745',
                 fontWeight: 'bold',
                 px: 3,
-                '&:hover': { backgroundColor: '#218838' }
+                '&:hover': { backgroundColor: '#218838' },
               }}
             >
               Submit Request

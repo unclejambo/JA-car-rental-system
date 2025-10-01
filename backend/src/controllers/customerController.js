@@ -5,7 +5,11 @@ import prisma from "../config/prisma.js";
 // @access  Public
 export const getCustomers = async (req, res) => {
   try {
-    const users = await prisma.customer.findMany();
+    const users = await prisma.customer.findMany({
+      include: {
+        DriverLicense: true, // ✅ include relation
+      },
+    });
     res.json(users);
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -20,8 +24,12 @@ export const getCustomerById = async (req, res) => {
   try {
     const customerId = parseInt(req.params.id);
     const customer = await prisma.customer.findUnique({
-      where: { customer_id: customerId },
+      where: { customer_id: customerId }, // ✅ fixed variable
+      include: {
+        DriverLicense: true, // ✅ include relation
+      },
     });
+
     if (!customer) return res.status(404).json({ error: "Customer not found" });
     res.json(customer);
   } catch (error) {
@@ -46,17 +54,14 @@ export const createCustomer = async (req, res) => {
       fb_link,
       date_created,
       status,
-      driver_license_no, // -> This must be an exisiting driver_license in the system (FK)
+      driver_license_no, // -> Must exist as FK
     } = req.body;
 
-    // basic validation
     if (!first_name || !last_name || !email || !username || !password) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "first_name, last_name, email, username and password are required",
-        });
+      return res.status(400).json({
+        error:
+          "first_name, last_name, email, username and password are required",
+      });
     }
 
     const newCustomer = await prisma.customer.create({
@@ -73,14 +78,14 @@ export const createCustomer = async (req, res) => {
         status,
         driver_license_no,
       },
+      include: {
+        DriverLicense: true, // ✅ include after create
+      },
     });
 
-    // remove password from response
     const { password: _pw, ...safeCustomer } = newCustomer;
-
     res.status(201).json(safeCustomer);
   } catch (error) {
-    // handle unique constraint (e.g. username or email) from Prisma
     if (error?.code === "P2002") {
       return res
         .status(409)
@@ -112,7 +117,6 @@ export const updateCustomer = async (req, res) => {
     });
     if (!existing) return res.status(404).json({ error: "Customer not found" });
 
-    // Accept partial updates; only include defined fields
     const allowed = [
       "first_name",
       "last_name",
@@ -134,7 +138,11 @@ export const updateCustomer = async (req, res) => {
     const updatedCustomer = await prisma.customer.update({
       where: { customer_id: customerId },
       data,
+      include: {
+        DriverLicense: true, // ✅ include after update
+      },
     });
+
     const { password: _pw, ...safeCustomer } = updatedCustomer;
     res.json(safeCustomer);
   } catch (error) {

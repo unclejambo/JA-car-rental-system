@@ -35,11 +35,13 @@ model Customer {
   date_created      DateTime?      @default(now())
   status            String?
   driver_license_no String?
+  isRecUpdate       String?
   bookings          Booking[]
   driver_license    DriverLicense? @relation("CustomerDriverLicense", fields: [driver_license_no], references: [driver_license_no])
   payments          Payment[]
   refunds           Refund[]
   transactions      Transaction[]
+  waitlist_entries  Waitlist[]
 }
 
 model DriverLicense {
@@ -52,35 +54,37 @@ model DriverLicense {
 }
 
 model Driver {
-  drivers_id        Int           @id @default(autoincrement())
-  first_name        String
-  last_name         String
-  address           String?
-  contact_no        String?
-  email             String
-  username          String
-  password          String
-  driver_license_no String
-  status            String?
-  bookings          Booking[]
-  driver_license    DriverLicense @relation(fields: [driver_license_no], references: [driver_license_no])
-  releases          Release[]
+  drivers_id           Int           @id @default(autoincrement())
+  first_name           String
+  last_name            String
+  address              String?
+  contact_no           String?
+  email                String
+  username             String
+  password             String
+  driver_license_no    String
+  status               String?
+  bookings             Booking[]
+  driver_license       DriverLicense @relation(fields: [driver_license_no], references: [driver_license_no])
+  releases             Release[]
+  waitlist_assignments Waitlist[]
 }
 
 model Car {
-  car_id        Int           @id @default(autoincrement())
-  car_img_url   String?
-  car_status    String?
-  license_plate String?
-  make          String?
-  mileage       Int?
-  model         String?
-  no_of_seat    Int
-  rent_price    Int
-  year          Int?
-  bookings      Booking[]
-  maintenances  Maintenance[]
-  transactions  Transaction[]
+  car_id           Int           @id @default(autoincrement())
+  car_img_url      String?
+  car_status       String?
+  license_plate    String?
+  make             String?
+  mileage          Int?
+  model            String?
+  no_of_seat       Int
+  rent_price       Int
+  year             Int?
+  bookings         Booking[]
+  maintenances     Maintenance[]
+  transactions     Transaction[]
+  waitlist_entries Waitlist[]
 }
 
 model Booking {
@@ -108,7 +112,8 @@ model Booking {
   admin_id       Int?
   isDeliver      Boolean?      @default(false)
   deliver_loc    String?
-  balance        Int?
+  balance        Int?          @default(0)
+  isPay          Boolean?      @default(false)
   admin          Admin?        @relation(fields: [admin_id], references: [admin_id])
   car            Car           @relation(fields: [car_id], references: [car_id])
   customer       Customer      @relation(fields: [customer_id], references: [customer_id])
@@ -132,7 +137,8 @@ model Extension {
 
 model Payment {
   payment_id     Int       @id @default(autoincrement())
-  booking_id     Int
+  booking_id     Int?
+  waitlist_id    Int?
   customer_id    Int
   description    String?
   payment_method String?
@@ -140,7 +146,9 @@ model Payment {
   reference_no   String?
   amount         Int
   paid_date      DateTime?
-  booking        Booking   @relation(fields: [booking_id], references: [booking_id])
+  balance        Int?
+  booking        Booking?  @relation(fields: [booking_id], references: [booking_id])
+  waitlist       Waitlist? @relation(fields: [waitlist_id], references: [waitlist_id])
   customer       Customer  @relation(fields: [customer_id], references: [customer_id])
 }
 
@@ -154,7 +162,6 @@ model Refund {
   refund_amount Int
   refund_date   DateTime?
   description   String?
-
   booking       Booking   @relation(fields: [booking_id], references: [booking_id])
   customer      Customer  @relation(fields: [customer_id], references: [customer_id])
 }
@@ -236,6 +243,38 @@ model Return {
   total_fee    Int?
   damage       damage_level? @default(No_Damage)
   Booking      Booking?      @relation(fields: [booking_id], references: [booking_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Waitlist {
+  waitlist_id          Int       @id @default(autoincrement())
+  customer_id          Int
+  car_id               Int
+  requested_start_date DateTime
+  requested_end_date   DateTime
+  purpose              String?
+  pickup_time          String?
+  dropoff_time         String?
+  pickup_location      String?
+  dropoff_location     String?
+  delivery_type        String?
+  is_self_drive        Boolean?  @default(true)
+  selected_driver_id   Int?
+  special_requests     String?
+  total_cost           Int?
+  status               String?   @default("waiting")
+  payment_status       String?   @default("unpaid")
+  position             Int
+  date_created         DateTime  @default(now())
+  notified_date        DateTime?
+  paid_date            DateTime?
+  car                  Car       @relation(fields: [car_id], references: [car_id], onDelete: Cascade)
+  customer             Customer  @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
+  selected_driver      Driver?   @relation(fields: [selected_driver_id], references: [drivers_id])
+  payments             Payment[]
+
+  @@index([car_id, status, position])
+  @@index([customer_id])
+  @@index([payment_status])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.

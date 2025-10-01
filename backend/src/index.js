@@ -19,6 +19,7 @@ import refundRoutes from './routes/refundRoute.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import adminProfileRoutes from './routes/adminProfileRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import waitlistRoutes from './routes/waitlistRoutes.js'; // <--- added waitlist routes
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -50,7 +51,8 @@ app.use('/api/registration', registrationRoutes); // <--- added
 app.use('/api/storage', storageRouter);
 app.use('/customers', customerRoutes);
 app.use('/admins', adminRoutes);
-app.use('/drivers', driverRoutes);
+app.use('/drivers', driverRoutes); // Fixed: Remove /api prefix to match frontend
+app.use('/api', waitlistRoutes); // <--- added waitlist routes
 app.use('/payments', paymentRoutes);
 app.use('/refunds', refundRoutes);
 app.use('/transactions', transactionRoutes);

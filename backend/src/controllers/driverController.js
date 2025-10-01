@@ -12,7 +12,10 @@ export const getDrivers = async (_req, res) => {
 		// map to plain object with expected frontend fields
 		const sanitized = drivers.map((d) => ({
 			...d,
+			driver_id: d.drivers_id, // Frontend expects driver_id
 			id: d.drivers_id, // DataGrid convenience if reused
+			license_number: d.driver_license_no, // Frontend expects license_number
+			rating: 4.5, // Default rating since not in schema yet
 			password: undefined,
 			restriction: d.driver_license?.restrictions || null,
 			expiryDate: d.driver_license?.expiry_date || null,

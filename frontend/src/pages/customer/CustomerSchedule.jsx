@@ -2,53 +2,90 @@ import React, { useState, useEffect } from 'react';
 import CustomerSideBar from '../../ui/components/CustomerSideBar';
 import Header from '../../ui/components/Header';
 import '../../styles/customercss/customerdashboard.css';
-import { Box, Typography } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Alert,
+  CircularProgress,
+  Card,
+  CardContent,
+} from '@mui/material';
 import { HiCalendarDays } from 'react-icons/hi2';
+import { HiRefresh } from 'react-icons/hi';
 import CustomerScheduleTable from '../../ui/components/table/CustomerScheduleTable';
 import Loading from '../../ui/components/Loading';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 
+function EmptyState({ icon: Icon, title, message }) {
+  return (
+    <Card
+      sx={{
+        textAlign: 'center',
+        py: 6,
+        boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+        borderRadius: 2,
+        backgroundColor: '#fafafa',
+      }}
+    >
+      <CardContent>
+        <Icon size={48} style={{ color: '#c10007', marginBottom: '12px' }} />
+        <Typography variant="h6" gutterBottom>
+          {title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {message}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+}
+
 function CustomerSchedule() {
-  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [schedule, setSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const authFetch = createAuthenticatedFetch(() => {
+  const API_BASE = getApiBase().replace(/\/$/, '');
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError('');
+
+    const authFetch = createAuthenticatedFetch(() => {
+      localStorage.removeItem('authToken');
+      window.location.href = '/login';
+    });
+
+    try {
+      const res = await authFetch(`${API_BASE}/schedules/me`, {
+        headers: { Accept: 'application/json' },
+      });
+
+      if (res.status === 401) {
         localStorage.removeItem('authToken');
         window.location.href = '/login';
-      });
-      const API_BASE = getApiBase().replace(/\/$/, '');
-
-      try {
-        const res = await authFetch(`${API_BASE}/schedules/me`, {
-          headers: { Accept: 'application/json' },
-        });
-
-        if (res.status === 401) {
-          localStorage.removeItem('authToken');
-          window.location.href = '/login';
-          return;
-        }
-
-        if (!res.ok)
-          throw new Error(`Failed to fetch schedules: ${res.status}`);
-        const data = await res.json();
-        setSchedule(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error('Error fetching schedules:', err);
-        setSchedule([]);
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
 
+      if (!res.ok) throw new Error(`Failed to fetch schedules: ${res.status}`);
+
+      const data = await res.json();
+      setSchedule(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching schedules:', err);
+      setError('Failed to load schedule');
+      setSchedule([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
-  if (loading || schedule === null) {
+  if (loading && schedule === null) {
     return (
       <>
         <Header
@@ -63,23 +100,10 @@ function CustomerSchedule() {
           component="main"
           sx={{
             flexGrow: 1,
-            p: { xs: 1, sm: 2, md: 3 },
-            width: `calc(100% - 18.7dvw)`,
-            ml: {
-              xs: '0px',
-              sm: '0px',
-              md: '18.7dvw',
-              lg: '18.7dvw',
-            },
-            '@media (max-width: 1024px)': {
-              ml: '0px',
-            },
-            mt: { xs: '64px', sm: '64px', md: '56px', lg: '56px' },
-            height: '100%',
-            boxSizing: 'border-box',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
+            mt: '80px',
           }}
         >
           <Loading />
@@ -103,91 +127,67 @@ function CustomerSchedule() {
           flexGrow: 1,
           p: { xs: 1, sm: 2, md: 3 },
           width: `calc(100% - 18.7dvw)`,
-          ml: {
-            xs: '0px',
-            sm: '0px',
-            md: '18.7dvw',
-            lg: '18.7dvw',
-          },
-          '@media (max-width: 1024px)': {
-            ml: '0px',
-          },
-          mt: { xs: '64px', sm: '64px', md: '56px', lg: '56px' },
-          height: '100%',
-          overflow: 'hidden',
+          ml: { xs: '0px', sm: '0px', md: '18.7dvw' },
+          mt: { xs: '64px', sm: '64px', md: '56px' },
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        <Box
-          sx={{
-            width: '100%',
-            flexGrow: 1,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
+        {/* Page Header */}
+        <Box sx={{ mb: 3 }}>
           <Box
             sx={{
-              flexGrow: 1,
-              width: '100%',
               display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: '#f9f9f9',
-              p: { xs: 1, sm: 2, md: 2, lg: 2 },
-              boxShadow:
-                '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 4px 0 6px -1px rgba(0, 0, 0, 0.1), -4px 0 6px -1px rgba(0, 0, 0, 0.1)',
-              overflow: 'hidden',
-              height: 'auto',
-              boxSizing: 'border-box',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mb: 1,
             }}
           >
-            <Box
-              sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}
+            <Typography
+              variant="h4"
+              sx={{ fontWeight: 'bold', color: '#c10007' }}
             >
-              <Typography
-                variant="h4"
-                component="h1"
-                gutterBottom
-                sx={{
-                  fontSize: '1.8rem',
-                  color: '#000',
-                  '@media (max-width: 1024px)': {
-                    fontSize: '1.5rem',
-                  },
-                }}
-              >
-                <HiCalendarDays
-                  style={{ verticalAlign: '-3px', marginRight: '5px' }}
-                />
-                SCHEDULE
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-              }}
-            >
-              {!schedule || schedule.length === 0 ? (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '50vh',
-                  }}
-                >
-                  <Typography variant="h6">No schedule found</Typography>
-                </Box>
-              ) : (
-                <CustomerScheduleTable rows={schedule} loading={loading} />
-              )}
+              <HiCalendarDays
+                style={{ verticalAlign: '-3px', marginRight: '8px' }}
+              />
+              Schedule
+            </Typography>
+            <Box>
+              <HiRefresh
+                size={22}
+                style={{ cursor: 'pointer', color: '#c10007' }}
+                onClick={fetchData}
+              />
             </Box>
           </Box>
+          <Typography variant="body1" color="text.secondary">
+            View your upcoming booking schedules
+          </Typography>
         </Box>
+
+        {/* Error */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Schedule Table or Empty State */}
+        {!schedule || schedule.length === 0 ? (
+          <EmptyState
+            icon={HiCalendarDays}
+            title="No Schedule Found"
+            message="You don’t have any schedules yet."
+          />
+        ) : (
+          <CustomerScheduleTable rows={schedule} loading={loading} />
+        )}
+
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress sx={{ color: '#c10007' }} />
+          </Box>
+        )}
       </Box>
     </Box>
   );

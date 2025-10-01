@@ -271,23 +271,30 @@ export default function CustomerSettings() {
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography
-                variant="h4"
-                component="h1"
-                gutterBottom
-                sx={{
-                  fontSize: '1.8rem',
-                  color: '#000',
-                  '@media (max-width: 1024px)': {
-                    fontSize: '1.5rem',
-                  },
-                }}
-              >
-                <HiCog8Tooth
-                  style={{ verticalAlign: '-3px', marginRight: '5px' }}
-                />
-                ACCOUNT SETTINGS
-              </Typography>
+              {/* Page Header */}
+              <Box sx={{ mb: 3 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 1,
+                  }}
+                >
+                  <Typography
+                    variant="h4"
+                    sx={{ fontWeight: 'bold', color: '#c10007' }}
+                  >
+                    <HiCog8Tooth
+                      style={{ verticalAlign: '-3px', marginRight: '8px' }}
+                    />
+                    Account Settings
+                  </Typography>
+                </Box>
+                <Typography variant="body1" color="text.secondary">
+                  Manage your profile and license information
+                </Typography>
+              </Box>
             </Box>
             <Box
               sx={{

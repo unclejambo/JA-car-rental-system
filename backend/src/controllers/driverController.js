@@ -2,40 +2,28 @@ import prisma from '../config/prisma.js';
 
 // @desc    Get all drivers
 // @route   GET /drivers
-// @access  Public
-export const getDrivers = async (req, res) => {
-  try {
-    console.log('getDrivers endpoint called');
-    const drivers = await prisma.driver.findMany({
-      select: {
-        drivers_id: true,
-        first_name: true,
-        last_name: true,
-        driver_license_no: true,
-        contact_no: true,
-        email: true,
-      },
-      orderBy: {
-        first_name: 'asc'
-      }
-    });
-    
-    // Format driver data for frontend
-    const formattedDrivers = drivers.map(driver => ({
-      id: driver.drivers_id,
-      name: `${driver.first_name} ${driver.last_name}`,
-      license: driver.driver_license_no,
-      contact: driver.contact_no,
-      email: driver.email,
-      rating: 4.5 + Math.random() * 0.5, // Mock rating for now
-    }));
-    
-    console.log('Found drivers:', formattedDrivers.length);
-    res.json(formattedDrivers);
-  } catch (error) {
-    console.error('Error fetching drivers:', error);
-    res.status(500).json({ error: 'Failed to fetch drivers' });
-  }
+// @access  Public (adjust later if auth needed)
+export const getDrivers = async (_req, res) => {
+	try {
+		const drivers = await prisma.driver.findMany({
+			include: { driver_license: true },
+		});
+		// map to plain object with expected frontend fields
+		const sanitized = drivers.map((d) => ({
+			...d,
+			driver_id: d.drivers_id, // Frontend expects driver_id
+			id: d.drivers_id, // DataGrid convenience if reused
+			license_number: d.driver_license_no, // Frontend expects license_number
+			rating: 4.5, // Default rating since not in schema yet
+			password: undefined,
+			restriction: d.driver_license?.restrictions || null,
+			expiryDate: d.driver_license?.expiry_date || null,
+		}));
+		res.json(sanitized);
+	} catch (error) {
+		console.error('Error fetching drivers:', error);
+		res.status(500).json({ error: 'Failed to fetch drivers' });
+	}
 };
 
 // @desc    Get driver by ID

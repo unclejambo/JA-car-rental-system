@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import CustomerSideBar from '../../ui/components/CustomerSideBar';
 import Header from '../../ui/components/Header';
 import BookingModal from '../../ui/components/modal/BookingModal';
+import BookingSuccessModal from '../../ui/components/modal/BookingSuccessModal';
 import '../../styles/customercss/customerdashboard.css';
 import { 
   Box, 
@@ -17,10 +18,13 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Paper,
-  Divider
+  Divider,
+  CircularProgress,
+  Alert,
+  Collapse
 } from '@mui/material';
 import { HiMiniTruck } from 'react-icons/hi2';
+import { HiAdjustmentsHorizontal } from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
 
@@ -32,17 +36,35 @@ function CustomerCars() {
   const [error, setError] = useState(null);
   const [selectedCar, setSelectedCar] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successBookingData, setSuccessBookingData] = useState(null);
+  const [waitlistEntries, setWaitlistEntries] = useState([]);
+  const [showWaitlistInfo, setShowWaitlistInfo] = useState(false);
   
   // Filter states
   const [seatFilter, setSeatFilter] = useState('');
   const [priceRange, setPriceRange] = useState([0, 10000]);
   const [maxPrice, setMaxPrice] = useState(10000);
+  const [showFilters, setShowFilters] = useState(false);
   
   const { logout } = useAuth();
   
   // Create stable references
   const API_BASE = getApiBase();
   const authenticatedFetch = React.useMemo(() => createAuthenticatedFetch(logout), [logout]);
+
+
+  const fetchWaitlistEntries = async () => {
+    try {
+      const response = await authenticatedFetch(`${API_BASE}/api/customers/me/waitlist`);
+      if (response.ok) {
+        const data = await response.json();
+        setWaitlistEntries(data);
+      }
+    } catch (error) {
+      console.error('Error fetching waitlist entries:', error);
+    }
+  };
 
   // Load cars from database
   useEffect(() => {
@@ -80,6 +102,7 @@ function CustomerCars() {
     };
 
     loadCars();
+    fetchWaitlistEntries();
   }, []); // Remove dependencies that cause re-renders
 
   // Filter cars based on selected filters
@@ -131,49 +154,75 @@ function CustomerCars() {
     setSelectedCar(null);
   };
 
+  // Handle success modal close
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
+    setSuccessBookingData(null);
+    setSelectedCar(null);
+  };
+
   // Handle booking submission
   const handleBookingSubmit = async (bookingData) => {
     try {
       console.log('Submitting booking:', bookingData);
       
       // Get current user from auth context or localStorage
-      const userData = JSON.parse(localStorage.getItem('user') || '{}');
-      const customerId = userData.customer_id || userData.id;
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+      const customerId = userInfo.customer_id || userInfo.id;
+      const authToken = localStorage.getItem('authToken');
+      
+      console.log('User Info:', userInfo);
+      console.log('Customer ID:', customerId);
+      console.log('Auth Token exists:', !!authToken);
       
       if (!customerId) {
         alert('Please log in to make a booking.');
         return;
       }
 
-      const response = await authenticatedFetch(`${API_BASE}/bookings/request`, {
+      if (!authToken) {
+        alert('Please log in to make a booking.');
+        return;
+      }
+
+      const requestData = {
+        car_id: bookingData.car_id,
+        purpose: bookingData.purpose,
+        startDate: bookingData.startDate,
+        endDate: bookingData.endDate,
+        pickupTime: bookingData.pickupTime,
+        dropoffTime: bookingData.dropoffTime,
+        pickupLocation: bookingData.pickupLocation,
+        dropoffLocation: bookingData.dropoffLocation,
+        deliveryLocation: bookingData.deliveryLocation,
+        totalCost: bookingData.totalCost,
+        isSelfDrive: bookingData.isSelfDrive,
+        selectedDriver: bookingData.selectedDriver,
+        deliveryType: bookingData.deliveryType,
+      };
+
+      console.log('Request data being sent:', requestData);
+
+      const response = await authenticatedFetch(`${API_BASE}/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          car_id: bookingData.car_id,
-          customer_id: customerId,
-          booking_date: new Date().toISOString(),
-          purpose: bookingData.purpose,
-          start_date: bookingData.startDate,
-          end_date: bookingData.endDate,
-          pickup_time: bookingData.startDate,
-          pickup_loc: bookingData.bookingType === 'pickup' ? bookingData.pickupLocation : bookingData.deliveryLocation,
-          dropoff_loc: bookingData.dropoffLocation,
-          isSelfDriver: bookingData.isSelfDrive,
-          drivers_id: bookingData.isSelfDrive ? null : bookingData.selectedDriver,
-          booking_type: bookingData.bookingType,
-          delivery_location: bookingData.deliveryLocation,
-        })
+        body: JSON.stringify(requestData)
       });
 
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
         const result = await response.json();
         console.log('Booking submitted successfully:', result);
-        handleCloseBookingModal();
-        alert('Booking request submitted successfully! You can track the status in your booking history.');
+        
+        // Store booking data and show success modal
+        setSuccessBookingData(requestData);
+        setShowBookingModal(false);
+        setShowSuccessModal(true);
       } else {
         const errorData = await response.json();
         console.error('Booking submission failed:', errorData);
-        alert(`Error submitting booking: ${errorData.error || 'Please try again.'}`);
+        alert(`Error submitting booking: ${errorData.error || errorData.details || 'Please try again.'}`);
       }
     } catch (error) {
       console.error('Error submitting booking:', error);
@@ -304,100 +353,228 @@ function CustomerCars() {
               boxSizing: 'border-box',
             }}
           >
-            {/* Page Header with Filters */}
-            <Box sx={{ mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                <Box>
-                  <Typography
-                    variant="h4"
-                    component="h1"
-                    gutterBottom
-                    sx={{
-                      fontSize: '1.8rem',
-                      color: '#000',
-                      '@media (max-width: 1024px)': {
-                        fontSize: '1.5rem',
-                      },
-                    }}
-                  >
-                    <HiMiniTruck
-                      style={{ verticalAlign: '-3px', marginRight: '5px' }}
+        
+        {/* Page Header */}
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative' }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{
+              flexGrow: 1,
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: '#f9f9f9',
+              p: { xs: 1, sm: 2, md: 2, lg: 2 },
+              boxShadow:
+                '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 4px 0 6px -1px rgba(0, 0, 0, 0.1), -4px 0 6px -1px rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+              height: 'auto',
+              boxSizing: 'border-box',
+            }}
+          >
+            <HiMiniTruck style={{ verticalAlign: '-3px', marginRight: '8px' }} />
+            AVAILABLE CARS
+          </Typography>
+          
+          {/* Filter Button and Collapsible Filters */}
+          <Box sx={{ position: 'relative' }}>
+            <Button
+              variant="outlined"
+              onClick={() => setShowFilters(!showFilters)}
+              startIcon={<HiAdjustmentsHorizontal />}
+              sx={{
+                borderColor: '#c10007',
+                color: '#c10007',
+                fontWeight: 'bold',
+                '&:hover': {
+                  borderColor: '#a50006',
+                  backgroundColor: 'rgba(193, 0, 7, 0.04)',
+                },
+              }}
+            >
+              Filters
+            </Button>
+            
+            {/* Filter Dropdown */}
+            <Collapse in={showFilters}>
+              <Box 
+                sx={{ 
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  mt: 1,
+                  width: { xs: '300px', sm: '350px', md: '400px' },
+                  p: 3, 
+                  backgroundColor: '#fff', 
+                  borderRadius: 2, 
+                  boxShadow: 3,
+                  border: '1px solid #e0e0e0',
+                  zIndex: 1000,
+                }}
+              >
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#c10007' }}>
+                  🎛️ Filter Options
+                </Typography>
+                
+                {/* Price Range Filter */}
+                <Box sx={{ mb: 3 }}>
+                  <Typography gutterBottom sx={{ fontWeight: 'medium', fontSize: '0.9rem' }}>
+                    Price Range: ₱{priceRange[0].toLocaleString()} - ₱{priceRange[1].toLocaleString()}
+                  </Typography>
+                  <Box sx={{ px: 1 }}>
+                    <Slider
+                      value={priceRange}
+                      onChange={handlePriceRangeChange}
+                      valueLabelDisplay="auto"
+                      min={0}
+                      max={10000}
+                      step={100}
+                      sx={{
+                        color: '#c10007',
+                        height: 6,
+                        '& .MuiSlider-thumb': {
+                          backgroundColor: '#c10007',
+                          height: 18,
+                          width: 18,
+                          '&:focus, &:hover, &.Mui-active, &.Mui-focusVisible': {
+                            boxShadow: '0px 0px 0px 8px rgba(193, 0, 7, 0.16)',
+                          },
+                        },
+                        '& .MuiSlider-track': {
+                          backgroundColor: '#c10007',
+                          border: 'none',
+                        },
+                        '& .MuiSlider-rail': {
+                          backgroundColor: '#e0e0e0',
+                        },
+                        '& .MuiSlider-valueLabel': {
+                          backgroundColor: '#c10007',
+                        },
+                      }}
                     />
-                    CARS
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    Browse and book from our fleet of available vehicles
-                  </Typography>
+                  </Box>
                 </Box>
                 
-                {/* Compact Filters with Divider */}
-                <Box sx={{ 
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  '@media (max-width: 768px)': { 
-                    flexDirection: 'column',
-                    alignItems: 'flex-end'
-                  }
-                }}>
-                  {/* Vertical Divider Line */}
-                  <Divider 
-                    orientation="vertical" 
-                    flexItem 
-                    sx={{ 
-                      mr: 3,
-                      backgroundColor: '#e0e0e0',
-                      width: '1px',
-                      '@media (max-width: 768px)': { 
-                        display: 'none'
-                      }
-                    }} 
-                  />
-                  
-                  {/* Filters Container */}
-                  <Box sx={{ 
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 1.5,
-                    minWidth: 200,
-                    '@media (max-width: 768px)': { 
-                      minWidth: 180,
-                      gap: 1
-                    }
-                  }}>
-                    
-                    {/* Price Range Filter */}
-                    <Box>
-                      <Typography variant="caption" sx={{ 
-                        display: 'block', 
-                        mb: 0.5, 
-                        color: '#666',
-                        fontSize: '0.75rem',
-                        fontWeight: 500
-                      }}>
-                        Price Range: ₱{priceRange[0].toLocaleString()} - ₱{priceRange[1].toLocaleString()}
-                      </Typography>
-                      <Slider
-                        value={priceRange}
-                        onChange={handlePriceRangeChange}
-                        valueLabelDisplay="auto"
-                        min={0}
-                        max={maxPrice}
-                        step={100}
-                        size="small"
-                        sx={{
-                          color: '#c10007',
-                          height: 4,
-                          '& .MuiSlider-thumb': {
-                            backgroundColor: '#c10007',
-                            width: 16,
-                            height: 16,
+                {/* Seating Capacity Filter */}
+                <Box>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="seat-filter-label">Seating Capacity</InputLabel>
+                    <Select
+                      labelId="seat-filter-label"
+                      value={seatFilter}
+                      label="Seating Capacity"
+                      onChange={handleSeatFilterChange}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#c10007',
                           },
-                          '& .MuiSlider-track': {
-                            backgroundColor: '#c10007',
-                          },
-                          '& .MuiSlider-rail': {
-                            backgroundColor: '#ddd',
-                          },
+                        },
+                      }}
+                    >
+                      <MenuItem value="all">All Cars</MenuItem>
+                      <MenuItem value="5">5-Seater Cars</MenuItem>
+                      <MenuItem value="7">7-Seater Cars</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+              </Box>
+            </Collapse>
+          </Box>
+        </Box>
+
+        {/* Waitlist Information */}
+        {waitlistEntries.length > 0 && (
+          <Box sx={{ mb: 3, p: 2, backgroundColor: '#fff5f5', borderRadius: 2, border: '2px solid #ff9800' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#c10007', mb: 1 }}>
+              📋 Your Waitlist Entries ({waitlistEntries.length})
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              You are on the waitlist for {waitlistEntries.length} car{waitlistEntries.length !== 1 ? 's' : ''}. You'll be notified when they become available.
+            </Typography>
+            <Button
+              size="small"
+              onClick={() => setShowWaitlistInfo(!showWaitlistInfo)}
+              sx={{ mt: 1, color: '#c10007' }}
+            >
+              {showWaitlistInfo ? 'Hide Details' : 'Show Details'}
+            </Button>
+            {showWaitlistInfo && (
+              <Box sx={{ mt: 2 }}>
+                {waitlistEntries.map((entry) => (
+                  <Box key={entry.waitlist_id} sx={{ mb: 2, p: 2, backgroundColor: 'white', borderRadius: 1, border: '1px solid #e0e0e0' }}>
+                    <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                      {entry.car.make} {entry.car.model} ({entry.car.year})
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Position #{entry.position} • Requested: {new Date(entry.requested_start_date).toLocaleDateString()} - {new Date(entry.requested_end_date).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+        )}
+
+        {/* Cars Results */}
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress size={60} sx={{ color: '#c10007' }} />
+          </Box>
+        ) : error ? (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        ) : (
+          <>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'medium' }}>
+              {filteredCars.length} car{filteredCars.length !== 1 ? 's' : ''} available
+            </Typography>
+            
+            {filteredCars.length === 0 ? (
+              <Box 
+                sx={{ 
+                  textAlign: 'center', 
+                  py: 8, 
+                  backgroundColor: '#f5f5f5', 
+                  borderRadius: 2 
+                }}
+              >
+                <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>
+                  No cars found
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  Try adjusting your filter criteria
+                </Typography>
+              </Box>
+            ) : (
+              <Grid container spacing={3} sx={{ justifyContent: { xs: 'flex-start', sm: 'flex-start' } }}>
+                {filteredCars.map((car) => (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={car.car_id}>
+                    <Card 
+                      sx={{ 
+                        maxWidth: { xs: '100%', sm: 320 },
+                        width: '100%',
+                        mx: { xs: 0, sm: 'auto' },
+                        display: 'flex',
+                        flexDirection: 'column',
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: 4,
+                        },
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <CardMedia
+                        component="img"
+                        height="160"
+                        image="/carImage.png"
+                        alt={`${car.make} ${car.model}`}
+                        sx={{ 
+                          objectFit: 'cover',
+                          backgroundColor: '#f5f5f5'
                         }}
                       />
                     </Box>
@@ -473,128 +650,66 @@ function CustomerCars() {
                       <Grid item xs={12} sm={6} md={4} key={car.car_id}>
                         <Card 
                           sx={{ 
-                            height: '420px',
-                            maxWidth: '350px',
-                            mx: 'auto',
-                            display: 'flex', 
-                            flexDirection: 'column',
-                            transition: 'box-shadow 0.2s ease',
-                            border: '1px solid #e0e0e0',
-                            '&:hover': {
-                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                              border: '1px solid #c10007',
-                            }
+                            fontWeight: 'bold', 
+                            color: '#c10007',
+                            fontSize: '1.2rem',
+                            mb: 2
                           }}
                         >
-                          {/* Car Image */}
-                          <CardMedia
-                            component="img"
-                            height="180"
-                            image={car.car_img_url || '/carImage.png'}
-                            alt={`${car.make} ${car.model}`}
-                            sx={{ 
-                              objectFit: 'cover',
-                              backgroundColor: '#f8f9fa',
-                              borderBottom: '1px solid #e9ecef',
-                            }}
-                            onError={(e) => {
-                              // If image fails to load, use placeholder
-                              e.target.src = '/carImage.png';
-                            }}
-                          />
-                          
-                          <CardContent sx={{ 
-                            flexGrow: 1, 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            p: 2,
-                            '&:last-child': { pb: 2 }
-                          }}>
-                            {/* Car Title */}
-                            <Typography variant="h6" component="h2" sx={{ 
-                              fontWeight: 'bold', 
-                              mb: 1.5,
-                              fontSize: '1.1rem',
-                              color: '#333',
-                              lineHeight: 1.2
-                            }}>
-                              {car.make} {car.model}
-                            </Typography>
-                            
-                            {/* Car Details */}
-                            <Box sx={{ mb: 1.5, flexGrow: 1 }}>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.4, fontSize: '0.85rem' }}>
-                                <strong>Year:</strong> {car.year || 'N/A'}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.4, fontSize: '0.85rem' }}>
-                                <strong>Seats:</strong> {car.no_of_seat || 'N/A'}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.4, fontSize: '0.85rem' }}>
-                                <strong>Plate:</strong> {car.license_plate || 'N/A'}
-                              </Typography>
-                            </Box>
+                          ₱{car.rent_price?.toLocaleString() || '0'}/day
+                        </Typography>
 
-                            {/* Status and Price */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                              <Chip 
-                                label={statusInfo.text} 
-                                color={statusInfo.color} 
-                                size="small" 
-                                variant="filled"
-                                sx={{ fontSize: '0.75rem', height: '26px' }}
-                              />
-                              <Typography variant="h6" sx={{ 
-                                fontWeight: 'bold', 
-                                color: '#c10007',
-                                fontSize: '1rem'
-                              }}>
-                                ₱{car.rent_price ? car.rent_price.toLocaleString() : 'N/A'}/day
-                              </Typography>
-                            </Box>
-
-                            {/* Book Now Button */}
-                            <Button
-                              variant="contained"
-                              fullWidth
-                              disabled={!statusInfo.canBook}
-                              onClick={() => handleBookNow(car)}
-                              sx={{
-                                mt: 'auto',
-                                py: 1,
-                                fontSize: '0.9rem',
-                                fontWeight: 'bold',
-                                backgroundColor: statusInfo.canBook ? '#c10007' : undefined,
-                                '&:hover': {
-                                  backgroundColor: statusInfo.canBook ? '#a00006' : undefined,
-                                },
-                                '&:disabled': {
-                                  backgroundColor: '#e0e0e0',
-                                  color: '#9e9e9e'
-                                }
-                              }}
-                            >
-                              {statusInfo.text === 'Maintenance' ? 'Under Maintenance' : 
-                               statusInfo.text === 'Rented' ? 'Join Waitlist' : 'Book Now'}
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    );
-                  })}
-                </Grid>
-              )}
-            </Box>
-          </Box>
+                        {/* Book Now Button */}
+                        <Button
+                          variant="contained"
+                          fullWidth
+                          onClick={() => handleBookNow(car)}
+                          disabled={car.car_status?.toLowerCase().includes('maint')}
+                          sx={{
+                            backgroundColor: car.car_status?.toLowerCase().includes('rent') ? '#ff9800' : '#c10007',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            py: 1,
+                            '&:hover': {
+                              backgroundColor: car.car_status?.toLowerCase().includes('rent') ? '#f57c00' : '#a50006',
+                            },
+                            '&:disabled': {
+                              backgroundColor: '#ccc',
+                              color: '#666',
+                            },
+                          }}
+                        >
+                          {car.car_status?.toLowerCase().includes('maint') ? 'Under Maintenance' :
+                           car.car_status?.toLowerCase().includes('rent') ? 'Join Waitlist' :
+                           'Book Now'}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </>
+        )}
         </Box>
       </Box>
+      </Box>
 
-      {/* Booking Modal */}
-      {showBookingModal && selectedCar && (
+      {showBookingModal && (
         <BookingModal
           open={showBookingModal}
-          onClose={handleCloseBookingModal}
+          onClose={() => setShowBookingModal(false)}
           car={selectedCar}
-          onSubmit={handleBookingSubmit}
+          onBookingSuccess={handleBookingSubmit}
+        />
+      )}
+
+      {showSuccessModal && (
+        <BookingSuccessModal
+          open={showSuccessModal}
+          onClose={handleCloseSuccessModal}
+          bookingData={successBookingData}
+          car={selectedCar}
         />
       )}
     </Box>

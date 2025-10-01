@@ -18,7 +18,7 @@ import transactionRoutes from './routes/transactionRoutes.js';
 import adminProfileRoutes from './routes/adminProfileRoutes.js';
 import driverProfileRoutes from './routes/driverProfileRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
-import manageFeesRoutes from './routes/manageFeesRoutes.js'; // <--- added manage fees routes
+import waitlistRoutes from './routes/waitlistRoutes.js'; // <--- added waitlist routes
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -50,6 +50,10 @@ app.use('/api/auth', authRoutes); // <--- added
 app.use('/api/auth', forgotPasswordRoutes); // <--- added forgot password routes
 app.use('/api/registration', registrationRoutes); // <--- added
 app.use('/api/storage', storageRouter);
+app.use('/customers', customerRoutes);
+app.use('/admins', adminRoutes);
+app.use('/drivers', driverRoutes); // Fixed: Remove /api prefix to match frontend
+app.use('/api', waitlistRoutes); // <--- added waitlist routes
 app.use('/payments', paymentRoutes);
 app.use('/refunds', refundRoutes);
 app.use('/transactions', transactionRoutes);

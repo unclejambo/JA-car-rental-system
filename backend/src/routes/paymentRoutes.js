@@ -1,9 +1,20 @@
 import express from 'express';
-import { getPayments, createPayment } from '../controllers/paymentController.js';
+import { 
+  getPayments, 
+  createPayment, 
+  processBookingPayment, 
+  getMyPayments 
+} from '../controllers/paymentController.js';
+import { verifyToken, requireCustomer, requireAdminOrStaff } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.get('/', getPayments);
-router.post('/', createPayment);
+// Admin routes
+router.get('/', verifyToken, requireAdminOrStaff, getPayments);
+router.post('/', verifyToken, requireAdminOrStaff, createPayment);
+
+// Customer routes
+router.post('/process-booking-payment', verifyToken, requireCustomer, processBookingPayment);
+router.get('/my-payments', verifyToken, requireCustomer, getMyPayments);
 
 export default router;

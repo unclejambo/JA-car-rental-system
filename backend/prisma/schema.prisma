@@ -41,7 +41,7 @@ model Customer {
   payments          Payment[]
   refunds           Refund[]
   transactions      Transaction[]
-  Waitlist          Waitlist[]
+  waitlist_entries  Waitlist[]
 }
 
 model DriverLicense {
@@ -54,37 +54,37 @@ model DriverLicense {
 }
 
 model Driver {
-  drivers_id        Int           @id @default(autoincrement())
-  first_name        String
-  last_name         String
-  address           String?
-  contact_no        String?
-  email             String
-  username          String
-  password          String
-  driver_license_no String
-  status            String?
-  bookings          Booking[]
-  driver_license    DriverLicense @relation(fields: [driver_license_no], references: [driver_license_no])
-  releases          Release[]
-  Waitlist          Waitlist[]
+  drivers_id           Int           @id @default(autoincrement())
+  first_name           String
+  last_name            String
+  address              String?
+  contact_no           String?
+  email                String
+  username             String
+  password             String
+  driver_license_no    String
+  status               String?
+  bookings             Booking[]
+  driver_license       DriverLicense @relation(fields: [driver_license_no], references: [driver_license_no])
+  releases             Release[]
+  waitlist_assignments Waitlist[]
 }
 
 model Car {
-  car_id        Int           @id @default(autoincrement())
-  car_img_url   String?
-  car_status    String?
-  license_plate String?
-  make          String?
-  mileage       Int?
-  model         String?
-  no_of_seat    Int
-  rent_price    Int
-  year          Int?
-  bookings      Booking[]
-  maintenances  Maintenance[]
-  transactions  Transaction[]
-  Waitlist      Waitlist[]
+  car_id           Int           @id @default(autoincrement())
+  car_img_url      String?
+  car_status       String?
+  license_plate    String?
+  make             String?
+  mileage          Int?
+  model            String?
+  no_of_seat       Int
+  rent_price       Int
+  year             Int?
+  bookings         Booking[]
+  maintenances     Maintenance[]
+  transactions     Transaction[]
+  waitlist_entries Waitlist[]
 }
 
 model Booking {
@@ -138,6 +138,7 @@ model Extension {
 model Payment {
   payment_id     Int       @id @default(autoincrement())
   booking_id     Int?
+  waitlist_id    Int?
   customer_id    Int
   description    String?
   payment_method String?
@@ -146,8 +147,8 @@ model Payment {
   amount         Int
   paid_date      DateTime?
   balance        Int?
-  waitlist_id    Int?
-  booking        Booking?  @relation(fields: [booking_id], references: [booking_id], onDelete: Restrict)
+  booking        Booking?  @relation(fields: [booking_id], references: [booking_id])
+  waitlist       Waitlist? @relation(fields: [waitlist_id], references: [waitlist_id])
   customer       Customer  @relation(fields: [customer_id], references: [customer_id])
   Waitlist       Waitlist? @relation(fields: [waitlist_id], references: [waitlist_id])
 }
@@ -268,19 +269,27 @@ model Waitlist {
   special_requests     String?
   total_cost           Int?
   status               String?   @default("waiting")
+  payment_status       String?   @default("unpaid")
   position             Int
   date_created         DateTime  @default(now())
   notified_date        DateTime?
-  payment_status       String?   @default("unpaid")
   paid_date            DateTime?
-  Payment              Payment[]
-  Car                  Car       @relation(fields: [car_id], references: [car_id], onDelete: Cascade)
-  Customer             Customer  @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
-  Driver               Driver?   @relation(fields: [selected_driver_id], references: [drivers_id])
+  car                  Car       @relation(fields: [car_id], references: [car_id], onDelete: Cascade)
+  customer             Customer  @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
+  selected_driver      Driver?   @relation(fields: [selected_driver_id], references: [drivers_id])
+  payments             Payment[]
+
 
   @@index([car_id, status, position])
   @@index([customer_id])
   @@index([payment_status])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ManageFees {
+  fee_id   BigInt @id @default(autoincrement())
+  fee_type String
+  amount   Int?
 }
 
 enum damage_level {

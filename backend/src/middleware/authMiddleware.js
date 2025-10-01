@@ -13,9 +13,16 @@ export const verifyToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    console.log('Token decoded successfully:', { 
+      role: decoded.role, 
+      sub: decoded.sub, 
+      email: decoded.email,
+      foundIn: decoded.foundIn 
+    });
     req.user = decoded;
     next();
   } catch (err) {
+    console.error('Token verification failed:', err.message);
     return res.status(403).json({ ok: false, message: 'Invalid or expired token' });
   }
 };
@@ -31,10 +38,21 @@ export const requireAdmin = (req, res, next) => {
 
 // Middleware to check if user is customer
 export const requireCustomer = (req, res, next) => {
+  console.log('requireCustomer check:', { 
+    userExists: !!req.user, 
+    userRole: req.user?.role,
+    fullUser: req.user 
+  });
+  
   if (req.user && req.user.role === 'customer') {
     next();
   } else {
-    return res.status(403).json({ ok: false, message: 'Customer access required' });
+    return res.status(403).json({ 
+      ok: false, 
+      message: 'Customer access required',
+      currentRole: req.user?.role,
+      hasUser: !!req.user
+    });
   }
 };
 

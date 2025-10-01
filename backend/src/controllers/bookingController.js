@@ -59,14 +59,6 @@ export const getBookingById = async (req, res) => {
 
     const { customer, car, driver, payments, ...rest } = booking;
     
-    // Debug logging
-    console.log('Backend Debug - Driver data:', {
-      drivers_id: rest.drivers_id,
-      driver_object: driver,
-      driver_first_name: driver?.first_name,
-      driver_exists: !!driver
-    });
-    
     const totalPaid = payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
     const remainingBalance = (rest.total_amount || 0) - totalPaid;
     

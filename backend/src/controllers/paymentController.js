@@ -84,6 +84,24 @@ export const createPayment = async (req, res) => {
       return res.status(400).json({ error: 'booking_id, customer_id and amount are required' });
     }
 
+    // First, get the booking and current payments to calculate running balance
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: Number(booking_id) },
+      include: { 
+        payments: { 
+          select: { amount: true },
+          orderBy: { payment_id: 'asc' } 
+        } 
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const currentTotalPaid = booking.payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+    const runningBalance = (booking.total_amount || 0) - (currentTotalPaid + Number(amount));
+
     const created = await prisma.payment.create({
       data: {
         booking_id: Number(booking_id),

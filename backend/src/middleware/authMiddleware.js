@@ -55,3 +55,12 @@ export const customerOnly = [verifyToken, requireCustomer];
 
 // Combined middleware for driver-only routes
 export const driverOnly = [verifyToken, requireDriver];
+
+// Middleware to check if user is admin or staff
+export const adminOrStaff = (req, res, next) => {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'staff')) {
+    next();
+  } else {
+    return res.status(403).json({ ok: false, message: 'Admin or staff access required' });
+  }
+};

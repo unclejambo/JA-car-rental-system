@@ -1,6 +1,6 @@
 import express from 'express';
 import { getFees, updateFees, initializeFees } from '../controllers/manageFeesController.js';
-import { adminOrStaff } from '../middleware/authMiddleware.js';
+import { verifyToken, adminOrStaff } from '../middleware/authMiddleware.js';
 import prisma from '../config/prisma.js';
 
 const router = express.Router();
@@ -31,12 +31,12 @@ router.get('/test', async (req, res) => {
 });
 
 // Get all fees
-router.get('/', adminOrStaff, getFees);
+router.get('/', verifyToken, adminOrStaff, getFees);
 
 // Update fees
-router.put('/', adminOrStaff, updateFees);
+router.put('/', verifyToken, adminOrStaff, updateFees);
 
 // Initialize default fees (for setup purposes)
-router.post('/initialize', adminOrStaff, initializeFees);
+router.post('/initialize', verifyToken, adminOrStaff, initializeFees);
 
 export default router;

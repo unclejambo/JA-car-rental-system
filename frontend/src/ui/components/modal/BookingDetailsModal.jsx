@@ -293,6 +293,443 @@ export default function BookingDetailsModal({
 
       <DialogContent sx={{ pt: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* Payment Section - Moved to Top */}
+          {booking.balance > 0 && (
+            <Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 2,
+                  p: 2.5,
+                  bgcolor: '#fff3cd',
+                  borderRadius: 2,
+                  border: '2px solid #ffc107',
+                  boxShadow: '0 2px 8px rgba(255, 193, 7, 0.2)',
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="h6"
+                    sx={{ fontWeight: 'bold', color: '#b45309', mb: 0.5 }}
+                  >
+                    ⚠️ Outstanding Balance
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#b45309', fontWeight: 'medium' }}>
+                    Customer has a remaining balance of{' '}
+                    <strong style={{ fontSize: '1.1em' }}>{formatCurrency(booking.balance)}</strong>
+                  </Typography>
+                </Box>
+                {!showPaymentForm && (
+                  <Button
+                    variant="contained"
+                    startIcon={<HiCreditCard />}
+                    onClick={() => setShowPaymentForm(true)}
+                    size="large"
+                    sx={{
+                      fontWeight: 'bold',
+                      px: 4,
+                      py: 1.5,
+                      bgcolor: '#dc3545',
+                      color: 'white',
+                      fontSize: '1rem',
+                      boxShadow: '0 4px 12px rgba(220, 53, 69, 0.3)',
+                      '&:hover': {
+                        bgcolor: '#c82333',
+                        boxShadow: '0 6px 16px rgba(220, 53, 69, 0.4)',
+                        transform: 'translateY(-2px)',
+                      },
+                      transition: 'all 0.2s ease-in-out',
+                    }}
+                  >
+                    💳 Record Payment
+                  </Button>
+                )}
+              </Box>
+
+              <Collapse in={showPaymentForm}>
+                <Box
+                  sx={{
+                    p: 3,
+                    bgcolor: '#f8f9fa',
+                    borderRadius: 2,
+                    mt: 2,
+                    border: '2px solid #28a745',
+                    boxShadow: '0 4px 16px rgba(40, 167, 69, 0.15)',
+                  }}
+                >
+                  <Box sx={{ mb: 2.5 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 'bold',
+                        color: '#155724',
+                        mb: 1,
+                      }}
+                    >
+                      💰 Payment Information
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#155724', fontWeight: 'medium' }}>
+                      Enter payment details below to record the transaction
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'grid', gap: 2.5 }}>
+                    {/* Quick Amount Buttons */}
+                    <Box>
+                      <Typography
+                        variant="body2"
+                        sx={{ mb: 1.5, fontWeight: 'bold', color: '#333' }}
+                      >
+                        Quick Amount Selection:
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                        <Button
+                          variant="contained"
+                          size="medium"
+                          onClick={() =>
+                            handlePaymentChange('amount', booking.balance.toString())
+                          }
+                          sx={{
+                            bgcolor: '#17a2b8',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            px: 2.5,
+                            py: 1,
+                            boxShadow: '0 2px 8px rgba(23, 162, 184, 0.3)',
+                            '&:hover': {
+                              bgcolor: '#138496',
+                              boxShadow: '0 4px 12px rgba(23, 162, 184, 0.4)',
+                              transform: 'translateY(-1px)',
+                            },
+                            transition: 'all 0.2s ease-in-out',
+                          }}
+                        >
+                          💯 Full Balance ({formatCurrency(booking.balance)})
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="medium"
+                          onClick={() =>
+                            handlePaymentChange('amount', (booking.balance / 2).toFixed(2))
+                          }
+                          sx={{
+                            bgcolor: '#6f42c1',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            px: 2.5,
+                            py: 1,
+                            boxShadow: '0 2px 8px rgba(111, 66, 193, 0.3)',
+                            '&:hover': {
+                              bgcolor: '#5a3397',
+                              boxShadow: '0 4px 12px rgba(111, 66, 193, 0.4)',
+                              transform: 'translateY(-1px)',
+                            },
+                            transition: 'all 0.2s ease-in-out',
+                          }}
+                        >
+                          ➗ Half ({formatCurrency(booking.balance / 2)})
+                        </Button>
+                      </Box>
+                    </Box>
+
+                    <TextField
+                      label="Payment Amount"
+                      type="number"
+                      value={paymentData.amount}
+                      onChange={(e) =>
+                        handlePaymentChange('amount', e.target.value)
+                      }
+                      onKeyDown={(e) => {
+                        // Block letters, 'e', 'E', '+', '-' from being typed
+                        const blockedKeys = ['e', 'E', '+', '-'];
+                        if (blockedKeys.includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
+                      fullWidth
+                      size="medium"
+                      inputProps={{
+                        min: 0.01,
+                        max: booking.balance,
+                        step: 0.01,
+                      }}
+                      error={!!fieldErrors.amount}
+                      helperText={
+                        fieldErrors.amount ||
+                        `Remaining balance: ${formatCurrency(booking.balance)}`
+                      }
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          bgcolor: 'white',
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#28a745',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#28a745',
+                          },
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: '#28a745',
+                        },
+                      }}
+                    />
+
+                    <TextField
+                      label="Payment Description (Optional)"
+                      value={paymentData.description}
+                      onChange={(e) =>
+                        handlePaymentChange('description', e.target.value)
+                      }
+                      fullWidth
+                      size="medium"
+                      placeholder={`Payment for Booking #${booking.booking_id}`}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          bgcolor: 'white',
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#28a745',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#28a745',
+                          },
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: '#28a745',
+                        },
+                      }}
+                    />
+
+                    <Box>
+                      <Typography
+                        variant="body2"
+                        sx={{ mb: 1.5, fontWeight: 'bold', color: '#333' }}
+                      >
+                        Payment Method:
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1.5 }}>
+                        <Button
+                          variant={paymentData.payment_method === 'Cash' ? 'contained' : 'outlined'}
+                          onClick={() => handlePaymentChange('payment_method', 'Cash')}
+                          sx={{
+                            flex: 1,
+                            py: 1.5,
+                            fontWeight: 'bold',
+                            fontSize: '0.95rem',
+                            bgcolor: paymentData.payment_method === 'Cash' ? '#28a745' : 'transparent',
+                            color: paymentData.payment_method === 'Cash' ? 'white' : '#28a745',
+                            borderColor: '#28a745',
+                            borderWidth: 2,
+                            boxShadow: paymentData.payment_method === 'Cash' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
+                            '&:hover': {
+                              bgcolor: '#28a745',
+                              color: 'white',
+                              borderColor: '#28a745',
+                              borderWidth: 2,
+                              boxShadow: '0 4px 12px rgba(40, 167, 69, 0.4)',
+                              transform: 'translateY(-1px)',
+                            },
+                            transition: 'all 0.2s ease-in-out',
+                          }}
+                        >
+                          💵 Cash Payment
+                        </Button>
+                        <Button
+                          variant={paymentData.payment_method === 'GCash' ? 'contained' : 'outlined'}
+                          onClick={() => handlePaymentChange('payment_method', 'GCash')}
+                          sx={{
+                            flex: 1,
+                            py: 1.5,
+                            fontWeight: 'bold',
+                            fontSize: '0.95rem',
+                            bgcolor: paymentData.payment_method === 'GCash' ? '#007bff' : 'transparent',
+                            color: paymentData.payment_method === 'GCash' ? 'white' : '#007bff',
+                            borderColor: '#007bff',
+                            borderWidth: 2,
+                            boxShadow: paymentData.payment_method === 'GCash' ? '0 2px 8px rgba(0, 123, 255, 0.3)' : 'none',
+                            '&:hover': {
+                              bgcolor: '#007bff',
+                              color: 'white',
+                              borderColor: '#007bff',
+                              borderWidth: 2,
+                              boxShadow: '0 4px 12px rgba(0, 123, 255, 0.4)',
+                              transform: 'translateY(-1px)',
+                            },
+                            transition: 'all 0.2s ease-in-out',
+                          }}
+                        >
+                          📱 GCash
+                        </Button>
+                      </Box>
+                    </Box>
+
+                    {paymentData.payment_method === 'GCash' && (
+                      <Collapse in={paymentData.payment_method === 'GCash'}>
+                        <Box
+                          sx={{
+                            p: 2.5,
+                            bgcolor: '#e7f3ff',
+                            borderRadius: 2,
+                            border: '2px solid #007bff',
+                            boxShadow: '0 2px 8px rgba(0, 123, 255, 0.1)',
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{ mb: 1.5, fontWeight: 'bold', color: '#004085' }}
+                          >
+                            📱 GCash Payment Details
+                          </Typography>
+                          <TextField
+                            label="Reference Number"
+                            value={paymentData.reference_no}
+                            onChange={(e) =>
+                              handlePaymentChange('reference_no', e.target.value)
+                            }
+                            fullWidth
+                            size="medium"
+                            error={!!fieldErrors.reference_no}
+                            helperText={
+                              fieldErrors.reference_no ||
+                              'Enter the GCash transaction reference number'
+                            }
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                bgcolor: 'white',
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: '#007bff',
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: '#007bff',
+                                },
+                              },
+                              '& .MuiInputLabel-root.Mui-focused': {
+                                color: '#007bff',
+                              },
+                            }}
+                          />
+                        </Box>
+                      </Collapse>
+                    )}
+
+                    {error && (
+                      <Alert 
+                        severity="error" 
+                        sx={{ 
+                          mt: 1,
+                          '& .MuiAlert-message': {
+                            fontWeight: 'medium'
+                          }
+                        }}
+                      >
+                        ❌ {error}
+                      </Alert>
+                    )}
+
+                    <Divider sx={{ my: 2 }} />
+
+                    {/* Action Buttons */}
+                    <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                      <Button
+                        variant="contained"
+                        onClick={handlePaymentSubmit}
+                        disabled={loading || !isPaymentFormValid()}
+                        startIcon={
+                          loading ? (
+                            <CircularProgress size={18} color="inherit" />
+                          ) : (
+                            <HiCreditCard />
+                          )
+                        }
+                        sx={{ 
+                          flex: 1,
+                          py: 1.8,
+                          fontWeight: 'bold',
+                          fontSize: '1.05rem',
+                          bgcolor: '#28a745',
+                          color: 'white',
+                          boxShadow: '0 4px 12px rgba(40, 167, 69, 0.3)',
+                          '&:hover': {
+                            bgcolor: '#218838',
+                            boxShadow: '0 6px 20px rgba(40, 167, 69, 0.4)',
+                            transform: 'translateY(-2px)',
+                          },
+                          '&:disabled': {
+                            bgcolor: '#6c757d',
+                            color: '#fff',
+                            opacity: 0.7,
+                          },
+                          transition: 'all 0.2s ease-in-out',
+                        }}
+                      >
+                        {loading ? 'Processing Payment...' : `💰 Record Payment ${paymentData.amount ? `(${formatCurrency(parseFloat(paymentData.amount) || 0)})` : ''}`}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={resetForm}
+                        disabled={loading}
+                        sx={{
+                          px: 3,
+                          py: 1.8,
+                          fontWeight: 'bold',
+                          fontSize: '1rem',
+                          color: '#dc3545',
+                          borderColor: '#dc3545',
+                          borderWidth: 2,
+                          '&:hover': {
+                            borderWidth: 2,
+                            bgcolor: '#dc3545',
+                            color: 'white',
+                            boxShadow: '0 4px 12px rgba(220, 53, 69, 0.3)',
+                            transform: 'translateY(-1px)',
+                          },
+                          transition: 'all 0.2s ease-in-out',
+                        }}
+                      >
+                        ❌ Cancel
+                      </Button>
+                    </Box>
+                    
+                    {/* Payment Summary */}
+                    {paymentData.amount && (
+                      <Box
+                        sx={{
+                          mt: 2.5,
+                          p: 2.5,
+                          bgcolor: '#f8f9fa',
+                          borderRadius: 2,
+                          border: '2px solid #dee2e6',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1.5, color: '#495057' }}>
+                          📋 Payment Summary:
+                        </Typography>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, fontSize: '0.9rem' }}>
+                          <Typography sx={{ fontWeight: 'medium' }}>Payment Amount:</Typography>
+                          <Typography sx={{ fontWeight: 'bold', color: '#28a745' }}>
+                            {formatCurrency(parseFloat(paymentData.amount) || 0)}
+                          </Typography>
+                          <Typography sx={{ fontWeight: 'medium' }}>Remaining After Payment:</Typography>
+                          <Typography sx={{ fontWeight: 'bold', color: booking.balance - (parseFloat(paymentData.amount) || 0) <= 0 ? '#28a745' : '#ffc107' }}>
+                            {formatCurrency(booking.balance - (parseFloat(paymentData.amount) || 0))}
+                          </Typography>
+                          <Typography sx={{ fontWeight: 'medium' }}>Payment Method:</Typography>
+                          <Typography sx={{ fontWeight: 'bold', color: '#495057' }}>
+                            {paymentData.payment_method === 'Cash' ? '💵 Cash' : '📱 GCash'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )}
+                  </Box>
+                </Box>
+              </Collapse>
+            </Box>
+          )}
+
+          <Divider sx={{ my: 1 }} />
+
           {/* Basic Booking Information */}
           <Box>
             <Typography
@@ -702,153 +1139,7 @@ export default function BookingDetailsModal({
             </Box>
           </Box>
 
-          {/* Payment Section */}
-          {booking.balance > 0 && (
-            <>
-              <Divider />
-              <Box>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 2,
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{ fontWeight: 'bold', color: 'primary.main' }}
-                  >
-                    💳 Add Payment
-                  </Typography>
-                  {!showPaymentForm && (
-                    <Button
-                      variant="contained"
-                      startIcon={<HiCreditCard />}
-                      onClick={() => setShowPaymentForm(true)}
-                      size="small"
-                    >
-                      Add Payment
-                    </Button>
-                  )}
-                </Box>
 
-                <Collapse in={showPaymentForm}>
-                  <Box
-                    sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mt: 2 }}
-                  >
-                    <Box sx={{ display: 'grid', gap: 2 }}>
-                      <TextField
-                        label="Payment Amount"
-                        type="number"
-                        value={paymentData.amount}
-                        onChange={(e) =>
-                          handlePaymentChange('amount', e.target.value)
-                        }
-                        onKeyDown={(e) => {
-                          // Block letters, 'e', 'E', '+', '-' from being typed
-                          const blockedKeys = ['e', 'E', '+', '-'];
-                          if (blockedKeys.includes(e.key)) {
-                            e.preventDefault();
-                          }
-                        }}
-                        fullWidth
-                        size="small"
-                        inputProps={{
-                          min: 0.01,
-                          max: booking.balance,
-                          step: 0.01,
-                        }}
-                        error={!!fieldErrors.amount}
-                        helperText={
-                          fieldErrors.amount ||
-                          `Remaining balance: ${formatCurrency(booking.balance)}`
-                        }
-                      />
-
-                      <TextField
-                        label="Description (Optional)"
-                        value={paymentData.description}
-                        onChange={(e) =>
-                          handlePaymentChange('description', e.target.value)
-                        }
-                        fullWidth
-                        size="small"
-                        placeholder={`Payment for Booking #${booking.booking_id}`}
-                      />
-
-                      <TextField
-                        select
-                        label="Payment Method"
-                        value={paymentData.payment_method}
-                        onChange={(e) =>
-                          handlePaymentChange('payment_method', e.target.value)
-                        }
-                        fullWidth
-                        size="small"
-                      >
-                        <MenuItem value="Cash">Cash</MenuItem>
-                        <MenuItem value="GCash">GCash</MenuItem>
-                      </TextField>
-
-                      {paymentData.payment_method === 'GCash' && (
-                        <>
-                          <TextField
-                            label="Reference Number (Optional)"
-                            value={paymentData.reference_no}
-                            onChange={(e) =>
-                              handlePaymentChange(
-                                'reference_no',
-                                e.target.value
-                              )
-                            }
-                            fullWidth
-                            size="small"
-                            error={!!fieldErrors.reference_no}
-                            helperText={
-                              fieldErrors.reference_no ||
-                              'Recommended for GCash payments'
-                            }
-                          />
-                        </>
-                      )}
-
-                      {error && (
-                        <Alert severity="error" sx={{ mt: 1 }}>
-                          {error}
-                        </Alert>
-                      )}
-
-                      <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-                        <Button
-                          variant="contained"
-                          onClick={handlePaymentSubmit}
-                          disabled={loading || !isPaymentFormValid()}
-                          startIcon={
-                            loading ? (
-                              <CircularProgress size={16} />
-                            ) : (
-                              <HiCreditCard />
-                            )
-                          }
-                          sx={{ flex: 1 }}
-                        >
-                          {loading ? 'Processing...' : 'Process Payment'}
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          onClick={resetForm}
-                          disabled={loading}
-                        >
-                          Cancel
-                        </Button>
-                      </Box>
-                    </Box>
-                  </Box>
-                </Collapse>
-              </Box>
-            </>
-          )}
 
           {success && (
             <Alert severity="success" sx={{ mt: 2 }}>

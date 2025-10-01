@@ -2,7 +2,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Box, Select, MenuItem, useMediaQuery } from '@mui/material';
 
 // use Vite env var, fallback to localhost; remove trailing slash if present
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+const API_BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL).replace(/\/$/, '');
 
 const ManageUserTable = ({ activeTab, rows, loading }) => {
   const isSmallScreen = useMediaQuery('(max-width:600px)');
@@ -131,24 +131,53 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
     headerName: 'Status',
     flex: 1,
     minWidth: 120,
-    editable: true,
-    sortable: false,
+    editable: false,
+    sortable: true,
     headerAlign: 'center',
     align: 'center',
     renderCell: (params) => {
+      // If user_type is admin, just show "Admin" text
+      if (params.row.user_type === 'admin') {
+        return (
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            height: '100%',
+            fontWeight: 500,
+            color: '#1976d2'
+          }}>
+            Admin
+          </Box>
+        );
+      }
+
       const handleStatusChange = async (e) => {
         const newStatusLabel = e.target.value; // 'Active' | 'Inactive'
         const bodyStatus = newStatusLabel.toLowerCase(); // send 'active'|'inactive' (backend normalizes)
 
         try {
-          const response = await fetch(
-            `${API_BASE}/customers/${params.id}`,
-            {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ status: bodyStatus }),
-            }
-          );
+          // Determine the correct API endpoint based on activeTab
+          let endpoint = '';
+          switch (activeTab) {
+            case 'CUSTOMER':
+              endpoint = `${API_BASE}/customers/${params.id}`;
+              break;
+            case 'DRIVER':
+              endpoint = `${API_BASE}/drivers/${params.id}`;
+              break;
+            case 'STAFF':
+              // For staff/admin, we don't allow status changes via dropdown
+              return;
+            default:
+              endpoint = `${API_BASE}/customers/${params.id}`;
+          }
+
+          const response = await fetch(endpoint, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: bodyStatus }),
+          });
 
           const json = await response.json().catch(() => null);
           if (!response.ok) {

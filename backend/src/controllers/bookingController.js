@@ -186,15 +186,8 @@ export const createBookingRequest = async (req, res) => {
 
 export const createBooking = async (req, res) => {
   try {
-    console.log('Creating booking with data:', req.body);
-    console.log('User from token:', req.user);
-
     // Extract customer_id from token
     const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
-    
-    console.log('Token user object:', req.user);
-    console.log('Extracted customer ID:', customerId);
-    console.log('User role:', req.user?.role);
     
     if (!customerId) {
       return res.status(401).json({ 
@@ -212,8 +205,6 @@ export const createBooking = async (req, res) => {
     }
 
     const {
-      booking_id,
-      customer_id,
       car_id,
       booking_date,
       purpose,
@@ -223,55 +214,24 @@ export const createBooking = async (req, res) => {
       pickup_loc,
       dropoff_time,
       dropoff_loc,
-      refunds,
-      isSelfDriver,
-      isExtend,
-      new_end_date,
-      isCancel,
+      rental_fee,
       total_amount,
-      payment_status,
-      isRelease,
-      isReturned,
-      booking_status,
-      drivers_id, // This must be an existing driver in the system (FK)
-      admin_id,
-      extensions,
-      payments,
-      releases,
-      transactions,
-    } = req.body;
-
-    const newBooking = await prisma.booking.create({
-      data: {
-        booking_id,
-        customer_id,
-        car_id,
-        booking_date,
-        purpose,
-        start_date,
-        end_date,
-        pickup_time,
-        pickup_loc,
-        dropoff_time,
-        dropoff_loc,
-        rental_fee,
-        total_amount,
-        isSelfDriver,
-        drivers_id,
-        booking_type,
-        delivery_location,
-        // Frontend specific fields
-        startDate,
-        endDate,
-        pickupTime,
-        dropoffTime,
-        deliveryType,
-        deliveryLocation,
-        pickupLocation,
-        dropoffLocation,
-        totalCost,
-        isSelfDrive,
-        selectedDriver,
+      isSelfDriver,
+      drivers_id,
+      booking_type,
+      delivery_location,
+      // Frontend specific fields
+      startDate,
+      endDate,
+      pickupTime,
+      dropoffTime,
+      deliveryType,
+      deliveryLocation,
+      pickupLocation,
+      dropoffLocation,
+      totalCost,
+      isSelfDrive,
+      selectedDriver,
     } = req.body;
 
     // Map frontend data to backend schema
@@ -321,7 +281,7 @@ export const createBooking = async (req, res) => {
         deliver_loc: deliveryType === 'delivery' ? (deliveryLocation || pickup_loc) : null,
     };
 
-    console.log('Processed booking data:', bookingData);
+    // Booking data processed successfully
 
     // Validate that customer exists
     const customerExists = await prisma.customer.findUnique({
@@ -383,13 +343,11 @@ export const createBooking = async (req, res) => {
           balance: bookingData.total_amount, // Full amount initially unpaid
         }
       });
-      console.log('Initial payment record created for booking:', newBooking.booking_id);
+      // Payment record created successfully
     } catch (paymentError) {
       console.error('Error creating payment record:', paymentError);
       // Don't fail the booking creation if payment record fails
     }
-
-    console.log('Booking created successfully:', newBooking);
 
     res.status(201).json({
       success: true,
@@ -464,10 +422,6 @@ export const updateBooking = async (req, res) => {
       booking_status,
       drivers_id,
       admin_id,
-      extensions,
-      payments,
-      releases,
-      transactions,
     } = req.body;
 
     const updatedBooking = await prisma.booking.update({
@@ -495,10 +449,7 @@ export const updateBooking = async (req, res) => {
         booking_status,
         drivers_id,
         admin_id,
-        extensions,
-        payments,
-        releases,
-        transactions,
+        // Note: extensions, payments, releases, transactions are handled through relations
       },
     });
 
@@ -528,20 +479,10 @@ export const getMyBookings = async (req, res) => {
   try {
     const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
     
-    console.log('getMyBookings called for customer:', customerId);
-    
     if (!customerId) {
       return res.status(401).json({ error: 'Customer authentication required' });
     }
 
-    // First, try a simple query to see if customer has any bookings
-    const simpleBookings = await prisma.booking.findMany({
-      where: { customer_id: parseInt(customerId) }
-    });
-    
-    console.log('Simple bookings found:', simpleBookings.length);
-
-    // Now try with includes
     const bookings = await prisma.booking.findMany({
       where: { customer_id: parseInt(customerId) },
       include: {
@@ -581,13 +522,7 @@ export const getMyBookings = async (req, res) => {
       orderBy: { booking_date: 'desc' }
     });
 
-    console.log('Fetched bookings count:', bookings.length);
-    console.log('Sample booking:', bookings[0] ? {
-      id: bookings[0].booking_id,
-      customer_id: bookings[0].customer_id,
-      car: bookings[0].car,
-      driver: bookings[0].driver
-    } : 'No bookings found');
+
 
     const shaped = bookings.map(({ customer, car, driver, payments, ...rest }) => ({
       ...rest,
@@ -609,7 +544,6 @@ export const getMyBookings = async (req, res) => {
       has_outstanding_balance: payments?.some(payment => (payment.balance || 0) > 0) || false
     }));
 
-    console.log('Shaped bookings count:', shaped.length);
     res.json(shaped);
   } catch (error) {
     console.error('Error fetching customer bookings:', error);
@@ -753,9 +687,8 @@ export const extendMyBooking = async (req, res) => {
       data: { 
         new_end_date: new Date(new_end_date),
         total_amount: newTotalAmount,
-        extensions: booking.extensions ? 
-          `${booking.extensions}; Extended by ${additionalDays} days on ${new Date().toISOString().split('T')[0]}` :
-          `Extended by ${additionalDays} days on ${new Date().toISOString().split('T')[0]}`
+        // Create extension record instead of string field
+        // extensions field is handled through Extension model relation
       },
       include: {
         car: { select: { make: true, model: true, year: true } }

@@ -1,56 +1,173 @@
-import { create } from "zustand";
+import { create } from 'zustand';
+import { getApiBase } from '../utils/api.js';
+import { createAuthenticatedFetch } from '../utils/api.js';
 
-export const useScheduleStore = create((set) => ({
-  reservations: [
-    // FOR TESTING SA FRONT END NI... WILL REPLACE WITH ACTUAL DATABASE... SEE PRISMA SCHEMA (../prisma/schema.prisma) or run npx prisma studio sud sa backend
-    {
-      reservationId: 1,
-      carPlate: "ABC-1234",
-      customerName: "Juan Dela Cruz",
-      pickupDate: "2025-07-6T08:00:00Z",
-      returnDate: "2025-07-7T17:00:00Z",
-      status: "Confirmed",
-    },
-    {
-      reservationId: 2,
-      carPlate: "GOY-4321",
-      customerName: "Elijah Go",
-      pickupDate: "2025-07-10T08:00:00Z",
-      returnDate: "2025-07-13T17:00:00Z",
-      status: "Ongoing",
-    },
-    {
-      reservationId: 3,
-      carPlate: "LAD-1234",
-      customerName: "Juan Dela Cruz",
-      pickupDate: "2025-07-2T08:00:00Z",
-      returnDate: "2025-07-3T17:00:00Z",
-      status: "Done",
-    },
-    {
-      reservationId: 4,
-      carPlate: "LAD-4321",
-      customerName: "Elijah Go",
-      pickupDate: "2025-08-10T08:00:00Z",
-      returnDate: "2025-08-13T17:00:00Z",
-      status: "Confirmed",
-    },
-    {
-      reservationId: 5,
-      carPlate: "GUY-1234",
-      customerName: "Juan Dela Cruz",
-      pickupDate: "2025-08-15T08:00:00Z",
-      returnDate: "2025-08-16T17:00:00Z",
-      status: "Confirmed",
-    },
-    {
-      reservationId: 6,
-      carPlate: "GUY-4321",
-      customerName: "Elijah Go",
-      pickupDate: "2025-09-10T08:00:00Z",
-      returnDate: "2025-010-13T17:00:00Z",
-      status: "Confirmed",
-    },
-  ],
-  setReservations: (rows) => set({ reservations: rows }),
+export const useScheduleStore = create((set, get) => ({
+  schedules: [],
+  loading: false,
+  error: null,
+
+  // Fetch all schedules
+  fetchSchedules: async () => {
+    try {
+      set({ loading: true, error: null });
+      const API_BASE = getApiBase();
+      const authenticatedFetch = createAuthenticatedFetch();
+      
+      const response = await authenticatedFetch(`${API_BASE}/schedules`);
+      if (response.ok) {
+        const data = await response.json();
+        set({ schedules: data, loading: false });
+        return data;
+      } else {
+        throw new Error('Failed to fetch schedules');
+      }
+    } catch (error) {
+      console.error('Error fetching schedules:', error);
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  // Update reservation status
+  updateReservationStatus: async (reservationId, newStatus) => {
+    try {
+      const API_BASE = getApiBase();
+      const authenticatedFetch = createAuthenticatedFetch();
+      
+      const response = await authenticatedFetch(`${API_BASE}/schedules/${reservationId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        const updatedReservation = await response.json();
+        
+        // Update the local state
+        set((state) => ({
+          schedules: state.schedules.map((schedule) =>
+            schedule.id === reservationId || schedule.reservationId === reservationId
+              ? { ...schedule, status: newStatus }
+              : schedule
+          ),
+        }));
+        
+        return updatedReservation;
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update reservation status');
+      }
+    } catch (error) {
+      console.error('Error updating reservation status:', error);
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
+  // Add new schedule/reservation
+  addSchedule: async (scheduleData) => {
+    try {
+      const API_BASE = getApiBase();
+      const authenticatedFetch = createAuthenticatedFetch();
+      
+      const response = await authenticatedFetch(`${API_BASE}/schedules`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(scheduleData),
+      });
+
+      if (response.ok) {
+        const newSchedule = await response.json();
+        set((state) => ({
+          schedules: [...state.schedules, newSchedule],
+        }));
+        return newSchedule;
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add schedule');
+      }
+    } catch (error) {
+      console.error('Error adding schedule:', error);
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
+  // Update schedule
+  updateSchedule: async (scheduleId, scheduleData) => {
+    try {
+      const API_BASE = getApiBase();
+      const authenticatedFetch = createAuthenticatedFetch();
+      
+      const response = await authenticatedFetch(`${API_BASE}/schedules/${scheduleId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(scheduleData),
+      });
+
+      if (response.ok) {
+        const updatedSchedule = await response.json();
+        set((state) => ({
+          schedules: state.schedules.map((schedule) =>
+            schedule.id === scheduleId || schedule.reservationId === scheduleId
+              ? { ...schedule, ...updatedSchedule }
+              : schedule
+          ),
+        }));
+        return updatedSchedule;
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update schedule');
+      }
+    } catch (error) {
+      console.error('Error updating schedule:', error);
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
+  // Delete schedule
+  deleteSchedule: async (scheduleId) => {
+    try {
+      const API_BASE = getApiBase();
+      const authenticatedFetch = createAuthenticatedFetch();
+      
+      const response = await authenticatedFetch(`${API_BASE}/schedules/${scheduleId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        set((state) => ({
+          schedules: state.schedules.filter(
+            (schedule) => schedule.id !== scheduleId && schedule.reservationId !== scheduleId
+          ),
+        }));
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete schedule');
+      }
+    } catch (error) {
+      console.error('Error deleting schedule:', error);
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
+  // Clear error state
+  clearError: () => set({ error: null }),
+
+  // Set schedules directly
+  setSchedules: (schedules) => set({ schedules }),
+
+  // Initialize store
+  init: async () => {
+    return get().fetchSchedules();
+  },
 }));

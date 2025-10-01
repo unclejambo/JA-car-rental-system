@@ -227,7 +227,7 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
           size="small"
           color="success"
           aria-label="confirm"
-          onClick={() => console.log('Confirmed!', params.row)}
+          onClick={() => {/* TODO: Handle confirm action */}}
           sx={{
             '&:hover': {
               backgroundColor: 'rgba(46, 125, 50, 0.08)',
@@ -240,7 +240,7 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
           size="small"
           color="error"
           aria-label="cancel"
-          onClick={() => console.log('Cancelled!', params.row)}
+          onClick={() => {/* TODO: Handle cancel action */}}
           sx={{
             '&:hover': {
               backgroundColor: 'rgba(211, 47, 47, 0.08)',

@@ -222,8 +222,6 @@ export default function ManageFeesModal({ show, onClose }) {
         numericData[key] = parseInt(formData[key], 10);
       });
 
-      console.log('Sending fee data:', numericData);
-
       const response = await authFetch(`${API_BASE}/manage-fees`, {
         method: 'PUT',
         headers: {
@@ -234,7 +232,6 @@ export default function ManageFeesModal({ show, onClose }) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Server error response:', errorData);
         throw new Error(
           `HTTP error! status: ${response.status}${errorData.details ? ': ' + errorData.details : ''}`
         );

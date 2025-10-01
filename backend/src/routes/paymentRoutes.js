@@ -5,13 +5,13 @@ import {
   processBookingPayment, 
   getMyPayments 
 } from '../controllers/paymentController.js';
-import { verifyToken, requireCustomer, requireAdminOrStaff } from '../middleware/authMiddleware.js';
+import { verifyToken, requireCustomer, adminOrStaff } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 // Admin routes
-router.get('/', verifyToken, requireAdminOrStaff, getPayments);
-router.post('/', verifyToken, requireAdminOrStaff, createPayment);
+router.get('/', verifyToken, adminOrStaff, getPayments);
+router.post('/', verifyToken, adminOrStaff, createPayment);
 
 // Customer routes
 router.post('/process-booking-payment', verifyToken, requireCustomer, processBookingPayment);

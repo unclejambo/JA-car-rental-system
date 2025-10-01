@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import axios from 'axios';
+import { getApiBase } from '../utils/api.js';
 
-const API_BASE = import.meta.env.VITE_LOCAL || 'http://localhost:3001';
-const CUSTOMERS_URL = `${API_BASE}/customers`;
+const getCustomersUrl = () => `${getApiBase()}/customers`;
 
 export const useCustomerStore = create((set, get) => ({
   customers: [],
@@ -10,7 +10,8 @@ export const useCustomerStore = create((set, get) => ({
   // Fetch all customers (optional, you might not even need this)
   fetchCustomers: async () => {
     try {
-      const response = await axios.get(CUSTOMERS_URL);
+      const customersUrl = getCustomersUrl();
+      const response = await axios.get(customersUrl);
       set({ customers: response.data });
       return response.data;
     } catch (error) {
@@ -22,7 +23,8 @@ export const useCustomerStore = create((set, get) => ({
   // Fetch a single customer (logged-in user)
   getCustomerById: async (customerId) => {
     try {
-      const response = await axios.get(`${CUSTOMERS_URL}/${customerId}`);
+      const customersUrl = getCustomersUrl();
+      const response = await axios.get(`${customersUrl}/${customerId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching customer by ID:', error);
@@ -33,10 +35,11 @@ export const useCustomerStore = create((set, get) => ({
   // Update a customer's profile
   updateCustomer: async (customerId, customerData) => {
     try {
+      const customersUrl = getCustomersUrl();
       const isFormData =
         typeof FormData !== 'undefined' && customerData instanceof FormData;
       const response = await axios.put(
-        `${CUSTOMERS_URL}/${customerId}`,
+        `${customersUrl}/${customerId}`,
         customerData,
         {
           headers: isFormData

@@ -7,7 +7,7 @@ export const getCustomers = async (req, res) => {
   try {
     const users = await prisma.customer.findMany({
       include: {
-        DriverLicense: true, // ✅ include relation
+        driver_license: true, // ✅ include relation
       },
     });
     res.json(users);
@@ -26,7 +26,7 @@ export const getCustomerById = async (req, res) => {
     const customer = await prisma.customer.findUnique({
       where: { customer_id: customerId }, // ✅ fixed variable
       include: {
-        DriverLicense: true, // ✅ include relation
+        driver_license: true, // ✅ include relation
       },
     });
 
@@ -79,7 +79,7 @@ export const createCustomer = async (req, res) => {
         driver_license_no,
       },
       include: {
-        DriverLicense: true, // ✅ include after create
+        driver_license: true, // ✅ include after create
       },
     });
 
@@ -139,7 +139,7 @@ export const updateCustomer = async (req, res) => {
       where: { customer_id: customerId },
       data,
       include: {
-        DriverLicense: true, // ✅ include after update
+        driver_license: true, // ✅ include after update
       },
     });
 

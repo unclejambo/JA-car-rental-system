@@ -233,12 +233,6 @@ model VerificationCode {
   updated_at   DateTime @updatedAt
 }
 
-model ManageFees {
-  fee_id   BigInt @id @default(autoincrement())
-  fee_type String
-  amount   Int?
-}
-
 model Return {
   return_id    BigInt        @id @unique @default(autoincrement())
   booking_id   Int?

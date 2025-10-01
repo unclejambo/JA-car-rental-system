@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
@@ -27,38 +27,82 @@ export default function AdminManageUser() {
   const openAddDriverModal = () => setShowAddDriverModal(true);
   const closeAddDriverModal = () => setShowAddDriverModal(false);
 
-  // create auth-aware fetch and API base
-  const authFetch = createAuthenticatedFetch(() => {
+  // create auth-aware fetch and API base with useMemo to prevent infinite loops
+  const authFetch = useMemo(() => createAuthenticatedFetch(() => {
     localStorage.removeItem('authToken');
     window.location.href = '/login';
-  });
+  }), []);
   const API_BASE = getApiBase().replace(/\/$/, '');
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async (tabType = activeTab) => {
     setLoading(true);
+    setError(null);
 
     try {
-      const response = await authFetch(`${API_BASE}/customers`, {
+      let endpoint = '';
+      switch (tabType) {
+        case 'CUSTOMER':
+          endpoint = `${API_BASE}/customers`;
+          break;
+        case 'STAFF':
+          endpoint = `${API_BASE}/admin-profile/all`;
+          break;
+        case 'DRIVER':
+          endpoint = `${API_BASE}/drivers`;
+          break;
+        default:
+          endpoint = `${API_BASE}/customers`;
+      }
+
+      const response = await authFetch(endpoint, {
         headers: { Accept: 'application/json' },
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      const formattedData = data.map((item) => ({
-        ...item,
-        id: item.customer_id, // required by DataGrid
-        contact_number: item.contact_no,
-        // normalize status explicitly so strings like 'inactive' don't become truthy -> Active
-        status:
-          item.status === true ||
-          item.status === 'Active' ||
-          item.status === 'active' ||
-          item.status === 1 ||
-          item.status === '1'
-            ? 'Active'
-            : 'Inactive',
-      }));
+      
+      let formattedData = [];
+      
+      if (tabType === 'CUSTOMER') {
+        formattedData = data.map((item) => ({
+          ...item,
+          id: item.customer_id, // required by DataGrid
+          contact_number: item.contact_no,
+          // normalize status explicitly so strings like 'inactive' don't become truthy -> Active
+          status:
+            item.status === true ||
+            item.status === 'Active' ||
+            item.status === 'active' ||
+            item.status === 1 ||
+            item.status === '1'
+              ? 'Active'
+              : 'Inactive',
+        }));
+      } else if (tabType === 'STAFF') {
+        formattedData = data.map((item) => ({
+          ...item,
+          id: item.admin_id, // required by DataGrid
+          contact_number: item.contact_no,
+          status: item.isActive === true || item.isActive === null ? 'Active' : 'Inactive',
+          user_type: item.user_type, // Ensure user_type is passed through for admin detection
+        }));
+      } else if (tabType === 'DRIVER') {
+        formattedData = data.map((item) => ({
+          ...item,
+          id: item.drivers_id, // required by DataGrid
+          contact_number: item.contact_no,
+          status:
+            item.status === true ||
+            item.status === 'Active' ||
+            item.status === 'active' ||
+            item.status === 1 ||
+            item.status === '1'
+              ? 'Active'
+              : 'Inactive',
+        }));
+      }
+      
       setRows(formattedData);
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -66,12 +110,12 @@ export default function AdminManageUser() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [authFetch, API_BASE, activeTab]);
 
-  // Ensure we call fetchData on mount so setLoading shows the Loading UI while fetching
+  // Fetch data when component mounts or when activeTab changes
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData(activeTab);
+  }, [activeTab, fetchData]);
 
   if (loading) {
     return (

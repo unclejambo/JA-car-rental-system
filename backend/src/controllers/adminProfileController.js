@@ -3,6 +3,47 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 /**
+ * Get all admins/staff (for manage users page)
+ */
+export const getAllAdmins = async (req, res) => {
+  try {
+    const admins = await prisma.admin.findMany({
+      select: {
+        admin_id: true,
+        first_name: true,
+        last_name: true,
+        contact_no: true,
+        email: true,
+        username: true,
+        user_type: true,
+        isActive: true,
+        address: true,
+        // Don't return password
+      },
+      orderBy: {
+        admin_id: 'asc'
+      }
+    });
+
+    // Format data for frontend compatibility
+    const formattedAdmins = admins.map(admin => ({
+      ...admin,
+      id: admin.admin_id, // Required by DataGrid
+      contact_number: admin.contact_no,
+      status: admin.isActive === true || admin.isActive === null ? 'Active' : 'Inactive'
+    }));
+
+    res.json(formattedAdmins);
+  } catch (error) {
+    console.error('Error fetching admins:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch admins' 
+    });
+  }
+};
+
+/**
  * Get admin profile information
  */
 export const getAdminProfile = async (req, res) => {

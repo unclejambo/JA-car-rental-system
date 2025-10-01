@@ -2,8 +2,6 @@
 export const createAuthenticatedFetch = (logout) => {
   return async (url, options = {}) => {
     const token = localStorage.getItem('authToken');
-    console.log('Making authenticated request to:', url);
-    console.log('Token exists:', !!token);
     
     if (token) {
       options.headers = {
@@ -14,17 +12,14 @@ export const createAuthenticatedFetch = (logout) => {
 
     try {
       const response = await fetch(url, options);
-      console.log('Response status:', response.status);
       
       // If token is invalid or expired (401/403), logout automatically
       if (response.status === 401 || response.status === 403) {
         const data = await response.json().catch(() => ({}));
-        console.log('Auth error response:', data);
         
         // Check if it's a token-related error
         if (data.message?.includes('token') || data.message?.includes('Token') || 
             data.message?.includes('Unauthorized') || data.message?.includes('expired')) {
-          console.warn('Token expired or invalid, logging out...');
           logout();
           return response;
         }

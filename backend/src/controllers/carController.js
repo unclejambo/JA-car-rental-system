@@ -5,12 +5,7 @@ import prisma from '../config/prisma.js';
 // @access  Public
 export const getCars = async (req, res) => {
   try {
-    console.log('getCars endpoint called');
     const cars = await prisma.car.findMany();
-    console.log('Found cars:', cars.length);
-    if (cars.length > 0) {
-      console.log('Sample car data:', cars[0]);
-    }
     res.json(cars);
   } catch (error) {
     console.error('Error fetching cars:', error);
@@ -23,7 +18,6 @@ export const getCars = async (req, res) => {
 // @access  Public
 export const getAvailableCars = async (req, res) => {
   try {
-    console.log('getAvailableCars endpoint called');
     const cars = await prisma.car.findMany({
       where: {
         car_status: {
@@ -35,7 +29,6 @@ export const getAvailableCars = async (req, res) => {
       }
     });
     
-    console.log('Found available cars:', cars.length);
     res.json(cars);
   } catch (error) {
     console.error('Error fetching available cars:', error);

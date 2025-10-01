@@ -86,7 +86,7 @@ export default function ReleaseModal({ show, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     // TODO: integrate with backend submission
-    console.log('Release submit', formData);
+    // Submit release form data
     onClose?.();
   };
 

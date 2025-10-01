@@ -51,7 +51,7 @@ export default function ReturnModal({ show, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Return submit', formData);
+    // Submit return form data
     onClose?.();
   };
 

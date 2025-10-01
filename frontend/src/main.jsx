@@ -2,7 +2,6 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './styles/index.css';
-import App from './App.jsx';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -26,11 +25,13 @@ import CustomerSettings from './pages/customer/CustomerSettings.jsx';
 import DriverSchedule from './pages/driver/DriverSchedule.jsx'; // =====> uncomment if driver routes are implemented
 import DriverSettings from './pages/driver/DriverSettings.jsx'; // ====> uncomment if driver routes are implemented
 import { AuthProvider } from './contexts/AuthContext.jsx';
+import ErrorBoundary from './ui/components/ErrorBoundary.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -196,5 +197,6 @@ createRoot(document.getElementById('root')).render(
         </Routes>
       </AuthProvider>
     </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>
 );

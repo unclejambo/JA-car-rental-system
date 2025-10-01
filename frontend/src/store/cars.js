@@ -1,12 +1,14 @@
 import { create } from 'zustand';
 import axios from 'axios';
+import { getApiBase } from '../utils/api.js';
 
 export const useCarStore = create((set, get) => ({
   cars: [],
 
   fetchCars: async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/cars');
+      const API_BASE = getApiBase();
+      const response = await axios.get(`${API_BASE}/cars`);
       set({ cars: response.data });
       return response.data;
     } catch (error) {
@@ -17,8 +19,9 @@ export const useCarStore = create((set, get) => ({
 
   addCar: async (carData) => {
     try {
+      const API_BASE = getApiBase();
       const response = await axios.post(
-        'http://localhost:3001/api/cars',
+        `${API_BASE}/cars`,
         carData
       );
       await get().fetchCars();
@@ -31,8 +34,9 @@ export const useCarStore = create((set, get) => ({
 
   updateCar: async (carId, carData) => {
     try {
+      const API_BASE = getApiBase();
       const response = await axios.put(
-        `http://localhost:3001/api/cars/${carId}`,
+        `${API_BASE}/cars/${carId}`,
         carData
       );
       await get().fetchCars();
@@ -45,7 +49,8 @@ export const useCarStore = create((set, get) => ({
 
   deleteCar: async (carId) => {
     try {
-      await axios.delete(`http://localhost:3001/api/cars/${carId}`);
+      const API_BASE = getApiBase();
+      await axios.delete(`${API_BASE}/cars/${carId}`);
       await get().fetchCars();
     } catch (error) {
       console.error('Error deleting car:', error);

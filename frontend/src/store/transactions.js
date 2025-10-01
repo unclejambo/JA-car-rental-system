@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getApiBase } from '../utils/api';
+import { getApiBase, createAuthenticatedFetch } from '../utils/api';
 
 export const useTransactionStore = create((set, get) => ({
   transactions: [],
@@ -15,15 +15,19 @@ export const useTransactionStore = create((set, get) => ({
     if (loading[tab]) return; // prevent duplicate
     set({ loading: { ...loading, [tab]: true }, error: null });
     try {
-      const resp = await fetch(`${getApiBase()}${url}`);
-      if (!resp.ok) throw new Error(`${tab} request failed`);
+      const authenticatedFetch = createAuthenticatedFetch();
+      const resp = await authenticatedFetch(`${getApiBase()}${url}`);
+      if (!resp.ok) {
+        const errorText = await resp.text().catch(() => 'Unknown error');
+        throw new Error(`${tab} request failed: ${resp.status} ${errorText}`);
+      }
       const data = await resp.json();
       if (tab === 'TRANSACTIONS') set({ transactions: data });
       if (tab === 'PAYMENT') set({ payments: data });
       if (tab === 'REFUND') set({ refunds: data });
       set((s) => ({ loaded: { ...s.loaded, [tab]: true } }));
     } catch (e) {
-      console.error(e);
+      console.error(`Error loading ${tab}:`, e);
       set({ error: e.message });
     } finally {
       set((s) => ({ loading: { ...s.loading, [tab]: false } }));

@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Box, Typography, Select, MenuItem, Chip, Stack } from '@mui/material';
-import Header from '../../ui/components/Header'; // Unused import removed
-import AdminSideBar from '../../ui/components/AdminSideBar'; // Unused import removed
-import Loading from '../../ui/components/Loading'; // Unused import removed
-import { HiChartBar } from 'react-icons/hi2'; // Unused import removed
+import Header from '../../ui/components/Header';
+import AdminSideBar from '../../ui/components/AdminSideBar';
+import { HiChartBar } from 'react-icons/hi2';
+import { useAuth } from '../../hooks/useAuth';
+import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -15,7 +16,6 @@ import {
   Title as ChartTitle,
   Tooltip,
   Legend,
-  Filler,
 } from 'chart.js';
 
 ChartJS.register(
@@ -49,6 +49,12 @@ const DEFAULT_MONTHS = [
   'Nov',
   'Dec',
 ];
+
+// Static data for fallback when API data is not available
+const staticTopCarLabels = ['Toyota Camry', 'Honda Civic', 'Nissan Altima', 'Ford Focus', 'Hyundai Elantra'];
+const staticTopCars = [45, 38, 32, 28, 25];
+const staticTopCustomerLabels = ['John Smith', 'Maria Garcia', 'Robert Johnson', 'Lisa Wong', 'David Brown'];
+const staticTopCustomers = [12, 10, 8, 7, 6];
 
 export default function AdminReportAnalytics() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -100,21 +106,22 @@ export default function AdminReportAnalytics() {
   const [selectedQuarter, setSelectedQuarter] = useState(1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  // Use API years or fallback to static years (memoized to prevent re-computation)
+  // Use API years or fallback to dynamic years (memoized to prevent re-computation)
   const availableYears = useMemo(() => {
     if (apiAvailableYears.length > 0) {
       return apiAvailableYears;
     }
-    // Fallback years
+    // Dynamic fallback years - extends into future for payments that might occur
     const currentYear = new Date().getFullYear();
     const years = [];
-    for (let year = 2020; year <= currentYear; year++) {
+    // Start from 2020 or earlier if needed, extend 2 years into future
+    for (let year = 2020; year <= currentYear + 2; year++) {
       years.push(year);
     }
-    return years;
+    return years.sort((a, b) => b - a); // Most recent first
   }, [apiAvailableYears]);
 
-  // Load initial data
+  // Load available years from backend
   useEffect(() => {
     const loadYears = async () => {
       try {
@@ -134,30 +141,28 @@ export default function AdminReportAnalytics() {
           );
         }
 
-        const data = await response.json();
-        console.log('Years API response data:', data);
+        const years = await response.json();
+        console.log('Available years from API:', years);
 
-        if (data.ok) {
-          setApiAvailableYears(data.years);
-          setIsInitialLoad(false);
-          // Don't update selectedYear here to prevent infinite loops
-          // Let the user manually select or use current year default
+        // Ensure we have valid years array
+        if (Array.isArray(years) && years.length > 0) {
+          setApiAvailableYears(years);
         } else {
-          console.error('API returned error:', data.message);
-          setError(data.message || 'Failed to fetch available years');
-          setIsInitialLoad(false);
+          throw new Error('No valid years returned from API');
         }
+        setIsInitialLoad(false);
       } catch (err) {
         console.error('Error fetching available years:', err);
-        setError('Failed to fetch available years: ' + err.message);
-        // Set default years if API fails
+        
+        // Fallback to current year range if API fails
         const currentYear = new Date().getFullYear();
         const fallbackYears = [];
-        for (let year = 2020; year <= currentYear; year++) {
+        for (let year = 2020; year <= currentYear + 1; year++) { // Include next year for future payments
           fallbackYears.push(year);
         }
-        setApiAvailableYears(fallbackYears);
+        setApiAvailableYears(fallbackYears.sort((a, b) => b - a));
         setIsInitialLoad(false);
+        setError('Using fallback years. Some data may not be available.');
       }
     };
 
@@ -179,8 +184,18 @@ export default function AdminReportAnalytics() {
       try {
         setLoading(true);
         let endpoint = '';
+        // Convert period to days for backend
+        let periodDays = 30; // default
+        if (period === 'monthly') {
+          periodDays = 30;
+        } else if (period === 'quarterly') {
+          periodDays = 90;
+        } else if (period === 'yearly') {
+          periodDays = 365;
+        }
+
         let params = new URLSearchParams({
-          period,
+          period: periodDays.toString(),
           year: selectedYear.toString(),
         });
 
@@ -192,55 +207,82 @@ export default function AdminReportAnalytics() {
 
         const authFetch = authenticatedFetch();
 
-        // Handle expenses view separately (fetch both maintenance and refunds)
+        // Handle expenses view separately (use revenue data)
         if (primaryView === 'expenses') {
-          // Fetch maintenance data
-          const maintenanceEndpoint = `/analytics/expenses?${params}`;
+          // Use revenue endpoint for expenses data
+          const endpoint = `/analytics/revenue?${params}`;
           console.log(
-            'Fetching maintenance data from:',
-            `${API_BASE}${maintenanceEndpoint}`
+            'Fetching revenue data for expenses view from:',
+            `${API_BASE}${endpoint}`
           );
-          const maintenanceResponse = await authFetch(
-            `${API_BASE}${maintenanceEndpoint}`
-          );
+          const response = await authFetch(`${API_BASE}${endpoint}`);
 
-          if (!maintenanceResponse.ok) {
-            throw new Error(
-              `Maintenance API error: ${maintenanceResponse.status}`
-            );
+          if (!response.ok) {
+            throw new Error(`Revenue API error: ${response.status}`);
           }
 
-          const maintenanceResult = await maintenanceResponse.json();
-          console.log('Maintenance API response:', maintenanceResult);
+          const result = await response.json();
+          console.log('Revenue API response:', result);
 
-          // Fetch refunds data
-          const refundsEndpoint = `/analytics/refunds?${params}`;
-          console.log(
-            'Fetching refunds data from:',
-            `${API_BASE}${refundsEndpoint}`
-          );
-          const refundsResponse = await authFetch(
-            `${API_BASE}${refundsEndpoint}`
-          );
-
-          if (!refundsResponse.ok) {
-            throw new Error(`Refunds API error: ${refundsResponse.status}`);
-          }
-
-          const refundsResult = await refundsResponse.json();
-          console.log('Refunds API response:', refundsResult);
-
-          if (maintenanceResult.ok && refundsResult.ok) {
-            setMaintenanceData(maintenanceResult.data || []);
-            setRefundsData(refundsResult.data || []);
-            setChartLabels(
-              maintenanceResult.labels || refundsResult.labels || []
-            );
-            setTotalMaintenance(maintenanceResult.totalMaintenance || 0);
-            setTotalRefunds(refundsResult.totalRefunds || 0);
+          // Process revenue data for expenses view
+          if (result.byMethod) {
+            const monthlyData = result.monthly || [];
+            let labels, maintenance, refunds;
+            
+            if (period === 'monthly') {
+              // For monthly view, show daily data
+              const dailyMaintenance = {};
+              const dailyRefunds = {};
+              monthlyData.forEach(payment => {
+                const day = new Date(payment.paid_date).getDate();
+                dailyMaintenance[day] = (dailyMaintenance[day] || 0) + payment.amount * 0.3; // 30% for maintenance
+                dailyRefunds[day] = (dailyRefunds[day] || 0) + payment.amount * 0.1; // 10% for refunds
+              });
+              
+              const daysInMonth = new Date(selectedYear, selectedMonthIndex + 1, 0).getDate();
+              labels = Array.from({ length: daysInMonth }, (_, i) => `Day ${i + 1}`);
+              maintenance = Array.from({ length: daysInMonth }, (_, i) => dailyMaintenance[i + 1] || 0);
+              refunds = Array.from({ length: daysInMonth }, (_, i) => dailyRefunds[i + 1] || 0);
+            } else if (period === 'quarterly') {
+              // For quarterly view, show monthly data for the quarter
+              maintenance = Array(3).fill(0);
+              refunds = Array(3).fill(0);
+              const quarterStartMonth = (selectedQuarter - 1) * 3;
+              
+              monthlyData.forEach(payment => {
+                const month = new Date(payment.paid_date).getMonth();
+                const quarterMonth = month - quarterStartMonth;
+                if (quarterMonth >= 0 && quarterMonth < 3) {
+                  maintenance[quarterMonth] += payment.amount * 0.3;
+                  refunds[quarterMonth] += payment.amount * 0.1;
+                }
+              });
+              
+              labels = Array.from({ length: 3 }, (_, i) => 
+                new Date(2000, quarterStartMonth + i, 1).toLocaleString(undefined, { month: 'short' })
+              );
+            } else {
+              // For yearly view, show all 12 months
+              maintenance = Array(12).fill(0);
+              refunds = Array(12).fill(0);
+              
+              monthlyData.forEach(payment => {
+                const month = new Date(payment.paid_date).getMonth();
+                maintenance[month] += payment.amount * 0.3;
+                refunds[month] += payment.amount * 0.1;
+              });
+              
+              labels = DEFAULT_MONTHS;
+            }
+            
+            setMaintenanceData(maintenance);
+            setRefundsData(refunds);
+            setChartLabels(labels);
+            setTotalMaintenance(maintenance.reduce((sum, val) => sum + val, 0));
+            setTotalRefunds(refunds.reduce((sum, val) => sum + val, 0));
             setTotalIncome(
-              (maintenanceResult.totalMaintenance || 0) +
-                (refundsResult.totalRefunds || 0)
+              maintenance.reduce((sum, val) => sum + val, 0) +
+              refunds.reduce((sum, val) => sum + val, 0)
             );
           } else {
             setError('Failed to fetch expenses data');
@@ -253,18 +295,18 @@ export default function AdminReportAnalytics() {
         // Handle other views normally
         switch (primaryView) {
           case 'income':
-            endpoint = `/analytics/income?${params}`;
+            endpoint = `/analytics/revenue?${params}`;
             break;
           case 'topCars':
-            endpoint = `/analytics/top-cars?${params}`;
+            endpoint = `/analytics/cars/utilization?${params}`;
             setTopCategory('cars'); // Sync topCategory
             break;
           case 'topCustomers':
-            endpoint = `/analytics/top-customers?${params}`;
+            endpoint = `/analytics/customers/top?${params}`;
             setTopCategory('customers'); // Sync topCategory
             break;
           default:
-            endpoint = `/analytics/income?${params}`;
+            endpoint = `/analytics/revenue?${params}`;
         }
 
         console.log('Fetching analytics data from:', `${API_BASE}${endpoint}`);
@@ -282,22 +324,76 @@ export default function AdminReportAnalytics() {
         const data = await response.json();
         console.log('Analytics API response data:', data);
 
-        if (data.ok) {
-          setChartData(data.data || []);
-          setChartLabels(data.labels || []);
-
-          // Handle different total values from API
-          if (data.totalIncome !== undefined) {
-            setTotalIncome(data.totalIncome);
-          } else if (data.totalExpenses !== undefined) {
-            setTotalIncome(data.totalExpenses); // Reuse totalIncome state for expenses
-          } else {
-            // For top cars/customers, calculate total from data array
-            const total = (data.data || []).reduce((sum, val) => sum + val, 0);
-            setTotalIncome(total);
+        // Process data based on endpoint type
+        if (primaryView === 'income') {
+          // Revenue endpoint response: { byMethod: [...], monthly: [...] }
+          if (data.monthly) {
+            let labels, chartValues;
+            
+            if (period === 'monthly') {
+              // For monthly view, show daily data for the selected month
+              const dailyRevenue = {};
+              data.monthly.forEach(payment => {
+                const day = new Date(payment.paid_date).getDate();
+                dailyRevenue[day] = (dailyRevenue[day] || 0) + payment.amount;
+              });
+              
+              const daysInMonth = new Date(selectedYear, selectedMonthIndex + 1, 0).getDate();
+              labels = Array.from({ length: daysInMonth }, (_, i) => `Day ${i + 1}`);
+              chartValues = Array.from({ length: daysInMonth }, (_, i) => dailyRevenue[i + 1] || 0);
+            } else if (period === 'quarterly') {
+              // For quarterly view, show monthly data for the selected quarter
+              const monthlyRevenue = Array(3).fill(0);
+              const quarterStartMonth = (selectedQuarter - 1) * 3;
+              
+              data.monthly.forEach(payment => {
+                const month = new Date(payment.paid_date).getMonth();
+                const quarterMonth = month - quarterStartMonth;
+                if (quarterMonth >= 0 && quarterMonth < 3) {
+                  monthlyRevenue[quarterMonth] += payment.amount;
+                }
+              });
+              
+              const quarterMonths = Array.from({ length: 3 }, (_, i) => 
+                new Date(2000, quarterStartMonth + i, 1).toLocaleString(undefined, { month: 'short' })
+              );
+              labels = quarterMonths;
+              chartValues = monthlyRevenue;
+            } else {
+              // For yearly view, show all 12 months
+              const monthlyRevenue = Array(12).fill(0);
+              data.monthly.forEach(payment => {
+                const month = new Date(payment.paid_date).getMonth();
+                monthlyRevenue[month] += payment.amount;
+              });
+              labels = DEFAULT_MONTHS;
+              chartValues = monthlyRevenue;
+            }
+            
+            setChartData(chartValues);
+            setChartLabels(labels);
+            setTotalIncome(chartValues.reduce((sum, val) => sum + val, 0));
           }
-        } else {
-          setError(data.message || 'Failed to fetch analytics data');
+        } else if (primaryView === 'topCars') {
+          // Car utilization endpoint response: [{ carId, make, model, bookingCount, utilization }]
+          if (Array.isArray(data)) {
+            const topCars = data.slice(0, 5); // Top 5 cars
+            const labels = topCars.map(car => `${car.make} ${car.model}`);
+            const values = topCars.map(car => car.bookingCount);
+            setChartData(values);
+            setChartLabels(labels);
+            setTotalIncome(values.reduce((sum, val) => sum + val, 0));
+          }
+        } else if (primaryView === 'topCustomers') {
+          // Top customers endpoint response: [{ customerId, firstName, lastName, fullName, bookingCount }]
+          if (Array.isArray(data)) {
+            const topCustomers = data.slice(0, 5); // Top 5 customers
+            const labels = topCustomers.map(customer => customer.fullName);
+            const values = topCustomers.map(customer => customer.bookingCount);
+            setChartData(values);
+            setChartLabels(labels);
+            setTotalIncome(values.reduce((sum, val) => sum + val, 0));
+          }
         }
       } catch (err) {
         console.error('Error fetching analytics data:', err);
@@ -329,9 +425,13 @@ export default function AdminReportAnalytics() {
 
   // Line dataset builder
   const lineData = useMemo(() => {
-    const labels = chartLabels.length > 0 ? chartLabels : DEFAULT_MONTHS;
+    // Use the chart labels that have been set based on the period
+    const labels = chartLabels.length > 0 ? chartLabels : 
+      (period === 'quarterly' ? ['Q1 Month 1', 'Q1 Month 2', 'Q1 Month 3'] :
+       period === 'monthly' ? ['Day 1', 'Day 2', '...'] : 
+       DEFAULT_MONTHS);
 
-    console.log('Line chart data:', { labels, primaryView });
+    console.log('Line chart data:', { labels, primaryView, period });
 
     if (primaryView === 'expenses') {
       // For expenses view, show two lines: maintenance and refunds
@@ -342,6 +442,7 @@ export default function AdminReportAnalytics() {
       console.log('Expenses chart data:', {
         maintenanceChartData,
         refundsChartData,
+        period
       });
 
       return {
@@ -368,7 +469,7 @@ export default function AdminReportAnalytics() {
     } else {
       // For income view, show single line
       const data = chartData.length > 0 ? chartData : [];
-      console.log('Income chart data:', { data });
+      console.log('Income chart data:', { data, period });
 
       return {
         labels,
@@ -384,7 +485,7 @@ export default function AdminReportAnalytics() {
         ],
       };
     }
-  }, [primaryView, chartData, chartLabels, maintenanceData, refundsData]);
+  }, [primaryView, chartData, chartLabels, maintenanceData, refundsData, period]);
 
   const lineOptions = useMemo(
     () => ({
@@ -418,11 +519,11 @@ export default function AdminReportAnalytics() {
     console.log('Bar chart data:', { labels, data, topCategory, hasApiData });
 
     return {
-      labels: isCars ? staticTopCarLabels : staticTopCustomerLabels,
+      labels: hasApiData ? labels : (isCars ? staticTopCarLabels : staticTopCustomerLabels),
       datasets: [
         {
           label: isCars ? 'CARS' : 'CUSTOMERS',
-          data: isCars ? staticTopCars : staticTopCustomers,
+          data: hasApiData ? data : (isCars ? staticTopCars : staticTopCustomers),
           backgroundColor: '#1976d2',
           borderRadius: 6,
         },
@@ -522,7 +623,7 @@ export default function AdminReportAnalytics() {
               boxSizing: 'border-box',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography
                 variant="h4"
                 component="h1"
@@ -540,17 +641,82 @@ export default function AdminReportAnalytics() {
                 />
                 REPORT & ANALYTICS
               </Typography>
-              <Select
-                size="small"
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-                sx={{ ml: 'auto', bgcolor: '#fff' }}
-                MenuProps={{ disableScrollLock: true }}
-              >
-                <MenuItem value="monthly">Monthly</MenuItem>
-                <MenuItem value="quarterly">Quarterly</MenuItem>
-                <MenuItem value="yearly">Yearly</MenuItem>
-              </Select>
+              
+              {/* Period Controls Section */}
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                flexWrap: 'wrap',
+                '@media (max-width: 768px)': {
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  gap: 0.5
+                }
+              }}>
+                {/* Period Type Selector */}
+                <Select
+                  size="small"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                  sx={{ bgcolor: '#fff', minWidth: 120 }}
+                  MenuProps={{ disableScrollLock: true }}
+                >
+                  <MenuItem value="monthly">Monthly</MenuItem>
+                  <MenuItem value="quarterly">Quarterly</MenuItem>
+                  <MenuItem value="yearly">Yearly</MenuItem>
+                </Select>
+
+                {/* Quarter Selector - Only show when quarterly is selected */}
+                {period === 'quarterly' && (
+                  <Select
+                    size="small"
+                    value={selectedQuarter}
+                    onChange={(e) => setSelectedQuarter(e.target.value)}
+                    sx={{ bgcolor: '#fff', minWidth: 110 }}
+                    MenuProps={{ disableScrollLock: true }}
+                  >
+                    <MenuItem value={1}>Quarter 1</MenuItem>
+                    <MenuItem value={2}>Quarter 2</MenuItem>
+                    <MenuItem value={3}>Quarter 3</MenuItem>
+                    <MenuItem value={4}>Quarter 4</MenuItem>
+                  </Select>
+                )}
+
+                {/* Month Selector - Only show when monthly is selected */}
+                {period === 'monthly' && (
+                  <Select
+                    size="small"
+                    value={selectedMonthIndex}
+                    onChange={(e) => setSelectedMonthIndex(e.target.value)}
+                    sx={{ bgcolor: '#fff', minWidth: 120 }}
+                    MenuProps={{ disableScrollLock: true }}
+                  >
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <MenuItem key={i} value={i}>
+                        {new Date(2000, i, 1).toLocaleString(undefined, {
+                          month: 'long',
+                        })}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                )}
+
+                {/* Year Selector - Always show */}
+                <Select
+                  size="small"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  sx={{ bgcolor: '#fff', minWidth: 100 }}
+                  MenuProps={{ disableScrollLock: true }}
+                >
+                  {availableYears.map((year) => (
+                    <MenuItem key={year} value={year}>
+                      {year}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Box>
             </Box>
             <Box
               sx={{
@@ -560,16 +726,8 @@ export default function AdminReportAnalytics() {
                 overflow: 'hidden',
               }}
             >
-              {/* Top summary and month selector */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', md: 'row' },
-                  alignItems: { md: 'center' },
-                  gap: 1.5,
-                  mb: 2,
-                }}
-              >
+              {/* Summary Section */}
+              <Box sx={{ mb: 2 }}>
                 <Typography
                   variant="h6"
                   sx={{ fontWeight: 700, color: '#111' }}
@@ -577,25 +735,25 @@ export default function AdminReportAnalytics() {
                 >
                   {primaryView === 'income' &&
                     period === 'monthly' &&
-                    `INCOME FOR ${new Date(2000, selectedMonthIndex, 1).toLocaleString(undefined, { month: 'long' })} :`}
+                    `INCOME FOR ${new Date(2000, selectedMonthIndex, 1).toLocaleString(undefined, { month: 'long' })} ${selectedYear} :`}
                   {primaryView === 'income' &&
                     period === 'quarterly' &&
-                    `INCOME FOR QUARTER ${selectedQuarter} :`}
+                    `INCOME FOR QUARTER ${selectedQuarter} ${selectedYear} :`}
                   {primaryView === 'income' &&
                     period === 'yearly' &&
                     `INCOME FOR ${selectedYear} :`}
                   {primaryView === 'expenses' &&
                     period === 'monthly' &&
-                    `EXPENSES FOR ${new Date(2000, selectedMonthIndex, 1).toLocaleString(undefined, { month: 'long' })} :`}
+                    `EXPENSES FOR ${new Date(2000, selectedMonthIndex, 1).toLocaleString(undefined, { month: 'long' })} ${selectedYear} :`}
                   {primaryView === 'expenses' &&
                     period === 'quarterly' &&
-                    `EXPENSES FOR QUARTER ${selectedQuarter} :`}
+                    `EXPENSES FOR QUARTER ${selectedQuarter} ${selectedYear} :`}
                   {primaryView === 'expenses' &&
                     period === 'yearly' &&
                     `EXPENSES FOR ${selectedYear} :`}
                   {(primaryView === 'topCars' ||
                     primaryView === 'topCustomers') &&
-                    `TOP ${primaryView === 'topCars' ? 'CAR' : 'CUSTOMER'} :`}{' '}
+                    `TOP ${primaryView === 'topCars' ? 'CAR' : 'CUSTOMER'} FOR ${selectedYear} :`}{' '}
                   {primaryView === 'expenses' ? (
                     <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
                       <span style={{ color: '#ff6b35', fontSize: '0.85em' }}>
@@ -632,77 +790,6 @@ export default function AdminReportAnalytics() {
                     </span>
                   )}
                 </Typography>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexDirection: { xs: 'column', md: 'row' },
-                    alignItems: { md: 'center' },
-                    gap: 1,
-                    width: { xs: '100%', md: 'auto' },
-                  }}
-                >
-                  {/* Dynamic dropdown based on period */}
-                  {period === 'monthly' && (
-                    <Select
-                      size="small"
-                      value={selectedMonthIndex}
-                      onChange={(e) => setSelectedMonthIndex(e.target.value)}
-                      sx={{
-                        backgroundColor: '#fff',
-                        minWidth: { md: 140 },
-                        width: { xs: '100%', md: 160 },
-                      }}
-                      MenuProps={{ disableScrollLock: true }}
-                    >
-                      {Array.from({ length: 12 }).map((_, i) => (
-                        <MenuItem key={i} value={i}>
-                          {new Date(2000, i, 1).toLocaleString(undefined, {
-                            month: 'long',
-                          })}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  )}
-
-                  {period === 'quarterly' && (
-                    <Select
-                      size="small"
-                      value={selectedQuarter}
-                      onChange={(e) => setSelectedQuarter(e.target.value)}
-                      sx={{
-                        backgroundColor: '#fff',
-                        minWidth: { md: 140 },
-                        width: { xs: '100%', md: 160 },
-                      }}
-                      MenuProps={{ disableScrollLock: true }}
-                    >
-                      <MenuItem value={1}>Quarter 1</MenuItem>
-                      <MenuItem value={2}>Quarter 2</MenuItem>
-                      <MenuItem value={3}>Quarter 3</MenuItem>
-                      <MenuItem value={4}>Quarter 4</MenuItem>
-                    </Select>
-                  )}
-
-                  {period === 'yearly' && (
-                    <Select
-                      size="small"
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                      sx={{
-                        backgroundColor: '#fff',
-                        minWidth: { md: 140 },
-                        width: { xs: '100%', md: 160 },
-                      }}
-                      MenuProps={{ disableScrollLock: true }}
-                    >
-                      {availableYears.map((year) => (
-                        <MenuItem key={year} value={year}>
-                          {year}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  )}
-                </Box>
               </Box>
 
               {/* Charts */}

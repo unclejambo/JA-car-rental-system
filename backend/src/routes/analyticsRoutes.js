@@ -3,7 +3,9 @@ import {
   getDashboardStats,
   getBookingAnalytics,
   getRevenueAnalytics,
-  getCarUtilization
+  getCarUtilization,
+  getTopCustomers,
+  getAvailableYears
 } from '../controllers/analyticsController.js';
 import { verifyToken, adminOrStaff } from '../middleware/authMiddleware.js';
 
@@ -24,5 +26,11 @@ router.get('/revenue', getRevenueAnalytics);
 
 // Car utilization statistics
 router.get('/cars/utilization', getCarUtilization);
+
+// Top customers
+router.get('/customers/top', getTopCustomers);
+
+// Available years
+router.get('/years', getAvailableYears);
 
 export default router;

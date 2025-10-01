@@ -3,13 +3,11 @@ import prisma from '../config/prisma.js';
 // Get all fees
 export const getFees = async (req, res) => {
   try {
-    console.log('Attempting to fetch fees from database...');
     const fees = await prisma.manageFees.findMany({
       orderBy: {
         fee_type: 'asc'
       }
     });
-    console.log('Fetched fees from database:', fees);
 
     // Default fees in case database is empty
     const defaultFees = {

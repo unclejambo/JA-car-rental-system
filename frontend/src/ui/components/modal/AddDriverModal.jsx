@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { z } from 'zod';
 import {
   Dialog,
@@ -100,7 +100,7 @@ export default function AddDriverModal({ show, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate(formData)) return;
-    console.log('Add driver:', formData);
+
     onClose?.();
   };
 

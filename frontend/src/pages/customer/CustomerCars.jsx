@@ -550,7 +550,9 @@ function CustomerCars() {
               </Box>
             ) : (
               <Grid container spacing={3} sx={{ justifyContent: { xs: 'flex-start', sm: 'flex-start' } }}>
-                {filteredCars.map((car) => (
+                {filteredCars.map((car) => {
+                  const statusInfo = getStatusInfo(car.car_status);
+                  return (
                   <Grid item xs={12} sm={6} md={4} lg={3} key={car.car_id}>
                     <Card 
                       sx={{ 
@@ -566,6 +568,7 @@ function CustomerCars() {
                         },
                         cursor: 'pointer'
                       }}
+                      onClick={() => handleBookNow(car)}
                     >
                       <CardMedia
                         component="img"
@@ -577,85 +580,47 @@ function CustomerCars() {
                           backgroundColor: '#f5f5f5'
                         }}
                       />
-                    </Box>
-                    
-                    {/* Seat Filter Below Price Slider */}
-                    <FormControl size="small" fullWidth>
-                      <InputLabel sx={{ fontSize: '0.875rem' }}>Number of Seats</InputLabel>
-                      <Select
-                        value={seatFilter}
-                        label="Number of Seats"
-                        onChange={handleSeatFilterChange}
-                        sx={{ fontSize: '0.875rem' }}
-                        MenuProps={{
-                          disableScrollLock: true,
-                          PaperProps: {
-                            sx: {
-                              maxHeight: 200,
-                              '& .MuiMenuItem-root': {
-                                fontSize: '0.875rem'
-                              }
-                            }
-                          }
-                        }}
-                      >
-                        <MenuItem value="" sx={{ fontSize: '0.875rem' }}>All Seats</MenuItem>
-                        <MenuItem value="5" sx={{ fontSize: '0.875rem' }}>5 Seats</MenuItem>
-                        <MenuItem value="7" sx={{ fontSize: '0.875rem' }}>7 Seats</MenuItem>
-                      </Select>
-                    </FormControl>
-                    
-                  </Box>
-                </Box>
-              </Box>
-            </Box>
+                      
+                      <CardContent sx={{ flexGrow: 1, p: 2 }}>
+                        {/* Car Title */}
+                        <Typography variant="h6" sx={{ 
+                          fontWeight: 'bold', 
+                          mb: 1,
+                          fontSize: '1.1rem'
+                        }}>
+                          {car.make} {car.model}
+                        </Typography>
 
-            <Divider sx={{ mb: 3 }} />
+                        {/* Car Details */}
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          {car.year} • {car.no_of_seat} seats
+                        </Typography>
+                        
+                        {/* Plate Number */}
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          Plate: {car.license_plate}
+                        </Typography>
 
-            {/* Cars Content */}
-            <Box
-              sx={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'auto',
-              }}
-            >
-
-              {/* Cars Grid */}
-              {filteredCars.length === 0 ? (
-                <Box sx={{ 
-                  textAlign: 'center', 
-                  py: 8,
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  flexDirection: 'column',
-                  height: '50vh'
-                }}>
-                  <Typography variant="h6" color="text.secondary">
-                    {cars.length === 0 ? 'No cars available at the moment.' : 'No cars match your filter criteria.'}
-                  </Typography>
-                  {cars.length > 0 && filteredCars.length === 0 && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      Try adjusting your filters to see more results.
-                    </Typography>
-                  )}
-                </Box>
-              ) : (
-                <Grid container spacing={3} sx={{ maxWidth: '1200px', mx: 'auto' }}>
-                  {filteredCars.map((car) => {
-                    const statusInfo = getStatusInfo(car.car_status);
-                    return (
-                      <Grid item xs={12} sm={6} md={4} key={car.car_id}>
-                        <Card 
-                          sx={{ 
-                            fontWeight: 'bold', 
-                            color: '#c10007',
-                            fontSize: '1.2rem',
-                            mb: 2
+                        {/* Status Badge */}
+                        <Chip
+                          label={statusInfo.label}
+                          size="small"
+                          sx={{
+                            backgroundColor: statusInfo.color,
+                            color: statusInfo.textColor || 'white',
+                            fontWeight: 'bold',
+                            mb: 2,
+                            fontSize: '0.75rem'
                           }}
-                        >
+                        />
+
+                        {/* Price */}
+                        <Typography variant="h6" sx={{ 
+                          fontWeight: 'bold', 
+                          color: '#c10007',
+                          fontSize: '1.2rem',
+                          mb: 2
+                        }}>
                           ₱{car.rent_price?.toLocaleString() || '0'}/day
                         </Typography>
 
@@ -663,7 +628,10 @@ function CustomerCars() {
                         <Button
                           variant="contained"
                           fullWidth
-                          onClick={() => handleBookNow(car)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleBookNow(car);
+                          }}
                           disabled={car.car_status?.toLowerCase().includes('maint')}
                           sx={{
                             backgroundColor: car.car_status?.toLowerCase().includes('rent') ? '#ff9800' : '#c10007',
@@ -686,7 +654,8 @@ function CustomerCars() {
                       </CardContent>
                     </Card>
                   </Grid>
-                ))}
+                  );
+                })}
               </Grid>
             )}
           </>

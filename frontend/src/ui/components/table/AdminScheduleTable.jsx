@@ -1,7 +1,7 @@
 import { DataGrid } from '@mui/x-data-grid';
 import { Box, Button } from '@mui/material';
-import { useScheduleStore } from '../../../store/schedule';
 import PublicIcon from '@mui/icons-material/Public';
+import { useScheduleStore } from '../../../store/useScheduleStore';
 
 const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
   const updateReservationStatus = useScheduleStore(
@@ -33,7 +33,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
             second: undefined,
           });
         }
-      } catch (e) {
+      } catch {
         // fall through
       }
     }
@@ -264,7 +264,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
             <Button
               variant="contained"
               color="success"
-              onClick={() => console.log('GPS Clicked!')}
+              onClick={() => {/* TODO: Implement GPS tracking */}}
               size="small"
               sx={{
                 borderRadius: '50%',

@@ -1,6 +1,6 @@
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AddCarModal from '../../ui/components/modal/AddCarModal.jsx';
 import EditCarModal from '../../ui/components/modal/EditCarModal.jsx';
 import { HiTruck, HiWrenchScrewdriver } from 'react-icons/hi2';
@@ -14,7 +14,7 @@ import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
 export default function AdminCarPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { logout } = useAuth();
-  const authenticatedFetch = createAuthenticatedFetch(logout);
+  const authenticatedFetch = useMemo(() => createAuthenticatedFetch(logout), [logout]);
   const API_BASE = getApiBase();
 
   // UI state for the table fetch
@@ -38,7 +38,7 @@ export default function AdminCarPage() {
     };
 
     loadCars();
-  }, [API_BASE, authenticatedFetch]);
+  }, [API_BASE, authenticatedFetch]); // Now authenticatedFetch is properly memoized
 
   const [activeTab, setActiveTab] = useState('CARS');
   const [showAddModal, setShowAddModal] = useState(false);

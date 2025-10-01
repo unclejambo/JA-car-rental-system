@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { FaUpload } from 'react-icons/fa';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
@@ -132,7 +132,7 @@ export default function AddCarModal({ show, onClose }) {
         mileage: formData.mileage !== '' ? parseInt(formData.mileage) : 0,
       };
 
-      console.log('Creating car with data:', carData);
+
 
       const response = await authenticatedFetch(`${API_BASE}/cars`, {
         method: 'POST',
@@ -147,7 +147,7 @@ export default function AddCarModal({ show, onClose }) {
         throw new Error(errorData.error || 'Failed to create car');
       }
 
-      console.log('Car created successfully');
+
 
       // Reset form and close modal
       setFormData({

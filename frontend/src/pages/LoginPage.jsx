@@ -130,6 +130,7 @@ function LoginPage() {
 
   return (
     <>
+      <title>Login</title>
       <Header />
       <div
         className="m-0 p-0 h-screen overflow-auto"

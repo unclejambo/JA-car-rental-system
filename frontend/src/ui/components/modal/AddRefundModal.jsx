@@ -226,7 +226,13 @@ export default function AddRefundModal({ show, onClose }) {
   }, [show]);
 
   return (
-    <Dialog open={!!show} onClose={onClose} fullWidth maxWidth="xs">
+    <Dialog
+      open={!!show}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      disableScrollLock
+    >
       <DialogTitle>Add Refund</DialogTitle>
 
       <DialogContent dividers>

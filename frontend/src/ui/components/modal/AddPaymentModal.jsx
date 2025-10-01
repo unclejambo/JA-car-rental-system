@@ -227,7 +227,13 @@ export default function AddPaymentModal({ show, onClose }) {
   }, [show]);
 
   return (
-    <Dialog open={!!show} onClose={onClose} fullWidth maxWidth="xs">
+    <Dialog
+      open={!!show}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      disableScrollLock
+    >
       <DialogTitle>Add Payment</DialogTitle>
 
       <DialogContent dividers>

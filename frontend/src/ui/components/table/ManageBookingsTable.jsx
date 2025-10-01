@@ -129,6 +129,12 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
   const tabSpecificColumns = {
     BOOKINGS: [
       {
+        field: 'balance',
+        headerName: 'Balance',
+        flex: 1.2,
+        minWidth: 80,
+      },
+      {
         field: 'purpose',
         headerName: 'Purpose',
         flex: 1.2,

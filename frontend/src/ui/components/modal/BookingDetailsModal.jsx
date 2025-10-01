@@ -17,7 +17,8 @@ import {
   Collapse,
 } from '@mui/material';
 import { HiX, HiCreditCard } from 'react-icons/hi';
-import { getApiBase } from '../../../utils/api';
+import { getApiBase, createAuthenticatedFetch } from '../../../utils/api';
+import { useAuth } from '../../../hooks/useAuth';
 import { z } from 'zod';
 
 export default function BookingDetailsModal({
@@ -40,12 +41,16 @@ export default function BookingDetailsModal({
   const [fieldErrors, setFieldErrors] = useState({});
   const [driverName, setDriverName] = useState('');
 
+  // Auth hook for authenticated requests
+  const { logout } = useAuth();
+
   // Fetch driver name when modal opens and booking has a driver
   useEffect(() => {
     if (open && booking && booking.drivers_id && !booking.isSelfDriver) {
       const fetchDriverName = async () => {
         try {
-          const response = await fetch(
+          const authenticatedFetch = createAuthenticatedFetch(logout);
+          const response = await authenticatedFetch(
             `${getApiBase()}/drivers/${booking.drivers_id}`
           );
           if (response.ok) {
@@ -60,7 +65,7 @@ export default function BookingDetailsModal({
     } else {
       setDriverName('');
     }
-  }, [open, booking]);
+  }, [open, booking, logout]);
 
   if (!booking) return null;
 
@@ -172,7 +177,9 @@ export default function BookingDetailsModal({
 
       const validatedData = validationResult.data;
 
-      const response = await fetch(`${getApiBase()}/payments`, {
+      // Use authenticated fetch for payment creation
+      const authenticatedFetch = createAuthenticatedFetch(logout);
+      const response = await authenticatedFetch(`${getApiBase()}/payments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

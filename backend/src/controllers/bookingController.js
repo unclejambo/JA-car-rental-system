@@ -50,13 +50,23 @@ export const getBookingById = async (req, res) => {
       include: {
         customer: { select: { first_name: true, last_name: true } },
         car: { select: { make: true, model: true, year: true } },
+        driver: { select: { first_name: true} },
         payments: { select: { amount: true } },
       },
     });
 
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
-    const { customer, car, payments, ...rest } = booking;
+    const { customer, car, driver, payments, ...rest } = booking;
+    
+    // Debug logging
+    console.log('Backend Debug - Driver data:', {
+      drivers_id: rest.drivers_id,
+      driver_object: driver,
+      driver_first_name: driver?.first_name,
+      driver_exists: !!driver
+    });
+    
     const totalPaid = payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
     const remainingBalance = (rest.total_amount || 0) - totalPaid;
     
@@ -73,6 +83,7 @@ export const getBookingById = async (req, res) => {
       balance: remainingBalance, // Use the calculated balance
       customer_name: `${customer?.first_name ?? ''} ${customer?.last_name ?? ''}`.trim(),
       car_model: [car?.make, car?.model].filter(Boolean).join(' '),
+      driver_name: (driver && driver.first_name) ? driver.first_name : null,
       total_paid: totalPaid,
       remaining_balance: remainingBalance,
     };

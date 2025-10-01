@@ -35,7 +35,6 @@ export default function CustomerSideBar({
         />
         DASHBOARD
       </NavLink>
-      <br />
       <hr />
       <NavLink to="/customer-profile" onClick={onClose}>
         <HiOutlineUserCircle
@@ -43,13 +42,11 @@ export default function CustomerSideBar({
         />
         MY PROFILE
       </NavLink>
-      <br />
       <hr />
       <NavLink to="/customer-bookings" onClick={onClose}>
         <HiBookOpen style={{ verticalAlign: '-3px', marginRight: '5px' }} />
         MY BOOKINGS
       </NavLink>
-      <br />
       <hr />
       <NavLink to="/customer-history" onClick={onClose}>
         <HiOutlineClipboardDocumentCheck
@@ -57,33 +54,28 @@ export default function CustomerSideBar({
         />
         BOOKING HISTORY
       </NavLink>
-      <br />
       <hr />
       <NavLink to="/customer-cars" onClick={onClose}>
         <HiTruck style={{ verticalAlign: '-3px', marginRight: '5px' }} />
         CARS
       </NavLink>
-      <br />
       <hr />
       <NavLink to="/customer-schedule" onClick={onClose}>
         <HiCalendar style={{ verticalAlign: '-3px', marginRight: '5px' }} />
         SCHEDULE
       </NavLink>
-      <br />
       <hr />
       <NavLink to="/customer-account" onClick={onClose}>
         <HiCog8Tooth style={{ verticalAlign: '-3px', marginRight: '5px' }} />
         ACCOUNT SETTINGS
       </NavLink>
-      <br />
       <hr />
-
-      <NavLink onClick={handleLogout}>
+      <div className="logout-item" onClick={handleLogout}>
         <HiArrowLeftStartOnRectangle
           style={{ verticalAlign: '-3px', marginRight: '5px' }}
         />
         LOGOUT
-      </NavLink>
+      </div>
     </div>
   );
 

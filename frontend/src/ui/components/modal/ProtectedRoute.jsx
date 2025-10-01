@@ -5,25 +5,27 @@ import { useAuth } from '../../../hooks/useAuth.js';
 const ProtectedRoute = ({ children, requiredRole = null }) => {
   const { isAuthenticated, userRole, isLoading } = useAuth();
   const location = useLocation();
-  
-  console.log('ProtectedRoute check:', { 
-    isAuthenticated, 
-    userRole, 
-    isLoading, 
-    requiredRole, 
-    location: location.pathname 
-  });
+
+  // console.log('ProtectedRoute check:', {
+  //   isAuthenticated,
+  //   userRole,
+  //   isLoading,
+  //   requiredRole,
+  //   location: location.pathname,
+  // });
 
   // Show loading while checking authentication
   if (isLoading) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        fontSize: '18px'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontSize: '18px',
+        }}
+      >
         Loading...
       </div>
     );
@@ -41,15 +43,15 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
       // Staff can access admin routes, so continue
       return children;
     }
-    
+
     // Redirect based on user's actual role
     const roleRedirects = {
       admin: '/admindashboard',
       staff: '/admindashboard', // Staff uses same dashboard as admin
-      customer: '/dashboard',
-      driver: '/driverdashboard'
+      customer: '/customer-dashboard',
+      driver: '/driver-schedule',
     };
-    
+
     const redirectPath = roleRedirects[userRole] || '/login';
     return <Navigate to={redirectPath} replace />;
   }

@@ -18,6 +18,7 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import refundRoutes from './routes/refundRoute.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import adminProfileRoutes from './routes/adminProfileRoutes.js';
+import driverProfileRoutes from './routes/driverProfileRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import manageFeesRoutes from './routes/manageFeesRoutes.js'; // <--- added manage fees routes
 
@@ -56,6 +57,7 @@ app.use('/payments', paymentRoutes);
 app.use('/refunds', refundRoutes);
 app.use('/transactions', transactionRoutes);
 app.use('/admin-profile', adminProfileRoutes);
+app.use('/driver-profile', driverProfileRoutes);
 app.use('/analytics', analyticsRoutes);
 app.use('/manage-fees', manageFeesRoutes); // <--- added manage fees routes
 

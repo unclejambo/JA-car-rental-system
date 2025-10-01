@@ -16,11 +16,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userInfo');
-    
+
     setIsAuthenticated(false);
     setUserRole(null);
     setUser(null);
-    
+
     navigate('/login');
   }, [navigate]);
 
@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
       const response = await fetch(`${API_BASE}/api/auth/validate`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -69,9 +69,12 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const validateInterval = setInterval(() => {
-      checkAuthStatus();
-    }, 5 * 60 * 1000); // 5 minutes
+    const validateInterval = setInterval(
+      () => {
+        checkAuthStatus();
+      },
+      5 * 60 * 1000
+    ); // 5 minutes
 
     return () => clearInterval(validateInterval);
   }, [isAuthenticated, checkAuthStatus]);
@@ -93,15 +96,15 @@ export const AuthProvider = ({ children }) => {
   }, [isAuthenticated, navigate]);
 
   const login = (token, role, userInfo) => {
-    console.log('AuthContext login called with:', { token, role, userInfo });
+    // console.log('AuthContext login called with:', { token, role, userInfo });
     localStorage.setItem('authToken', token);
     localStorage.setItem('userRole', role);
     localStorage.setItem('userInfo', JSON.stringify(userInfo));
-    
+
     setIsAuthenticated(true);
     setUserRole(role);
     setUser(userInfo);
-    console.log('AuthContext state updated:', { isAuthenticated: true, role, userInfo });
+    // console.log('AuthContext state updated:', { isAuthenticated: true, role, userInfo });
   };
 
   const value = {
@@ -114,9 +117,5 @@ export const AuthProvider = ({ children }) => {
     checkAuthStatus,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

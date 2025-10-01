@@ -86,7 +86,7 @@ function LoginPage() {
       });
 
       const data = await response.json();
-      console.log('Login response:', data);
+      // console.log('Login response:', data);
 
       if (data.ok) {
         // Use auth context login method
@@ -105,7 +105,7 @@ function LoginPage() {
             navigate('/customer-dashboard');
             break;
           case 'driver':
-            navigate('/driverdashboard');
+            navigate('/driver-schedule');
             break;
           default:
             navigate('/');

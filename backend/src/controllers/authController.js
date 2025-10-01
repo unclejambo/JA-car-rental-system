@@ -148,8 +148,8 @@ async function login(req, res, next) {
     const redirectMap = {
       admin: '/admindashboard',
       staff: '/admindashboard', // Staff uses same dashboard as admin
-      driver: '/driverdashboard', 
-      customer: '/dashboard',
+      driver: '/driver-schedule', 
+      customer: '/customer-dashboard',
     };
     const redirect = redirectMap[role] || '/';
 

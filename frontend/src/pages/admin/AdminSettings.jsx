@@ -28,7 +28,7 @@ export default function AdminSettings() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
-  
+
   // Profile state
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({});
@@ -110,18 +110,28 @@ export default function AdminSettings() {
 
   const getChanges = () => {
     const changes = [];
-    
+
     Object.keys(draft).forEach((key) => {
       if (draft[key] !== profile[key]) {
         let fieldLabel = key;
         switch (key) {
-          case 'firstName': fieldLabel = 'First Name'; break;
-          case 'lastName': fieldLabel = 'Last Name'; break;
-          case 'contactNo': fieldLabel = 'Contact Number'; break;
-          case 'email': fieldLabel = 'Email'; break;
-          case 'username': fieldLabel = 'Username'; break;
+          case 'firstName':
+            fieldLabel = 'First Name';
+            break;
+          case 'lastName':
+            fieldLabel = 'Last Name';
+            break;
+          case 'contactNo':
+            fieldLabel = 'Contact Number';
+            break;
+          case 'email':
+            fieldLabel = 'Email';
+            break;
+          case 'username':
+            fieldLabel = 'Username';
+            break;
         }
-        
+
         changes.push({
           field: fieldLabel,
           from: profile[key],
@@ -147,18 +157,21 @@ export default function AdminSettings() {
     if (!draft.lastName?.trim()) return 'Last name is required';
     if (!draft.email?.trim()) return 'Email is required';
     if (!draft.username?.trim()) return 'Username is required';
-    
+
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(draft.email)) return 'Please enter a valid email';
-    
+
     // Password validation if changing
     if (passwordData.newPassword && passwordData.newPassword.trim() !== '') {
-      if (!passwordData.currentPassword) return 'Current password is required to change password';
-      if (passwordData.newPassword.length < 6) return 'New password must be at least 6 characters';
-      if (passwordData.newPassword !== passwordData.confirmPassword) return 'Password confirmation does not match';
+      if (!passwordData.currentPassword)
+        return 'Current password is required to change password';
+      if (passwordData.newPassword.length < 6)
+        return 'New password must be at least 6 characters';
+      if (passwordData.newPassword !== passwordData.confirmPassword)
+        return 'Password confirmation does not match';
     }
-    
+
     return null;
   };
 
@@ -215,7 +228,7 @@ export default function AdminSettings() {
           username: result.data.username || '',
           userType: result.data.user_type || '',
         };
-        
+
         setProfile(updatedProfile);
         setDraft(updatedProfile);
         setPasswordData({
@@ -542,7 +555,12 @@ export default function AdminSettings() {
                         {!isEditing && (
                           <Typography sx={{ fontWeight: 700 }}>
                             User Type:{' '}
-                            <span style={{ fontWeight: 400, textTransform: 'capitalize' }}>
+                            <span
+                              style={{
+                                fontWeight: 400,
+                                textTransform: 'capitalize',
+                              }}
+                            >
                               {profile.userType || 'N/A'}
                             </span>
                           </Typography>
@@ -579,17 +597,34 @@ export default function AdminSettings() {
                             />
                           ) : (
                             <Typography sx={{ flex: 1, pl: 2 }}>
-                              <strong>Username:</strong> {profile.username || 'N/A'}
+                              <strong>Username:</strong>{' '}
+                              {profile.username || 'N/A'}
                             </Typography>
                           )}
                         </Box>
 
                         {isEditing && (
-                          <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
-                            <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                          <Box
+                            sx={{
+                              mt: 2,
+                              p: 2,
+                              bgcolor: '#f5f5f5',
+                              borderRadius: 2,
+                            }}
+                          >
+                            <Typography
+                              variant="subtitle2"
+                              sx={{ mb: 2, fontWeight: 600 }}
+                            >
                               Change Password (Optional)
                             </Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 2,
+                              }}
+                            >
                               <TextField
                                 label="Current Password"
                                 type="password"
@@ -669,7 +704,7 @@ export default function AdminSettings() {
           </Box>
         </Box>
       </Box>
-      
+
       {/* Confirmation Modal */}
       <ConfirmationModal
         open={showConfirmModal}
@@ -688,15 +723,15 @@ export default function AdminSettings() {
       />
 
       {/* Success Message */}
-      <Snackbar 
-        open={showSuccess} 
-        autoHideDuration={4000} 
+      <Snackbar
+        open={showSuccess}
+        autoHideDuration={4000}
         onClose={() => setShowSuccess(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <Alert 
-          onClose={() => setShowSuccess(false)} 
-          severity="success" 
+        <Alert
+          onClose={() => setShowSuccess(false)}
+          severity="success"
           sx={{ width: '100%' }}
         >
           {successMessage}

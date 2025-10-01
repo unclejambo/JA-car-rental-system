@@ -23,6 +23,8 @@ import CustomerBookingHistory from './pages/customer/CustomerBookingHistory.jsx'
 import CustomerCars from './pages/customer/CustomerCars.jsx';
 import CustomerSchedule from './pages/customer/CustomerSchedule.jsx';
 import CustomerSettings from './pages/customer/CustomerSettings.jsx';
+import DriverSchedule from './pages/driver/DriverSchedule.jsx'; // =====> uncomment if driver routes are implemented
+import DriverSettings from './pages/driver/DriverSettings.jsx'; // ====> uncomment if driver routes are implemented
 import { AuthProvider } from './contexts/AuthContext.jsx';
 
 createRoot(document.getElementById('root')).render(
@@ -109,9 +111,6 @@ createRoot(document.getElementById('root')).render(
             }
           />
 
-
-       
-
           <Route
             path="/customer-dashboard"
             element={
@@ -139,7 +138,6 @@ createRoot(document.getElementById('root')).render(
             }
           />
 
-          
           <Route
             path="/customer-history"
             element={
@@ -176,6 +174,23 @@ createRoot(document.getElementById('root')).render(
             }
           />
 
+          <Route
+            path="/driver-schedule"
+            element={
+              <ProtectedRoute requiredRole="driver">
+                <DriverSchedule />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/driver-settings"
+            element={
+              <ProtectedRoute requiredRole="driver">
+                <DriverSettings />
+              </ProtectedRoute>
+            }
+          />
 
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

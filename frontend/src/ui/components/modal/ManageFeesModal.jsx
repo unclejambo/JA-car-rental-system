@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import {
   Dialog,
@@ -10,24 +10,31 @@ import {
   Stack,
   Box,
   Typography,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
-
-// Single source of truth for default amounts (also used as placeholders)
-const defaultFees = {
-  overDueFee: '100',
-  damageFee: '10000',
-  equipmentLossFee: '1000',
-  gasLevelFee: '300',
-  cleaningFee: '200',
-};
+import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
 
 // Zod schema for positive integer fees
 const feesSchema = z.object({
-  overDueFee: z.coerce.number().int().gt(0, 'Must be a positive integer'),
-  damageFee: z.coerce.number().int().gt(0, 'Must be a positive integer'),
-  equipmentLossFee: z.coerce.number().int().gt(0, 'Must be a positive integer'),
-  gasLevelFee: z.coerce.number().int().gt(0, 'Must be a positive integer'),
-  cleaningFee: z.coerce.number().int().gt(0, 'Must be a positive integer'),
+  reservation_fee: z.coerce.number().int().gt(0, 'Must be a positive integer'),
+  cleaning_fee: z.coerce.number().int().gt(0, 'Must be a positive integer'),
+  driver_fee: z.coerce.number().int().gt(0, 'Must be a positive integer'),
+  overdue_fee: z.coerce.number().int().gt(0, 'Must be a positive integer'),
+  damage_fee: z.coerce.number().int().gt(0, 'Must be a positive integer'),
+  equipment_loss_fee: z.coerce
+    .number()
+    .int()
+    .gt(0, 'Must be a positive integer'),
+  gas_level_fee: z.coerce.number().int().gt(0, 'Must be a positive integer'),
+  stain_removal_fee: z.coerce
+    .number()
+    .int()
+    .gt(0, 'Must be a positive integer'),
+  security_deposit_fee: z.coerce
+    .number()
+    .int()
+    .gt(0, 'Must be a positive integer'),
 });
 
 const formatPeso = (v) => {
@@ -36,17 +43,111 @@ const formatPeso = (v) => {
   return `₱ ${n.toLocaleString('en-PH')}`;
 };
 
+// Fee items configuration for UI display
+const feeItems = [
+  {
+    label: 'Reservation Fee',
+    key: 'reservation_fee',
+  },
+  {
+    label: 'Cleaning Fee',
+    key: 'cleaning_fee',
+  },
+  {
+    label: 'Driver Fee',
+    key: 'driver_fee',
+  },
+  {
+    label: 'Overdue Fee',
+    key: 'overdue_fee',
+  },
+  {
+    label: 'Damage Fee',
+    key: 'damage_fee',
+  },
+  {
+    label: 'Equipment Loss Fee',
+    key: 'equipment_loss_fee',
+  },
+  {
+    label: 'Gas Level Fee',
+    key: 'gas_level_fee',
+  },
+  {
+    label: 'Stain Removal Fee',
+    key: 'stain_removal_fee',
+  },
+  {
+    label: 'Security Deposit Fee',
+    key: 'security_deposit_fee',
+  },
+];
+
 export default function ManageFeesModal({ show, onClose }) {
-  // Saved (view) values: initialize with defaults
-  const [savedData, setSavedData] = useState({ ...defaultFees });
+  // Saved (view) values: initialize empty
+  const [savedData, setSavedData] = useState({});
 
   // Editing state
   const [isEditing, setIsEditing] = useState(false);
 
-  // In-form editing values: initialize with defaults
-  const [formData, setFormData] = useState({ ...defaultFees });
+  // In-form editing values: initialize empty
+  const [formData, setFormData] = useState({});
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  // Fetch fees from database
+  useEffect(() => {
+    if (show) {
+      fetchFees();
+    }
+  }, [show]);
+
+  // Handle focus management when modal opens/closes
+  useEffect(() => {
+    if (show) {
+      // Clear any existing focus issues when modal opens
+      const focusedElement = document.activeElement;
+      if (focusedElement && focusedElement.blur) {
+        focusedElement.blur();
+      }
+    }
+  }, [show]);
+
+  const fetchFees = async () => {
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const authFetch = createAuthenticatedFetch(() => {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+      });
+      const API_BASE = getApiBase().replace(/\/$/, '');
+      const response = await authFetch(`${API_BASE}/manage-fees`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const fees = await response.json();
+
+      // Convert numbers to strings for form handling
+      const stringifiedFees = {};
+      Object.keys(fees).forEach((key) => {
+        stringifiedFees[key] = fees[key]?.toString() || '0';
+      });
+
+      setSavedData(stringifiedFees);
+      setFormData(stringifiedFees);
+    } catch (error) {
+      console.error('Error fetching fees:', error);
+      setFetchError('Failed to load fees. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const validate = (data) => {
     const res = feesSchema.safeParse(data);
@@ -103,40 +204,88 @@ export default function ManageFeesModal({ show, onClose }) {
     setIsEditing(false);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate(formData)) return;
-    setSavedData({ ...formData });
-    setIsEditing(false);
+
+    setSaving(true);
+    try {
+      const authFetch = createAuthenticatedFetch(() => {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+      });
+      const API_BASE = getApiBase().replace(/\/$/, '');
+
+      // Convert string values to numbers for API
+      const numericData = {};
+      Object.keys(formData).forEach((key) => {
+        numericData[key] = parseInt(formData[key], 10);
+      });
+
+      console.log('Sending fee data:', numericData);
+
+      const response = await authFetch(`${API_BASE}/manage-fees`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(numericData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Server error response:', errorData);
+        throw new Error(
+          `HTTP error! status: ${response.status}${errorData.details ? ': ' + errorData.details : ''}`
+        );
+      }
+
+      const result = await response.json();
+
+      // Update saved data with the response
+      const stringifiedFees = {};
+      Object.keys(result.fees).forEach((key) => {
+        stringifiedFees[key] = result.fees[key]?.toString() || '0';
+      });
+
+      setSavedData(stringifiedFees);
+      setIsEditing(false);
+      setFetchError(null);
+    } catch (error) {
+      console.error('Error updating fees:', error);
+      setFetchError('Failed to save fees. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const items = [
-    {
-      label: 'Overdue Fee',
-      key: 'overDueFee',
-      placeholder: defaultFees.overDueFee,
-    },
-    {
-      label: 'Damage Fee',
-      key: 'damageFee',
-      placeholder: defaultFees.damageFee,
-    },
-    {
-      label: 'Equipment Loss Fee',
-      key: 'equipmentLossFee',
-      placeholder: defaultFees.equipmentLossFee,
-    },
-    {
-      label: 'Gas Level Fee',
-      key: 'gasLevelFee',
-      placeholder: defaultFees.gasLevelFee,
-    },
-    {
-      label: 'Cleaning Fee',
-      key: 'cleaningFee',
-      placeholder: defaultFees.cleaningFee,
-    },
-  ];
+  // const items = [
+  //   {
+  //     label: 'Overdue Fee',
+  //     key: 'overDueFee',
+  //     placeholder: defaultFees.overDueFee,
+  //   },
+  //   {
+  //     label: 'Damage Fee',
+  //     key: 'damageFee',
+  //     placeholder: defaultFees.damageFee,
+  //   },
+  //   {
+  //     label: 'Equipment Loss Fee',
+  //     key: 'equipmentLossFee',
+  //     placeholder: defaultFees.equipmentLossFee,
+  //   },
+  //   {
+  //     label: 'Gas Level Fee',
+  //     key: 'gasLevelFee',
+  //     placeholder: defaultFees.gasLevelFee,
+  //   },
+  //   {
+  //     label: 'Cleaning Fee',
+  //     key: 'cleaningFee',
+  //     placeholder: defaultFees.cleaningFee,
+  //   },
+  // ];
 
   return (
     <Dialog
@@ -145,6 +294,10 @@ export default function ManageFeesModal({ show, onClose }) {
       fullWidth
       maxWidth="xs"
       disableScrollLock // prevent scrollbar removal => no width jump
+      disableEnforceFocus // Prevents focus enforcement issues
+      disableAutoFocus // Prevents automatic focus on first element
+      aria-labelledby="manage-fees-dialog-title"
+      aria-describedby="manage-fees-dialog-description"
     >
       <Box
         sx={{
@@ -153,7 +306,9 @@ export default function ManageFeesModal({ show, onClose }) {
           justifyContent: 'space-between',
         }}
       >
-        <DialogTitle sx={{ pb: 1 }}>Manage Fees</DialogTitle>
+        <DialogTitle id="manage-fees-dialog-title" sx={{ pb: 1 }}>
+          Manage Fees
+        </DialogTitle>
         {!isEditing && (
           <Button
             type="button"
@@ -167,10 +322,22 @@ export default function ManageFeesModal({ show, onClose }) {
         )}
       </Box>
 
-      <DialogContent dividers>
-        {!isEditing && (
+      <DialogContent id="manage-fees-dialog-description" dividers>
+        {fetchError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {fetchError}
+          </Alert>
+        )}
+
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+            <CircularProgress />
+          </Box>
+        )}
+
+        {!isEditing && !loading && (
           <Stack spacing={1.25}>
-            {items.map((it) => (
+            {feeItems.map((it) => (
               <Box
                 key={it.key}
                 sx={{
@@ -182,27 +349,26 @@ export default function ManageFeesModal({ show, onClose }) {
               >
                 <Typography>{it.label}</Typography>
                 <Typography fontWeight={600}>
-                  {formatPeso(savedData[it.key])}
+                  {formatPeso(savedData[it.key] || '0')}
                 </Typography>
               </Box>
             ))}
           </Stack>
         )}
 
-        {isEditing && (
+        {isEditing && !loading && (
           <form id="manageFeesForm" onSubmit={handleSubmit}>
             <Stack spacing={2}>
-              {items.map((it) => (
+              {feeItems.map((it) => (
                 <TextField
                   key={it.key}
                   label={it.label}
                   name={it.key}
                   type="text"
                   inputMode="numeric"
-                  value={formData[it.key]}
+                  value={formData[it.key] || ''}
                   onChange={handleAmountChange}
                   onKeyDown={blockNonNumericKeys}
-                  placeholder={it.placeholder}
                   required
                   error={!!errors[it.key]}
                   helperText={errors[it.key]}
@@ -230,13 +396,16 @@ export default function ManageFeesModal({ show, onClose }) {
               form="manageFeesForm"
               variant="contained"
               color="success"
+              disabled={saving}
+              startIcon={saving ? <CircularProgress size={20} /> : null}
             >
-              Save
+              {saving ? 'Saving...' : 'Save'}
             </Button>
             <Button
               onClick={handleCancelEdit}
               color="error"
               variant="outlined"
+              disabled={saving}
               sx={{
                 '&:hover': { backgroundColor: 'error.main', color: 'white' },
               }}

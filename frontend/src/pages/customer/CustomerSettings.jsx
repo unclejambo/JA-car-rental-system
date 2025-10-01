@@ -22,49 +22,102 @@ import CustomerSettingsHeader from '../../ui/components/header/CustomerSettingsH
 import Loading from '../../ui/components/Loading';
 import { HiCog8Tooth } from 'react-icons/hi2';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
+import { useCustomerStore } from '../../store/customer';
+import SaveCancelModal from '../../ui/components/modal/SaveCancelModal'; // adjust path as needed
+import { FormControlLabel, Checkbox } from '@mui/material';
 
 export default function CustomerSettings() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [loading, _setLoading] = useState(false); // -----------------------------------> CHANGE TO TRUE WHEN CONTENT IS ADDED
+  const [loading, _setLoading] = useState(true);
   const [error, _setError] = useState(null);
 
   // Profile state
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
-    firstName: 'Jude Christian',
-    lastName: 'Amoguis',
-    address: 'R.Calo Butuan City',
-    email: 'judechristian@gmail.com',
-    birthdate: 'April 18, 1997',
-    username: 'Judeex',
-    password: 'Judeex18',
+    firstName: '',
+    lastName: '',
+    address: '',
+    email: '',
+    contactNumber: '',
+    birthdate: '',
+    username: '',
+    password: '',
   });
 
-  const [avatarOpen, setAvatarOpen] = useState(false); // for avatar modal
-  const [showPassword, setShowPassword] = useState(false); // for password toggle
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [draft, setDraft] = useState(profile);
 
-  const [activeTab, setActiveTab] = useState('INFO'); // Tabs state (FIX: was missing in your previous file)
+  // Tabs
+  const [activeTab, setActiveTab] = useState('INFO');
   const handleTabChange = (tab) => setActiveTab(tab);
 
-  const [isEditingLicense, setIsEditingLicense] = useState(false); // for license tab
-  const [licenseNo, setLicenseNo] = useState('K01-17-002807');
-  const [licenseRestrictions, setLicenseRestrictions] =
-    useState('A, A1 B, B1, B2');
-  const [licenseExpiration, setLicenseExpiration] = useState('2032-04-18');
-  const [licenseImage, setLicenseImage] = useState('/license.png');
-  const [draftLicenseNo, setDraftLicenseNo] = useState(licenseNo);
+  // Modals
+  const [openInfoSaveModal, setOpenInfoSaveModal] = useState(false);
+  const [openInfoCancelModal, setOpenInfoCancelModal] = useState(false);
+  const [openLicenseSaveModal, setOpenLicenseSaveModal] = useState(false);
+  const [openLicenseCancelModal, setOpenLicenseCancelModal] = useState(false);
+
+  // Checkbox
+  const [receiveUpdatesPhone, setReceiveUpdatesPhone] = useState(false);
+  const [receiveUpdatesEmail, setReceiveUpdatesEmail] = useState(false);
+
+  // License state
+  const [isEditingLicense, setIsEditingLicense] = useState(false);
+  const [licenseNo, setLicenseNo] = useState('');
+  const [licenseRestrictions, setLicenseRestrictions] = useState('');
+  const [licenseExpiration, setLicenseExpiration] = useState('');
+  const [licenseImage, setLicenseImage] = useState('');
+  const [draftLicenseNo, setDraftLicenseNo] = useState('');
+  const [draftLicenseRestrictions, setDraftLicenseRestrictions] = useState('');
+  const [draftLicenseExpiration, setDraftLicenseExpiration] = useState('');
   const [previewLicenseImage, setPreviewLicenseImage] = useState(null);
   const [draftLicenseImage, setDraftLicenseImage] = useState(null);
-  const [draftLicenseRestrictions, setDraftLicenseRestrictions] =
-    useState(licenseRestrictions);
-  const [draftLicenseExpiration, setDraftLicenseExpiration] =
-    useState(licenseExpiration);
   const [openLicenseModal, setOpenLicenseModal] = useState(false);
 
+  // Store hook
+  const { getCustomerById } = useCustomerStore();
+
+  useEffect(() => {
+    let user = JSON.parse(localStorage.getItem('userInfo'));
+    const loadCustomer = async () => {
+      try {
+        _setLoading(true);
+        _setError(null);
+        const customer = await getCustomerById(user?.id);
+
+        if (customer) {
+          setLicenseNo(customer.driver_license_no || '');
+          setLicenseRestrictions(customer.DriverLicense?.restrictions || '');
+          setLicenseExpiration(customer.DriverLicense?.expiry_date || '');
+          setLicenseImage(customer.DriverLicense?.dl_img_url || '/license.png');
+
+          setProfile((prev) => ({
+            ...prev,
+            firstName: customer.first_name || '',
+            lastName: customer.last_name || '',
+            address: customer.address || '',
+            email: customer.email || '',
+            contactNumber: customer.contact_no || '',
+            username: customer.username || '',
+            password: customer.password || '',
+          }));
+        }
+      } catch (err) {
+        console.error('Error loading customer:', err);
+        _setError('Failed to load data. Please try again later.');
+      } finally {
+        _setLoading(false);
+      }
+    };
+
+    loadCustomer();
+  }, [getCustomerById]);
+
+  // keep draft synced with profile
   useEffect(() => {
     setDraft(profile);
-  }, [isEditing, profile]);
+  }, [profile]);
 
   function handleEditToggle() {
     setIsEditing(true);
@@ -76,7 +129,6 @@ export default function CustomerSettings() {
   }
 
   function handleSave() {
-    // In real app, send update to server here. For now, update local state.
     setProfile(draft);
     setIsEditing(false);
   }
@@ -84,6 +136,38 @@ export default function CustomerSettings() {
   function handleChange(e) {
     const { name, value } = e.target;
     setDraft((s) => ({ ...s, [name]: value }));
+  }
+
+  function handleSaveConfirm() {
+    setProfile(draft);
+    setIsEditing(false);
+    setOpenInfoSaveModal(false);
+  }
+
+  function handleCancelConfirm() {
+    setDraft(profile);
+    setIsEditing(false);
+    setOpenInfoCancelModal(false);
+  }
+  function handleLicenseSaveConfirm() {
+    setLicenseNo(draftLicenseNo);
+    setLicenseRestrictions(draftLicenseRestrictions);
+    setLicenseExpiration(draftLicenseExpiration);
+    if (draftLicenseImage) {
+      setLicenseImage(previewLicenseImage);
+    }
+    setIsEditingLicense(false);
+    setOpenLicenseSaveModal(false);
+  }
+
+  function handleLicenseCancelConfirm() {
+    setDraftLicenseNo(licenseNo);
+    setDraftLicenseRestrictions(licenseRestrictions);
+    setDraftLicenseExpiration(licenseExpiration);
+    setPreviewLicenseImage(null);
+    setDraftLicenseImage(null);
+    setIsEditingLicense(false);
+    setOpenLicenseCancelModal(false);
   }
 
   if (loading) {
@@ -398,18 +482,18 @@ export default function CustomerSettings() {
 
                           {isEditing ? (
                             <TextField
-                              label="Birthdate"
-                              name="birthdate"
-                              value={draft.birthdate}
+                              label="Contactnumber"
+                              name="contactnumber"
+                              value={draft.contactNumber}
                               onChange={handleChange}
                               size="small"
                               sx={{ width: { xs: '100%', md: '50%' } }}
                             />
                           ) : (
                             <Typography sx={{ fontWeight: 700 }}>
-                              Birthdate:{' '}
+                              Contact Number:{' '}
                               <span style={{ fontWeight: 400 }}>
-                                {profile.birthdate}
+                                {profile.contactNumber}
                               </span>
                             </Typography>
                           )}
@@ -505,6 +589,42 @@ export default function CustomerSettings() {
                               )}
                             </Box>
                           </Box>
+                          {/* CheckBox */}
+                          <Box
+                            sx={{
+                              mt: 2,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 1,
+                            }}
+                          >
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={receiveUpdatesPhone}
+                                  onChange={(e) =>
+                                    setReceiveUpdatesPhone(e.target.checked)
+                                  }
+                                  color="primary"
+                                  disabled={!isEditing} // ⬅️ disable when not editing
+                                />
+                              }
+                              label="Receive updates via Phone"
+                            />
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={receiveUpdatesEmail}
+                                  onChange={(e) =>
+                                    setReceiveUpdatesEmail(e.target.checked)
+                                  }
+                                  color="primary"
+                                  disabled={!isEditing} // ⬅️ disable when not editing
+                                />
+                              }
+                              label="Receive updates via Email"
+                            />
+                          </Box>
 
                           {isEditing && (
                             <Box
@@ -521,8 +641,7 @@ export default function CustomerSettings() {
                                 color="primary"
                                 size="small"
                                 startIcon={<SaveIcon />}
-                                onClick={handleSave}
-                                sx={{ width: { xs: '100%', md: '100%' } }}
+                                onClick={() => setOpenInfoSaveModal(true)} // open modal
                               >
                                 Save
                               </Button>
@@ -531,8 +650,7 @@ export default function CustomerSettings() {
                                 color="inherit"
                                 size="small"
                                 startIcon={<CloseIcon />}
-                                onClick={handleCancel}
-                                sx={{ width: { xs: '100%', md: '100%' } }}
+                                onClick={() => setOpenInfoCancelModal(true)} // open modal
                               >
                                 Cancel
                               </Button>
@@ -561,7 +679,14 @@ export default function CustomerSettings() {
                     {/* Top-right Edit Button */}
                     {!isEditingLicense && (
                       <IconButton
-                        onClick={() => setIsEditingLicense(true)}
+                        onClick={() => {
+                          setDraftLicenseNo(licenseNo);
+                          setDraftLicenseRestrictions(licenseRestrictions);
+                          setDraftLicenseExpiration(licenseExpiration);
+                          setPreviewLicenseImage(null);
+                          setDraftLicenseImage(null);
+                          setIsEditingLicense(true);
+                        }}
                         sx={{
                           position: 'absolute',
                           top: 12,
@@ -698,27 +823,22 @@ export default function CustomerSettings() {
                     {isEditingLicense && (
                       <Box
                         sx={{
-                          position: 'absolute',
-                          bottom: 10,
-                          left: '50%',
-                          transform: 'translateX(-50%)',
+                          position: { xs: 'static', md: 'absolute' }, // static on mobile, absolute on desktop
+                          mt: { xs: 3, md: 0 }, // ✅ add top margin on mobile
+                          bottom: { md: 10 }, // keep bottom positioning only for desktop
+                          left: { md: '50%' },
+                          transform: { md: 'translateX(-50%)' },
                           display: 'flex',
+                          justifyContent: 'center',
                           gap: 2,
+                          width: { xs: '100%', md: 'auto' }, // full-width buttons on mobile
                         }}
                       >
                         <Button
                           variant="contained"
                           color="primary"
                           startIcon={<SaveIcon />}
-                          onClick={() => {
-                            setLicenseNo(draftLicenseNo);
-                            setLicenseRestrictions(draftLicenseRestrictions);
-                            setLicenseExpiration(draftLicenseExpiration);
-                            if (draftLicenseImage) {
-                              setLicenseImage(previewLicenseImage);
-                            }
-                            setIsEditingLicense(false);
-                          }}
+                          onClick={() => setOpenLicenseSaveModal(true)} // open modal
                         >
                           Save
                         </Button>
@@ -726,14 +846,7 @@ export default function CustomerSettings() {
                           variant="outlined"
                           color="inherit"
                           startIcon={<CloseIcon />}
-                          onClick={() => {
-                            setDraftLicenseNo(licenseNo);
-                            setDraftLicenseRestrictions(licenseRestrictions);
-                            setDraftLicenseExpiration(licenseExpiration);
-                            setPreviewLicenseImage(null);
-                            setDraftLicenseImage(null);
-                            setIsEditingLicense(false);
-                          }}
+                          onClick={() => setOpenLicenseCancelModal(true)} // open modal
                         >
                           Cancel
                         </Button>
@@ -805,7 +918,33 @@ export default function CustomerSettings() {
           </Box>
         </Box>
       </Box>
+      {/* ---- MODALS ---- */}
+      <SaveCancelModal
+        open={openInfoSaveModal}
+        onClose={() => setOpenInfoSaveModal(false)}
+        onConfirm={handleSaveConfirm}
+        type="save"
+      />
 
+      <SaveCancelModal
+        open={openInfoCancelModal}
+        onClose={() => setOpenInfoCancelModal(false)}
+        onConfirm={handleCancelConfirm}
+        type="cancel"
+      />
+      <SaveCancelModal
+        open={openLicenseSaveModal}
+        onClose={() => setOpenLicenseSaveModal(false)}
+        onConfirm={handleLicenseSaveConfirm}
+        type="save"
+      />
+
+      <SaveCancelModal
+        open={openLicenseCancelModal}
+        onClose={() => setOpenLicenseCancelModal(false)}
+        onConfirm={handleLicenseCancelConfirm}
+        type="cancel"
+      />
       {/* Avatar Modal — single instance kept at bottom (shows full-size) */}
       <Modal open={avatarOpen} onClose={() => setAvatarOpen(false)}>
         <Box

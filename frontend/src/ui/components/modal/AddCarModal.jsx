@@ -1,18 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { FaUpload } from 'react-icons/fa';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Box,
-  Typography,
-  TextField,
-  Grid,
-  Alert,
-  InputAdornment,
-} from '@mui/material';
+import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api.js';
 
@@ -71,10 +61,7 @@ export default function AddCarModal({ show, onClose }) {
     }
 
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      setError(
-        'Unsupported file type. Please select a PNG, JPEG, or JPG image.'
-      );
-
+      setError('Unsupported file type. Please select a PNG, JPEG, or JPG image.');
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -101,28 +88,18 @@ export default function AddCarModal({ show, onClose }) {
     uploadFormData.append('model', formData.model);
     uploadFormData.append('licensePlate', formData.license_plate);
 
-    console.log(
-      'Uploading car image to:',
-      `${API_BASE}/api/storage/car-images`
-    );
+    console.log('Uploading car image to:', `${API_BASE}/api/storage/car-images`);
 
-    const response = await authenticatedFetch(
-      `${API_BASE}/api/storage/car-images`,
-      {
-        method: 'POST',
-        body: uploadFormData,
-      }
-    );
-
+    const response = await authenticatedFetch(`${API_BASE}/api/storage/car-images`, {
+      method: 'POST',
+      body: uploadFormData,
+    });
 
     const result = await response.json();
     console.log('Car image upload response:', result);
 
     if (!response.ok) {
-      throw new Error(
-        result.error || result.message || 'Failed to upload car image'
-      );
-
+      throw new Error(result.error || result.message || 'Failed to upload car image');
     }
 
     return result.filePath || result.path || result.url || result.publicUrl;
@@ -135,7 +112,7 @@ export default function AddCarModal({ show, onClose }) {
 
     try {
       let carImageUrl = 'default-car-image.jpg';
-
+      
       // Upload car image first if one is selected
       if (carImageFile) {
         console.log('Uploading car image...');
@@ -184,7 +161,7 @@ export default function AddCarModal({ show, onClose }) {
       });
       setCarImageFile(null);
       onClose();
-
+      
       // Refresh the page to show the new car
       window.location.reload();
     } catch (err) {
@@ -196,171 +173,195 @@ export default function AddCarModal({ show, onClose }) {
   };
 
   return (
-    <Dialog open={!!show} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Add Car</DialogTitle>
-      <DialogContent dividers>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        <Box
-          component="form"
-          id="addCarForm"
-          onSubmit={handleSubmit}
-          noValidate
-        >
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
+    <>
+      {show && (
+        <div className="modal-overlay" onClick={onClose}>
+          <form
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={handleSubmit}
+          >
+            <h1 className="font-pathway" style={{ margin: '0 0 10px 0' }}>
+              ADD CAR
+            </h1>
+
+            {error && <div className="error-message" style={{
+              fontSize: '0.875rem', 
+              color: '#DC2626', 
+              backgroundColor: '#FEF2F2', 
+              padding: '12px', 
+              borderRadius: '4px', 
+              border: '1px solid #FECACA',
+              marginBottom: '16px'
+            }}>{error}</div>}
+
+            <div className="field-row">
+              <label className="field-label font-pathway">Make</label>
+              <input
+                className="font-pathway"
                 name="make"
-                label="Make"
                 value={formData.make}
                 onChange={handleChange}
-                fullWidth
+                placeholder="Make"
                 required
-                size="small"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
+            </div>
+            <div className="field-row">
+              <label className="field-label font-pathway">Model</label>
+              <input
+                className="font-pathway"
                 name="model"
-                label="Model"
                 value={formData.model}
                 onChange={handleChange}
-                fullWidth
+                placeholder="Model"
                 required
-                size="small"
               />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
+            </div>
+            <div className="field-row">
+              <label className="field-label font-pathway">Year</label>
+              <input
+                className="font-pathway"
                 name="year"
-                label="Year"
                 type="number"
+                min="1900"
+                max={new Date().getFullYear() + 1}
                 value={formData.year}
                 onChange={handleChange}
-                inputProps={{ min: 1900, max: new Date().getFullYear() + 1 }}
-                fullWidth
+                placeholder="Year"
                 required
-                size="small"
               />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
+            </div>
+            <div className="field-row">
+              <label className="field-label font-pathway">Mileage</label>
+              <input
+                className="font-pathway"
                 name="mileage"
-                label="Mileage"
                 type="number"
+                min="0"
                 value={formData.mileage}
                 onChange={handleChange}
-                inputProps={{ min: 0 }}
-                fullWidth
-                size="small"
+                placeholder="Mileage"
               />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
+            </div>
+            <div className="field-row">
+              <label className="field-label font-pathway">Seats</label>
+              <input
+                className="font-pathway"
                 name="no_of_seat"
-                label="Seats"
                 type="number"
+                min="1"
+                max="20"
                 value={formData.no_of_seat}
                 onChange={handleChange}
-                inputProps={{ min: 1, max: 20 }}
-                fullWidth
+                placeholder="Seats"
                 required
-                size="small"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
+            </div>
+            <div className="field-row">
+              <label className="field-label font-pathway">Rent Price</label>
+              <input
+                className="font-pathway"
                 name="rent_price"
-                label="Rent Price"
                 type="number"
+                min="0"
+                step="0.01"
                 value={formData.rent_price}
                 onChange={handleChange}
-                inputProps={{ min: 0 }}
-                fullWidth
+                placeholder="Rent Price"
                 required
-                size="small"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">₱</InputAdornment>
-                  ),
-                }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
+            </div>
+            <div className="field-row">
+              <label className="field-label font-pathway">License Plate</label>
+              <input
+                className="font-pathway"
                 name="license_plate"
-                label="License Plate"
                 value={formData.license_plate}
                 onChange={handleChange}
-                fullWidth
+                placeholder="License Plate"
                 required
-                size="small"
               />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                Car Image
+            </div>
+            
+            {/* Car Image Upload */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: '600', mb: 1 }}>
+                CAR IMAGE
               </Typography>
-              <input
-                ref={fileInputRef}
-                id="carImageUpload"
-                type="file"
-                accept={ALLOWED_FILE_TYPES.join(',')}
-                style={{ display: 'none' }}
-                onChange={handleFileChange}
-              />
-              <Button
-                variant="outlined"
-                startIcon={<FaUpload />}
-                onClick={() => fileInputRef.current?.click()}
-                size="small"
+              <Box>
+                <input
+                  ref={fileInputRef}
+                  id="carImageUpload"
+                  name="file"
+                  type="file"
+                  onChange={handleFileChange}
+                  accept={ALLOWED_FILE_TYPES.join(',')}
+                  style={{ display: 'none' }}
+                />
+                <Button
+                  variant="outlined"
+                  component="label"
+                  htmlFor="carImageUpload"
+                  startIcon={<FaUpload />}
+                  sx={{
+                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                    borderColor: 'rgba(156, 163, 175, 0.5)',
+                    color: 'rgba(75, 85, 99, 1)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(209, 213, 219, 0.8)',
+                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                    },
+                  }}>
+                  {carImageFile ? 'Change Image' : 'Upload Car Image'}
+                </Button>
+                
+                {carImageFile && (
+                  <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'rgba(75, 85, 99, 1)', flex: 1 }}>
+                      {carImageFile.name}
+                    </Typography>
+                    <Button
+                      type="button"
+                      onClick={removeFile}
+                      variant="text"
+                      color="error"
+                      size="small"
+                      sx={{ fontSize: '0.875rem', textDecoration: 'underline', minWidth: 'auto' }}
+                    >
+                      Remove
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+
+            <div
+              className="btn-container"
+              style={{
+                display: 'flex',
+                gap: '10px',
+                marginTop: '15px',
+              }}
+            >
+              <button
+                type="submit"
+                className="font-pathway save-btn"
+                disabled={isLoading}
               >
-                {carImageFile ? 'Change Image' : 'Upload Image'}
-              </Button>
-              {carImageFile && (
-                <Box
-                  sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}
-                >
-                  <Typography variant="body2" sx={{ flex: 1 }}>
-                    {carImageFile.name}
-                  </Typography>
-                  <Button
-                    type="button"
-                    onClick={removeFile}
-                    color="error"
-                    size="small"
-                  >
-                    Remove
-                  </Button>
-                </Box>
-              )}
-            </Grid>
-          </Grid>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button
-          type="submit"
-          form="addCarForm"
-          variant="contained"
-          color="success"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Saving...' : 'Save'}
-        </Button>
-        <Button
-          onClick={onClose}
-          variant="outlined"
-          color="error"
-          disabled={isLoading}
-          sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
-        >
-          Cancel
-        </Button>
-      </DialogActions>
-    </Dialog>
+                {isLoading ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                type="button"
+                className="font-pathway cancel-btn"
+                onClick={onClose}
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </>
   );
 }

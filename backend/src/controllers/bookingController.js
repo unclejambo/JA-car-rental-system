@@ -1,4 +1,4 @@
-import prisma from '../config/prisma.js';
+import prisma from "../config/prisma.js";
 
 export const getBookings = async (req, res) => {
   try {
@@ -6,19 +6,39 @@ export const getBookings = async (req, res) => {
       include: {
         customer: { select: { first_name: true, last_name: true } },
         car: { select: { make: true, model: true, year: true } },
+        payments: { select: { amount: true } },
       },
     });
 
-    const shaped = bookings.map(({ customer, car, ...rest }) => ({
-      ...rest,
-      customer_name: `${customer?.first_name ?? ''} ${customer?.last_name ?? ''}`.trim(),
-      car_model: [car?.make, car?.model].filter(Boolean).join(' '),
-    }));
+    // Update balances in database and shape response
+    const shaped = await Promise.all(
+      bookings.map(async ({ customer, car, payments, ...rest }) => {
+        const totalPaid = payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+        const remainingBalance = (rest.total_amount || 0) - totalPaid;
+        
+        // Update the balance in the database if it's different
+        if (rest.balance !== remainingBalance) {
+          await prisma.booking.update({
+            where: { booking_id: rest.booking_id },
+            data: { balance: remainingBalance },
+          });
+        }
+        
+        return {
+          ...rest,
+          balance: remainingBalance, // Use the calculated balance
+          customer_name: `${customer?.first_name ?? ''} ${customer?.last_name ?? ''}`.trim(),
+          car_model: [car?.make, car?.model].filter(Boolean).join(' '),
+          total_paid: totalPaid,
+          remaining_balance: remainingBalance,
+        };
+      })
+    );
 
     res.json(shaped);
   } catch (error) {
-    console.error('Error fetching bookings:', error);
-    res.status(500).json({ error: 'Failed to fetch bookings' });
+    console.error("Error fetching bookings:", error);
+    res.status(500).json({ error: "Failed to fetch bookings" });
   }
 };
 
@@ -30,22 +50,137 @@ export const getBookingById = async (req, res) => {
       include: {
         customer: { select: { first_name: true, last_name: true } },
         car: { select: { make: true, model: true, year: true } },
+        driver: { select: { first_name: true} },
+        payments: { select: { amount: true } },
       },
     });
 
-    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (!booking) return res.status(404).json({ error: "Booking not found" });
 
-    const { customer, car, ...rest } = booking;
+    const { customer, car, driver, payments, ...rest } = booking;
+    
+    const totalPaid = payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+    const remainingBalance = (rest.total_amount || 0) - totalPaid;
+    
+    // Update the balance in the database if it's different
+    if (rest.balance !== remainingBalance) {
+      await prisma.booking.update({
+        where: { booking_id: rest.booking_id },
+        data: { balance: remainingBalance },
+      });
+    }
+    
     const shaped = {
       ...rest,
+      balance: remainingBalance, // Use the calculated balance
       customer_name: `${customer?.first_name ?? ''} ${customer?.last_name ?? ''}`.trim(),
       car_model: [car?.make, car?.model].filter(Boolean).join(' '),
+      driver_name: (driver && driver.first_name) ? driver.first_name : null,
+      total_paid: totalPaid,
+      remaining_balance: remainingBalance,
     };
 
     res.json(shaped);
   } catch (error) {
-    console.error('Error fetching booking:', error);
-    res.status(500).json({ error: 'Failed to fetch booking' });
+    console.error("Error fetching booking:", error);
+    res.status(500).json({ error: "Failed to fetch booking" });
+  }
+};
+
+// @desc    Create a booking request (for customers)
+// @route   POST /bookings
+// @access  Private/Customer
+export const createBookingRequest = async (req, res) => {
+  try {
+    const {
+      car_id,
+      customer_id,
+      booking_date,
+      purpose,
+      start_date,
+      end_date,
+      pickup_time,
+      pickup_loc,
+      dropoff_loc,
+      isSelfDriver,
+      drivers_id,
+      booking_type, // 'deliver' or 'pickup'
+      delivery_location,
+    } = req.body;
+
+    console.log("Creating booking request with data:", req.body);
+
+    // Validate required fields
+    if (!car_id || !customer_id || !start_date || !end_date || !purpose) {
+      return res.status(400).json({
+        error:
+          "Missing required fields: car_id, customer_id, start_date, end_date, purpose",
+      });
+    }
+
+    // Check if car exists and is available
+    const car = await prisma.car.findUnique({
+      where: { car_id: parseInt(car_id) },
+    });
+
+    if (!car) {
+      return res.status(404).json({ error: "Car not found" });
+    }
+
+    // Create the booking
+    const newBooking = await prisma.booking.create({
+      data: {
+        car_id: parseInt(car_id),
+        customer_id: parseInt(customer_id),
+        booking_date: new Date(booking_date || new Date()),
+        purpose,
+        start_date: new Date(start_date),
+        end_date: new Date(end_date),
+        pickup_time: pickup_time ? new Date(pickup_time) : new Date(start_date),
+        pickup_loc: pickup_loc || delivery_location,
+        dropoff_loc,
+        isSelfDriver: Boolean(isSelfDriver),
+        drivers_id: isSelfDriver
+          ? null
+          : drivers_id
+          ? parseInt(drivers_id)
+          : null,
+        booking_status: "Pending", // Admin needs to approve
+        payment_status: "Pending",
+        total_amount: null, // Will be calculated by admin
+        isExtend: false,
+        isCancel: false,
+        isRelease: false,
+        isReturned: false,
+      },
+      include: {
+        car: {
+          select: {
+            make: true,
+            model: true,
+            year: true,
+            rent_price: true,
+          },
+        },
+        customer: {
+          select: {
+            first_name: true,
+            last_name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    console.log("Booking created successfully:", newBooking.booking_id);
+
+    res.status(201).json({
+      message: "Booking request submitted successfully",
+      booking: newBooking,
+    });
+  } catch (error) {
+    console.error("Error creating booking request:", error);
+    res.status(500).json({ error: "Failed to create booking request" });
   }
 };
 
@@ -77,6 +212,39 @@ export const createBooking = async (req, res) => {
     }
 
     const {
+      booking_id,
+      customer_id,
+      car_id,
+      booking_date,
+      purpose,
+      start_date,
+      end_date,
+      pickup_time,
+      pickup_loc,
+      dropoff_time,
+      dropoff_loc,
+      refunds,
+      isSelfDriver,
+      isExtend,
+      new_end_date,
+      isCancel,
+      total_amount,
+      payment_status,
+      isRelease,
+      isReturned,
+      booking_status,
+      drivers_id, // This must be an existing driver in the system (FK)
+      admin_id,
+      extensions,
+      payments,
+      releases,
+      transactions,
+    } = req.body;
+
+    const newBooking = await prisma.booking.create({
+      data: {
+        booking_id,
+        customer_id,
         car_id,
         booking_date,
         purpose,
@@ -229,6 +397,7 @@ export const createBooking = async (req, res) => {
       booking: newBooking
     });
   } catch (error) {
+
     console.error('Error creating booking:', error);
     
     // Handle specific Prisma errors
@@ -273,6 +442,37 @@ export const updateBooking = async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
     const {
+      customer_id,
+      car_id,
+      booking_date,
+      purpose,
+      start_date,
+      end_date,
+      pickup_time,
+      pickup_loc,
+      dropoff_time,
+      dropoff_loc,
+      refunds,
+      isSelfDriver,
+      isExtend,
+      new_end_date,
+      isCancel,
+      total_amount,
+      payment_status,
+      isRelease,
+      isReturned,
+      booking_status,
+      drivers_id,
+      admin_id,
+      extensions,
+      payments,
+      releases,
+      transactions,
+    } = req.body;
+
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: {
         customer_id,
         car_id,
         booking_date,
@@ -299,48 +499,15 @@ export const updateBooking = async (req, res) => {
         payments,
         releases,
         transactions,
-    } = req.body;
-
-    const updatedBooking = await prisma.booking.update({
-        where: { booking_id: bookingId },
-        data: {
-            customer_id,
-            car_id,
-            booking_date,
-            purpose,
-            start_date,
-            end_date,
-            pickup_time,
-            pickup_loc,
-            dropoff_time,
-            dropoff_loc,
-            refunds,
-            isSelfDriver,
-            isExtend,
-            new_end_date,
-            isCancel,
-            total_amount,
-            payment_status,
-            isRelease,
-            isReturned,
-            booking_status,
-            drivers_id,
-            admin_id,
-            extensions,
-            payments,
-            releases,
-            transactions,
-        },
+      },
     });
 
     res.json(updatedBooking);
   } catch (error) {
-    console.error('Error updating booking:', error);
-    res.status(500).json({ error: 'Failed to update booking' });
+    console.error("Error updating booking:", error);
+    res.status(500).json({ error: "Failed to update booking" });
   }
 };
-
-
 
 export const deleteBooking = async (req, res) => {
   try {
@@ -348,10 +515,11 @@ export const deleteBooking = async (req, res) => {
     await prisma.booking.delete({ where: { booking_id: bookingId } });
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting booking:', error);
-    res.status(500).json({ error: 'Failed to delete booking' });
+    console.error("Error deleting booking:", error);
+    res.status(500).json({ error: "Failed to delete booking" });
   }
 };
+
 
 // @desc    Get customer's own bookings
 // @route   GET /bookings/my-bookings/list

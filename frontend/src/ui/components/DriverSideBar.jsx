@@ -14,7 +14,7 @@ import { HiMiniSquaresPlus } from 'react-icons/hi2';
 import { HiArrowLeftStartOnRectangle } from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth.js';
 
-export default function AdminSideBar({
+export default function DriverSideBar({
   mobileOpen = false,
   onClose = () => {},
 }) {
@@ -28,48 +28,12 @@ export default function AdminSideBar({
 
   const SidebarContent = (
     <div id="admin-sidebar" className="admin-sidebar" role="navigation">
-      <NavLink to="/#" onClick={onClose}>
-        <HiMiniSquaresPlus
-          style={{ verticalAlign: '-3px', marginRight: '5px' }}
-        />
-        DASHBOARD
-      </NavLink>
-      <hr />
-      <NavLink to="/manage-booking" onClick={onClose}>
-        <HiBookOpen style={{ verticalAlign: '-3px', marginRight: '5px' }} />
-        MANAGE BOOKINGS
-      </NavLink>
-      <hr />
-      <NavLink to="/manage-car" onClick={onClose}>
-        <HiTruck style={{ verticalAlign: '-3px', marginRight: '5px' }} />
-        MANAGE CARS
-      </NavLink>
-      <hr />
-      <NavLink to="/manage-user" onClick={onClose}>
-        <HiOutlineUserGroup
-          style={{ verticalAlign: '-3px', marginRight: '5px' }}
-        />
-        MANAGE USERS
-      </NavLink>
-      <hr />
-      <NavLink to="/schedule" onClick={onClose}>
+      <NavLink to="/driver-schedule" onClick={onClose}>
         <HiCalendar style={{ verticalAlign: '-3px', marginRight: '5px' }} />
         SCHEDULE
       </NavLink>
       <hr />
-      <NavLink to="/transaction-logs" onClick={onClose}>
-        <HiDocumentCurrencyDollar
-          style={{ verticalAlign: '-3px', marginRight: '5px' }}
-        />
-        TRANSACTION LOGS
-      </NavLink>
-      <hr />
-      <NavLink to="/report-analytics" onClick={onClose}>
-        <HiChartBar style={{ verticalAlign: '-3px', marginRight: '5px' }} />
-        REPORT & ANALYTICS
-      </NavLink>
-      <hr />
-      <NavLink to="/settings" onClick={onClose}>
+      <NavLink to="/driver-settings" onClick={onClose}>
         <HiCog8Tooth style={{ verticalAlign: '-3px', marginRight: '5px' }} />
         SETTINGS
       </NavLink>

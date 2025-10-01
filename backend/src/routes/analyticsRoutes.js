@@ -1,36 +1,28 @@
 import express from 'express';
-import {
-  getIncomeData,
-  getExpensesData,
-  getRefundsData,
-  getTopCarsData,
-  getTopCustomersData,
-  getAvailableYears
+import { 
+  getDashboardStats,
+  getBookingAnalytics,
+  getRevenueAnalytics,
+  getCarUtilization
 } from '../controllers/analyticsController.js';
-import { verifyToken, requireAdminOrStaff } from '../middleware/authMiddleware.js';
+import { verifyToken, adminOrStaff } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Protect all analytics routes with authentication and admin/staff authorization
+// Analytics routes - require admin/staff authentication
 router.use(verifyToken);
-router.use(requireAdminOrStaff);
+router.use(adminOrStaff);
 
-// GET /analytics/income?period=monthly&year=2024&month=5
-router.get('/income', getIncomeData);
+// Dashboard statistics
+router.get('/dashboard', getDashboardStats);
 
-// GET /analytics/expenses?period=quarterly&year=2024&quarter=1
-router.get('/expenses', getExpensesData);
+// Booking analytics
+router.get('/bookings', getBookingAnalytics);
 
-// GET /analytics/refunds?period=quarterly&year=2024&quarter=1
-router.get('/refunds', getRefundsData);
+// Revenue analytics
+router.get('/revenue', getRevenueAnalytics);
 
-// GET /analytics/top-cars?period=yearly&year=2024
-router.get('/top-cars', getTopCarsData);
-
-// GET /analytics/top-customers?period=monthly&year=2024&month=3
-router.get('/top-customers', getTopCustomersData);
-
-// GET /analytics/years - Get available years for dropdown
-router.get('/years', getAvailableYears);
+// Car utilization statistics
+router.get('/cars/utilization', getCarUtilization);
 
 export default router;

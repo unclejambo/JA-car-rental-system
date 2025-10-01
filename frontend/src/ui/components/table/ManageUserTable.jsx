@@ -2,9 +2,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Box, Select, MenuItem, useMediaQuery } from '@mui/material';
 
 // use Vite env var, fallback to localhost; remove trailing slash if present
-const API_BASE = (
-  import.meta.env.VITE_API_URL || 'http://localhost:3001'
-).replace(/\/$/, '');
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
 
 const ManageUserTable = ({ activeTab, rows, loading }) => {
   const isSmallScreen = useMediaQuery('(max-width:600px)');
@@ -58,11 +56,7 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              style={{
-                color: '#1976d2',
-                textDecoration: 'none',
-                fontWeight: 500,
-              }}
+              style={{ color: '#1976d2', textDecoration: 'none', fontWeight: 500 }}
             >
               Link
             </a>
@@ -137,68 +131,39 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
     headerName: 'Status',
     flex: 1,
     minWidth: 120,
-    editable: false,
+    editable: true,
     sortable: false,
     headerAlign: 'center',
     align: 'center',
     renderCell: (params) => {
-      // If STAFF tab and user_type is superadmin -> show static label 'ADMIN'
-      if (
-        activeTab === 'STAFF' &&
-        (params.row?.user_type === 'admin' ||
-          params.row?.userType === 'admin')
-      ) {
-        return (
-          <Box
-            sx={{
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: 1,
-            }}
-          >
-            ADMIN
-          </Box>
-        );
-      }
       const handleStatusChange = async (e) => {
         const newStatusLabel = e.target.value; // 'Active' | 'Inactive'
-        const lowered = newStatusLabel.toLowerCase();
-
-        // Determine endpoint + payload per tab
-        let endpoint = '';
-        let payload = {};
-        if (activeTab === 'CUSTOMER') {
-          endpoint = `${API_BASE}/customers/${params.id}`;
-          payload = { status: lowered };
-        } else if (activeTab === 'STAFF') {
-          endpoint = `${API_BASE}/admins/${params.id}`;
-          payload = { isActive: lowered === 'active' };
-        } else if (activeTab === 'DRIVER') {
-          endpoint = `${API_BASE}/drivers/${params.id}`;
-          payload = { status: lowered };
-        } else {
-          return; // unsupported tab
-        }
+        const bodyStatus = newStatusLabel.toLowerCase(); // send 'active'|'inactive' (backend normalizes)
 
         try {
-          const response = await fetch(endpoint, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
+          const response = await fetch(
+            `${API_BASE}/customers/${params.id}`,
+            {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: bodyStatus }),
+            }
+          );
+
           const json = await response.json().catch(() => null);
           if (!response.ok) {
             console.error('Update failed:', response.status, json);
-            throw new Error(
-              json?.error || json?.message || 'Failed to update status'
-            );
+            throw new Error(json?.error || json?.message || 'Failed to update status');
           }
+
+          // update only the status cell in the grid with the display label
           params.api.updateRows([{ id: params.id, status: newStatusLabel }]);
-        } catch (err) {
-          console.error('Error updating status:', err);
+        } catch (error) {
+          console.error('Error updating status:', error);
         }
       };
 
+      // normalize value so boolean, "Active"/"active" all display correctly
       const statusLabel =
         params.value === true ||
         params.value === 'Active' ||
@@ -214,7 +179,6 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
           onChange={handleStatusChange}
           sx={{ width: 90, height: 20, fontSize: 12 }}
           onClick={(e) => e.stopPropagation()}
-          MenuProps={{ disableScrollLock: true }}
         >
           <MenuItem value="Active" sx={{ fontSize: 12 }}>
             Active
@@ -233,16 +197,6 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
     ...(tabSpecificColumns[activeTab] || []),
     statusColumn,
   ];
-
-  // Pre-sort admin (STAFF) rows ascending by id without adding an ID column or DataGrid sort model
-  const displayRows =
-    activeTab === 'STAFF'
-      ? [...rows].sort((a, b) => {
-          const aId = typeof a.id === 'number' ? a.id : parseInt(a.id, 10) || 0;
-          const bId = typeof b.id === 'number' ? b.id : parseInt(b.id, 10) || 0;
-          return aId - bId;
-        })
-      : rows;
 
   return (
     <Box
@@ -282,7 +236,7 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
       }}
     >
       <DataGrid
-        rows={displayRows}
+        rows={rows}
         columns={columns.filter((col) => !col.hide)}
         loading={loading}
         autoHeight={false}

@@ -1157,10 +1157,12 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
             <Button
               onClick={onClose}
               sx={{ color: '#666', textTransform: 'none' }}
+
             >
               Cancel
             </Button>
             <Button
+
               onClick={handleNext}
               variant="contained"
               endIcon={<HiArrowRight />}

@@ -53,6 +53,7 @@ function CustomerCars() {
   const API_BASE = getApiBase();
   const authenticatedFetch = React.useMemo(() => createAuthenticatedFetch(logout), [logout]);
 
+
   const fetchWaitlistEntries = async () => {
     try {
       const response = await authenticatedFetch(`${API_BASE}/api/customers/me/waitlist`);
@@ -359,12 +360,17 @@ function CustomerCars() {
             variant="h4"
             component="h1"
             sx={{
-              fontSize: '1.8rem',
-              color: '#000',
-              fontWeight: 'bold',
-              '@media (max-width: 1024px)': {
-                fontSize: '1.5rem',
-              },
+              flexGrow: 1,
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: '#f9f9f9',
+              p: { xs: 1, sm: 2, md: 2, lg: 2 },
+              boxShadow:
+                '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 4px 0 6px -1px rgba(0, 0, 0, 0.1), -4px 0 6px -1px rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+              height: 'auto',
+              boxSizing: 'border-box',
             }}
           >
             <HiMiniTruck style={{ verticalAlign: '-3px', marginRight: '8px' }} />
@@ -571,53 +577,78 @@ function CustomerCars() {
                           backgroundColor: '#f5f5f5'
                         }}
                       />
-                      <CardContent sx={{ flexGrow: 1, p: 2 }}>
-                        {/* Car Status Chip */}
-                        <Box sx={{ mb: 2 }}>
-                          <Chip
-                            label={car.car_status || 'Available'}
-                            size="small"
-                            color={
-                              (car.car_status === 'Available') ? 'success' :
-                              (car.car_status === 'Maintenance') ? 'warning' :
-                              'default'
+                    </Box>
+                    
+                    {/* Seat Filter Below Price Slider */}
+                    <FormControl size="small" fullWidth>
+                      <InputLabel sx={{ fontSize: '0.875rem' }}>Number of Seats</InputLabel>
+                      <Select
+                        value={seatFilter}
+                        label="Number of Seats"
+                        onChange={handleSeatFilterChange}
+                        sx={{ fontSize: '0.875rem' }}
+                        MenuProps={{
+                          disableScrollLock: true,
+                          PaperProps: {
+                            sx: {
+                              maxHeight: 200,
+                              '& .MuiMenuItem-root': {
+                                fontSize: '0.875rem'
+                              }
                             }
-                            sx={{ fontWeight: 'medium' }}
-                          />
-                        </Box>
-                        
-                        {/* Car Details */}
-                        <Typography 
-                          variant="h6" 
-                          component="h3" 
-                          sx={{ 
-                            fontWeight: 'bold', 
-                            mb: 1,
-                            fontSize: '1.1rem'
-                          }}
-                        >
-                          {car.make} {car.model}
-                        </Typography>
-                        
-                        <Typography 
-                          variant="body2" 
-                          color="text.secondary" 
-                          sx={{ mb: 1 }}
-                        >
-                          {car.year} • {car.no_of_seat} seats
-                        </Typography>
-                        
-                        <Typography 
-                          variant="body2" 
-                          color="text.secondary" 
-                          sx={{ mb: 2 }}
-                        >
-                          Plate: {car.license_plate}
-                        </Typography>
-                        
-                        {/* Price */}
-                        <Typography 
-                          variant="h6" 
+                          }
+                        }}
+                      >
+                        <MenuItem value="" sx={{ fontSize: '0.875rem' }}>All Seats</MenuItem>
+                        <MenuItem value="5" sx={{ fontSize: '0.875rem' }}>5 Seats</MenuItem>
+                        <MenuItem value="7" sx={{ fontSize: '0.875rem' }}>7 Seats</MenuItem>
+                      </Select>
+                    </FormControl>
+                    
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+
+            <Divider sx={{ mb: 3 }} />
+
+            {/* Cars Content */}
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'auto',
+              }}
+            >
+
+              {/* Cars Grid */}
+              {filteredCars.length === 0 ? (
+                <Box sx={{ 
+                  textAlign: 'center', 
+                  py: 8,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flexDirection: 'column',
+                  height: '50vh'
+                }}>
+                  <Typography variant="h6" color="text.secondary">
+                    {cars.length === 0 ? 'No cars available at the moment.' : 'No cars match your filter criteria.'}
+                  </Typography>
+                  {cars.length > 0 && filteredCars.length === 0 && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      Try adjusting your filters to see more results.
+                    </Typography>
+                  )}
+                </Box>
+              ) : (
+                <Grid container spacing={3} sx={{ maxWidth: '1200px', mx: 'auto' }}>
+                  {filteredCars.map((car) => {
+                    const statusInfo = getStatusInfo(car.car_status);
+                    return (
+                      <Grid item xs={12} sm={6} md={4} key={car.car_id}>
+                        <Card 
                           sx={{ 
                             fontWeight: 'bold', 
                             color: '#c10007',

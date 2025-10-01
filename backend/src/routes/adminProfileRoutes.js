@@ -1,12 +1,11 @@
 import express from 'express';
 import { getAdminProfile, updateAdminProfile, changeAdminPassword } from '../controllers/adminProfileController.js';
-import { adminOrStaff } from '../middleware/authMiddleware.js';
+import { adminOnly } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// All routes require admin or staff authentication
-router.use(adminOrStaff);
-
+// All routes require admin authentication
+router.use(adminOnly);
 
 // GET /admin-profile - Get admin profile
 router.get('/', getAdminProfile);

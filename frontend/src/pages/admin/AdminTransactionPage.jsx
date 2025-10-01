@@ -6,18 +6,10 @@ import Header from '../../ui/components/Header';
 import { HiDocumentCurrencyDollar } from 'react-icons/hi2';
 import TransactionLogsHeader from '../../ui/components/header/TransactionLogsHeader';
 import TransactionLogsTable from '../../ui/components/table/TranscationLogsTable';
-import BookingDetailsModal from '../../ui/components/modal/BookingDetailsModal';
-import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 import Loading from '../../ui/components/Loading';
 import { useTransactionStore } from '../../store/transactions';
 import AddPaymentModal from '../../ui/components/modal/AddPaymentModal';
 import AddRefundModal from '../../ui/components/modal/AddRefundModal';
-
-// const formatDate = (dateString) => {
-//   if (!dateString) return 'N/A';
-//   const options = { year: 'numeric', month: 'short', day: 'numeric' };
-//   return new Date(dateString).toLocaleDateString(undefined, options);
-// };
 
 export default function AdminTransactionPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -29,76 +21,10 @@ export default function AdminTransactionPage() {
   const loaded = useTransactionStore((s) => s.loaded);
   const storeLoading = useTransactionStore((s) => s.loading);
   const [activeTab, setActiveTab] = useState('TRANSACTIONS');
-  const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState(null);
-  // Original rows from store
-  const storeRows = useTransactionStore((s) => s.getRowsForTab(activeTab));
-  // Apply filtering rules per requirement:
-  // For TRANSACTIONS tab we only show entries that are completed OR cancelled.
-  // Backend does not send an explicit status field; we infer status from the
-  // presence of completionDate or cancellationDate (returned by /transactions).
-  const rows = React.useMemo(() => {
-    if (!Array.isArray(storeRows)) return [];
-    if (activeTab === 'TRANSACTIONS') {
-      return storeRows.filter((r) => {
-        return Boolean(r?.completionDate) || Boolean(r?.cancellationDate);
-      });
-    }
-    return storeRows; // PAYMENT and REFUND unchanged
-  }, [storeRows, activeTab]);
-
-  // Fetch booking details by bookingId and open modal
-  const openBookingDetails = async (bookingId) => {
-    if (!bookingId) return;
-    try {
-      const authFetch = createAuthenticatedFetch(() => {
-        localStorage.removeItem('authToken');
-        window.location.href = '/login';
-      });
-      const API_BASE = getApiBase().replace(/\/$/, '');
-      const res = await authFetch(`${API_BASE}/bookings/${bookingId}`, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!res.ok) throw new Error('Failed to load booking details');
-      const data = await res.json();
-      // Map booking shape to what BookingDetailsModal expects (aligning with ManageBookingsTable mapping)
-      const mapped = {
-        id: data.booking_id,
-        customerName: data.customer_name,
-        carModel: data.car_model,
-        carPlateNumber: data.plate_number || data.car_plate_number,
-        bookingDate: data.booking_date,
-        purpose: data.purpose,
-        startDate: data.start_date,
-        endDate: data.end_date,
-        pickupTime: data.pickup_time,
-        dropoffTime: data.dropoff_time,
-        deliveryLocation: data.pickup_loc || data.delivery_location,
-        dropoffLocation: data.dropoff_loc,
-        selfDrive: data.isSelfDriver,
-        driverName: data.driver_name,
-        phoneNumber: data.phone_number,
-        fbLink: data.fb_link,
-        reservationFee: data.reservation_fee,
-        driverFee: data.driver_fee,
-        deliveryFee: data.delivery_fee,
-        totalAmount: data.total_amount,
-        paymentStatus: data.payment_status,
-        bookingStatus: data.booking_status,
-      };
-      setSelectedBooking(mapped);
-      setShowBookingDetailsModal(true);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const closeBookingDetails = () => {
-    setShowBookingDetailsModal(false);
-    setSelectedBooking(null);
-  };
+  const rows = useTransactionStore((s) => s.getRowsForTab(activeTab));
 
   // console.log('AdminTransactionPage - Rows:', rows);
+
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
   const openAddPaymentModal = () => setShowAddPaymentModal(true);
   const closeAddPaymentModal = () => setShowAddPaymentModal(false);
@@ -180,11 +106,6 @@ export default function AdminTransactionPage() {
         onClose={closeAddPaymentModal}
       />
       <AddRefundModal show={showAddRefundModal} onClose={closeAddRefundModal} />
-      <BookingDetailsModal
-        open={showBookingDetailsModal}
-        onClose={closeBookingDetails}
-        booking={selectedBooking}
-      />
 
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar
@@ -334,7 +255,6 @@ export default function AdminTransactionPage() {
                 activeTab={activeTab}
                 rows={rows}
                 loading={loading || storeLoading[activeTab]}
-                onViewBooking={(row) => openBookingDetails(row.bookingId)}
               />
             </Box>
           </Box>

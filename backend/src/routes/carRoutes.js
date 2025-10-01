@@ -1,26 +1,23 @@
 import express from 'express';
 import {
   getCars,
+  getAvailableCars,
   getCarGps,
   createCar,
   updateCar,
   deleteCar,
 } from '../controllers/carController.js';
-import upload from '../middleware/upload.js';
-import maintenanceRoutes from './maintenanceRoutes.js';
 
 const router = express.Router();
 
-// Nested maintenance routes
-router.use('/:carId/maintenance', maintenanceRoutes);
-
 // Public routes
 router.get('/', getCars);
+router.get('/available', getAvailableCars);
 router.get('/:id/gps', getCarGps);
 
 // Protected routes (add authentication middleware later)
-router.post('/', upload.single('image'), createCar);
-router.put('/:id', upload.single('image'), updateCar);
-router.delete('/:id', deleteCar);
+router.post('/', createCar);    // use "cars/"  -> POST
+router.put('/:id', updateCar);        // use "cars/:id"     -> PUT
+router.delete('/:id', deleteCar);     // use "cars/:id"     -> DELETE
 
 export default router;

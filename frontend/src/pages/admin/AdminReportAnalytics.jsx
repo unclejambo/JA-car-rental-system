@@ -1,7 +1,5 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Box, Typography, Select, MenuItem, Chip, Stack } from '@mui/material';
-import { createAuthenticatedFetch } from '../../utils/api';
-import { useAuth } from '../../hooks/useAuth';
 import Header from '../../ui/components/Header'; // Unused import removed
 import AdminSideBar from '../../ui/components/AdminSideBar'; // Unused import removed
 import Loading from '../../ui/components/Loading'; // Unused import removed
@@ -18,7 +16,6 @@ import {
   Tooltip,
   Legend,
   Filler,
-
 } from 'chart.js';
 
 ChartJS.register(
@@ -29,24 +26,34 @@ ChartJS.register(
   BarElement,
   ChartTitle,
   Tooltip,
-  Legend,
-  Filler
+  Legend
 );
 
 // API base URL
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+const API_BASE = (
+  import.meta.env.VITE_API_URL || 'http://localhost:3001'
+).replace(/\/$/, '');
 
 // Default months for fallback labels only
 const DEFAULT_MONTHS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 export default function AdminReportAnalytics() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
 
   // View toggles from the sketches
   const [primaryView, setPrimaryView] = useState('income'); // 'income' | 'expenses' | 'topCars' | 'topCustomers'
@@ -55,7 +62,10 @@ export default function AdminReportAnalytics() {
 
   // Auth and API
   const { logout } = useAuth();
-  const authenticatedFetch = useCallback(() => createAuthenticatedFetch(logout), [logout]);
+  const authenticatedFetch = useCallback(
+    () => createAuthenticatedFetch(logout),
+    [logout]
+  );
 
   // Fallback timeout to ensure loading doesn't stay true forever
   useEffect(() => {
@@ -76,7 +86,7 @@ export default function AdminReportAnalytics() {
   const [totalIncome, setTotalIncome] = useState(0);
   const [apiAvailableYears, setApiAvailableYears] = useState([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  
+
   // Separate data states for expenses view (maintenance + refunds)
   const [maintenanceData, setMaintenanceData] = useState([]);
   const [refundsData, setRefundsData] = useState([]);
@@ -108,20 +118,25 @@ export default function AdminReportAnalytics() {
   useEffect(() => {
     const loadYears = async () => {
       try {
-        console.log('Fetching available years from:', `${API_BASE}/analytics/years`);
+        console.log(
+          'Fetching available years from:',
+          `${API_BASE}/analytics/years`
+        );
         const authFetch = authenticatedFetch();
         const response = await authFetch(`${API_BASE}/analytics/years`);
         console.log('Years API response status:', response.status);
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           console.log('Years API error response:', errorText);
-          throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+          throw new Error(
+            `HTTP error! status: ${response.status}, message: ${errorText}`
+          );
         }
-        
+
         const data = await response.json();
         console.log('Years API response data:', data);
-        
+
         if (data.ok) {
           setApiAvailableYears(data.years);
           setIsInitialLoad(false);
@@ -145,13 +160,13 @@ export default function AdminReportAnalytics() {
         setIsInitialLoad(false);
       }
     };
-    
+
     // Only load years once during initial load
     if (isInitialLoad && apiAvailableYears.length === 0) {
       loadYears();
     }
   }, [authenticatedFetch, apiAvailableYears.length, isInitialLoad]); // Only run during initial load
-  
+
   // Fetch data when view or period changes
   useEffect(() => {
     const loadData = async () => {
@@ -160,64 +175,81 @@ export default function AdminReportAnalytics() {
         console.log('No available years yet, skipping data load');
         return;
       }
-      
+
       try {
         setLoading(true);
         let endpoint = '';
         let params = new URLSearchParams({
           period,
-          year: selectedYear.toString()
+          year: selectedYear.toString(),
         });
-        
+
         if (period === 'quarterly') {
           params.append('quarter', selectedQuarter.toString());
         } else if (period === 'monthly') {
           params.append('month', selectedMonthIndex.toString());
         }
-        
+
         const authFetch = authenticatedFetch();
-        
+
         // Handle expenses view separately (fetch both maintenance and refunds)
         if (primaryView === 'expenses') {
           // Fetch maintenance data
           const maintenanceEndpoint = `/analytics/expenses?${params}`;
-          console.log('Fetching maintenance data from:', `${API_BASE}${maintenanceEndpoint}`);
-          const maintenanceResponse = await authFetch(`${API_BASE}${maintenanceEndpoint}`);
-          
+          console.log(
+            'Fetching maintenance data from:',
+            `${API_BASE}${maintenanceEndpoint}`
+          );
+          const maintenanceResponse = await authFetch(
+            `${API_BASE}${maintenanceEndpoint}`
+          );
+
           if (!maintenanceResponse.ok) {
-            throw new Error(`Maintenance API error: ${maintenanceResponse.status}`);
+            throw new Error(
+              `Maintenance API error: ${maintenanceResponse.status}`
+            );
           }
-          
+
           const maintenanceResult = await maintenanceResponse.json();
           console.log('Maintenance API response:', maintenanceResult);
-          
+
           // Fetch refunds data
           const refundsEndpoint = `/analytics/refunds?${params}`;
-          console.log('Fetching refunds data from:', `${API_BASE}${refundsEndpoint}`);
-          const refundsResponse = await authFetch(`${API_BASE}${refundsEndpoint}`);
-          
+          console.log(
+            'Fetching refunds data from:',
+            `${API_BASE}${refundsEndpoint}`
+          );
+          const refundsResponse = await authFetch(
+            `${API_BASE}${refundsEndpoint}`
+          );
+
           if (!refundsResponse.ok) {
             throw new Error(`Refunds API error: ${refundsResponse.status}`);
           }
-          
+
           const refundsResult = await refundsResponse.json();
           console.log('Refunds API response:', refundsResult);
-          
+
           if (maintenanceResult.ok && refundsResult.ok) {
             setMaintenanceData(maintenanceResult.data || []);
             setRefundsData(refundsResult.data || []);
-            setChartLabels(maintenanceResult.labels || refundsResult.labels || []);
+            setChartLabels(
+              maintenanceResult.labels || refundsResult.labels || []
+            );
             setTotalMaintenance(maintenanceResult.totalMaintenance || 0);
             setTotalRefunds(refundsResult.totalRefunds || 0);
-            setTotalIncome((maintenanceResult.totalMaintenance || 0) + (refundsResult.totalRefunds || 0));
+            setTotalIncome(
+              (maintenanceResult.totalMaintenance || 0) +
+                (refundsResult.totalRefunds || 0)
+            );
           } else {
             setError('Failed to fetch expenses data');
           }
-          
+
           setLoading(false);
           return;
         }
-        
+
         // Handle other views normally
         switch (primaryView) {
           case 'income':
@@ -234,24 +266,26 @@ export default function AdminReportAnalytics() {
           default:
             endpoint = `/analytics/income?${params}`;
         }
-        
+
         console.log('Fetching analytics data from:', `${API_BASE}${endpoint}`);
         const response = await authFetch(`${API_BASE}${endpoint}`);
         console.log('Analytics API response status:', response.status);
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           console.log('Analytics API error response:', errorText);
-          throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+          throw new Error(
+            `HTTP error! status: ${response.status}, message: ${errorText}`
+          );
         }
-        
+
         const data = await response.json();
         console.log('Analytics API response data:', data);
-        
+
         if (data.ok) {
           setChartData(data.data || []);
           setChartLabels(data.labels || []);
-          
+
           // Handle different total values from API
           if (data.totalIncome !== undefined) {
             setTotalIncome(data.totalIncome);
@@ -272,32 +306,44 @@ export default function AdminReportAnalytics() {
         setLoading(false);
       }
     };
-    
+
     loadData();
-  }, [primaryView, period, selectedYear, selectedQuarter, selectedMonthIndex, availableYears, authenticatedFetch]); // Now using memoized availableYears
+  }, [
+    primaryView,
+    period,
+    selectedYear,
+    selectedQuarter,
+    selectedMonthIndex,
+    availableYears,
+    authenticatedFetch,
+  ]); // Now using memoized availableYears
 
   // Use totalIncome from API data only
   const income = totalIncome || 0;
-
 
   const formatCurrency = (n) =>
     `₱ ${Number(n || 0).toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
-  // Line dataset builder - API data only
+
+  // Line dataset builder
   const lineData = useMemo(() => {
     const labels = chartLabels.length > 0 ? chartLabels : DEFAULT_MONTHS;
-    
+
     console.log('Line chart data:', { labels, primaryView });
-    
+
     if (primaryView === 'expenses') {
       // For expenses view, show two lines: maintenance and refunds
-      const maintenanceChartData = maintenanceData.length > 0 ? maintenanceData : [];
+      const maintenanceChartData =
+        maintenanceData.length > 0 ? maintenanceData : [];
       const refundsChartData = refundsData.length > 0 ? refundsData : [];
-      
-      console.log('Expenses chart data:', { maintenanceChartData, refundsChartData });
-      
+
+      console.log('Expenses chart data:', {
+        maintenanceChartData,
+        refundsChartData,
+      });
+
       return {
         labels,
         datasets: [
@@ -323,7 +369,7 @@ export default function AdminReportAnalytics() {
       // For income view, show single line
       const data = chartData.length > 0 ? chartData : [];
       console.log('Income chart data:', { data });
-      
+
       return {
         labels,
         datasets: [
@@ -361,29 +407,28 @@ export default function AdminReportAnalytics() {
     []
   );
 
-  // Bar dataset builder - API data only
+  // Bar dataset builder (top cars/customers)
   const barData = useMemo(() => {
     const isCars = topCategory === 'cars';
     const hasApiData = chartData.length > 0 && chartLabels.length > 0;
-    
+
     const labels = hasApiData ? chartLabels : [];
     const data = hasApiData ? chartData : [];
-    
+
     console.log('Bar chart data:', { labels, data, topCategory, hasApiData });
-    
+
     return {
-      labels,
+      labels: isCars ? staticTopCarLabels : staticTopCustomerLabels,
       datasets: [
         {
           label: isCars ? 'CARS' : 'CUSTOMERS',
-          data,
+          data: isCars ? staticTopCars : staticTopCustomers,
           backgroundColor: '#1976d2',
           borderRadius: 6,
         },
       ],
     };
   }, [topCategory, chartData, chartLabels]);
-
 
   const barOptions = useMemo(
     () => ({
@@ -398,28 +443,7 @@ export default function AdminReportAnalytics() {
     []
   );
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex' }}>
-        <Header onMenuClick={() => setMobileOpen(true)} />
-        <AdminSideBar
-          mobileOpen={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-        />
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-          }}
-        >
-          <Loading />
-        </Box>
-      </Box>
-    );
-  }
+  // Remove the full page loading - we'll show loading only for charts
 
   if (error) {
     return (
@@ -551,13 +575,27 @@ export default function AdminReportAnalytics() {
                   sx={{ fontWeight: 700, color: '#111' }}
                   className="font-pathway"
                 >
-                  {primaryView === 'income' && period === 'monthly' && `INCOME FOR ${new Date(2000, selectedMonthIndex, 1).toLocaleString(undefined, { month: 'long' })} :`}
-                  {primaryView === 'income' && period === 'quarterly' && `INCOME FOR QUARTER ${selectedQuarter} :`}
-                  {primaryView === 'income' && period === 'yearly' && `INCOME FOR ${selectedYear} :`}
-                  {primaryView === 'expenses' && period === 'monthly' && `EXPENSES FOR ${new Date(2000, selectedMonthIndex, 1).toLocaleString(undefined, { month: 'long' })} :`}
-                  {primaryView === 'expenses' && period === 'quarterly' && `EXPENSES FOR QUARTER ${selectedQuarter} :`}
-                  {primaryView === 'expenses' && period === 'yearly' && `EXPENSES FOR ${selectedYear} :`}
-                  {(primaryView === 'topCars' || primaryView === 'topCustomers') && `TOTAL BOOKINGS :`}{' '}
+                  {primaryView === 'income' &&
+                    period === 'monthly' &&
+                    `INCOME FOR ${new Date(2000, selectedMonthIndex, 1).toLocaleString(undefined, { month: 'long' })} :`}
+                  {primaryView === 'income' &&
+                    period === 'quarterly' &&
+                    `INCOME FOR QUARTER ${selectedQuarter} :`}
+                  {primaryView === 'income' &&
+                    period === 'yearly' &&
+                    `INCOME FOR ${selectedYear} :`}
+                  {primaryView === 'expenses' &&
+                    period === 'monthly' &&
+                    `EXPENSES FOR ${new Date(2000, selectedMonthIndex, 1).toLocaleString(undefined, { month: 'long' })} :`}
+                  {primaryView === 'expenses' &&
+                    period === 'quarterly' &&
+                    `EXPENSES FOR QUARTER ${selectedQuarter} :`}
+                  {primaryView === 'expenses' &&
+                    period === 'yearly' &&
+                    `EXPENSES FOR ${selectedYear} :`}
+                  {(primaryView === 'topCars' ||
+                    primaryView === 'topCustomers') &&
+                    `TOP ${primaryView === 'topCars' ? 'CAR' : 'CUSTOMER'} :`}{' '}
                   {primaryView === 'expenses' ? (
                     <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
                       <span style={{ color: '#ff6b35', fontSize: '0.85em' }}>
@@ -572,6 +610,22 @@ export default function AdminReportAnalytics() {
                         Total: {formatCurrency(income)}
                       </span>
                     </Box>
+                  ) : primaryView === 'topCars' ||
+                    primaryView === 'topCustomers' ? (
+                    <span style={{ color: '#2e7d32' }}>
+                      {(() => {
+                        // Get the top item (highest value)
+                        if (chartData.length > 0 && chartLabels.length > 0) {
+                          const maxIndex = chartData.indexOf(
+                            Math.max(...chartData)
+                          );
+                          const topItem = chartLabels[maxIndex];
+                          const topValue = chartData[maxIndex];
+                          return `${topItem} (${topValue} bookings)`;
+                        }
+                        return 'No data available';
+                      })()}
+                    </span>
                   ) : (
                     <span style={{ color: '#2e7d32' }}>
                       {formatCurrency(income)}
@@ -609,7 +663,7 @@ export default function AdminReportAnalytics() {
                       ))}
                     </Select>
                   )}
-                  
+
                   {period === 'quarterly' && (
                     <Select
                       size="small"
@@ -628,7 +682,7 @@ export default function AdminReportAnalytics() {
                       <MenuItem value={4}>Quarter 4</MenuItem>
                     </Select>
                   )}
-                  
+
                   {period === 'yearly' && (
                     <Select
                       size="small"
@@ -662,7 +716,7 @@ export default function AdminReportAnalytics() {
                 {/* Summary chips and dropdowns like sketches */}
                 <Stack
                   direction="row"
-                  spacing={0.3}
+                  spacing={0.4}
                   sx={{ width: '100%', flexWrap: 'nowrap' }}
                 >
                   <Chip
@@ -804,7 +858,7 @@ export default function AdminReportAnalytics() {
                           {primaryView === 'income' ? 'Income' : 'Expenses'}
                         </Typography>
                         <Typography variant="caption" sx={{ color: '#666' }}>
-                          LINE GRAPH
+                          BAR GRAPH
                         </Typography>
                       </Box>
                     ) : (
@@ -818,38 +872,56 @@ export default function AdminReportAnalytics() {
                             : 'Top Customers'}
                         </Typography>
                         <Typography variant="caption" sx={{ color: '#666' }}>
-                          BAR GRAPH
+                          LINE GRAPH
                         </Typography>
                       </Box>
                     )}
                   </Box>
                   <Box sx={{ p: 2, height: 320 }}>
-                    {(chartData.length > 0 || (primaryView === 'expenses' && (maintenanceData.length > 0 || refundsData.length > 0))) ? (
+                    {loading ? (
+                      <Box
+                        sx={{
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#666',
+                          fontSize: '1.1rem',
+                        }}
+                      >
+                        <Typography sx={{ color: '#666' }}>
+                          Loading chart data...
+                        </Typography>
+                      </Box>
+                    ) : chartData.length > 0 ||
+                      (primaryView === 'expenses' &&
+                        (maintenanceData.length > 0 ||
+                          refundsData.length > 0)) ? (
                       primaryView === 'income' || primaryView === 'expenses' ? (
-                        <Line 
+                        <Line
                           key={`line-${primaryView}-${period}-${selectedYear}-${selectedQuarter}-${selectedMonthIndex}`}
-                          data={lineData} 
-                          options={lineOptions} 
+                          data={lineData}
+                          options={lineOptions}
                         />
                       ) : (
-                        <Bar 
+                        <Bar
                           key={`bar-${primaryView}-${period}-${selectedYear}-${selectedQuarter}-${selectedMonthIndex}`}
-                          data={barData} 
-                          options={barOptions} 
+                          data={barData}
+                          options={barOptions}
                         />
                       )
                     ) : (
-                      <Box 
-                        sx={{ 
-                          height: '100%', 
-                          display: 'flex', 
-                          alignItems: 'center', 
+                      <Box
+                        sx={{
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
                           justifyContent: 'center',
                           color: '#666',
-                          fontSize: '1.1rem'
+                          fontSize: '1.1rem',
                         }}
                       >
-                        {loading ? 'Loading data...' : 'No data available for the selected period'}
+                        No data available for the selected period
                       </Box>
                     )}
                   </Box>

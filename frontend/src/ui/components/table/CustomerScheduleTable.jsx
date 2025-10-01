@@ -36,8 +36,11 @@ const ScheduleTable = ({ rows, loading }) => {
           pickup_time: r.pickup_time ?? r.pickupTime,
           dropoff_time: r.dropoff_time ?? r.dropoffTime,
           pickup_loc: r.pickup_loc ?? r.pickup_location,
-          dropoff_location: r.dropoff_location ?? r.dropoff_loc ?? r.dropoff_location,
-          car_model: r.car_model ?? r.car?.model ?? `${r.car?.make ?? ''} ${r.car?.model ?? ''}`.trim(),
+          dropoff_location: r.dropoff_loc ?? r.dropoff_loc ?? r.dropoff_loc,
+          car_model:
+            r.car_model ??
+            r.car?.model ??
+            `${r.car?.make ?? ''} ${r.car?.model ?? ''}`.trim(),
         };
       })
     : [];
@@ -48,14 +51,18 @@ const ScheduleTable = ({ rows, loading }) => {
       headerName: 'Start Date',
       flex: 1,
       minWidth: 100,
-      renderCell: (params) => <span>{formatDate(params?.row?.start_date ?? params?.value)}</span>,
+      renderCell: (params) => (
+        <span>{formatDate(params?.row?.start_date ?? params?.value)}</span>
+      ),
     },
     {
       field: 'pickup_time',
       headerName: 'Pickup Time',
       flex: 1,
       minWidth: 140,
-      renderCell: (params) => <span>{formatTime(params?.row?.pickup_time ?? params?.value)}</span>,
+      renderCell: (params) => (
+        <span>{formatTime(params?.row?.pickup_time ?? params?.value)}</span>
+      ),
     },
     {
       field: 'pickup_loc',
@@ -68,17 +75,21 @@ const ScheduleTable = ({ rows, loading }) => {
       headerName: 'End Date',
       flex: 1,
       minWidth: 90,
-      renderCell: (params) => <span>{formatDate(params?.row?.end_date ?? params?.value)}</span>,
+      renderCell: (params) => (
+        <span>{formatDate(params?.row?.end_date ?? params?.value)}</span>
+      ),
     },
     {
       field: 'dropoff_time',
       headerName: 'Drop Off Time',
       flex: 1,
       minWidth: 90,
-      renderCell: (params) => <span>{formatTime(params?.row?.dropoff_time ?? params?.value)}</span>,
+      renderCell: (params) => (
+        <span>{formatTime(params?.row?.dropoff_time ?? params?.value)}</span>
+      ),
     },
     {
-      field: 'dropoff_location',
+      field: 'dropoff_loc',
       headerName: 'Drop Off Location',
       flex: 1,
       minWidth: 90,

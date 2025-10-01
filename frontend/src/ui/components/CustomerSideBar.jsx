@@ -36,11 +36,9 @@ export default function CustomerSideBar({
         DASHBOARD
       </NavLink>
       <hr />
-      <NavLink to="/customer-profile" onClick={onClose}>
-        <HiOutlineUserCircle
-          style={{ verticalAlign: '-3px', marginRight: '5px' }}
-        />
-        MY PROFILE
+      <NavLink to="/customer-cars" onClick={onClose}>
+        <HiTruck style={{ verticalAlign: '-3px', marginRight: '5px' }} />
+        CARS
       </NavLink>
       <hr />
       <NavLink to="/customer-bookings" onClick={onClose}>

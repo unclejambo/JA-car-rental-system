@@ -11,6 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@date-io/date-fns": "^3.2.1",
+    "@date-io/dayjs": "^3.2.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@heroicons/react": "^2.2.0",
@@ -18,10 +20,13 @@
     "@mui/material": "^7.3.2",
     "@mui/styles": "^6.5.0",
     "@mui/x-data-grid": "^8.11.2",
+    "@mui/x-date-pickers": "^8.12.0",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-table-devtools": "^8.21.3",
     "axios": "^1.11.0",
     "chart.js": "^4.5.0",
+    "date-fns": "^4.1.0",
+    "dayjs": "^1.11.18",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.1.0",

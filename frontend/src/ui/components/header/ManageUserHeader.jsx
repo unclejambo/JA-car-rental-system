@@ -1,9 +1,7 @@
 import { Box, Button } from '@mui/material';
 
-const ManageUserHeader = ({ activeTab = 'CUSTOMER', onTabChange, user }) => {
-  const allTabs = ['CUSTOMER', 'STAFF', 'DRIVER'];
-  const isStaffRestricted = user?.user_type === 'staff';
-  const tabs = isStaffRestricted ? ['CUSTOMER'] : allTabs;
+const ManageUserHeader = ({ activeTab = 'CUSTOMER', onTabChange }) => {
+  const tabs = ['CUSTOMER', 'STAFF', 'DRIVER'];
 
   return (
     <Box

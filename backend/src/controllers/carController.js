@@ -11,11 +11,35 @@ export const getCars = async (req, res) => {
     if (cars.length > 0) {
       console.log('Sample car data:', cars[0]);
     }
-
     res.json(cars);
   } catch (error) {
     console.error('Error fetching cars:', error);
     res.status(500).json({ error: 'Failed to fetch cars' });
+  }
+};
+
+// @desc    Get available cars for customers
+// @route   GET /cars/available
+// @access  Public
+export const getAvailableCars = async (req, res) => {
+  try {
+    console.log('getAvailableCars endpoint called');
+    const cars = await prisma.car.findMany({
+      where: {
+        car_status: {
+          in: ['Available', 'Rented', 'Maintenance'] // Include all except deleted/inactive
+        }
+      },
+      orderBy: {
+        car_id: 'asc'
+      }
+    });
+    
+    console.log('Found available cars:', cars.length);
+    res.json(cars);
+  } catch (error) {
+    console.error('Error fetching available cars:', error);
+    res.status(500).json({ error: 'Failed to fetch available cars' });
   }
 };
 
@@ -81,53 +105,32 @@ export const createCar = async (req, res) => {
 export const updateCar = async (req, res) => {
   try {
     const carId = parseInt(req.params.id);
-    const { ...carData } = req.body;
-
-    // Normalize numeric fields: if empty string, omit; else parse to int
-    const normalized = { ...carData };
-    const normalizeIntField = (obj, key) => {
-      if (obj[key] === '') {
-        delete obj[key];
-      } else if (obj[key] != null) {
-        const parsed = parseInt(obj[key], 10);
-        if (!Number.isNaN(parsed)) obj[key] = parsed;
-        else delete obj[key];
-      }
-    };
-
-    normalizeIntField(normalized, 'year');
-    normalizeIntField(normalized, 'mileage');
-    normalizeIntField(normalized, 'no_of_seat');
-    normalizeIntField(normalized, 'rent_price');
-
-    if (req.file) {
-      normalized.car_img_url = `/uploads/${req.file.filename}`;
-    }
-
-    // Whitelist allowed columns only
-    const allowed = [
-      'make',
-      'model',
-      'year',
-      'license_plate',
-      'no_of_seat',
-      'rent_price',
-      'car_status',
-      'car_img_url',
-      'mileage',
-    ];
-    const data = Object.fromEntries(
-      Object.entries(normalized).filter(([k, v]) => allowed.includes(k))
-    );
-
-    console.log('UpdateCar received body:', req.body);
-    console.log('UpdateCar normalized data:', data);
+    const {
+      make,
+      model,
+      year,
+      license_plate,
+      no_of_seat,
+      rent_price,
+      car_status,
+      car_img_url,
+      mileage,
+    } = req.body;
 
     const updatedCar = await prisma.car.update({
       where: { car_id: carId },
-      data,
+      data: {
+        make,
+        model,
+        year,
+        license_plate,
+        no_of_seat,
+        rent_price,
+        car_status,
+        car_img_url,
+        mileage,
+      },
     });
-
     res.json(updatedCar);
   } catch (error) {
     console.error('Error updating car:', error);

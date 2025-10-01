@@ -1,7 +1,4 @@
 import React, { useState } from 'react';
-import { useUserStore } from '../../../store/users';
-import { getApiBase } from '../../../utils/api';
-
 import { z } from 'zod';
 import {
   Dialog,
@@ -100,59 +97,11 @@ export default function AddDriverModal({ show, onClose }) {
     }
   };
 
-  const [submitting, setSubmitting] = useState(false);
-  const loadDrivers = useUserStore((s) => s.loadDrivers);
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate(formData)) return;
-    setSubmitting(true);
-    try {
-      const payload = {
-        first_name: formData.driverFirstName,
-        last_name: formData.driverLastName,
-        address: formData.driverAddress,
-        contact_no: formData.contactNumber,
-        email: formData.driverEmail,
-        username: formData.username,
-        password: formData.password,
-        driver_license_no: formData.driverLicense,
-        restriction: formData.restriction,
-        expiry_date: formData.expirationDate,
-        status: formData.status,
-      };
-      const resp = await fetch(`${getApiBase()}/drivers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!resp.ok) {
-        const errJson = await resp.json().catch(() => ({}));
-        throw new Error(
-          errJson.error || errJson.message || 'Failed to create driver'
-        );
-      }
-      await loadDrivers();
-      onClose?.();
-      setFormData({
-        driverFirstName: '',
-        driverLastName: '',
-        driverAddress: '',
-        contactNumber: '',
-        driverEmail: '',
-        driverLicense: '',
-        restriction: '',
-        expirationDate: '',
-        username: '',
-        password: '',
-        status: 'Active',
-      });
-    } catch (err) {
-      console.error('Create driver failed:', err);
-      setErrors((e) => ({ ...e, form: err.message }));
-    } finally {
-      setSubmitting(false);
-    }
+    console.log('Add driver:', formData);
+    onClose?.();
   };
 
   return (
@@ -167,12 +116,6 @@ export default function AddDriverModal({ show, onClose }) {
       <DialogContent dividers>
         <form id="addDriverForm" onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            {errors.form && (
-              <Box sx={{ color: 'error.main', fontSize: 14 }}>
-                {errors.form}
-              </Box>
-            )}
-
             <TextField
               label="First Name"
               name="driverFirstName"
@@ -312,10 +255,8 @@ export default function AddDriverModal({ show, onClose }) {
             form="addDriverForm"
             variant="contained"
             color="success"
-            disabled={submitting}
           >
-            {submitting ? 'Saving...' : 'Save'}
-
+            Save
           </Button>
           <Button
             onClick={onClose}

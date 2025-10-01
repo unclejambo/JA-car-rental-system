@@ -232,6 +232,12 @@ model VerificationCode {
   updated_at   DateTime @updatedAt
 }
 
+model ManageFees {
+  fee_id   BigInt @id @default(autoincrement())
+  fee_type String
+  amount   Int?
+}
+
 model Return {
   return_id    BigInt        @id @unique @default(autoincrement())
   booking_id   Int?
@@ -243,13 +249,6 @@ model Return {
   total_fee    Int?
   damage       damage_level? @default(No_Damage)
   Booking      Booking?      @relation(fields: [booking_id], references: [booking_id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model ManageFees {
-  fee_id   BigInt @id @default(autoincrement())
-  fee_type String
-  amount   Int?
 }
 
 model Waitlist {

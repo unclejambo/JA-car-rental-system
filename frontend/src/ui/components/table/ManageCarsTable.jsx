@@ -1,19 +1,11 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, IconButton, Button, Select, MenuItem } from '@mui/material';
+import { Box, IconButton } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 const NullLoadingOverlay = () => null;
 
-const ManageCarsTable = ({
-  activeTab,
-  rows,
-  onEdit,
-  onDelete,
-  onExtend,
-  onSetAvailable,
-  onStatusChange,
-}) => {
+const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
   const commonColumns = [
     {
       field: 'model',
@@ -45,7 +37,7 @@ const ManageCarsTable = ({
         field: 'year',
         headerName: 'Year',
         flex: 1.5,
-        minWidth: 80,
+        minWidth: 100,
         editable: false,
       },
       {
@@ -96,34 +88,14 @@ const ManageCarsTable = ({
         field: 'status',
         headerName: 'Status',
         flex: 1.5,
-        minWidth: 130,
-        sortable: false,
-        filterable: false,
-        renderCell: (params) => {
-          const value = params.row.status || 'Available';
-          return (
-            <Select
-              size="small"
-              value={value}
-              onChange={(e) => {
-                const newStatus = e.target.value;
-                // notify parent with the raw row
-                onStatusChange?.(params.row, newStatus);
-              }}
-              sx={{ fontSize: '0.775rem', minWidth: 120 }}
-            >
-              <MenuItem value="Available">Available</MenuItem>
-              <MenuItem value="Rented">Rented</MenuItem>
-              <MenuItem value="Maintenance">Maintenance</MenuItem>
-            </Select>
-          );
-        },
+        minWidth: 100,
+        editable: false,
       },
       {
         field: 'action',
         headerName: '',
         flex: 1.5,
-        minWidth: 80,
+        minWidth: 100,
         editable: false,
         align: 'center',
         renderCell: (params) => (
@@ -152,40 +124,16 @@ const ManageCarsTable = ({
     ],
     MAINTENANCE: [
       {
-        field: 'maintenance_start_date',
+        field: 'startDate',
         headerName: 'Start Date',
         flex: 1.5,
-        minWidth: 100,
-        renderCell: (params) => {
-          // Try multiple potential field names for start date
-          const value =
-            params.row.maintenance_start_date ||
-            params.row.start_date ||
-            params.row.startDate ||
-            params.row.start;
-
-          if (!value) return 'N/A';
-          const d = new Date(value);
-          return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
-        },
+        minWidth: 120,
       },
       {
-        field: 'maintenance_end_date',
+        field: 'endDate',
         headerName: 'End Date',
         flex: 1.5,
-        minWidth: 100,
-        renderCell: (params) => {
-          // Try multiple potential field names for end date
-          const value =
-            params.row.maintenance_end_date ||
-            params.row.end_date ||
-            params.row.endDate ||
-            params.row.end;
-
-          if (!value) return 'N/A';
-          const d = new Date(value);
-          return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
-        },
+        minWidth: 120,
       },
       {
         field: 'description',
@@ -194,15 +142,13 @@ const ManageCarsTable = ({
         minWidth: 120,
       },
       {
-        field: 'maintenance_shop_name',
-
+        field: 'shopAssigned',
         headerName: 'Shop Assigned',
         flex: 1.5,
         minWidth: 120,
       },
       {
-        field: 'maintenance_cost',
-
+        field: 'maintenanceFee',
         headerName: 'Maintenance Fee',
         flex: 1.5,
         minWidth: 120,
@@ -218,46 +164,22 @@ const ManageCarsTable = ({
       },
       {
         field: 'action',
-        headerName: '',
-        flex: 2,
-        minWidth: 180,
+        headerName: 'Action',
+        flex: 1.5,
+        minWidth: 100,
         editable: false,
         align: 'center',
         renderCell: (params) => (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              flexWrap: 'wrap',
-            }}
-          >
-            <Button
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton
               size="small"
-              variant="outlined"
-              onClick={() => onExtend?.(params.row)}
-              sx={{
-                minWidth: 'auto',
-                fontSize: '0.75rem',
-                padding: '4px 4px',
-              }}
+              color="primary"
+              aria-label="edit"
+              sx={{ p: 0.5 }}
+              onClick={() => onEdit?.(params.row)}
             >
-              Extend
-            </Button>
-            <Button
-              size="small"
-              variant="contained"
-              color="success"
-              onClick={() => onSetAvailable?.(params.row)}
-              sx={{
-                minWidth: 'auto',
-                fontSize: '0.70rem',
-                padding: '4px 4px',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Set Available
-            </Button>
+              <EditIcon fontSize="small" />
+            </IconButton>
           </Box>
         ),
       },
@@ -307,14 +229,10 @@ const ManageCarsTable = ({
       <DataGrid
         rows={rows}
         columns={columns.filter((col) => !col.hide)}
-        getRowId={(row) =>
-          row.maintenance_id ?? row.transactionId ?? row.id ?? row.car_id
-        }
+        getRowId={(row) => row.transactionId}
         // loading={loading}
         components={{ LoadingOverlay: NullLoadingOverlay }}
-        componentsProps={{
-          loadingOverlay: { sx: { display: 'none !important' } },
-        }}
+        componentsProps={{ loadingOverlay: { sx: { display: 'none !important' } } }}
         autoHeight={false}
         hideFooterSelectedRowCount
         disableColumnMenu

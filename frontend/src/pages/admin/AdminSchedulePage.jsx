@@ -59,21 +59,7 @@ export default function AdminSchedulePage() {
           );
         }
         const data = await res.json();
-        // Filter to only show reservations with status Confirmed or In Progress/Ongoing per requirement
-        const filtered = Array.isArray(data)
-          ? data.filter((r) => {
-              const raw = (r.status || r.booking_status || '')
-                .toString()
-                .toLowerCase()
-                .trim();
-              return (
-                raw === 'confirmed' ||
-                raw === 'in progress' ||
-                raw === 'ongoing'
-              );
-            })
-          : [];
-        setSchedule(filtered);
+        setSchedule(data);
       } catch (error) {
         console.error('Error fetching schedules:', error);
         setSchedule([]); // fallback to empty list so UI can render

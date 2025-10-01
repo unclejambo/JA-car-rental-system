@@ -59,7 +59,7 @@ export default function AdminBookingPage() {
           return d.toISOString().split('T')[0];
         };
 
-        let formattedData = data.map((item, index) => ({
+        const formattedData = data.map((item, index) => ({
           ...item,
           id: item.customerId || item.reservationId || `row-${index}`, // Add unique id property
           status: item.status ? 'Active' : 'Inactive',

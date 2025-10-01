@@ -1,4 +1,4 @@
-import prisma from '../config/prisma.js';
+import prisma from "../config/prisma.js";
 
 function shapePayment(p) {
   const { booking, customer, ...rest } = p;
@@ -7,7 +7,9 @@ function shapePayment(p) {
     paymentId: rest.payment_id,
     bookingId: rest.booking_id,
     customerId: rest.customer_id,
-    customerName: [customer?.first_name, customer?.last_name].filter(Boolean).join(' '),
+    customerName: [customer?.first_name, customer?.last_name]
+      .filter(Boolean)
+      .join(" "),
     description: rest.description || null,
     paymentMethod: rest.payment_method || null,
     gCashNo: rest.gcash_no || null,
@@ -25,7 +27,7 @@ export const getPayments = async (req, res) => {
         customer: { select: { first_name: true, last_name: true } },
         booking: { select: { booking_id: true } },
       },
-      orderBy: { payment_id: 'desc' },
+      orderBy: { payment_id: "desc" },
     });
     res.json(payments.map(shapePayment));
   } catch (error) {
@@ -67,27 +69,20 @@ export const recalculatePaymentBalances = async (bookingId) => {
 
 export const createPayment = async (req, res) => {
   try {
-    const { booking_id, customer_id, description, payment_method, gcash_no, reference_no, amount, paid_date } = req.body;
+    const {
+      booking_id,
+      customer_id,
+      description,
+      payment_method,
+      gcash_no,
+      reference_no,
+      amount,
+      paid_date,
+    } = req.body;
 
     if (!booking_id || !customer_id || amount == null) {
       return res.status(400).json({ error: 'booking_id, customer_id and amount are required' });
     }
-
-    // Get booking details to calculate running balance
-    const booking = await prisma.booking.findUnique({
-      where: { booking_id: Number(booking_id) },
-      include: { payments: { select: { amount: true } } },
-    });
-
-    if (!booking) {
-      return res.status(404).json({ error: 'Booking not found' });
-    }
-
-    // Calculate current total paid (before this payment)
-    const currentTotalPaid = booking.payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-    
-    // Calculate running balance after this payment
-    const runningBalance = (booking.total_amount || 0) - currentTotalPaid - Number(amount);
 
     const created = await prisma.payment.create({
       data: {
@@ -118,7 +113,7 @@ export const createPayment = async (req, res) => {
 
     res.status(201).json(shapePayment(created));
   } catch (error) {
-    console.error('Error creating payment:', error);
-    res.status(500).json({ error: 'Failed to create payment' });
+    console.error("Error creating payment:", error);
+    res.status(500).json({ error: "Failed to create payment" });
   }
 };

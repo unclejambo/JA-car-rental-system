@@ -1,13 +1,12 @@
 import { create } from 'zustand';
 import axios from 'axios';
-const API_BASE = import.meta.env.VITE_LOCAL || 'http://localhost:3001';
-const CARS_URL = `${API_BASE}/cars`;
+
 export const useCarStore = create((set, get) => ({
   cars: [],
 
   fetchCars: async () => {
     try {
-      const response = await axios.get(CARS_URL);
+      const response = await axios.get('http://localhost:3001/api/cars');
       set({ cars: response.data });
       return response.data;
     } catch (error) {
@@ -18,7 +17,10 @@ export const useCarStore = create((set, get) => ({
 
   addCar: async (carData) => {
     try {
-      const response = await axios.post(CARS_URL, carData);
+      const response = await axios.post(
+        'http://localhost:3001/api/cars',
+        carData
+      );
       await get().fetchCars();
       return response.data;
     } catch (error) {
@@ -29,10 +31,10 @@ export const useCarStore = create((set, get) => ({
 
   updateCar: async (carId, carData) => {
     try {
-      const isFormData = typeof FormData !== 'undefined' && carData instanceof FormData;
-      const response = await axios.put(`${CARS_URL}/${carId}`, carData, {
-        headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
-      });
+      const response = await axios.put(
+        `http://localhost:3001/api/cars/${carId}`,
+        carData
+      );
       await get().fetchCars();
       return response.data;
     } catch (error) {
@@ -43,7 +45,7 @@ export const useCarStore = create((set, get) => ({
 
   deleteCar: async (carId) => {
     try {
-      await axios.delete(`${CARS_URL}/${carId}`);
+      await axios.delete(`http://localhost:3001/api/cars/${carId}`);
       await get().fetchCars();
     } catch (error) {
       console.error('Error deleting car:', error);

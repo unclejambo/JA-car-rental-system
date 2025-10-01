@@ -1,8 +1,7 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, IconButton, Tooltip } from '@mui/material';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import { Box } from '@mui/material';
 
-const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
+const TransactionLogsTable = ({ activeTab, rows, loading }) => {
   const commonColumns = [
     {
       field: 'customerName',
@@ -142,41 +141,7 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
   };
 
   // Combine columns based on active tab
-  const actionColumn =
-    activeTab === 'TRANSACTIONS'
-      ? [
-          {
-            field: 'action',
-            headerName: '',
-            flex: 0.6,
-            minWidth: 80,
-            sortable: false,
-            filterable: false,
-            renderCell: (params) => (
-              <Tooltip title="View Booking Details" arrow>
-                <IconButton
-                  size="small"
-                  onClick={() =>
-                    onViewBooking &&
-                    onViewBooking(params.row, params.row.transactionId)
-                  }
-                  sx={{
-                    '&:hover': { backgroundColor: 'rgba(25,118,210,0.08)' },
-                  }}
-                >
-                  <MoreHorizIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            ),
-          },
-        ]
-      : [];
-
-  const columns = [
-    ...commonColumns,
-    ...(tabSpecificColumns[activeTab] || []),
-    ...actionColumn,
-  ];
+  const columns = [...commonColumns, ...(tabSpecificColumns[activeTab] || [])];
 
   return (
     <Box

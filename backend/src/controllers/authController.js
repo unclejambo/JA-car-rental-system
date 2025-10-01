@@ -37,7 +37,7 @@ async function login(req, res, next) {
         },
       });
       if (user) {
-        role = user.user_type || 'admin'; // Use user_type from database, default to admin
+        role = 'admin';
         foundIn = 'admin';
       }
     } catch (err) {
@@ -104,35 +104,6 @@ async function login(req, res, next) {
       return res.status(401).json({ ok: false, message: 'Invalid credentials' });
     }
 
-    // Check if account is active based on user type
-    if (foundIn === 'admin') {
-      // For admin and staff, check isActive column and user_type
-      if (user.user_type === 'admin' || user.user_type === 'staff') {
-        if (!user.isActive) {
-          return res.status(403).json({ 
-            ok: false, 
-            message: 'Account is inactive. Please contact admin to activate your account.' 
-          });
-        }
-      }
-    } else if (foundIn === 'customer') {
-      // For customers, check status column
-      if (user.status !== 'active') {
-        return res.status(403).json({ 
-          ok: false, 
-          message: 'Account is inactive. Please contact admin to activate your account.' 
-        });
-      }
-    } else if (foundIn === 'driver') {
-      // For drivers, check status column
-      if (user.status !== 'active') {
-        return res.status(403).json({ 
-          ok: false, 
-          message: 'Account is inactive. Please contact admin to activate your account.' 
-        });
-      }
-    }
-
     // create a small token (avoid putting sensitive info)
     const userId = user.admin_id || user.customer_id || user.drivers_id;
     const tokenPayload = {
@@ -164,7 +135,6 @@ async function login(req, res, next) {
         name: `${user.first_name} ${user.last_name}`,
         email: user.email,
         username: user.username,
-        ...(foundIn === 'admin' && user.user_type ? { user_type: user.user_type } : {}),
       },
     });
   } catch (err) {

@@ -1,7 +1,5 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Box, Typography, Select, MenuItem, Chip, Stack } from '@mui/material';
-import { createAuthenticatedFetch } from '../../utils/api';
-import { useAuth } from '../../hooks/useAuth';
 import Header from '../../ui/components/Header'; // Unused import removed
 import AdminSideBar from '../../ui/components/AdminSideBar'; // Unused import removed
 import Loading from '../../ui/components/Loading'; // Unused import removed
@@ -28,8 +26,7 @@ ChartJS.register(
   BarElement,
   ChartTitle,
   Tooltip,
-  Legend,
-  Filler
+  Legend
 );
 
 // API base URL
@@ -329,7 +326,8 @@ export default function AdminReportAnalytics() {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
-  // Line dataset builder - API data only
+
+  // Line dataset builder
   const lineData = useMemo(() => {
     const labels = chartLabels.length > 0 ? chartLabels : DEFAULT_MONTHS;
 
@@ -409,7 +407,7 @@ export default function AdminReportAnalytics() {
     []
   );
 
-  // Bar dataset builder - API data only
+  // Bar dataset builder (top cars/customers)
   const barData = useMemo(() => {
     const isCars = topCategory === 'cars';
     const hasApiData = chartData.length > 0 && chartLabels.length > 0;
@@ -420,11 +418,11 @@ export default function AdminReportAnalytics() {
     console.log('Bar chart data:', { labels, data, topCategory, hasApiData });
 
     return {
-      labels,
+      labels: isCars ? staticTopCarLabels : staticTopCustomerLabels,
       datasets: [
         {
           label: isCars ? 'CARS' : 'CUSTOMERS',
-          data,
+          data: isCars ? staticTopCars : staticTopCustomers,
           backgroundColor: '#1976d2',
           borderRadius: 6,
         },
@@ -860,7 +858,7 @@ export default function AdminReportAnalytics() {
                           {primaryView === 'income' ? 'Income' : 'Expenses'}
                         </Typography>
                         <Typography variant="caption" sx={{ color: '#666' }}>
-                          LINE GRAPH
+                          BAR GRAPH
                         </Typography>
                       </Box>
                     ) : (
@@ -874,7 +872,7 @@ export default function AdminReportAnalytics() {
                             : 'Top Customers'}
                         </Typography>
                         <Typography variant="caption" sx={{ color: '#666' }}>
-                          BAR GRAPH
+                          LINE GRAPH
                         </Typography>
                       </Box>
                     )}

@@ -176,7 +176,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
     flex: 1,
     minWidth: 150,
     editable: false,
-    sortable: false,
+    sortable: true,
     headerAlign: 'left',
     align: 'left',
     renderCell: (params) => {

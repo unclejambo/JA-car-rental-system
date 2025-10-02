@@ -13,7 +13,7 @@ import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 import { useAuth } from '../../hooks/useAuth';
 
 export default function AdminManageUser() {
-  const { user, userRole } = useAuth();
+  const { userRole } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +46,7 @@ export default function AdminManageUser() {
       setError(null);
 
       // Restrict staff users to only access customer data
-      if (user?.user_type === 'staff' && tabType !== 'CUSTOMER') {
+      if (userRole === 'staff' && tabType !== 'CUSTOMER') {
         setError('Access denied. Staff can only view customer data.');
         setLoading(false);
         return;
@@ -128,15 +128,15 @@ export default function AdminManageUser() {
         setLoading(false);
       }
     },
-    [authFetch, API_BASE, activeTab, user?.user_type]
+    [authFetch, API_BASE, activeTab, userRole]
   );
 
   // Force staff users to stay on CUSTOMER tab
   useEffect(() => {
-    if (user?.user_type === 'staff' && activeTab !== 'CUSTOMER') {
+    if (userRole === 'staff' && activeTab !== 'CUSTOMER') {
       setActiveTab('CUSTOMER');
     }
-  }, [user?.user_type, activeTab]);
+  }, [userRole, activeTab]);
 
   // Fetch data when component mounts or when activeTab changes
   useEffect(() => {
@@ -189,7 +189,7 @@ export default function AdminManageUser() {
       </Box>
     );
   }
-  console.log(userRole, user.user_type);
+  
   return (
     <Box sx={{ display: 'flex' }}>
       <title>Manage Users</title>
@@ -231,13 +231,19 @@ export default function AdminManageUser() {
             flexDirection: 'column',
           }}
         >
-          {/* Hide header tabs for staff users - they should only see customers */}
-          {user?.user_type !== 'staff' && (
+          {/* Show header with filtered tabs based on user type */}
+
+          {userRole !== 'staff' && (
             <ManageUserHeader
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-            />
-          )}
+            activeTab={activeTab}
+            onTabChange={(tab) => {
+              // Prevent staff users from accessing STAFF and DRIVER tabs
+              setActiveTab(tab);
+            }}
+            userType={userRole}
+          />)
+          }
+          
           <Box
             sx={{
               flexGrow: 1,
@@ -272,7 +278,7 @@ export default function AdminManageUser() {
                 {activeTab}
               </Typography>
               {/* Hide Add buttons for staff users */}
-              {user?.user_type !== 'staff' && activeTab === 'STAFF' && (
+              {userRole !== 'staff' && activeTab === 'STAFF' && (
                 <Button
                   variant="outlined"
                   startIcon={
@@ -303,7 +309,7 @@ export default function AdminManageUser() {
                   Add New {activeTab}
                 </Button>
               )}
-              {user?.user_type !== 'staff' && activeTab === 'DRIVER' && (
+              {userRole !== 'staff' && activeTab === 'DRIVER' && (
                 <Button
                   variant="outlined"
                   startIcon={

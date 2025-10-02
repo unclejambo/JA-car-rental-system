@@ -1,7 +1,16 @@
 import { Box, Button } from '@mui/material';
 
-const ManageUserHeader = ({ activeTab = 'CUSTOMER', onTabChange }) => {
-  const tabs = ['CUSTOMER', 'STAFF', 'DRIVER'];
+const ManageUserHeader = ({ activeTab = 'CUSTOMER', onTabChange, userType }) => {
+  console.log('Debug - ManageUserHeader userType:', userType);
+  // Filter tabs based on user role - staff can only see CUSTOMER tab
+  const getAllTabs = () => {
+    if (userType === 'staff') {
+      return ['CUSTOMER'];
+    }
+    return ['CUSTOMER', 'STAFF', 'DRIVER'];
+  };
+  
+  const tabs = getAllTabs();
 
   return (
     <Box
@@ -33,8 +42,8 @@ const ManageUserHeader = ({ activeTab = 'CUSTOMER', onTabChange }) => {
             textOverflow: 'ellipsis',
             boxShadow: 0,
             borderRadius: 0,
-            borderTopLeftRadius: tab === 'CUSTOMER' ? '8px' : 0,
-            borderTopRightRadius: tab === 'DRIVER' ? '8px' : 0,
+            borderTopLeftRadius: tab === tabs[0] ? '8px' : 0,
+            borderTopRightRadius: tab === tabs[tabs.length - 1] ? '8px' : 0,
             color: activeTab === tab ? '#fff' : '#333',
             backgroundColor: activeTab === tab ? '#c10007' : '#d9d9d9',
             borderColor: '#ccc',

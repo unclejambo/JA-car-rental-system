@@ -26,7 +26,7 @@ async function login(req, res, next) {
     // Search identifier (email or username) in all three user tables
     const searchTerm = identifier || email || username;
 
-    // Try Admin first
+    // Try Admin/Staff first
     try {
       user = await prisma.admin.findFirst({
         where: {
@@ -37,7 +37,8 @@ async function login(req, res, next) {
         },
       });
       if (user) {
-        role = 'admin';
+        // Use the user_type field to determine role (admin or staff)
+        role = user.user_type || 'admin'; // Default to 'admin' if user_type is null
         foundIn = 'admin';
       }
     } catch (err) {

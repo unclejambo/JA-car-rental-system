@@ -6,15 +6,16 @@ import '../../styles/components/header.css';
 
 function Header({ onMenuClick = null, isMenuOpen = false }) {
   const isMobile = useMediaQuery('(max-width: 1024px)');
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, userRole } = useAuth();
 
   const getUserDisplayName = () => {
-    // Only show 'ADMIN' for users with user_type === 'admin'
-    // Staff members should show their first name
-    if (user?.user_type === 'admin') {
+    // Only show 'ADMIN' for users with role === 'admin'
+    // Staff members and other users should show their first name
+    if (userRole === 'admin') {
       return 'ADMIN';
     }
 
+    // For staff, customers, drivers - show their first name
     // Try multiple possible property names for the first name
     const firstName =
       user?.firstName ||

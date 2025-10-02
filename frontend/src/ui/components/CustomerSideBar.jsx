@@ -53,11 +53,6 @@ export default function CustomerSideBar({
         BOOKING HISTORY
       </NavLink>
       <hr />
-      <NavLink to="/customer-cars" onClick={onClose}>
-        <HiTruck style={{ verticalAlign: '-3px', marginRight: '5px' }} />
-        CARS
-      </NavLink>
-      <hr />
       <NavLink to="/customer-schedule" onClick={onClose}>
         <HiCalendar style={{ verticalAlign: '-3px', marginRight: '5px' }} />
         SCHEDULE

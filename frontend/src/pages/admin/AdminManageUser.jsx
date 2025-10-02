@@ -10,8 +10,10 @@ import AddStaffModal from '../../ui/components/modal/AddStaffModal';
 import AddDriverModal from '../../ui/components/modal/AddDriverModal';
 import { HiOutlineUserGroup } from 'react-icons/hi2';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function AdminManageUser() {
+  const { user, userRole } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,89 +30,113 @@ export default function AdminManageUser() {
   const closeAddDriverModal = () => setShowAddDriverModal(false);
 
   // create auth-aware fetch and API base with useMemo to prevent infinite loops
-  const authFetch = useMemo(() => createAuthenticatedFetch(() => {
-    localStorage.removeItem('authToken');
-    window.location.href = '/login';
-  }), []);
+  const authFetch = useMemo(
+    () =>
+      createAuthenticatedFetch(() => {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+      }),
+    []
+  );
   const API_BASE = getApiBase().replace(/\/$/, '');
 
-  const fetchData = useCallback(async (tabType = activeTab) => {
-    setLoading(true);
-    setError(null);
+  const fetchData = useCallback(
+    async (tabType = activeTab) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      let endpoint = '';
-      switch (tabType) {
-        case 'CUSTOMER':
-          endpoint = `${API_BASE}/customers`;
-          break;
-        case 'STAFF':
-          endpoint = `${API_BASE}/admin-profile/all`;
-          break;
-        case 'DRIVER':
-          endpoint = `${API_BASE}/drivers`;
-          break;
-        default:
-          endpoint = `${API_BASE}/customers`;
+      // Restrict staff users to only access customer data
+      if (user?.user_type === 'staff' && tabType !== 'CUSTOMER') {
+        setError('Access denied. Staff can only view customer data.');
+        setLoading(false);
+        return;
       }
 
-      const response = await authFetch(endpoint, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      try {
+        let endpoint = '';
+        switch (tabType) {
+          case 'CUSTOMER':
+            endpoint = `${API_BASE}/customers`;
+            break;
+          case 'STAFF':
+            endpoint = `${API_BASE}/admin-profile/all`;
+            break;
+          case 'DRIVER':
+            endpoint = `${API_BASE}/drivers`;
+            break;
+          default:
+            endpoint = `${API_BASE}/customers`;
+        }
+
+        const response = await authFetch(endpoint, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+
+        let formattedData = [];
+
+        if (tabType === 'CUSTOMER') {
+          formattedData = data.map((item) => ({
+            ...item,
+            id: item.customer_id, // required by DataGrid
+            contact_number: item.contact_no,
+            // normalize status explicitly so strings like 'inactive' don't become truthy -> Active
+            status:
+              item.status === true ||
+              item.status === 'Active' ||
+              item.status === 'active' ||
+              item.status === 1 ||
+              item.status === '1'
+                ? 'Active'
+                : 'Inactive',
+          }));
+        } else if (tabType === 'STAFF') {
+          formattedData = data.map((item) => ({
+            ...item,
+            id: item.admin_id, // required by DataGrid
+            contact_number: item.contact_no,
+            status:
+              item.isActive === true || item.isActive === null
+                ? 'Active'
+                : 'Inactive',
+            user_type: item.user_type, // Ensure user_type is passed through for admin detection
+          }));
+        } else if (tabType === 'DRIVER') {
+          formattedData = data.map((item) => ({
+            ...item,
+            id: item.drivers_id, // required by DataGrid
+            contact_number: item.contact_no,
+            status:
+              item.status === true ||
+              item.status === 'Active' ||
+              item.status === 'active' ||
+              item.status === 1 ||
+              item.status === '1'
+                ? 'Active'
+                : 'Inactive',
+          }));
+        }
+
+        setRows(formattedData);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load data. Please try again later.');
+      } finally {
+        setLoading(false);
       }
-      const data = await response.json();
-      
-      let formattedData = [];
-      
-      if (tabType === 'CUSTOMER') {
-        formattedData = data.map((item) => ({
-          ...item,
-          id: item.customer_id, // required by DataGrid
-          contact_number: item.contact_no,
-          // normalize status explicitly so strings like 'inactive' don't become truthy -> Active
-          status:
-            item.status === true ||
-            item.status === 'Active' ||
-            item.status === 'active' ||
-            item.status === 1 ||
-            item.status === '1'
-              ? 'Active'
-              : 'Inactive',
-        }));
-      } else if (tabType === 'STAFF') {
-        formattedData = data.map((item) => ({
-          ...item,
-          id: item.admin_id, // required by DataGrid
-          contact_number: item.contact_no,
-          status: item.isActive === true || item.isActive === null ? 'Active' : 'Inactive',
-          user_type: item.user_type, // Ensure user_type is passed through for admin detection
-        }));
-      } else if (tabType === 'DRIVER') {
-        formattedData = data.map((item) => ({
-          ...item,
-          id: item.drivers_id, // required by DataGrid
-          contact_number: item.contact_no,
-          status:
-            item.status === true ||
-            item.status === 'Active' ||
-            item.status === 'active' ||
-            item.status === 1 ||
-            item.status === '1'
-              ? 'Active'
-              : 'Inactive',
-        }));
-      }
-      
-      setRows(formattedData);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Failed to load data. Please try again later.');
-    } finally {
-      setLoading(false);
+    },
+    [authFetch, API_BASE, activeTab, user?.user_type]
+  );
+
+  // Force staff users to stay on CUSTOMER tab
+  useEffect(() => {
+    if (user?.user_type === 'staff' && activeTab !== 'CUSTOMER') {
+      setActiveTab('CUSTOMER');
     }
-  }, [authFetch, API_BASE, activeTab]);
+  }, [user?.user_type, activeTab]);
 
   // Fetch data when component mounts or when activeTab changes
   useEffect(() => {
@@ -163,7 +189,7 @@ export default function AdminManageUser() {
       </Box>
     );
   }
-
+  console.log(userRole, user.user_type);
   return (
     <Box sx={{ display: 'flex' }}>
       <title>Manage Users</title>
@@ -205,7 +231,13 @@ export default function AdminManageUser() {
             flexDirection: 'column',
           }}
         >
-          <ManageUserHeader activeTab={activeTab} onTabChange={setActiveTab} />
+          {/* Hide header tabs for staff users - they should only see customers */}
+          {user?.user_type !== 'staff' && (
+            <ManageUserHeader
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
+          )}
           <Box
             sx={{
               flexGrow: 1,
@@ -239,7 +271,8 @@ export default function AdminManageUser() {
                 />
                 {activeTab}
               </Typography>
-              {activeTab === 'STAFF' && (
+              {/* Hide Add buttons for staff users */}
+              {user?.user_type !== 'staff' && activeTab === 'STAFF' && (
                 <Button
                   variant="outlined"
                   startIcon={
@@ -270,7 +303,7 @@ export default function AdminManageUser() {
                   Add New {activeTab}
                 </Button>
               )}
-              {activeTab === 'DRIVER' && (
+              {user?.user_type !== 'staff' && activeTab === 'DRIVER' && (
                 <Button
                   variant="outlined"
                   startIcon={

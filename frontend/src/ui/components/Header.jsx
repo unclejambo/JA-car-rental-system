@@ -6,10 +6,12 @@ import '../../styles/components/header.css';
 
 function Header({ onMenuClick = null, isMenuOpen = false }) {
   const isMobile = useMediaQuery('(max-width: 1024px)');
-  const { isAuthenticated, user, userRole } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const getUserDisplayName = () => {
-    if (userRole === 'admin') {
+    // Only show 'ADMIN' for users with user_type === 'admin'
+    // Staff members should show their first name
+    if (user?.user_type === 'admin') {
       return 'ADMIN';
     }
 
@@ -20,7 +22,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
       user?.name?.split(' ')[0] ||
       user?.fullName?.split(' ')[0];
 
-    return firstName;
+    return firstName || 'User';
   };
 
   return (

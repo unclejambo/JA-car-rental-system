@@ -112,29 +112,6 @@ export default function AdminBookingPage() {
     fetchBookings();
   }, []);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex' }}>
-        <Header onMenuClick={() => setMobileOpen(true)} />
-        <AdminSideBar
-          mobileOpen={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-        />
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-          }}
-        >
-          <Loading />
-        </Box>
-      </Box>
-    );
-  }
-
   if (error) {
     return (
       <Box sx={{ display: 'flex' }}>

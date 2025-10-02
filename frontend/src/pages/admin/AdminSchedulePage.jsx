@@ -13,6 +13,7 @@ export default function AdminSchedulePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [schedule, setSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [showReleaseModal, setShowReleaseModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -60,8 +61,10 @@ export default function AdminSchedulePage() {
         }
         const data = await res.json();
         setSchedule(data);
+        setError(null);
       } catch (error) {
         console.error('Error fetching schedules:', error);
+        setError('Failed to load schedule data. Please try again later.');
         setSchedule([]); // fallback to empty list so UI can render
       } finally {
         setLoading(false);
@@ -71,7 +74,7 @@ export default function AdminSchedulePage() {
     fetchData();
   }, []);
 
-  if (loading || schedule === null) {
+  if (error) {
     return (
       <Box sx={{ display: 'flex' }}>
         <Header onMenuClick={() => setMobileOpen(true)} />
@@ -87,8 +90,9 @@ export default function AdminSchedulePage() {
             alignItems: 'center',
             height: '100vh',
           }}
+          color="error.main"
         >
-          <Loading />
+          <Typography>{error}</Typography>
         </Box>
       </Box>
     );
@@ -188,30 +192,12 @@ export default function AdminSchedulePage() {
                 overflow: 'hidden',
               }}
             >
-              {!schedule || schedule.length === 0 ? (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '50vh',
-                  }}
-                >
-                  <Typography variant="h6">No schedule found</Typography>
-                </Box>
-              ) : (
-                <>
-                  <pre style={{ display: 'none' }}>
-                    {JSON.stringify(schedule, null, 2)}
-                  </pre>
-                  <AdminScheduleTable
-                    rows={schedule}
-                    loading={loading}
-                    onOpenRelease={handleReleaseClick}
-                    onOpenReturn={handleReturnClick}
-                  />
-                </>
-              )}
+              <AdminScheduleTable
+                rows={schedule || []}
+                loading={loading}
+                onOpenRelease={handleReleaseClick}
+                onOpenReturn={handleReturnClick}
+              />
             </Box>
           </Box>
         </Box>

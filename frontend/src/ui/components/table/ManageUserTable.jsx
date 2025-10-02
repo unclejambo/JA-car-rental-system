@@ -2,7 +2,9 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Box, Select, MenuItem, useMediaQuery } from '@mui/material';
 
 // use Vite env var, fallback to localhost; remove trailing slash if present
-const API_BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL).replace(/\/$/, '');
+const API_BASE = (
+  import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL
+).replace(/\/$/, '');
 
 const ManageUserTable = ({ activeTab, rows, loading }) => {
   const isSmallScreen = useMediaQuery('(max-width:600px)');
@@ -56,7 +58,11 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              style={{ color: '#1976d2', textDecoration: 'none', fontWeight: 500 }}
+              style={{
+                color: '#1976d2',
+                textDecoration: 'none',
+                fontWeight: 500,
+              }}
             >
               Link
             </a>
@@ -136,18 +142,20 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
     headerAlign: 'center',
     align: 'center',
     renderCell: (params) => {
-      // If user_type is admin, just show "Admin" text
-      if (params.row.user_type === 'admin') {
+      // If STAFF tab and user_type is superadmin -> show static label 'ADMIN'
+      if (
+        activeTab === 'STAFF' &&
+        (params.row?.user_type === 'admin' || params.row?.userType === 'admin')
+      ) {
         return (
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            height: '100%',
-            fontWeight: 500,
-            color: '#1976d2'
-          }}>
-            Admin
+          <Box
+            sx={{
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: 1,
+            }}
+          >
+            ADMIN
           </Box>
         );
       }
@@ -182,7 +190,9 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
           const json = await response.json().catch(() => null);
           if (!response.ok) {
             console.error('Update failed:', response.status, json);
-            throw new Error(json?.error || json?.message || 'Failed to update status');
+            throw new Error(
+              json?.error || json?.message || 'Failed to update status'
+            );
           }
 
           // update only the status cell in the grid with the display label

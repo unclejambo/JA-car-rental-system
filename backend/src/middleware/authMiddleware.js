@@ -13,6 +13,12 @@ export const verifyToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    console.log('Token decoded successfully:', { 
+      role: decoded.role, 
+      sub: decoded.sub, 
+      email: decoded.email,
+      foundIn: decoded.foundIn 
+    });
     req.user = decoded;
     next();
   } catch (err) {
@@ -32,6 +38,12 @@ export const requireAdmin = (req, res, next) => {
 
 // Middleware to check if user is customer
 export const requireCustomer = (req, res, next) => {
+  console.log('requireCustomer check:', { 
+    userExists: !!req.user, 
+    userRole: req.user?.role,
+    fullUser: req.user 
+  });
+  
   if (req.user && req.user.role === 'customer') {
     next();
   } else {
@@ -62,24 +74,11 @@ export const customerOnly = [verifyToken, requireCustomer];
 // Combined middleware for driver-only routes
 export const driverOnly = [verifyToken, requireDriver];
 
-// Middleware function to check if user is admin or staff (used internally)
-const requireAdminOrStaff = (req, res, next) => {
-  console.log('🛡️ AdminOrStaff middleware - User role:', req.user?.role);
-  console.log('🛡️ AdminOrStaff middleware - Full user:', req.user);
-  
+// Middleware to check if user is admin or staff
+export const adminOrStaff = (req, res, next) => {
   if (req.user && (req.user.role === 'admin' || req.user.role === 'staff')) {
-    console.log('✅ Access granted to admin/staff user');
     next();
   } else {
-    console.log('❌ Access denied - not admin or staff');
-    return res.status(403).json({ 
-      ok: false, 
-      message: 'Admin or staff access required',
-      currentRole: req.user?.role,
-      hasUser: !!req.user
-    });
+    return res.status(403).json({ ok: false, message: 'Admin or staff access required' });
   }
 };
-
-// Combined middleware for admin-or-staff routes
-export const adminOrStaff = [verifyToken, requireAdminOrStaff];

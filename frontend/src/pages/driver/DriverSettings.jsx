@@ -368,23 +368,30 @@ export default function DriverSettings() {
               boxSizing: 'border-box',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography
-                variant="h4"
-                component="h1"
-                gutterBottom
+            <Box sx={{ mb: 3 }}>
+              <Box
                 sx={{
-                  fontSize: '1.8rem',
-                  color: '#000',
-                  '@media (max-width: 1024px)': {
-                    fontSize: '1.5rem',
-                  },
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 1,
                 }}
               >
-                <HiCog8Tooth
-                  style={{ verticalAlign: '-3px', marginRight: '5px' }}
-                />
-                DRIVER SETTINGS
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 'bold',
+                    color: '#c10007',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <HiCog8Tooth style={{ marginRight: '8px' }} />
+                  Driver Settings
+                </Typography>
+              </Box>
+              <Typography variant="body1" color="text.secondary">
+                Manage your driver account information
               </Typography>
             </Box>
             <Box

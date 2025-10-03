@@ -83,6 +83,22 @@ const determineBookingStatus = (totalPaid, totalAmount, currentStatus) => {
   }
 };
 
+// Utility function to determine appropriate booking status based on payments
+const determineBookingStatus = (totalPaid, totalAmount, currentStatus) => {
+  if (totalPaid <= 0) {
+    // No payments made - should be pending
+    return 'pending';
+  } else if (totalPaid >= totalAmount) {
+    // Fully paid - should be confirmed or maintain current status if already progressed
+    return ['Confirmed', 'In Progress', 'Completed', 'Returned'].includes(currentStatus?.toLowerCase()) 
+      ? currentStatus 
+      : 'Confirmed';
+  } else {
+    // Partially paid - should be confirmed
+    return 'Confirmed';
+  }
+};
+
 export const createPayment = async (req, res) => {
   try {
     const {
@@ -94,7 +110,7 @@ export const createPayment = async (req, res) => {
       reference_no,
       amount,
       paid_date, update_status,
-    } = req.body;
+   , update_status } = req.body;
 
     if (!booking_id || !customer_id || amount == null) {
       return res.status(400).json({ error: 'booking_id, customer_id and amount are required' });

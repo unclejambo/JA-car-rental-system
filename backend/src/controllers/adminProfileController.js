@@ -79,6 +79,43 @@ export const getAllAdmins = async (req, res) => {
     });
   }
 };
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+/**
+ * Generate fresh signed URL for profile image if it exists
+ */
+const refreshProfileImageUrl = async (profileImgUrl) => {
+  if (!profileImgUrl) return null;
+  
+  try {
+    // Extract the path from the existing URL
+    // Format: https://...supabase.co/storage/v1/object/sign/licenses/profile_img/filename?token=...
+    const urlParts = profileImgUrl.split('/');
+    const bucketIndex = urlParts.findIndex(part => part === 'licenses');
+    
+    if (bucketIndex === -1) return profileImgUrl; // Return original if can't parse
+    
+    const path = urlParts.slice(bucketIndex + 1).join('/').split('?')[0]; // Remove query params
+    
+    const { data: signedUrlData, error } = await supabase.storage
+      .from('licenses')
+      .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year expiration
+    
+    if (error) {
+      console.error('Error refreshing signed URL:', error);
+      return profileImgUrl; // Return original URL if refresh fails
+    }
+    
+    return signedUrlData.signedUrl;
+  } catch (error) {
+    console.error('Error parsing profile image URL:', error);
+    return profileImgUrl; // Return original URL if parsing fails
+  }
+};
 
 /**
  * Get admin profile information

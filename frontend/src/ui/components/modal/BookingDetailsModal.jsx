@@ -948,6 +948,216 @@ export default function BookingDetailsModal({
 
           <Divider />
 
+          {/* Payment Section */}
+          {booking.balance > 0 && (
+            <Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 2,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 'bold', color: 'primary.main' }}
+                >
+                  💳 Add Payment
+                </Typography>
+                {!showPaymentForm && (
+                  <Button
+                    variant="contained"
+                    startIcon={<HiCreditCard />}
+                    onClick={() => setShowPaymentForm(true)}
+                    size="small"
+                  >
+                    Add Payment
+                  </Button>
+                )}
+              </Box>
+
+              <Collapse in={showPaymentForm}>
+                <Box
+                  sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mt: 2 }}
+                >
+                  <Box sx={{ display: 'grid', gap: 2 }}>
+                    <TextField
+                      label="Payment Amount"
+                      type="number"
+                      value={paymentData.amount}
+                      onChange={(e) =>
+                        handlePaymentChange('amount', e.target.value)
+                      }
+                      onKeyDown={(e) => {
+                        // Block letters, 'e', 'E', '+', '-' from being typed
+                        const blockedKeys = ['e', 'E', '+', '-'];
+                        if (blockedKeys.includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
+                      fullWidth
+                      size="small"
+                      inputProps={{
+                        min: 0.01,
+                        max: booking.balance,
+                        step: 0.01,
+                      }}
+                      error={!!fieldErrors.amount}
+                      helperText={
+                        fieldErrors.amount ||
+                        `Remaining balance: ${formatCurrency(booking.balance)}`
+                      }
+                    />
+
+                    <TextField
+                      label="Description (Optional)"
+                      value={paymentData.description}
+                      onChange={(e) =>
+                        handlePaymentChange('description', e.target.value)
+                      }
+                      fullWidth
+                      size="small"
+                      placeholder={`Payment for Booking #${booking.booking_id}`}
+                    />
+
+                    <TextField
+                      select
+                      label="Payment Method"
+                      value={paymentData.payment_method}
+                      onChange={(e) =>
+                        handlePaymentChange('payment_method', e.target.value)
+                      }
+                      fullWidth
+                      size="small"
+                    >
+                      <MenuItem value="Cash">Cash</MenuItem>
+                      <MenuItem value="GCash">GCash</MenuItem>
+                    </TextField>
+
+                    {paymentData.payment_method === 'GCash' && (
+                      <>
+                        <TextField
+                          label="Reference Number (Optional)"
+                          value={paymentData.reference_no}
+                          onChange={(e) =>
+                            handlePaymentChange(
+                              'reference_no',
+                              e.target.value
+                            )
+                          }
+                          fullWidth
+                          size="small"
+                          error={!!fieldErrors.reference_no}
+                          helperText={
+                            fieldErrors.reference_no ||
+                            'Recommended for GCash payments'
+                          }
+                        />
+                      </>
+                    )}
+
+                    {error && (
+                      <Alert severity="error" sx={{ mt: 1 }}>
+                        {error}
+                      </Alert>
+                    )}
+
+                    <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                      <Button
+                        variant="contained"
+                        onClick={handlePaymentSubmit}
+                        disabled={loading || !isPaymentFormValid()}
+                        startIcon={
+                          loading ? (
+                            <CircularProgress size={16} />
+                          ) : (
+                            <HiCreditCard />
+                          )
+                        }
+                        sx={{ flex: 1 }}
+                      >
+                        {loading ? 'Processing...' : 'Process Payment'}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={resetForm}
+                        disabled={loading}
+                      >
+                        Cancel
+                      </Button>
+                    </Box>
+                  </Box>
+                </Box>
+              </Collapse>
+            </Box>
+          )}
+
+          {success && (
+            <Alert severity="success" sx={{ mt: 2 }}>
+              {success}
+            </Alert>
+          )}
+
+          {/* Financial Information */}
+          <Box>
+            <Typography
+              variant="h6"
+              sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}
+            >
+              💰 Financial Information
+            </Typography>
+            <Box
+              sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}
+            >
+              <Box>
+                <Typography variant="body2" color="text.secondary">
+                  Total Amount:
+                </Typography>
+                <Typography variant="h6" fontWeight="bold" color="primary">
+                  {formatCurrency(booking.total_amount)}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">
+                  Remaining Balance:
+                </Typography>
+                <Typography
+                  variant="body1"
+                  fontWeight="medium"
+                  color={booking.balance > 0 ? 'error.main' : 'success.main'}
+                >
+                  {formatCurrency(booking.balance)}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">
+                  Payment Status:
+                </Typography>
+                <Chip
+                  label={booking.balance <= 0 ? 'Paid' : (booking.payment_status || 'Unpaid')}
+                  color={booking.balance <= 0 ? 'success' : getStatusColor(booking.payment_status)}
+                  size="small"
+                  variant="outlined"
+                />
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary">
+                  Total Paid:
+                </Typography>
+                <Typography
+                  variant="body1"
+                  fontWeight="medium"
+                  color="success.main"
+                >
+                  {formatCurrency(booking.total_paid)}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          <Divider />
+
           {/* Basic Booking Information */}
           <Box>
             <Typography

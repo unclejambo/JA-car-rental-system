@@ -20,6 +20,8 @@ import driverProfileRoutes from './routes/driverProfileRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import waitlistRoutes from './routes/waitlistRoutes.js'; // <--- added waitlist routes
 import manageFeesRoutes from './routes/manageFeesRoutes.js'; // <--- added manage fees routes
+import releaseRoutes from './routes/releaseRoute.js'; // <--- added release routes
+import releasePaymentRoutes from './routes/releasePaymentRoute.js'; // <--- added release payment routes
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -59,6 +61,8 @@ app.use('/admin-profile', adminProfileRoutes);
 app.use('/driver-profile', driverProfileRoutes);
 app.use('/analytics', analyticsRoutes);
 app.use('/manage-fees', manageFeesRoutes); // <--- added manage fees routes
+app.use('/releases', releaseRoutes); // <--- added release routes
+app.use('/release-payments', releasePaymentRoutes); // <--- added release payment routes
 
 // Error handling middleware
 app.use((err, req, res, next) => {

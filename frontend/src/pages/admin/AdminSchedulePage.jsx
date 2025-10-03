@@ -42,36 +42,46 @@ export default function AdminSchedulePage() {
   //         </div>
   //       </div>
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const authFetch = createAuthenticatedFetch(() => {
-        localStorage.removeItem('authToken');
-        window.location.href = '/login';
+  const fetchScheduleData = async () => {
+    setLoading(true);
+    const authFetch = createAuthenticatedFetch(() => {
+      localStorage.removeItem('authToken');
+      window.location.href = '/login';
+    });
+    const API_BASE = getApiBase().replace(/\/$/, '');
+    try {
+      const res = await authFetch(`${API_BASE}/schedules`, {
+        headers: { Accept: 'application/json' },
       });
-      const API_BASE = getApiBase().replace(/\/$/, '');
-      try {
-        const res = await authFetch(`${API_BASE}/schedules`, {
-          headers: { Accept: 'application/json' },
-        });
-        if (!res.ok) {
-          throw new Error(
-            `Failed to fetch schedules: ${res.status} ${res.statusText}`
-          );
-        }
-        const data = await res.json();
-        setSchedule(data);
-        setError(null);
-      } catch (error) {
-        console.error('Error fetching schedules:', error);
-        setError('Failed to load schedule data. Please try again later.');
-        setSchedule([]); // fallback to empty list so UI can render
-      } finally {
-        setLoading(false);
+      if (!res.ok) {
+        throw new Error(
+          `Failed to fetch schedules: ${res.status} ${res.statusText}`
+        );
       }
-    };
+      const data = await res.json();
+      // Filter to only show reservations with status Confirmed or In Progress/Ongoing per requirement
+      const filtered = Array.isArray(data)
+        ? data.filter((r) => {
+            const raw = (r.status || r.booking_status || '')
+              .toString()
+              .toLowerCase()
+              .trim();
+            return (
+              raw === 'confirmed' || raw === 'in progress' || raw === 'ongoing'
+            );
+          })
+        : [];
+      setSchedule(filtered);
+    } catch (error) {
+      console.error('Error fetching schedules:', error);
+      setSchedule([]); // fallback to empty list so UI can render
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchData();
+  useEffect(() => {
+    fetchScheduleData();
   }, []);
 
   if (error) {
@@ -111,6 +121,7 @@ export default function AdminSchedulePage() {
           show={showReleaseModal}
           onClose={() => setShowReleaseModal(false)}
           reservation={selectedReservation}
+          onSuccess={fetchScheduleData}
         />
       )}
       {showReturnModal && (

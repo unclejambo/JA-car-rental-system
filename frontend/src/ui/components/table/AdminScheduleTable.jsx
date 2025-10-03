@@ -203,7 +203,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       };
 
       // Show release button if today is start date and status is 'Confirmed'
-      if ('2025-03-16' === startDate && params.row.status === 'Confirmed') {
+      if ('2025-08-19' === startDate && params.row.status === 'Confirmed') {
         return (
           <Button
             variant="contained"

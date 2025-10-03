@@ -1,7 +1,7 @@
 import express from 'express';
 import { 
   getPayments, 
-  createPayment, 
+  createPayment, deletePayment, fixAllBookingStatusInconsistencies, 
   processBookingPayment, 
   getMyPayments 
 } from '../controllers/paymentController.js';
@@ -16,5 +16,7 @@ router.post('/', verifyToken, adminOrStaff, createPayment);
 // Customer routes
 router.post('/process-booking-payment', verifyToken, requireCustomer, processBookingPayment);
 router.get('/my-payments', verifyToken, requireCustomer, getMyPayments);
+router.delete('/:id', deletePayment);
+router.post('/fix-booking-status', fixAllBookingStatusInconsistencies);
 
 export default router;

@@ -130,6 +130,26 @@ export default function ReleaseModal({ show, onClose }) {
             </Grid>
           </Box>
 
+          {/* Gas Level */}
+          <Box>
+            <FormLabel sx={{ fontWeight: 600 }}>Gas Level</FormLabel>
+            <RadioGroup
+              row
+              name="gasLevel"
+              value={formData.gasLevel}
+              onChange={handleInputChange}
+            >
+              {['High', 'Mid', 'Low'].map((g) => (
+                <FormControlLabel
+                  key={g}
+                  value={g}
+                  control={<Radio />}
+                  label={g}
+                />
+              ))}
+            </RadioGroup>
+          </Box>
+
           {/* Car Images */}
           <Box>
             <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
@@ -258,23 +278,32 @@ export default function ReleaseModal({ show, onClose }) {
           </Grid>
         </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button
-          variant="contained"
-          color="success"
-          type="submit"
-          form="releaseForm"
+      <DialogActions sx={{ px: 3 }}>
+        <Box
+          sx={{
+            width: '100%',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            gap: 1,
+          }}
         >
-          Release
-        </Button>
-        <Button
-          variant="outlined"
-          color="error"
-          onClick={onClose}
-          sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
-        >
-          Cancel
-        </Button>
+          <Button
+            variant="contained"
+            color="success"
+            type="submit"
+            form="releaseForm"
+          >
+            Release
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={onClose}
+            sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
+          >
+            Cancel
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );

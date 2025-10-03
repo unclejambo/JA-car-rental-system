@@ -190,17 +190,21 @@ model Maintenance {
 }
 
 model Release {
-  release_id     Int     @id @default(autoincrement())
-  booking_id     Int
-  drivers_id     Int
-  valid_id_img1  String?
-  valid_id_img2  String?
-  agreement_form String?
-  equipment      String?
-  others         String?
-  gas_level      String?
-  booking        Booking @relation(fields: [booking_id], references: [booking_id])
-  driver         Driver  @relation(fields: [drivers_id], references: [drivers_id])
+  release_id        Int      @id @default(autoincrement())
+  booking_id        Int
+  drivers_id        Int
+  valid_id_img1     String?
+  valid_id_img2     String?
+  equipment         String?
+  equip_others      String?
+  gas_level         String?
+  license_presented Boolean? @default(false)
+  front_img         String?  @default("https://yiehortophscxugrjlie.supabase.co/storage/v1/object/public/licenses/dl_img/DL80808080_gronk_1758978590592.png")
+  back_img          String?  @default("https://yiehortophscxugrjlie.supabase.co/storage/v1/object/public/licenses/dl_img/DL80808080_gronk_1758978590592.png")
+  right_img         String?  @default("https://yiehortophscxugrjlie.supabase.co/storage/v1/object/public/licenses/dl_img/DL80808080_gronk_1758978590592.png")
+  left_img          String?  @default("https://yiehortophscxugrjlie.supabase.co/storage/v1/object/public/licenses/dl_img/DL80808080_gronk_1758978590592.png")
+  booking           Booking  @relation(fields: [booking_id], references: [booking_id])
+  driver            Driver   @relation(fields: [drivers_id], references: [drivers_id])
 }
 
 model PasswordResetToken {

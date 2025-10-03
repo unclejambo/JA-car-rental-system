@@ -16,9 +16,17 @@ import {
   MenuItem,
   Box,
   Typography,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
+import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
 
-export default function ReleaseModal({ show, onClose }) {
+export default function ReleaseModal({
+  show,
+  onClose,
+  reservation,
+  onSuccess,
+}) {
   const [formData, setFormData] = useState({
     images: {
       id1: { file: null, preview: '' },
@@ -31,12 +39,16 @@ export default function ReleaseModal({ show, onClose }) {
     license: false,
     gasLevel: 'High',
     equipmentStatus: 'complete',
-    equipmentDetails: '',
+    equip_others: '',
     paymentMethod: 'Cash',
-    amount: '',
+    paymentAmount: '',
     gcash_no: '',
     reference_no: '',
   });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -85,11 +97,168 @@ export default function ReleaseModal({ show, onClose }) {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: integrate with backend submission
-    console.log('Release submit', formData);
-    onClose?.();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    if (!reservation) {
+      setError('No reservation data available');
+      setLoading(false);
+      return;
+    }
+
+    // Basic validation
+    if (formData.paymentAmount && Number(formData.paymentAmount) <= 0) {
+      setError('Payment amount must be greater than 0');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.paymentMethod === 'GCash' && formData.paymentAmount) {
+      if (!formData.gcash_no || !formData.reference_no) {
+        setError(
+          'GCash number and reference number are required for GCash payments'
+        );
+        setLoading(false);
+        return;
+      }
+    }
+
+    try {
+      const authFetch = createAuthenticatedFetch(() => {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+      });
+      const API_BASE = getApiBase().replace(/\/$/, '');
+
+      // Step 1: Create release record
+      const releaseData = {
+        booking_id: reservation.booking_id || reservation.id,
+        drivers_id: reservation.drivers_id || 1, // Use driver ID from reservation or fallback to 1
+        equipment: formData.equipmentStatus,
+        equip_others:
+          formData.equipmentStatus === 'no' ? formData.equip_others : null,
+        gas_level: formData.gasLevel,
+        license_presented: formData.license,
+      };
+
+      const releaseResponse = await authFetch(`${API_BASE}/releases`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(releaseData),
+      });
+
+      if (!releaseResponse.ok) {
+        throw new Error('Failed to create release record');
+      }
+
+      const releaseResult = await releaseResponse.json();
+      const releaseId = releaseResult.release.release_id;
+
+      // Step 2: Upload images
+      const imageTypes = ['id1', 'id2', 'front', 'back', 'right', 'left'];
+      const uploadPromises = [];
+
+      for (const imageType of imageTypes) {
+        const imageData = formData.images[imageType];
+        if (imageData.file) {
+          const formDataUpload = new FormData();
+          formDataUpload.append('image', imageData.file);
+          formDataUpload.append('image_type', imageType);
+          formDataUpload.append(
+            'start_date',
+            reservation.start_date || reservation.startDate
+          );
+          // Extract customer first name with better fallback handling
+          let customerFirstName = 'customer'; // default fallback
+
+          if (reservation.customer?.first_name) {
+            customerFirstName = reservation.customer.first_name;
+          } else if (reservation.customer_name) {
+            // Extract first name from full name string
+            const nameParts = reservation.customer_name.trim().split(' ');
+            customerFirstName = nameParts[0] || 'customer';
+          }
+
+          // Sanitize filename (remove special characters, keep only alphanumeric)
+          customerFirstName = customerFirstName.replace(/[^a-zA-Z0-9]/g, '');
+
+          formDataUpload.append('customer_first_name', customerFirstName);
+
+          const uploadPromise = authFetch(
+            `${API_BASE}/releases/${releaseId}/images`,
+            {
+              method: 'POST',
+              body: formDataUpload,
+            }
+          );
+
+          uploadPromises.push(uploadPromise);
+        }
+      }
+
+      // Wait for all image uploads to complete
+      const uploadResults = await Promise.all(uploadPromises);
+
+      // Check if any uploads failed
+      for (const result of uploadResults) {
+        if (!result.ok) {
+          console.warn('Some images failed to upload');
+        }
+      }
+
+      // Step 3: Process payment
+      if (formData.paymentAmount && Number(formData.paymentAmount) > 0) {
+        const paymentData = {
+          booking_id: reservation.booking_id || reservation.id,
+          customer_id: reservation.customer_id || reservation.customerId,
+          amount: Number(formData.paymentAmount),
+          payment_method: formData.paymentMethod,
+          gcash_no:
+            formData.paymentMethod === 'GCash' ? formData.gcash_no : null,
+          reference_no:
+            formData.paymentMethod === 'GCash' ? formData.reference_no : null,
+        };
+
+        const paymentResponse = await authFetch(
+          `${API_BASE}/release-payments`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(paymentData),
+          }
+        );
+
+        if (!paymentResponse.ok) {
+          throw new Error('Failed to process payment');
+        }
+
+        const paymentResult = await paymentResponse.json();
+        console.log('Payment processed:', paymentResult);
+      }
+
+      setSuccess('Release processed successfully!');
+
+      // Close modal after a short delay to show success message
+      setTimeout(async () => {
+        setLoading(false);
+        onClose?.();
+        // Refresh the table data instead of reloading the whole page
+        if (onSuccess) {
+          await onSuccess();
+        }
+      }, 1500);
+    } catch (error) {
+      console.error('Error processing release:', error);
+      setError(error.message || 'Failed to process release');
+      setLoading(false);
+    }
   };
 
   return (
@@ -102,6 +271,16 @@ export default function ReleaseModal({ show, onClose }) {
     >
       <DialogTitle>Release</DialogTitle>
       <DialogContent dividers>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+        {success && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            {success}
+          </Alert>
+        )}
         <Stack
           component="form"
           id="releaseForm"
@@ -137,6 +316,18 @@ export default function ReleaseModal({ show, onClose }) {
               ))}
             </Grid>
           </Box>
+
+          {/* License */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                name="license"
+                checked={formData.license}
+                onChange={handleInputChange}
+              />
+            }
+            label="License Presented"
+          />
 
           {/* Gas Level */}
           <Box>
@@ -193,18 +384,6 @@ export default function ReleaseModal({ show, onClose }) {
             </Grid>
           </Box>
 
-          {/* License */}
-          <FormControlLabel
-            control={
-              <Checkbox
-                name="license"
-                checked={formData.license}
-                onChange={handleInputChange}
-              />
-            }
-            label="License Presented"
-          />
-
           {/* Equipment Status */}
           <Box>
             <FormLabel sx={{ fontWeight: 600 }}>Equipment</FormLabel>
@@ -219,17 +398,13 @@ export default function ReleaseModal({ show, onClose }) {
                 control={<Radio />}
                 label="Complete"
               />
-              <FormControlLabel
-                value="damaged"
-                control={<Radio />}
-                label="Damaged"
-              />
+              <FormControlLabel value="no" control={<Radio />} label="No" />
             </RadioGroup>
-            {formData.equipmentStatus === 'damaged' && (
+            {formData.equipmentStatus === 'no' && (
               <TextField
-                name="equipmentDetails"
+                name="equip_others"
                 label="Equipment Details"
-                value={formData.equipmentDetails}
+                value={formData.equip_others}
                 onChange={handleInputChange}
                 fullWidth
                 multiline
@@ -309,13 +484,16 @@ export default function ReleaseModal({ show, onClose }) {
             color="success"
             type="submit"
             form="releaseForm"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : null}
           >
-            Release
+            {loading ? 'Processing...' : 'Release'}
           </Button>
           <Button
             variant="outlined"
             color="error"
             onClick={onClose}
+            disabled={loading}
             sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
           >
             Cancel

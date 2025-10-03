@@ -6,6 +6,8 @@ export const getSchedules = async (req, res) => {
     const schedules = await prisma.booking.findMany({
       select: {
         booking_id: true,
+        customer_id: true,
+        drivers_id: true,
         start_date: true,
         pickup_time: true,
         pickup_loc: true,
@@ -27,6 +29,8 @@ export const getSchedules = async (req, res) => {
     // Normalize shape: merge customer first/last name into single customer_name field
     const mapped = schedules.map((s) => ({
       booking_id: s.booking_id,
+      customer_id: s.customer_id,
+      drivers_id: s.drivers_id,
       customer_name: `${s.customer?.first_name ?? ''} ${s.customer?.last_name ?? ''}`.trim(),
       start_date: s.start_date,
       pickup_time: s.pickup_time,
@@ -36,6 +40,10 @@ export const getSchedules = async (req, res) => {
       dropoff_loc: s.dropoff_loc,
       isSelfDriver: s.isSelfDriver,
       booking_status: s.booking_status,
+      customer: {
+        first_name: s.customer?.first_name,
+        last_name: s.customer?.last_name,
+      },
     }));
 
     res.json(mapped);

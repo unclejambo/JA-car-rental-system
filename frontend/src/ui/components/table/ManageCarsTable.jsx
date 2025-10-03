@@ -1,11 +1,19 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, IconButton } from '@mui/material';
+import { Box, IconButton, Button, Select, MenuItem } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 const NullLoadingOverlay = () => null;
 
-const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
+const ManageCarsTable = ({
+  activeTab,
+  rows,
+  onEdit,
+  onDelete,
+  onExtend,
+  onSetAvailable,
+  onStatusChange,
+}) => {
   const commonColumns = [
     {
       field: 'model',
@@ -27,7 +35,7 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
         editable: false,
       },
       {
-        field: 'type',
+        field: 'car_type',
         headerName: 'Type',
         flex: 1.5,
         minWidth: 80,
@@ -37,7 +45,7 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
         field: 'year',
         headerName: 'Year',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 80,
         editable: false,
       },
       {
@@ -118,7 +126,7 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
         field: 'action',
         headerName: '',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 80,
         editable: false,
         align: 'center',
         renderCell: (params) => (
@@ -147,16 +155,40 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
     ],
     MAINTENANCE: [
       {
-        field: 'startDate',
+        field: 'maintenance_start_date',
         headerName: 'Start Date',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 100,
+        renderCell: (params) => {
+          // Try multiple potential field names for start date
+          const value =
+            params.row.maintenance_start_date ||
+            params.row.start_date ||
+            params.row.startDate ||
+            params.row.start;
+
+          if (!value) return 'N/A';
+          const d = new Date(value);
+          return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+        },
       },
       {
-        field: 'endDate',
+        field: 'maintenance_end_date',
         headerName: 'End Date',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 100,
+        renderCell: (params) => {
+          // Try multiple potential field names for end date
+          const value =
+            params.row.maintenance_end_date ||
+            params.row.end_date ||
+            params.row.endDate ||
+            params.row.end;
+
+          if (!value) return 'N/A';
+          const d = new Date(value);
+          return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+        },
       },
       {
         field: 'description',
@@ -165,13 +197,15 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
         minWidth: 120,
       },
       {
-        field: 'shopAssigned',
+        field: 'maintenance_shop_name',
+
         headerName: 'Shop Assigned',
         flex: 1.5,
         minWidth: 120,
       },
       {
-        field: 'maintenanceFee',
+        field: 'maintenance_cost',
+
         headerName: 'Maintenance Fee',
         flex: 1.5,
         minWidth: 120,
@@ -187,22 +221,46 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
       },
       {
         field: 'action',
-        headerName: 'Action',
-        flex: 1.5,
-        minWidth: 100,
+        headerName: '',
+        flex: 2,
+        minWidth: 180,
         editable: false,
         align: 'center',
         renderCell: (params) => (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              flexWrap: 'wrap',
+            }}
+          >
+            <Button
               size="small"
-              color="primary"
-              aria-label="edit"
-              sx={{ p: 0.5 }}
-              onClick={() => onEdit?.(params.row)}
+              variant="outlined"
+              onClick={() => onExtend?.(params.row)}
+              sx={{
+                minWidth: 'auto',
+                fontSize: '0.75rem',
+                padding: '4px 4px',
+              }}
             >
-              <EditIcon fontSize="small" />
-            </IconButton>
+              Extend
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              color="success"
+              onClick={() => onSetAvailable?.(params.row)}
+              sx={{
+                minWidth: 'auto',
+                fontSize: '0.70rem',
+                padding: '4px 4px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Set Available
+            </Button>
           </Box>
         ),
       },
@@ -252,10 +310,14 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
       <DataGrid
         rows={rows}
         columns={columns.filter((col) => !col.hide)}
-        getRowId={(row) => row.transactionId}
+        getRowId={(row) =>
+          row.maintenance_id ?? row.transactionId ?? row.id ?? row.car_id
+        }
         // loading={loading}
         components={{ LoadingOverlay: NullLoadingOverlay }}
-        componentsProps={{ loadingOverlay: { sx: { display: 'none !important' } } }}
+        componentsProps={{
+          loadingOverlay: { sx: { display: 'none !important' } },
+        }}
         autoHeight={false}
         hideFooterSelectedRowCount
         disableColumnMenu

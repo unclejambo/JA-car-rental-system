@@ -9,13 +9,10 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
   const { isAuthenticated, user, userRole } = useAuth();
 
   const getUserDisplayName = () => {
-    // Only show 'ADMIN' for users with role === 'admin'
-    // Staff members and other users should show their first name
     if (userRole === 'admin') {
       return 'ADMIN';
     }
 
-    // For staff, customers, drivers - show their first name
     // Try multiple possible property names for the first name
     const firstName =
       user?.firstName ||
@@ -23,7 +20,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
       user?.name?.split(' ')[0] ||
       user?.fullName?.split(' ')[0];
 
-    return firstName || 'User';
+    return firstName;
   };
 
   return (

@@ -18,10 +18,12 @@ import transactionRoutes from './routes/transactionRoutes.js';
 import adminProfileRoutes from './routes/adminProfileRoutes.js';
 import driverProfileRoutes from './routes/driverProfileRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import maintenanceRoutes from './routes/maintenanceRoutes.js'; // <--- added maintenance routes
 import waitlistRoutes from './routes/waitlistRoutes.js'; // <--- added waitlist routes
 import manageFeesRoutes from './routes/manageFeesRoutes.js'; // <--- added manage fees routes
 import releaseRoutes from './routes/releaseRoute.js'; // <--- added release routes
 import releasePaymentRoutes from './routes/releasePaymentRoute.js'; // <--- added release payment routes
+import adminRoutes from './routes/adminRoutes.js'
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -60,9 +62,11 @@ app.use('/transactions', transactionRoutes);
 app.use('/api/admin-profile', adminProfileRoutes);
 app.use('/api/driver-profile', driverProfileRoutes);
 app.use('/analytics', analyticsRoutes);
+app.use('/cars/:carId/maintenance', maintenanceRoutes); // <--- added maintenance routes
 app.use('/manage-fees', manageFeesRoutes); // <--- added manage fees routes
 app.use('/releases', releaseRoutes); // <--- added release routes
 app.use('/release-payments', releasePaymentRoutes); // <--- added release payment routes
+app.use('/admins', adminRoutes)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -59,7 +59,7 @@ export default function AdminManageUser() {
             endpoint = `${API_BASE}/customers`;
             break;
           case 'STAFF':
-            endpoint = `${API_BASE}/admin-profile/all`;
+            endpoint = `${API_BASE}/admins`;
             break;
           case 'DRIVER':
             endpoint = `${API_BASE}/drivers`;

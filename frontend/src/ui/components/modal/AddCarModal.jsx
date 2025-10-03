@@ -2,7 +2,6 @@ import { useState, useRef } from 'react';
 import { FaUpload } from 'react-icons/fa';
 import {
   Box,
-  Box,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -215,64 +214,72 @@ export default function AddCarModal({ show, onClose }) {
             <Grid>
               <TextField
                 name="make"
+                label="Make"
                 value={formData.make}
                 onChange={handleChange}
-                placeholder="Make"
+                fullWidth
                 required
+                size="small"
               />
             </Grid>
             <Grid>
               <TextField
                 name="model"
+                label="Model"
                 value={formData.model}
                 onChange={handleChange}
-                placeholder="Model"
+                fullWidth
                 required
+                size="small"
               />
             </Grid>
             <Grid>
               <TextField
                 name="year"
+                label="Year"
                 type="number"
-                min="1900"
-                max={new Date().getFullYear() + 1}
                 value={formData.year}
                 onChange={handleChange}
-                placeholder="Year"
+                inputProps={{ min: 1900, max: new Date().getFullYear() + 1 }}
+                fullWidth
                 required
+                size="small"
               />
             </Grid>
             <Grid>
               <TextField
                 name="mileage"
+                label="Mileage"
                 type="number"
-                min="0"
                 value={formData.mileage}
                 onChange={handleChange}
-                placeholder="Mileage"
+                inputProps={{ min: 0 }}
+                fullWidth
+                size="small"
               />
             </Grid>
             <Grid>
               <TextField
                 name="no_of_seat"
+                label="Seats"
                 type="number"
-                min="1"
-                max="20"
                 value={formData.no_of_seat}
                 onChange={handleChange}
-                placeholder="Seats"
+                inputProps={{ min: 1, max: 20 }}
+                fullWidth
                 required
+                size="small"
               />
             </Grid>
             <Grid>
               <TextField
                 name="rent_price"
+                label="Rent Price"
                 type="number"
-                min="0"
-                step="0.01"
                 value={formData.rent_price}
                 onChange={handleChange}
-                placeholder="Rent Price"
+                inputProps={{ min: 0 }}
+                fullWidth
                 required
                 size="small"
                 InputProps={{
@@ -285,90 +292,84 @@ export default function AddCarModal({ show, onClose }) {
             <Grid>
               <TextField
                 name="license_plate"
+                label="License Plate"
                 value={formData.license_plate}
                 onChange={handleChange}
-                placeholder="License Plate"
+                fullWidth
                 required
+                size="small"
               />
             </Grid>
             <Grid>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
                 Car Image
               </Typography>
-              <Box>
-                <input
-                  ref={fileInputRef}
-                  id="carImageUpload"
-                  name="file"
-                  type="file"
-                  onChange={handleFileChange}
-                  accept={ALLOWED_FILE_TYPES.join(',')}
-                  style={{ display: 'none' }}
-                />
-                <Button
-                  variant="outlined"
-                  component="label"
-                  htmlFor="carImageUpload"
-                  startIcon={<FaUpload />}
-                  sx={{
-                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
-                    borderColor: 'rgba(156, 163, 175, 0.5)',
-                    color: 'rgba(75, 85, 99, 1)',
-                    '&:hover': {
-                      backgroundColor: 'rgba(209, 213, 219, 0.8)',
-                      borderColor: 'rgba(156, 163, 175, 0.8)',
-                    },
-                  }}>
-                  {carImageFile ? 'Change Image' : 'Upload Car Image'}
-                </Button>
-                
-                {carImageFile && (
-                  <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'rgba(75, 85, 99, 1)', flex: 1 }}>
-                      {carImageFile.name}
-                    </Typography>
-                    <Button
-                      type="button"
-                      onClick={removeFile}
-                      variant="text"
-                      color="error"
-                      size="small"
-                      sx={{ fontSize: '0.875rem', textDecoration: 'underline', minWidth: 'auto' }}
-                    >
-                      Remove
-                    </Button>
-                  </Box>
-                )}
-              </Box>
-            </Box>
-
-            <div
-              className="btn-container"
-              style={{
-                display: 'flex',
-                gap: '10px',
-                marginTop: '15px',
-              }}
-            >
-              <button
-                type="submit"
-                className="font-pathway save-btn"
-                disabled={isLoading}
+              <input
+                ref={fileInputRef}
+                id="carImageUpload"
+                type="file"
+                accept={ALLOWED_FILE_TYPES.join(',')}
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
+              <Button
+                variant="outlined"
+                startIcon={<FaUpload />}
+                onClick={() => fileInputRef.current?.click()}
+                size="small"
               >
-                {isLoading ? 'Saving...' : 'Save'}
-              </button>
-              <button
-                type="button"
-                className="font-pathway cancel-btn"
-                onClick={onClose}
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-    </>
+                {carImageFile ? 'Change Image' : 'Upload Image'}
+              </Button>
+              {carImageFile && (
+                <Box
+                  sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}
+                >
+                  <Typography variant="body2" sx={{ flex: 1 }}>
+                    {carImageFile.name}
+                  </Typography>
+                  <Button
+                    type="button"
+                    onClick={removeFile}
+                    color="error"
+                    size="small"
+                  >
+                    Remove
+                  </Button>
+                </Box>
+              )}
+            </Grid>
+          </Grid>
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ px: 3 }}>
+        <Box
+          sx={{
+            width: '100%',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            gap: 1,
+          }}
+        >
+          <Button
+            type="submit"
+            form="addCarForm"
+            variant="contained"
+            color="success"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Saving...' : 'Save'}
+          </Button>
+          <Button
+            onClick={onClose}
+            variant="outlined"
+            color="error"
+            disabled={isLoading}
+            sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
+          >
+            Cancel
+          </Button>
+        </Box>
+      </DialogActions>
+    </Dialog>
   );
 }

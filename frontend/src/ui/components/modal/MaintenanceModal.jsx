@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Box,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -53,7 +54,15 @@ export default function MaintenanceModal({ show, onClose, car, onSave }) {
   };
 
   return (
-    <Dialog open={!!show} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={!!show}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      disableAutoFocus
+      disableEnforceFocus
+      disableScrollLock
+    >
       <DialogTitle>Set Maintenance Details</DialogTitle>
       <DialogContent dividers>
         <Stack
@@ -70,7 +79,7 @@ export default function MaintenanceModal({ show, onClose, car, onSave }) {
             fullWidth
           />
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 label="Start Date"
                 type="date"
@@ -92,7 +101,7 @@ export default function MaintenanceModal({ show, onClose, car, onSave }) {
                 inputProps={{ min: todayStr }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 label="End Date"
                 type="date"
@@ -116,7 +125,7 @@ export default function MaintenanceModal({ show, onClose, car, onSave }) {
             minRows={2}
           />
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 label="Shop Assigned"
                 name="shop_assigned"
@@ -126,7 +135,7 @@ export default function MaintenanceModal({ show, onClose, car, onSave }) {
                 fullWidth
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 label="Maintenance Fee"
                 name="maintenance_fee"
@@ -147,23 +156,32 @@ export default function MaintenanceModal({ show, onClose, car, onSave }) {
           </Grid>
         </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button
-          type="submit"
-          form="maintenanceForm"
-          variant="contained"
-          color="success"
+      <DialogActions sx={{ px: 3 }}>
+        <Box
+          sx={{
+            width: '100%',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            gap: 1,
+          }}
         >
-          Save
-        </Button>
-        <Button
-          onClick={onClose}
-          variant="outlined"
-          color="error"
-          sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
-        >
-          Cancel
-        </Button>
+          <Button
+            type="submit"
+            form="maintenanceForm"
+            variant="contained"
+            color="success"
+          >
+            Save
+          </Button>
+          <Button
+            onClick={onClose}
+            variant="outlined"
+            color="error"
+            sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
+          >
+            Cancel
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );

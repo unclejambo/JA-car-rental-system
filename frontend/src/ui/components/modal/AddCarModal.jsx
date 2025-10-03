@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { FaUpload } from 'react-icons/fa';
 import {
+  Box,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Button,
-  Box,
   Typography,
   TextField,
   Grid,
@@ -114,7 +114,6 @@ export default function AddCarModal({ show, onClose }) {
       }
     );
 
-
     const result = await response.json();
     console.log('Car image upload response:', result);
 
@@ -122,7 +121,6 @@ export default function AddCarModal({ show, onClose }) {
       throw new Error(
         result.error || result.message || 'Failed to upload car image'
       );
-
     }
 
     return result.filePath || result.path || result.url || result.publicUrl;
@@ -196,7 +194,15 @@ export default function AddCarModal({ show, onClose }) {
   };
 
   return (
-    <Dialog open={!!show} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={!!show}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      disableAutoFocus
+      disableEnforceFocus
+      disableScrollLock
+    >
       <DialogTitle>Add Car</DialogTitle>
       <DialogContent dividers>
         {error && (
@@ -211,7 +217,7 @@ export default function AddCarModal({ show, onClose }) {
           noValidate
         >
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 name="make"
                 label="Make"
@@ -222,7 +228,7 @@ export default function AddCarModal({ show, onClose }) {
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 name="model"
                 label="Model"
@@ -233,7 +239,7 @@ export default function AddCarModal({ show, onClose }) {
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid>
               <TextField
                 name="year"
                 label="Year"
@@ -246,7 +252,7 @@ export default function AddCarModal({ show, onClose }) {
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid>
               <TextField
                 name="mileage"
                 label="Mileage"
@@ -258,7 +264,7 @@ export default function AddCarModal({ show, onClose }) {
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid>
               <TextField
                 name="no_of_seat"
                 label="Seats"
@@ -271,7 +277,7 @@ export default function AddCarModal({ show, onClose }) {
                 size="small"
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 name="rent_price"
                 label="Rent Price"
@@ -289,7 +295,7 @@ export default function AddCarModal({ show, onClose }) {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid>
               <TextField
                 name="license_plate"
                 label="License Plate"
@@ -300,7 +306,7 @@ export default function AddCarModal({ show, onClose }) {
                 size="small"
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
                 Car Image
               </Typography>
@@ -341,25 +347,34 @@ export default function AddCarModal({ show, onClose }) {
           </Grid>
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button
-          type="submit"
-          form="addCarForm"
-          variant="contained"
-          color="success"
-          disabled={isLoading}
+      <DialogActions sx={{ px: 3 }}>
+        <Box
+          sx={{
+            width: '100%',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            gap: 1,
+          }}
         >
-          {isLoading ? 'Saving...' : 'Save'}
-        </Button>
-        <Button
-          onClick={onClose}
-          variant="outlined"
-          color="error"
-          disabled={isLoading}
-          sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
-        >
-          Cancel
-        </Button>
+          <Button
+            type="submit"
+            form="addCarForm"
+            variant="contained"
+            color="success"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Saving...' : 'Save'}
+          </Button>
+          <Button
+            onClick={onClose}
+            variant="outlined"
+            color="error"
+            disabled={isLoading}
+            sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
+          >
+            Cancel
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );

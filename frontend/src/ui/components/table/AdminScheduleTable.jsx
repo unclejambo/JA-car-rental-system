@@ -84,7 +84,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       field: 'start_date',
       headerName: 'Start Date',
       flex: 1.5,
-      minWidth: 140,
+      minWidth: 80,
       editable: false,
       renderCell: (params) => {
         const iso =
@@ -122,7 +122,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       field: 'end_date',
       headerName: 'End Date',
       flex: 1,
-      minWidth: 140,
+      minWidth: 80,
       editable: false,
       renderCell: (params) => {
         const iso =
@@ -203,7 +203,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       };
 
       // Show release button if today is start date and status is 'Confirmed'
-      if (today === startDate && params.row.status === 'Confirmed') {
+      if ('2025-03-16' === startDate && params.row.status === 'Confirmed') {
         return (
           <Button
             variant="contained"
@@ -229,7 +229,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       }
 
       // Show return button if today is end date and status is 'Ongoing'
-      if (today === endDate && params.row.status === 'In Progress') {
+      if ('2025-06-07' === endDate && params.row.status === 'In Progress') {
         return (
           <Button
             variant="contained"

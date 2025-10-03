@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Box,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -32,7 +33,15 @@ export default function ExtendMaintenanceModal({
   };
 
   return (
-    <Dialog open={!!show} onClose={onClose} maxWidth="xs" fullWidth>
+    <Dialog
+      open={!!show}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      disableAutoFocus
+      disableEnforceFocus
+      disableScrollLock
+    >
       <DialogTitle>Extend Maintenance</DialogTitle>
       <DialogContent dividers>
         <Stack
@@ -53,23 +62,32 @@ export default function ExtendMaintenanceModal({
           />
         </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button
-          type="submit"
-          form="extendMaintenanceForm"
-          variant="contained"
-          color="success"
+      <DialogActions sx={{ px: 3 }}>
+        <Box
+          sx={{
+            width: '100%',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            gap: 1,
+          }}
         >
-          Save
-        </Button>
-        <Button
-          onClick={onClose}
-          variant="outlined"
-          color="error"
-          sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
-        >
-          Cancel
-        </Button>
+          <Button
+            type="submit"
+            form="extendMaintenanceForm"
+            variant="contained"
+            color="success"
+          >
+            Save
+          </Button>
+          <Button
+            onClick={onClose}
+            variant="outlined"
+            color="error"
+            sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
+          >
+            Cancel
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );

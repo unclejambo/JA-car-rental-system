@@ -52,7 +52,7 @@ const ManageCarsTable = ({
         field: 'mileage',
         headerName: 'Mileage',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 80,
         editable: false,
       },
       {
@@ -89,7 +89,7 @@ const ManageCarsTable = ({
         field: 'image',
         headerName: 'Image',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 80,
         editable: false,
       },
       {
@@ -105,6 +105,9 @@ const ManageCarsTable = ({
             <Select
               size="small"
               value={value}
+              MenuProps={{
+                disableScrollLock: true,
+              }}
               onChange={(e) => {
                 const newStatus = e.target.value;
                 // notify parent with the raw row

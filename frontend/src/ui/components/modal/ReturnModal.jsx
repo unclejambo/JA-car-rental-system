@@ -51,7 +51,7 @@ export default function ReturnModal({ show, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Return submit', formData);
+    // Submit return form data
     onClose?.();
   };
 
@@ -61,6 +61,7 @@ export default function ReturnModal({ show, onClose }) {
       onClose={onClose}
       fullWidth
       maxWidth={isMobile ? 'sm' : 'md'}
+      disableScrollLock
     >
       <DialogTitle>Return</DialogTitle>
       <DialogContent dividers sx={{ p: 0 }}>
@@ -82,7 +83,7 @@ export default function ReturnModal({ show, onClose }) {
                   value={formData.gasLevel}
                   onChange={handleInputChange}
                 >
-                  {['High', 'Medium', 'Low'].map((g) => (
+                  {['High', 'Mid', 'Low'].map((g) => (
                     <FormControlLabel
                       key={g}
                       value={g}
@@ -93,6 +94,7 @@ export default function ReturnModal({ show, onClose }) {
                 </RadioGroup>
               </Box>
               {/* Odometer */}
+
               <TextField
                 name="odometer"
                 label="Odometer"
@@ -102,6 +104,7 @@ export default function ReturnModal({ show, onClose }) {
                 size="small"
                 inputMode="numeric"
               />
+
               {/* Damage Check */}
               <Box>
                 <FormLabel sx={{ fontWeight: 600 }}>Damage Check</FormLabel>
@@ -117,24 +120,16 @@ export default function ReturnModal({ show, onClose }) {
                     label="No Damages"
                   />
                   <FormControlLabel
-                    value="specify"
+                    value="major"
                     control={<Radio />}
-                    label="Specify"
+                    label="Major"
+                  />
+                  <FormControlLabel
+                    value="minor"
+                    control={<Radio />}
+                    label="Minor"
                   />
                 </RadioGroup>
-                {formData.damageStatus === 'specify' && (
-                  <TextField
-                    name="damageDetails"
-                    label="Damage Details"
-                    value={formData.damageDetails}
-                    onChange={handleInputChange}
-                    fullWidth
-                    multiline
-                    minRows={2}
-                    required
-                    sx={{ mt: 1 }}
-                  />
-                )}
               </Box>
               {/* Equipment Check */}
               <Box>
@@ -207,6 +202,8 @@ export default function ReturnModal({ show, onClose }) {
                 height: isMobile ? '100%' : 'auto',
                 zIndex: 10,
                 overflowY: 'auto',
+                overflowX: 'hidden',
+                boxSizing: 'border-box',
               }}
             >
               {isMobile && (
@@ -226,20 +223,63 @@ export default function ReturnModal({ show, onClose }) {
                 {fees.map((f) => (
                   <Box
                     key={f.label}
-                    sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      gap: 1,
+                      minWidth: 0, // Allow shrinking
+                    }}
                   >
-                    <Typography variant="body2">{f.label}</Typography>
-                    <Typography variant="body2">
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        flex: 1,
+                        wordBreak: 'break-word',
+                        minWidth: 0,
+                      }}
+                    >
+                      {f.label}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        flexShrink: 0,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {currency(f.amount)}
                     </Typography>
                   </Box>
                 ))}
                 <Divider />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    gap: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: 700,
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
                     Total
                   </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: 700,
+                      flexShrink: 0,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {currency(total)}
                   </Typography>
                 </Box>
@@ -248,23 +288,32 @@ export default function ReturnModal({ show, onClose }) {
           )}
         </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button
-          type="submit"
-          form="returnForm"
-          variant="contained"
-          color="success"
+      <DialogActions sx={{ px: 3 }}>
+        <Box
+          sx={{
+            width: '100%',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            gap: 1,
+          }}
         >
-          Return
-        </Button>
-        <Button
-          variant="outlined"
-          color="error"
-          onClick={onClose}
-          sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
-        >
-          Cancel
-        </Button>
+          <Button
+            type="submit"
+            form="returnForm"
+            variant="contained"
+            color="success"
+          >
+            Return
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={onClose}
+            sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
+          >
+            Cancel
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );

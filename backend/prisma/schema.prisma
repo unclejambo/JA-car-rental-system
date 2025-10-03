@@ -9,17 +9,18 @@ datasource db {
 }
 
 model Admin {
-  admin_id   Int       @id @default(autoincrement())
-  first_name String
-  last_name  String
-  contact_no String?
-  email      String
-  username   String
-  password   String
-  user_type  String?
-  isActive   Boolean?
-  address    String?
-  bookings   Booking[]
+  admin_id      Int       @id @default(autoincrement())
+  first_name    String
+  last_name     String
+  contact_no    String?
+  email         String
+  username      String
+  password      String
+  user_type     String?
+  isActive      Boolean?
+  address       String?
+  profile_img_url String?
+  bookings      Booking[]
 }
 
 model Customer {

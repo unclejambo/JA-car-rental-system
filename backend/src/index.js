@@ -58,8 +58,8 @@ app.use('/drivers', driverRoutes);
 app.use('/payments', paymentRoutes);
 app.use('/refunds', refundRoutes);
 app.use('/transactions', transactionRoutes);
-app.use('/admin-profile', adminProfileRoutes);
-app.use('/driver-profile', driverProfileRoutes);
+app.use('/api/admin-profile', adminProfileRoutes);
+app.use('/api/driver-profile', driverProfileRoutes);
 app.use('/analytics', analyticsRoutes);
 app.use('/manage-fees', manageFeesRoutes); // <--- added manage fees routes
 app.use('/releases', releaseRoutes); // <--- added release routes

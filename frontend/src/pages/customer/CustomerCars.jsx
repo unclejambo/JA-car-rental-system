@@ -21,7 +21,11 @@ import {
   Divider,
   CircularProgress,
   Alert,
-  Collapse
+  Collapse,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormLabel
 } from '@mui/material';
 import { HiMiniTruck } from 'react-icons/hi2';
 import { HiAdjustmentsHorizontal } from 'react-icons/hi2';
@@ -235,13 +239,33 @@ function CustomerCars() {
     const normalizedStatus = String(status || '').toLowerCase();
     
     if (normalizedStatus.includes('available') || normalizedStatus === 'available') {
-      return { color: 'success', text: 'Available', canBook: true };
+      return { 
+        label: 'Available', 
+        color: '#4caf50',
+        textColor: 'white',
+        canBook: true 
+      };
     } else if (normalizedStatus.includes('maint') || normalizedStatus.includes('maintenance')) {
-      return { color: 'warning', text: 'Maintenance', canBook: false };
+      return { 
+        label: 'Maintenance', 
+        color: '#f44336', // Changed to red
+        textColor: 'white',
+        canBook: false 
+      };
     } else if (normalizedStatus.includes('rent') || normalizedStatus === 'rented') {
-      return { color: 'error', text: 'Rented', canBook: true }; // Can still book but will be queued
+      return { 
+        label: 'Rented', 
+        color: '#ffeb3b', // Changed to yellow
+        textColor: 'black', // Changed text color to black for better contrast on yellow
+        canBook: true 
+      }; // Can still book but will be queued
     } else {
-      return { color: 'default', text: status || 'Unknown', canBook: false };
+      return { 
+        label: status || 'Unknown', 
+        color: '#9e9e9e',
+        textColor: 'white',
+        canBook: false 
+      };
     }
   };
 
@@ -354,72 +378,123 @@ function CustomerCars() {
             }}
           >
         
-        {/* Page Header */}
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative' }}>
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{
-              flexGrow: 1,
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: '#f9f9f9',
-              p: { xs: 1, sm: 2, md: 2, lg: 2 },
-              boxShadow:
-                '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 4px 0 6px -1px rgba(0, 0, 0, 0.1), -4px 0 6px -1px rgba(0, 0, 0, 0.1)',
-              overflow: 'hidden',
-              height: 'auto',
-              boxSizing: 'border-box',
-            }}
-          >
-            <HiMiniTruck style={{ verticalAlign: '-3px', marginRight: '8px' }} />
-            AVAILABLE CARS
+        {/* Page Title */}
+        <Typography
+          variant="h4"
+          component="h1"
+          sx={{
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
+            color: '#333',
+            mb: 3,
+          }}
+        >
+          <HiMiniTruck style={{ verticalAlign: '-3px', marginRight: '8px', color: '#c10007' }} />
+          AVAILABLE CARS
+        </Typography>
+
+        {/* Filter Button - Aligned with Cars Available */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            width: '100%',
+            mb: 2,
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
+            {filteredCars.length} car{filteredCars.length !== 1 ? 's' : ''} available
           </Typography>
           
-          {/* Filter Button and Collapsible Filters */}
-          <Box sx={{ position: 'relative' }}>
-            <Button
-              variant="outlined"
-              onClick={() => setShowFilters(!showFilters)}
-              startIcon={<HiAdjustmentsHorizontal />}
+          <Button
+            onClick={() => setShowFilters(!showFilters)}
+            startIcon={<HiAdjustmentsHorizontal />}
+            variant="contained"
+            sx={{
+              backgroundColor: '#c10007',
+              color: 'white',
+              fontWeight: 'bold',
+              minWidth: { xs: '120px', sm: '150px' },
+              borderRadius: '8px',
+              padding: '10px 20px',
+              textTransform: 'none',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              '&:hover': {
+                backgroundColor: '#a50006',
+                boxShadow: '0 6px 8px -1px rgba(0, 0, 0, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.06)',
+              },
+              '&:focus': {
+                backgroundColor: '#a50006',
+              },
+              '&:active': {
+                backgroundColor: '#8b0005',
+              },
+            }}
+          >
+            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>Filter Cars</Box>
+            <Box sx={{ display: { xs: 'block', sm: 'none' } }}>Filter</Box>
+          </Button>
+        </Box>
+
+        {/* Filter Modal */}
+        {showFilters && (
+          <Box
+            sx={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              p: 2,
+            }}
+            onClick={() => setShowFilters(false)}
+          >
+            <Box
               sx={{
-                borderColor: '#c10007',
-                color: '#c10007',
-                fontWeight: 'bold',
-                '&:hover': {
-                  borderColor: '#a50006',
-                  backgroundColor: 'rgba(193, 0, 7, 0.04)',
-                },
+                backgroundColor: '#fff',
+                borderRadius: 3,
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                p: 3,
+                maxWidth: '500px',
+                width: '100%',
+                maxHeight: '80vh',
+                overflow: 'visible', // Changed from 'auto' to 'visible'
+                position: 'relative',
+                zIndex: 10000,
               }}
+              onClick={(e) => e.stopPropagation()}
             >
-              Filters
-            </Button>
-            
-            {/* Filter Dropdown */}
-            <Collapse in={showFilters}>
-              <Box 
-                sx={{ 
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  mt: 1,
-                  width: { xs: '300px', sm: '350px', md: '400px' },
-                  p: 3, 
-                  backgroundColor: '#fff', 
-                  borderRadius: 2, 
-                  boxShadow: 3,
-                  border: '1px solid #e0e0e0',
-                  zIndex: 1000,
-                }}
-              >
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#c10007' }}>
+              {/* Modal Header */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#c10007' }}>
                   🎛️ Filter Options
                 </Typography>
-                
+                <Button
+                  onClick={() => setShowFilters(false)}
+                  sx={{ 
+                    minWidth: 'auto', 
+                    p: 1, 
+                    color: '#666',
+                    '&:hover': { backgroundColor: '#f5f5f5' }
+                  }}
+                >
+                  ✕
+                </Button>
+              </Box>
+
+              {/* Filter Content */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {/* Price Range Filter */}
-                <Box sx={{ mb: 3 }}>
-                  <Typography gutterBottom sx={{ fontWeight: 'medium', fontSize: '0.9rem' }}>
+                <Box>
+                  <Typography gutterBottom sx={{ fontWeight: 'medium', fontSize: '0.9rem', mb: 1.5 }}>
                     Price Range: ₱{priceRange[0].toLocaleString()} - ₱{priceRange[1].toLocaleString()}
                   </Typography>
                   <Box sx={{ px: 1 }}>
@@ -428,7 +503,7 @@ function CustomerCars() {
                       onChange={handlePriceRangeChange}
                       valueLabelDisplay="auto"
                       min={0}
-                      max={10000}
+                      max={maxPrice}
                       step={100}
                       sx={{
                         color: '#c10007',
@@ -458,31 +533,96 @@ function CustomerCars() {
                 
                 {/* Seating Capacity Filter */}
                 <Box>
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="seat-filter-label">Seating Capacity</InputLabel>
-                    <Select
-                      labelId="seat-filter-label"
-                      value={seatFilter}
-                      label="Seating Capacity"
-                      onChange={handleSeatFilterChange}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#c10007',
-                          },
-                        },
+                  <FormControl component="fieldset">
+                    <FormLabel 
+                      component="legend" 
+                      sx={{ 
+                        fontWeight: 'medium', 
+                        fontSize: '0.9rem', 
+                        mb: 1.5,
+                        color: '#333 !important',
+                        '&.Mui-focused': {
+                          color: '#c10007 !important',
+                        }
                       }}
                     >
-                      <MenuItem value="all">All Cars</MenuItem>
-                      <MenuItem value="5">5-Seater Cars</MenuItem>
-                      <MenuItem value="7">7-Seater Cars</MenuItem>
-                    </Select>
+                      Seating Capacity
+                    </FormLabel>
+                    <RadioGroup
+                      value={seatFilter}
+                      onChange={handleSeatFilterChange}
+                      sx={{ mt: 1 }}
+                    >
+                      <FormControlLabel 
+                        value="" 
+                        control={
+                          <Radio 
+                            sx={{
+                              color: '#c10007',
+                              '&.Mui-checked': {
+                                color: '#c10007',
+                              },
+                            }}
+                          />
+                        } 
+                        label="All Cars" 
+                        sx={{ mb: 0.5 }}
+                      />
+                      <FormControlLabel 
+                        value="5" 
+                        control={
+                          <Radio 
+                            sx={{
+                              color: '#c10007',
+                              '&.Mui-checked': {
+                                color: '#c10007',
+                              },
+                            }}
+                          />
+                        } 
+                        label="5-Seater Cars" 
+                        sx={{ mb: 0.5 }}
+                      />
+                      <FormControlLabel 
+                        value="7" 
+                        control={
+                          <Radio 
+                            sx={{
+                              color: '#c10007',
+                              '&.Mui-checked': {
+                                color: '#c10007',
+                              },
+                            }}
+                          />
+                        } 
+                        label="7-Seater Cars" 
+                        sx={{ mb: 0.5 }}
+                      />
+                    </RadioGroup>
                   </FormControl>
                 </Box>
+
+                {/* Apply Button */}
+                <Button
+                  variant="contained"
+                  onClick={() => setShowFilters(false)}
+                  sx={{
+                    backgroundColor: '#c10007',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    py: 1.5,
+                    mt: 1,
+                    '&:hover': {
+                      backgroundColor: '#a50006',
+                    },
+                  }}
+                >
+                  Apply Filters
+                </Button>
               </Box>
-            </Collapse>
+            </Box>
           </Box>
-        </Box>
+        )}
 
         {/* Waitlist Information */}
         {waitlistEntries.length > 0 && (
@@ -528,10 +668,6 @@ function CustomerCars() {
           </Alert>
         ) : (
           <>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'medium' }}>
-              {filteredCars.length} car{filteredCars.length !== 1 ? 's' : ''} available
-            </Typography>
-            
             {filteredCars.length === 0 ? (
               <Box 
                 sx={{ 

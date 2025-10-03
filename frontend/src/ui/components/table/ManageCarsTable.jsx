@@ -44,7 +44,7 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
         field: 'mileage',
         headerName: 'Mileage',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 80,
         editable: false,
       },
       {
@@ -81,15 +81,38 @@ const ManageCarsTable = ({ activeTab, rows, onEdit, onDelete }) => {
         field: 'image',
         headerName: 'Image',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 80,
         editable: false,
       },
       {
         field: 'status',
         headerName: 'Status',
         flex: 1.5,
-        minWidth: 100,
-        editable: false,
+        minWidth: 130,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) => {
+          const value = params.row.status || 'Available';
+          return (
+            <Select
+              size="small"
+              value={value}
+              MenuProps={{
+                disableScrollLock: true,
+              }}
+              onChange={(e) => {
+                const newStatus = e.target.value;
+                // notify parent with the raw row
+                onStatusChange?.(params.row, newStatus);
+              }}
+              sx={{ fontSize: '0.775rem', minWidth: 120 }}
+            >
+              <MenuItem value="Available">Available</MenuItem>
+              <MenuItem value="Rented">Rented</MenuItem>
+              <MenuItem value="Maintenance">Maintenance</MenuItem>
+            </Select>
+          );
+        },
       },
       {
         field: 'action',

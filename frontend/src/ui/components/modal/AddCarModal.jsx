@@ -1,8 +1,18 @@
 import { useState, useRef } from 'react';
 import { FaUpload } from 'react-icons/fa';
-import Button from '@mui/material/Button';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+import {
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  TextField,
+  Grid,
+  Alert,
+  InputAdornment,
+} from '@mui/material';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api.js';
 
@@ -90,16 +100,21 @@ export default function AddCarModal({ show, onClose }) {
 
     console.log('Uploading car image to:', `${API_BASE}/api/storage/car-images`);
 
-    const response = await authenticatedFetch(`${API_BASE}/api/storage/car-images`, {
-      method: 'POST',
-      body: uploadFormData,
-    });
+    const response = await authenticatedFetch(
+      `${API_BASE}/api/storage/car-images`,
+      {
+        method: 'POST',
+        body: uploadFormData,
+      }
+    );
 
     const result = await response.json();
     console.log('Car image upload response:', result);
 
     if (!response.ok) {
-      throw new Error(result.error || result.message || 'Failed to upload car image');
+      throw new Error(
+        result.error || result.message || 'Failed to upload car image'
+      );
     }
 
     return result.filePath || result.path || result.url || result.publicUrl;
@@ -173,54 +188,49 @@ export default function AddCarModal({ show, onClose }) {
   };
 
   return (
-    <>
-      {show && (
-        <div className="modal-overlay" onClick={onClose}>
-          <form
-            className="modal"
-            onClick={(e) => e.stopPropagation()}
-            onSubmit={handleSubmit}
-          >
-            <h1 className="font-pathway" style={{ margin: '0 0 10px 0' }}>
-              ADD CAR
-            </h1>
-
-            {error && <div className="error-message" style={{
-              fontSize: '0.875rem', 
-              color: '#DC2626', 
-              backgroundColor: '#FEF2F2', 
-              padding: '12px', 
-              borderRadius: '4px', 
-              border: '1px solid #FECACA',
-              marginBottom: '16px'
-            }}>{error}</div>}
-
-            <div className="field-row">
-              <label className="field-label font-pathway">Make</label>
-              <input
-                className="font-pathway"
+    <Dialog
+      open={!!show}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      disableAutoFocus
+      disableEnforceFocus
+      disableScrollLock
+    >
+      <DialogTitle>Add Car</DialogTitle>
+      <DialogContent dividers>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+        <Box
+          component="form"
+          id="addCarForm"
+          onSubmit={handleSubmit}
+          noValidate
+        >
+          <Grid container spacing={2}>
+            <Grid>
+              <TextField
                 name="make"
                 value={formData.make}
                 onChange={handleChange}
                 placeholder="Make"
                 required
               />
-            </div>
-            <div className="field-row">
-              <label className="field-label font-pathway">Model</label>
-              <input
-                className="font-pathway"
+            </Grid>
+            <Grid>
+              <TextField
                 name="model"
                 value={formData.model}
                 onChange={handleChange}
                 placeholder="Model"
                 required
               />
-            </div>
-            <div className="field-row">
-              <label className="field-label font-pathway">Year</label>
-              <input
-                className="font-pathway"
+            </Grid>
+            <Grid>
+              <TextField
                 name="year"
                 type="number"
                 min="1900"
@@ -230,11 +240,9 @@ export default function AddCarModal({ show, onClose }) {
                 placeholder="Year"
                 required
               />
-            </div>
-            <div className="field-row">
-              <label className="field-label font-pathway">Mileage</label>
-              <input
-                className="font-pathway"
+            </Grid>
+            <Grid>
+              <TextField
                 name="mileage"
                 type="number"
                 min="0"
@@ -242,11 +250,9 @@ export default function AddCarModal({ show, onClose }) {
                 onChange={handleChange}
                 placeholder="Mileage"
               />
-            </div>
-            <div className="field-row">
-              <label className="field-label font-pathway">Seats</label>
-              <input
-                className="font-pathway"
+            </Grid>
+            <Grid>
+              <TextField
                 name="no_of_seat"
                 type="number"
                 min="1"
@@ -256,11 +262,9 @@ export default function AddCarModal({ show, onClose }) {
                 placeholder="Seats"
                 required
               />
-            </div>
-            <div className="field-row">
-              <label className="field-label font-pathway">Rent Price</label>
-              <input
-                className="font-pathway"
+            </Grid>
+            <Grid>
+              <TextField
                 name="rent_price"
                 type="number"
                 min="0"
@@ -269,24 +273,26 @@ export default function AddCarModal({ show, onClose }) {
                 onChange={handleChange}
                 placeholder="Rent Price"
                 required
+                size="small"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">₱</InputAdornment>
+                  ),
+                }}
               />
-            </div>
-            <div className="field-row">
-              <label className="field-label font-pathway">License Plate</label>
-              <input
-                className="font-pathway"
+            </Grid>
+            <Grid>
+              <TextField
                 name="license_plate"
                 value={formData.license_plate}
                 onChange={handleChange}
                 placeholder="License Plate"
                 required
               />
-            </div>
-            
-            {/* Car Image Upload */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: '600', mb: 1 }}>
-                CAR IMAGE
+            </Grid>
+            <Grid>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                Car Image
               </Typography>
               <Box>
                 <input

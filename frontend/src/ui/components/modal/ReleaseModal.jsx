@@ -29,11 +29,13 @@ export default function ReleaseModal({ show, onClose }) {
       left: { file: null, preview: '' },
     },
     license: false,
+    gasLevel: 'High',
     equipmentStatus: 'complete',
     equipmentDetails: '',
     paymentMethod: 'Cash',
-    paymentAmount: '',
-    paymentReference: '',
+    amount: '',
+    gcash_no: '',
+    reference_no: '',
   });
 
   const handleInputChange = (e) => {
@@ -91,14 +93,20 @@ export default function ReleaseModal({ show, onClose }) {
   };
 
   return (
-    <Dialog open={!!show} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog
+      open={!!show}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      disableScrollLock
+    >
       <DialogTitle>Release</DialogTitle>
       <DialogContent dividers>
         <Stack
           component="form"
           id="releaseForm"
           onSubmit={handleSubmit}
-          spacing={3}
+          spacing={2}
         >
           {/* Valid IDs */}
           <Box>
@@ -107,7 +115,7 @@ export default function ReleaseModal({ show, onClose }) {
             </Typography>
             <Grid container spacing={1}>
               {['id1', 'id2'].map((id) => (
-                <Grid item xs={6} key={id}>
+                <Grid key={id}>
                   <Button
                     component="label"
                     variant={
@@ -162,7 +170,7 @@ export default function ReleaseModal({ show, onClose }) {
                 ['right', 'Right'],
                 ['left', 'Left'],
               ].map(([key, label]) => (
-                <Grid item xs={6} sm={3} key={key}>
+                <Grid key={key}>
                   <Button
                     component="label"
                     variant={
@@ -234,7 +242,7 @@ export default function ReleaseModal({ show, onClose }) {
 
           {/* Payment */}
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}>
+            <Grid>
               <TextField
                 select
                 name="paymentMethod"
@@ -248,7 +256,7 @@ export default function ReleaseModal({ show, onClose }) {
                 <MenuItem value="GCash">GCash</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid>
               <TextField
                 name="paymentAmount"
                 label="Amount"
@@ -263,17 +271,26 @@ export default function ReleaseModal({ show, onClose }) {
               />
             </Grid>
             {formData.paymentMethod === 'GCash' && (
-              <Grid item xs={12} sm={4}>
+              <Box display={'flex'} flexDirection="column" width="100%" gap={1}>
                 <TextField
-                  name="paymentReference"
-                  label="Reference No."
-                  value={formData.paymentReference}
+                  name="gcash_no"
+                  label="GCash No."
+                  value={formData.gcash_no}
                   onChange={handleInputChange}
                   fullWidth
                   size="small"
                   required
                 />
-              </Grid>
+                <TextField
+                  name="reference_no"
+                  label="Reference No."
+                  value={formData.reference_no}
+                  onChange={handleInputChange}
+                  fullWidth
+                  size="small"
+                  required
+                />
+              </Box>
             )}
           </Grid>
         </Stack>

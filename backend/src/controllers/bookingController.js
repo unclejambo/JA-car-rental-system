@@ -400,33 +400,6 @@ export const updateBooking = async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
     const {
-      customer_id,
-      car_id,
-      booking_date,
-      purpose,
-      start_date,
-      end_date,
-      pickup_time,
-      pickup_loc,
-      dropoff_time,
-      dropoff_loc,
-      refunds,
-      isSelfDriver,
-      isExtend,
-      new_end_date,
-      isCancel,
-      total_amount,
-      payment_status,
-      isRelease,
-      isReturned,
-      booking_status,
-      drivers_id,
-      admin_id,
-    } = req.body;
-
-    const updatedBooking = await prisma.booking.update({
-      where: { booking_id: bookingId },
-      data: {
         customer_id,
         car_id,
         booking_date,
@@ -444,13 +417,49 @@ export const updateBooking = async (req, res) => {
         isCancel,
         total_amount,
         payment_status,
+        balance,
         isRelease,
         isReturned,
         booking_status,
         drivers_id,
         admin_id,
-        // Note: extensions, payments, releases, transactions are handled through relations
-      },
+        extensions,
+        payments,
+        releases,
+        transactions,
+    } = req.body;
+
+    const updatedBooking = await prisma.booking.update({
+        where: { booking_id: bookingId },
+        data: {
+            customer_id,
+            car_id,
+            booking_date,
+            purpose,
+            start_date,
+            end_date,
+            pickup_time,
+            pickup_loc,
+            dropoff_time,
+            dropoff_loc,
+            refunds,
+            isSelfDriver,
+            isExtend,
+            new_end_date,
+            isCancel,
+            total_amount,
+            payment_status,
+            balance,
+            isRelease,
+            isReturned,
+            booking_status,
+            drivers_id,
+            admin_id,
+            extensions,
+            payments,
+            releases,
+            transactions,
+        },
     });
 
     res.json(updatedBooking);

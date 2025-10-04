@@ -57,7 +57,9 @@ export default function AdminSettings() {
   const fetchProfileData = async () => {
     setLoading(true);
     try {
-      const response = await authenticatedFetch(`${API_BASE}/api/admin-profile`);
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/admin-profile`
+      );
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
@@ -176,30 +178,30 @@ export default function AdminSettings() {
   const validateImageFile = (file) => {
     const maxSize = 5 * 1024 * 1024; // 5MB
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    
+
     if (!allowedTypes.includes(file.type)) {
       return 'Only JPG, PNG, and WEBP files are allowed';
     }
-    
+
     if (file.size > maxSize) {
       return 'File size must be less than 5MB';
     }
-    
+
     return null;
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     const validation = validateImageFile(file);
     if (validation) {
       setError(validation);
       return;
     }
-    
+
     setProfileImage(file);
-    
+
     // Create preview
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -213,29 +215,35 @@ export default function AdminSettings() {
     try {
       if (profile.profileImageUrl) {
         setImageUploading(true);
-        const response = await authenticatedFetch(`${API_BASE}/api/storage/profile-images`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filePath: profile.profileImageUrl }),
-        });
-        
+        const response = await authenticatedFetch(
+          `${API_BASE}/api/storage/profile-images`,
+          {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filePath: profile.profileImageUrl }),
+          }
+        );
+
         if (!response.ok) {
           throw new Error('Failed to delete image from storage');
         }
       }
-      
+
       setImagePreview('');
       setProfileImage(null);
-      setProfile(prev => ({ ...prev, profileImageUrl: '' }));
-      setDraft(prev => ({ ...prev, profileImageUrl: '' }));
-      
+      setProfile((prev) => ({ ...prev, profileImageUrl: '' }));
+      setDraft((prev) => ({ ...prev, profileImageUrl: '' }));
+
       // Update profile in database
-      const updateResponse = await authenticatedFetch(`${API_BASE}/api/admin-profile`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...draft, profile_img_url: '' }),
-      });
-      
+      const updateResponse = await authenticatedFetch(
+        `${API_BASE}/api/admin-profile`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...draft, profile_img_url: '' }),
+        }
+      );
+
       if (updateResponse.ok) {
         setSuccessMessage('Profile picture removed successfully!');
         setShowSuccess(true);
@@ -250,44 +258,50 @@ export default function AdminSettings() {
 
   const uploadProfileImage = async () => {
     if (!profileImage) return null;
-    
+
     try {
       setImageUploading(true);
-      
+
       // No need to delete old image manually - backend handles this now
-      
+
       const formData = new FormData();
       formData.append('profileImage', profileImage); // Changed from 'image' to 'profileImage'
       formData.append('userId', profile.adminId || 'unknown');
       formData.append('userType', 'admin');
-      
+
       console.log('🚀 Uploading profile image...');
-      
-      const response = await authenticatedFetch(`${API_BASE}/api/storage/profile-images`, {
-        method: 'POST',
-        body: formData,
-      });
-      
+
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/storage/profile-images`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
       const result = await response.json();
       console.log('📦 Upload response:', result);
-      
+
       if (!response.ok || (!result.ok && !result.success)) {
         throw new Error(result.message || 'Upload failed');
       }
-      
+
       // Backend now automatically updates the database and returns the admin data
       // The image URL can be found in result.data.url or result.data.admin.profile_img_url
-      const imageUrl = result.data?.url || result.data?.admin?.profile_img_url || result.publicUrl;
-      
+      const imageUrl =
+        result.data?.url ||
+        result.data?.admin?.profile_img_url ||
+        result.publicUrl;
+
       if (!imageUrl) {
         throw new Error('No image URL returned from upload');
       }
-      
+
       console.log('✅ Image uploaded successfully:', imageUrl);
-      
+
       // Update the preview immediately
       setImagePreview(imageUrl);
-      
+
       return imageUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -329,11 +343,11 @@ export default function AdminSettings() {
     }
 
     const changes = getChanges();
-    
+
     // Check if there are any changes (including profile image)
     const hasProfileImageChange = profileImage !== null;
     const hasFormChanges = changes.length > 0;
-    
+
     if (!hasProfileImageChange && !hasFormChanges) {
       setError('No changes detected');
       return;
@@ -348,7 +362,7 @@ export default function AdminSettings() {
       // Check if there's a profile image to upload
       let profileImageUrl = profile.profileImageUrl;
       let imageWasUploaded = false;
-      
+
       if (profileImage) {
         console.log('🖼️ Uploading new profile image...');
         profileImageUrl = await uploadProfileImage();
@@ -358,10 +372,13 @@ export default function AdminSettings() {
           setShowConfirmModal(false);
           return;
         }
-        console.log('✅ Profile image uploaded and saved to DB:', profileImageUrl);
+        console.log(
+          '✅ Profile image uploaded and saved to DB:',
+          profileImageUrl
+        );
         imageWasUploaded = true;
       }
-      
+
       // Prepare update data for other fields
       const updateData = {
         first_name: draft.firstName,
@@ -371,7 +388,7 @@ export default function AdminSettings() {
         username: draft.username,
         profile_img_url: profileImageUrl,
       };
-      
+
       // Add password data if changing password
       if (passwordData.newPassword && passwordData.newPassword.trim() !== '') {
         updateData.password = passwordData.newPassword;
@@ -379,26 +396,27 @@ export default function AdminSettings() {
       }
 
       // Check if there are other changes besides the image
-      const hasOtherChanges = (
+      const hasOtherChanges =
         draft.firstName !== profile.firstName ||
         draft.lastName !== profile.lastName ||
         draft.contactNo !== profile.contactNo ||
         draft.email !== profile.email ||
         draft.username !== profile.username ||
-        (passwordData.newPassword && passwordData.newPassword.trim() !== '')
-      );
+        (passwordData.newPassword && passwordData.newPassword.trim() !== '');
 
       let result;
-      
+
       // If image was uploaded and there are other changes, update the profile
       // If only image was uploaded, we can skip the profile update since backend already handled it
       if (imageWasUploaded && !hasOtherChanges) {
         // Image was already uploaded and saved, just refresh the profile data
         console.log('📱 Only image changed, fetching updated profile...');
-        
-        const profileResponse = await authenticatedFetch(`${API_BASE}/api/admin-profile`);
+
+        const profileResponse = await authenticatedFetch(
+          `${API_BASE}/api/admin-profile`
+        );
         const profileResult = await profileResponse.json();
-        
+
         if (profileResponse.ok && profileResult.success) {
           result = profileResult;
         } else {
@@ -408,13 +426,16 @@ export default function AdminSettings() {
         // Update other profile fields
         console.log('📤 Updating profile data:', updateData);
 
-        const response = await authenticatedFetch(`${API_BASE}/api/admin-profile`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updateData),
-        });
+        const response = await authenticatedFetch(
+          `${API_BASE}/api/admin-profile`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updateData),
+          }
+        );
 
         result = await response.json();
 
@@ -434,9 +455,9 @@ export default function AdminSettings() {
         userType: result.data.user_type || '',
         profileImageUrl: result.data.profile_img_url || '',
       };
-      
+
       console.log('🎉 Profile updated successfully:', updatedProfile);
-      
+
       setImagePreview(result.data.profile_img_url || '');
       setProfileImage(null);
 
@@ -450,7 +471,6 @@ export default function AdminSettings() {
       setIsEditing(false);
       setSuccessMessage('Profile updated successfully!');
       setShowSuccess(true);
-      
     } catch (error) {
       console.error('Error updating profile:', error);
       setError(error.message || 'Failed to update profile');
@@ -657,7 +677,10 @@ export default function AdminSettings() {
                       }}
                     >
                       <Avatar
-                        src={imagePreview || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"}
+                        src={
+                          imagePreview ||
+                          'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+                        }
                         sx={{
                           width: { xs: 96, md: 120 },
                           height: { xs: 96, md: 120 },
@@ -668,27 +691,29 @@ export default function AdminSettings() {
                           border: imagePreview ? '3px solid #e0e0e0' : 'none',
                         }}
                       />
-                      
+
                       {isEditing && (
-                        <Box sx={{ 
-                          mt: { xs: 2, md: 0 }, 
-                          position: { md: 'absolute' },
-                          top: { md: 155 },
-                          left: { md: 8 },
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 1,
-                          alignItems: 'center'
-                        }}>
+                        <Box
+                          sx={{
+                            mt: { xs: 2, md: 0 },
+                            position: { md: 'absolute' },
+                            top: { md: 155 },
+                            left: { md: 8 },
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1,
+                            alignItems: 'center',
+                          }}
+                        >
                           <Button
                             variant="contained"
                             component="label"
                             size="small"
                             disabled={imageUploading}
-                            sx={{ 
+                            sx={{
                               fontSize: '0.75rem',
                               px: 1.5,
-                              minWidth: 'auto'
+                              minWidth: 'auto',
                             }}
                           >
                             {imagePreview ? 'Change' : 'Upload'}
@@ -699,7 +724,7 @@ export default function AdminSettings() {
                               onChange={handleImageChange}
                             />
                           </Button>
-                          
+
                           {imagePreview && (
                             <Button
                               variant="outlined"
@@ -707,16 +732,16 @@ export default function AdminSettings() {
                               color="error"
                               onClick={handleRemoveImage}
                               disabled={imageUploading}
-                              sx={{ 
+                              sx={{
                                 fontSize: '0.75rem',
                                 px: 1.5,
-                                minWidth: 'auto'
+                                minWidth: 'auto',
                               }}
                             >
                               Remove
                             </Button>
                           )}
-                          
+
                           {imageUploading && (
                             <CircularProgress size={20} sx={{ mt: 1 }} />
                           )}

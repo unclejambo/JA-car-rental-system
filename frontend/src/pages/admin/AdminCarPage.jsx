@@ -425,7 +425,7 @@ export default function AdminCarPage() {
           car_id: item.car_id,
           make: item.make ?? '',
           model: item.model ?? '',
-          type: item.make ?? 'N/A', // Use make field for type display since type column doesn't exist
+          car_type: item.car_type ?? '',
           year: item.year ?? '',
           mileage: item.mileage ?? '',
           no_of_seat: item.no_of_seat ?? item.no_of_seat,

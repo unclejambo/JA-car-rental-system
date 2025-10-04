@@ -9,7 +9,7 @@ import {
   Button,
   Typography,
   TextField,
-  Grid,
+  Stack,
   Alert,
   InputAdornment,
 } from '@mui/material';
@@ -28,6 +28,7 @@ export default function AddCarModal({ show, onClose }) {
   const [formData, setFormData] = useState({
     make: '',
     model: '',
+    car_type: '',
     year: '',
     mileage: '',
     no_of_seat: '',
@@ -71,7 +72,9 @@ export default function AddCarModal({ show, onClose }) {
     }
 
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      setError('Unsupported file type. Please select a PNG, JPEG, or JPG image.');
+      setError(
+        'Unsupported file type. Please select a PNG, JPEG, or JPG image.'
+      );
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -98,7 +101,10 @@ export default function AddCarModal({ show, onClose }) {
     uploadFormData.append('model', formData.model);
     uploadFormData.append('licensePlate', formData.license_plate);
 
-    console.log('Uploading car image to:', `${API_BASE}/api/storage/car-images`);
+    console.log(
+      'Uploading car image to:',
+      `${API_BASE}/api/storage/car-images`
+    );
 
     const response = await authenticatedFetch(
       `${API_BASE}/api/storage/car-images`,
@@ -127,7 +133,7 @@ export default function AddCarModal({ show, onClose }) {
 
     try {
       let carImageUrl = 'default-car-image.jpg';
-      
+
       // Upload car image first if one is selected
       if (carImageFile) {
         console.log('Uploading car image...');
@@ -138,6 +144,7 @@ export default function AddCarModal({ show, onClose }) {
       const carData = {
         make: formData.make,
         model: formData.model,
+        car_type: formData.car_type,
         year: formData.year ? parseInt(formData.year) : null,
         license_plate: formData.license_plate,
         no_of_seat: parseInt(formData.no_of_seat) || 5, // Default to 5 seats if not provided
@@ -146,8 +153,6 @@ export default function AddCarModal({ show, onClose }) {
         car_img_url: carImageUrl,
         mileage: formData.mileage !== '' ? parseInt(formData.mileage) : 0,
       };
-
-
 
       const response = await authenticatedFetch(`${API_BASE}/cars`, {
         method: 'POST',
@@ -162,12 +167,11 @@ export default function AddCarModal({ show, onClose }) {
         throw new Error(errorData.error || 'Failed to create car');
       }
 
-
-
       // Reset form and close modal
       setFormData({
         make: '',
         model: '',
+        type: '',
         year: '',
         mileage: '',
         no_of_seat: '',
@@ -176,7 +180,7 @@ export default function AddCarModal({ show, onClose }) {
       });
       setCarImageFile(null);
       onClose();
-      
+
       // Refresh the page to show the new car
       window.location.reload();
     } catch (err) {
@@ -191,10 +195,8 @@ export default function AddCarModal({ show, onClose }) {
     <Dialog
       open={!!show}
       onClose={onClose}
-      maxWidth="sm"
       fullWidth
-      disableAutoFocus
-      disableEnforceFocus
+      maxWidth="xs"
       disableScrollLock
     >
       <DialogTitle>Add Car</DialogTitle>
@@ -204,103 +206,101 @@ export default function AddCarModal({ show, onClose }) {
             {error}
           </Alert>
         )}
-        <Box
-          component="form"
-          id="addCarForm"
-          onSubmit={handleSubmit}
-          noValidate
-        >
-          <Grid container spacing={2}>
-            <Grid>
-              <TextField
-                name="make"
-                label="Make"
-                value={formData.make}
-                onChange={handleChange}
-                fullWidth
-                required
-                size="small"
-              />
-            </Grid>
-            <Grid>
-              <TextField
-                name="model"
-                label="Model"
-                value={formData.model}
-                onChange={handleChange}
-                fullWidth
-                required
-                size="small"
-              />
-            </Grid>
-            <Grid>
-              <TextField
-                name="year"
-                label="Year"
-                type="number"
-                value={formData.year}
-                onChange={handleChange}
-                inputProps={{ min: 1900, max: new Date().getFullYear() + 1 }}
-                fullWidth
-                required
-                size="small"
-              />
-            </Grid>
-            <Grid>
-              <TextField
-                name="mileage"
-                label="Mileage"
-                type="number"
-                value={formData.mileage}
-                onChange={handleChange}
-                inputProps={{ min: 0 }}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid>
-              <TextField
-                name="no_of_seat"
-                label="Seats"
-                type="number"
-                value={formData.no_of_seat}
-                onChange={handleChange}
-                inputProps={{ min: 1, max: 20 }}
-                fullWidth
-                required
-                size="small"
-              />
-            </Grid>
-            <Grid>
-              <TextField
-                name="rent_price"
-                label="Rent Price"
-                type="number"
-                value={formData.rent_price}
-                onChange={handleChange}
-                inputProps={{ min: 0 }}
-                fullWidth
-                required
-                size="small"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">₱</InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid>
-              <TextField
-                name="license_plate"
-                label="License Plate"
-                value={formData.license_plate}
-                onChange={handleChange}
-                fullWidth
-                required
-                size="small"
-              />
-            </Grid>
-            <Grid>
+        <form id="addCarForm" onSubmit={handleSubmit}>
+          <Stack spacing={2}>
+            <TextField
+              name="make"
+              label="Make"
+              value={formData.make}
+              onChange={handleChange}
+              fullWidth
+              required
+              placeholder="e.g., Toyota"
+            />
+
+            <TextField
+              name="model"
+              label="Model"
+              value={formData.model}
+              onChange={handleChange}
+              fullWidth
+              required
+              placeholder="e.g., Camry"
+            />
+
+            <TextField
+              name="car_type"
+              label="Car Type"
+              value={formData.car_type}
+              onChange={handleChange}
+              fullWidth
+              required
+              placeholder="e.g., Sedan, SUV, Hatchback"
+            />
+
+            <TextField
+              name="year"
+              label="Year"
+              type="number"
+              value={formData.year}
+              onChange={handleChange}
+              inputProps={{ min: 2000, max: new Date().getFullYear() + 1 }}
+              fullWidth
+              required
+              placeholder="e.g., 2020"
+            />
+
+            <TextField
+              name="mileage"
+              label="Mileage (km)"
+              type="number"
+              value={formData.mileage}
+              onChange={handleChange}
+              inputProps={{ min: 0 }}
+              fullWidth
+              placeholder="e.g., 50000"
+            />
+
+            <TextField
+              name="no_of_seat"
+              label="Number of Seats"
+              type="number"
+              value={formData.no_of_seat}
+              onChange={handleChange}
+              inputProps={{ min: 2, max: 20 }}
+              fullWidth
+              required
+              placeholder="e.g., 5"
+            />
+
+            <TextField
+              name="rent_price"
+              label="Rent Price"
+              type="number"
+              value={formData.rent_price}
+              onChange={handleChange}
+              inputProps={{ min: 0 }}
+              fullWidth
+              required
+              placeholder="Daily rental price"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">₱</InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              name="license_plate"
+              label="License Plate"
+              value={formData.license_plate}
+              onChange={handleChange}
+              fullWidth
+              required
+              placeholder="e.g., ABC-123"
+            />
+
+            <Box>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
                 Car Image
               </Typography>
@@ -316,7 +316,7 @@ export default function AddCarModal({ show, onClose }) {
                 variant="outlined"
                 startIcon={<FaUpload />}
                 onClick={() => fileInputRef.current?.click()}
-                size="small"
+                fullWidth
               >
                 {carImageFile ? 'Change Image' : 'Upload Image'}
               </Button>
@@ -337,9 +337,9 @@ export default function AddCarModal({ show, onClose }) {
                   </Button>
                 </Box>
               )}
-            </Grid>
-          </Grid>
-        </Box>
+            </Box>
+          </Stack>
+        </form>
       </DialogContent>
       <DialogActions sx={{ px: 3 }}>
         <Box
@@ -357,14 +357,16 @@ export default function AddCarModal({ show, onClose }) {
             color="success"
             disabled={isLoading}
           >
-            {isLoading ? 'Saving...' : 'Save'}
+            {isLoading ? 'Adding...' : 'Add Car'}
           </Button>
           <Button
             onClick={onClose}
             variant="outlined"
             color="error"
             disabled={isLoading}
-            sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
+            sx={{
+              '&:hover': { backgroundColor: 'error.main', color: 'white' },
+            }}
           >
             Cancel
           </Button>

@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useCarStore } from '../../../store/cars';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useAuth } from '../../../hooks/useAuth.js';
+import { createAuthenticatedFetch, getApiBase } from '../../../utils/api.js';
 import {
   Dialog,
   DialogTitle,
@@ -7,19 +8,27 @@ import {
   DialogActions,
   Button,
   TextField,
-  Grid,
+  Stack,
   MenuItem,
   Box,
   Typography,
   InputAdornment,
+  Alert,
 } from '@mui/material';
 import { FaUpload } from 'react-icons/fa';
 
 export default function EditCarModal({ show, onClose, car, onStatusChange }) {
   const [formData, setFormData] = useState({});
   const [imageFile, setImageFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const fileRef = useRef(null);
-  const { updateCar } = useCarStore();
+  const { logout } = useAuth();
+  const authenticatedFetch = useMemo(
+    () => createAuthenticatedFetch(logout),
+    [logout]
+  );
+  const API_BASE = getApiBase();
 
   useEffect(() => {
     if (car) {
@@ -27,13 +36,13 @@ export default function EditCarModal({ show, onClose, car, onStatusChange }) {
       setFormData({
         make: raw.make || car.make || '',
         model: raw.model || car.model || '',
+        car_type: raw.car_type || car.car_type || '',
         year: raw.year ?? car.year ?? '',
         mileage: raw.mileage ?? car.mileage ?? '',
         no_of_seat: raw.no_of_seat ?? car.no_of_seat ?? '',
         rent_price: raw.rent_price ?? car.rent_price ?? '',
         license_plate: raw.license_plate || car.license_plate || '',
         car_img_url: raw.car_img_url || car.image || '',
-        car_status: raw.car_status || car.status || 'Available',
       });
     }
   }, [car]);
@@ -41,9 +50,6 @@ export default function EditCarModal({ show, onClose, car, onStatusChange }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (name === 'car_status') {
-      onStatusChange?.(car, value);
-    }
   };
 
   const handleFileChange = (e) => {
@@ -55,117 +61,167 @@ export default function EditCarModal({ show, onClose, car, onStatusChange }) {
     e.preventDefault();
     if (!car) return;
 
-    const payload = new FormData();
-    Object.keys(formData).forEach((key) => {
-      payload.append(key, formData[key]);
-    });
-
-    if (imageFile) {
-      payload.append('image', imageFile);
-    }
+    setLoading(true);
+    setError(null);
 
     try {
-      await updateCar(car.car_id, payload);
+      let payload;
+      let headers = {};
+
+      if (imageFile) {
+        // Use FormData for file uploads
+        payload = new FormData();
+        Object.keys(formData).forEach((key) => {
+          if (formData[key] !== null && formData[key] !== undefined) {
+            payload.append(key, formData[key]);
+          }
+        });
+        payload.append('image', imageFile);
+      } else {
+        // Use JSON for updates without file uploads
+        payload = JSON.stringify(formData);
+        headers['Content-Type'] = 'application/json';
+      }
+
+      const response = await authenticatedFetch(
+        `${API_BASE}/cars/${car.car_id}`,
+        {
+          method: 'PUT',
+          headers,
+          body: payload,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || 'Failed to update car');
+      }
+
+      const updatedCar = await response.json();
+      console.log('Car updated successfully:', updatedCar);
       onClose();
     } catch (error) {
       console.error('Failed to update car:', error);
-      alert('Failed to update car. Please check your inputs.');
+      setError(
+        error.message || 'Failed to update car. Please check your inputs.'
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Dialog open={!!show} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog
+      open={!!show}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      disableScrollLock
+    >
       <DialogTitle>Edit Car</DialogTitle>
       <DialogContent dividers>
-        <Box
-          component="form"
-          id="editCarForm"
-          onSubmit={handleSubmit}
-          noValidate
-        >
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                name="make"
-                label="Make"
-                value={formData.make || ''}
-                onChange={handleChange}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                name="model"
-                label="Model"
-                value={formData.model || ''}
-                onChange={handleChange}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                name="year"
-                label="Year"
-                type="number"
-                value={formData.year || ''}
-                onChange={handleChange}
-                size="small"
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                name="mileage"
-                label="Mileage"
-                type="number"
-                value={formData.mileage || ''}
-                onChange={handleChange}
-                size="small"
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                name="no_of_seat"
-                label="Seats"
-                type="number"
-                value={formData.no_of_seat || ''}
-                onChange={handleChange}
-                size="small"
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                name="rent_price"
-                label="Rent Price"
-                type="number"
-                value={formData.rent_price || ''}
-                onChange={handleChange}
-                size="small"
-                fullWidth
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">₱</InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                name="license_plate"
-                label="License Plate"
-                value={formData.license_plate || ''}
-                onChange={handleChange}
-                size="small"
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+        <form id="editCarForm" onSubmit={handleSubmit}>
+          <Stack spacing={2}>
+            <TextField
+              name="make"
+              label="Make"
+              value={formData.make || ''}
+              onChange={handleChange}
+              fullWidth
+              required
+              placeholder="e.g., Toyota"
+            />
+
+            <TextField
+              name="model"
+              label="Model"
+              value={formData.model || ''}
+              onChange={handleChange}
+              fullWidth
+              required
+              placeholder="e.g., Camry"
+            />
+
+            <TextField
+              name="car_type"
+              label="Car Type"
+              value={formData.car_type || ''}
+              onChange={handleChange}
+              fullWidth
+              required
+              placeholder="e.g., Sedan, SUV, Hatchback"
+            />
+
+            <TextField
+              name="year"
+              label="Year"
+              type="number"
+              value={formData.year || ''}
+              onChange={handleChange}
+              inputProps={{ min: 2000, max: new Date().getFullYear() + 1 }}
+              fullWidth
+              required
+              placeholder="e.g., 2020"
+            />
+
+            <TextField
+              name="mileage"
+              label="Mileage (km)"
+              type="number"
+              value={formData.mileage || ''}
+              onChange={handleChange}
+              inputProps={{ min: 0 }}
+              fullWidth
+              placeholder="e.g., 50000"
+            />
+
+            <TextField
+              name="no_of_seat"
+              label="Number of Seats"
+              type="number"
+              value={formData.no_of_seat || ''}
+              onChange={handleChange}
+              inputProps={{ min: 2, max: 20 }}
+              fullWidth
+              required
+              placeholder="e.g., 5"
+            />
+
+            <TextField
+              name="rent_price"
+              label="Rent Price"
+              type="number"
+              value={formData.rent_price || ''}
+              onChange={handleChange}
+              inputProps={{ min: 0 }}
+              fullWidth
+              required
+              placeholder="Daily rental price"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">₱</InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              name="license_plate"
+              label="License Plate"
+              value={formData.license_plate || ''}
+              onChange={handleChange}
+              fullWidth
+              required
+              placeholder="e.g., ABC-123"
+            />
+
+            <Box>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                Image
+                Car Image
               </Typography>
               <input
                 ref={fileRef}
@@ -176,38 +232,63 @@ export default function EditCarModal({ show, onClose, car, onStatusChange }) {
               />
               <Button
                 variant="outlined"
-                size="small"
                 startIcon={<FaUpload />}
                 onClick={() => fileRef.current?.click()}
+                fullWidth
               >
                 {imageFile ? 'Change Image' : 'Upload Image'}
               </Button>
               {imageFile && (
-                <Typography variant="caption" sx={{ ml: 1 }}>
-                  {imageFile.name}
-                </Typography>
+                <Box
+                  sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}
+                >
+                  <Typography variant="body2" sx={{ flex: 1 }}>
+                    {imageFile.name}
+                  </Typography>
+                  <Button
+                    type="button"
+                    onClick={() => setImageFile(null)}
+                    color="error"
+                    size="small"
+                  >
+                    Remove
+                  </Button>
+                </Box>
               )}
-            </Grid>
-          </Grid>
-        </Box>
+            </Box>
+          </Stack>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button
-          type="submit"
-          form="editCarForm"
-          variant="contained"
-          color="success"
+      <DialogActions sx={{ px: 3 }}>
+        <Box
+          sx={{
+            width: '100%',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            gap: 1,
+          }}
         >
-          Save
-        </Button>
-        <Button
-          onClick={onClose}
-          variant="outlined"
-          color="error"
-          sx={{ '&:hover': { bgcolor: 'error.main', color: '#fff' } }}
-        >
-          Cancel
-        </Button>
+          <Button
+            type="submit"
+            form="editCarForm"
+            variant="contained"
+            color="success"
+            disabled={loading}
+          >
+            {loading ? 'Updating...' : 'Update Car'}
+          </Button>
+          <Button
+            onClick={onClose}
+            variant="outlined"
+            color="error"
+            disabled={loading}
+            sx={{
+              '&:hover': { backgroundColor: 'error.main', color: 'white' },
+            }}
+          >
+            Cancel
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );

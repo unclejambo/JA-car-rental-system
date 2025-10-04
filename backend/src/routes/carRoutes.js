@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import {
   getCars,
   getAvailableCars,
@@ -9,6 +10,7 @@ import {
 } from '../controllers/carController.js';
 
 const router = express.Router();
+const upload = multer(); // memory storage for file uploads
 
 // Public routes
 router.get('/', getCars);
@@ -16,8 +18,8 @@ router.get('/available', getAvailableCars);
 router.get('/:id/gps', getCarGps);
 
 // Protected routes (add authentication middleware later)
-router.post('/', createCar);    // use "cars/"  -> POST
-router.put('/:id', updateCar);        // use "cars/:id"     -> PUT
+router.post('/', upload.single('image'), createCar);    // use "cars/"  -> POST
+router.put('/:id', upload.single('image'), updateCar);        // use "cars/:id"     -> PUT
 router.delete('/:id', deleteCar);     // use "cars/:id"     -> DELETE
 
 export default router;

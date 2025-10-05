@@ -302,8 +302,8 @@ export default function BookingDetailsModal({
       <DialogContent sx={{ pt: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 
-          {/* Payment Section */}
-          {booking.balance > 0 && (
+          {/* Payment Section - Hide for cancelled bookings */}
+          {booking.balance > 0 && !booking.isCancel && booking.booking_status !== 'Cancelled' && (
             <Box>
               <Box
                 sx={{

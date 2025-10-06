@@ -170,28 +170,35 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
         resizable: true,
       },
     ],
-    CANCELLATION: [
-      {
-        field: 'cancellation_date',
-        headerName: 'Cancellation Date',
-        flex: 1.5,
-        minWidth: 120,
-        resizable: true,
-      },
-      {
-        field: 'cancellationReason',
-        headerName: 'Cancellation Reason',
-        flex: 1.5,
-        minWidth: 120,
-        resizable: true,
-      },
-    ],
+    // CANCELLATION: [
+    //   {
+    //     field: 'cancellation_date',
+    //     headerName: 'Cancellation Date',
+    //     flex: 1.5,
+    //     minWidth: 120,
+    //     resizable: true,
+    //     renderCell: (params) => {
+    //       return formatDateString(params.value);
+    //     },
+    //   },
+    //   {
+    //     field: 'cancellation_reason',
+    //     headerName: 'Cancellation Reason',
+    //     flex: 1.5,
+    //     minWidth: 120,
+    //     resizable: true,
+    //   },
+    // ],
     EXTENSION: [
       {
-        field: 'newEndDate',
+        field: 'new_end_date',
         headerName: 'New End Date',
         flex: 1.5,
+        minWidth: 120,
         resizable: true,
+        renderCell: (params) => {
+          return formatDateString(params.value);
+        },
       },
     ],
   };
@@ -206,51 +213,67 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
     editable: false,
     headerAlign: 'center',
     align: 'center',
-    renderCell: (params) => (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-        {activeTab === 'BOOKINGS' && (
-          <IconButton
-            size="small"
-            color="primary"
-            aria-label="view details"
-            onClick={() => handleViewDetails(params.row)}
-            sx={{
-              '&:hover': {
-                backgroundColor: 'rgba(25, 118, 210, 0.08)',
-              },
-            }}
-          >
-            <MoreHorizIcon fontSize="small" />
-          </IconButton>
-        )}
-        <IconButton
-          size="small"
-          color="success"
-          aria-label="confirm"
-          onClick={() => {/* TODO: Handle confirm action */}}
-          sx={{
-            '&:hover': {
-              backgroundColor: 'rgba(46, 125, 50, 0.08)',
-            },
-          }}
-        >
-          <CheckCircleIcon fontSize="small" />
-        </IconButton>
-        <IconButton
-          size="small"
-          color="error"
-          aria-label="cancel"
-          onClick={() => {/* TODO: Handle cancel action */}}
-          sx={{
-            '&:hover': {
-              backgroundColor: 'rgba(211, 47, 47, 0.08)',
-            },
-          }}
-        >
-          <CancelIcon fontSize="small" />
-        </IconButton>
-      </Box>
-    ),
+    renderCell: (params) => {
+      // Check if isPay is true (for showing check/cancel buttons)
+      const shouldShowPaymentButtons =
+        params.row.isPay === true ||
+        params.row.isPay === 'true' ||
+        params.row.isPay === 'TRUE';
+
+      return (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+          {activeTab === 'BOOKINGS' && (
+            <IconButton
+              size="small"
+              color="primary"
+              aria-label="view details"
+              onClick={() => handleViewDetails(params.row)}
+              sx={{
+                '&:hover': {
+                  backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                },
+              }}
+            >
+              <MoreHorizIcon fontSize="small" />
+            </IconButton>
+          )}
+          {shouldShowPaymentButtons && (
+            <>
+              <IconButton
+                size="small"
+                color="success"
+                aria-label="confirm"
+                onClick={() => {
+                  /* TODO: Handle confirm action */
+                }}
+                sx={{
+                  '&:hover': {
+                    backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                  },
+                }}
+              >
+                <CheckCircleIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                size="small"
+                color="error"
+                aria-label="cancel"
+                onClick={() => {
+                  /* TODO: Handle cancel action */
+                }}
+                sx={{
+                  '&:hover': {
+                    backgroundColor: 'rgba(211, 47, 47, 0.08)',
+                  },
+                }}
+              >
+                <CancelIcon fontSize="small" />
+              </IconButton>
+            </>
+          )}
+        </Box>
+      );
+    },
   };
 
   // Combine columns based on active tab

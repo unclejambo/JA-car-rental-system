@@ -1,5 +1,5 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, Select, MenuItem, useMediaQuery } from '@mui/material';
+import { Box, Select, MenuItem, useMediaQuery, Skeleton } from '@mui/material';
 
 // use Vite env var, fallback to localhost; remove trailing slash if present
 const API_BASE = (
@@ -218,6 +218,7 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
           onChange={handleStatusChange}
           sx={{ width: 90, height: 20, fontSize: 12 }}
           onClick={(e) => e.stopPropagation()}
+          MenuProps={{ disableScrollLock: true }}
         >
           <MenuItem value="Active" sx={{ fontSize: 12 }}>
             Active
@@ -271,6 +272,12 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
             borderTop: '1px solid rgba(224, 224, 224, 1)',
             backgroundColor: '#fff',
           },
+          '& .MuiDataGrid-loadingOverlay': {
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            '& .MuiCircularProgress-root': {
+              color: '#c10007',
+            },
+          },
         },
       }}
     >
@@ -293,6 +300,11 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
             paginationModel: { pageSize: 10, page: 0 },
           },
         }}
+        // slotProps={{
+        //   loadingOverlay: {
+        //     variant: 'linear-progress',
+        //   },
+        // }}
         sx={{
           width: '100%',
           '& .MuiDataGrid-main': {
@@ -329,6 +341,10 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
             '& .MuiSvgIcon-root': {
               color: '#000',
             },
+          },
+          '& .MuiDataGrid-loadingOverlay': {
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(1px)',
           },
           '@media (max-width: 1024px)': {
             pageSizeOptions: [],

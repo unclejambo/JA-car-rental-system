@@ -28,7 +28,7 @@ export default function ReturnModal({ show, onClose }) {
     damageStatus: 'noDamage',
     damageDetails: '',
     equipmentStatus: 'complete',
-    equipmentDetails: '',
+    equip_others: '',
   });
 
   // Static fee data (could be props later)
@@ -145,17 +145,13 @@ export default function ReturnModal({ show, onClose }) {
                     control={<Radio />}
                     label="Complete"
                   />
-                  <FormControlLabel
-                    value="specify"
-                    control={<Radio />}
-                    label="Specify"
-                  />
+                  <FormControlLabel value="no" control={<Radio />} label="No" />
                 </RadioGroup>
-                {formData.equipmentStatus === 'specify' && (
+                {formData.equipmentStatus === 'no' && (
                   <TextField
-                    name="equipmentDetails"
+                    name="equip_others"
                     label="Equipment Details"
-                    value={formData.equipmentDetails}
+                    value={formData.equip_others}
                     onChange={handleInputChange}
                     fullWidth
                     multiline

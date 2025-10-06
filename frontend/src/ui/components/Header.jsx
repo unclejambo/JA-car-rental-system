@@ -11,6 +11,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
   const { isAuthenticated, user, userRole, logout } = useAuth();
   const [profileImageUrl, setProfileImageUrl] = useState(null);
   const [isLoadingImage, setIsLoadingImage] = useState(false);
+  const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
 
   const authenticatedFetch = useMemo(
     () => createAuthenticatedFetch(logout),
@@ -33,9 +34,31 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
     return firstName;
   };
 
-  // Fetch profile image when user is authenticated
+  // Load profile image from cache or fetch once
   useEffect(() => {
-    if (!isAuthenticated || !userRole) return;
+    if (!isAuthenticated || !userRole) {
+      // Clear cached data when not authenticated
+      setProfileImageUrl(null);
+      setHasLoadedProfile(false);
+      sessionStorage.removeItem('profileImageUrl');
+      sessionStorage.removeItem('profileImageCacheKey');
+      return;
+    }
+
+    // Create a cache key based on user info and role
+    const cacheKey = `${userRole}_${user?.id || user?.customer_id || user?.admin_id || user?.drivers_id}`;
+    const cachedImageUrl = sessionStorage.getItem('profileImageUrl');
+    const cachedKey = sessionStorage.getItem('profileImageCacheKey');
+
+    // If we have cached data for the same user, use it
+    if (cachedImageUrl && cachedKey === cacheKey && !hasLoadedProfile) {
+      setProfileImageUrl(cachedImageUrl);
+      setHasLoadedProfile(true);
+      return;
+    }
+
+    // Only fetch if we haven't loaded for this session
+    if (hasLoadedProfile) return;
 
     const fetchProfileImage = async () => {
       setIsLoadingImage(true);
@@ -66,6 +89,9 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
 
             if (imageUrl && imageUrl.trim() !== '') {
               setProfileImageUrl(imageUrl);
+              // Cache the image URL and cache key
+              sessionStorage.setItem('profileImageUrl', imageUrl);
+              sessionStorage.setItem('profileImageCacheKey', cacheKey);
             }
           }
         }
@@ -73,11 +99,19 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
         console.error('Error fetching profile image:', error);
       } finally {
         setIsLoadingImage(false);
+        setHasLoadedProfile(true);
       }
     };
 
     fetchProfileImage();
-  }, [isAuthenticated, userRole, authenticatedFetch, API_BASE]);
+  }, [
+    isAuthenticated,
+    userRole,
+    user,
+    authenticatedFetch,
+    API_BASE,
+    hasLoadedProfile,
+  ]);
 
   return (
     <header className="app-header">

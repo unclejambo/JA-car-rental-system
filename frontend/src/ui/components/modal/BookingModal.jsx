@@ -31,7 +31,7 @@ import {
   StepLabel,
   Avatar,
 } from '@mui/material';
-import { HiX, HiArrowLeft, HiArrowRight, HiCheck, HiExclamationCircle } from 'react-icons/hi';
+import { HiX, HiArrowLeft, HiArrowRight, HiCheck, HiExclamationCircle, HiClock, HiCurrencyDollar } from 'react-icons/hi';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
 import { useAuth } from '../../../hooks/useAuth';
 
@@ -48,6 +48,23 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
   const [isSelfService, setIsSelfService] = useState(true);
   const [missingFields, setMissingFields] = useState([]);
   const [availableDates, setAvailableDates] = useState(null);
+  
+  // Fee management state
+  const [fees, setFees] = useState({
+    reservation_fee: 1000,
+    cleaning_fee: 200,
+    driver_fee: 500,
+    overdue_fee: 250,
+    damage_fee: 5000,
+    equipment_loss_fee: 500,
+    gas_level_fee: 500,
+    stain_removal_fee: 500,
+    security_deposit_fee: 3000
+  });
+  
+  // Payment deadline state
+  const [paymentDeadline, setPaymentDeadline] = useState(null);
+  const [paymentDeadlineHours, setPaymentDeadlineHours] = useState(null);
   const [isWaitlist, setIsWaitlist] = useState(false);
   const [formData, setFormData] = useState({
     purpose: '',
@@ -94,6 +111,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
     if (open && car) {
       fetchDrivers();
       fetchAvailableDates();
+      fetchFees(); // Fetch current fee structure
       
       // Determine if this is a waitlist booking (car is rented)
       const carStatus = String(car.car_status || '').toLowerCase();
@@ -312,7 +330,100 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
     const end = new Date(formData.endDate);
     const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
     
-    return daysDiff * car.rent_price;
+    // Base cost: daily rate * number of days
+    let totalCost = daysDiff * car.rent_price;
+    
+    // Add reservation fee (always included)
+    totalCost += fees.reservation_fee;
+    
+    // Add cleaning fee (always included)
+    totalCost += fees.cleaning_fee;
+    
+    // Add driver fee if not self-service
+    if (!isSelfService) {
+      totalCost += fees.driver_fee * daysDiff; // Driver fee per day
+    }
+    
+    return totalCost;
+  };
+
+  // Fetch fees from backend
+  const fetchFees = async () => {
+    try {
+      const response = await authenticatedFetch(`${API_BASE}/api/manage-fees`);
+      if (response.ok) {
+        const feesData = await response.json();
+        setFees(feesData);
+      }
+    } catch (error) {
+      console.error('Error fetching fees:', error);
+      // Keep default fees if fetch fails
+    }
+  };
+
+  // Calculate payment deadline based on booking start date
+  const calculatePaymentDeadline = (startDate) => {
+    if (!startDate) return { deadline: null, hours: null };
+    
+    const now = new Date();
+    const bookingStart = new Date(startDate);
+    const daysDifference = Math.ceil((bookingStart - now) / (1000 * 60 * 60 * 24));
+    
+    let deadline, hours;
+    
+    if (daysDifference === 0) {
+      // Same day booking: must pay within 1 hour
+      deadline = new Date(now.getTime() + (1 * 60 * 60 * 1000));
+      hours = 1;
+    } else if (daysDifference < 4) {
+      // Less than 4 days: must pay within 24 hours
+      deadline = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+      hours = 24;
+    } else {
+      // 4 or more days: must pay within 3 days (72 hours)
+      deadline = new Date(now.getTime() + (72 * 60 * 60 * 1000));
+      hours = 72;
+    }
+    
+    return { deadline, hours };
+  };
+
+  // Update payment deadline when start date changes
+  useEffect(() => {
+    if (formData.startDate) {
+      const { deadline, hours } = calculatePaymentDeadline(formData.startDate);
+      setPaymentDeadline(deadline);
+      setPaymentDeadlineHours(hours);
+    }
+  }, [formData.startDate]);
+
+  // Format payment deadline for display
+  const formatPaymentDeadline = () => {
+    if (!paymentDeadline || !paymentDeadlineHours) return '';
+    
+    const now = new Date();
+    const startDate = new Date(formData.startDate);
+    const daysDifference = Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
+    
+    let urgencyLevel = 'info';
+    let message = '';
+    
+    if (daysDifference === 0) {
+      urgencyLevel = 'error';
+      message = `⚡ URGENT: Same-day booking requires payment within 1 hour. You can avail the service 3 hours after payment confirmation.`;
+    } else if (daysDifference < 4) {
+      urgencyLevel = 'warning';
+      message = `⏰ Payment required within 24 hours to confirm this booking.`;
+    } else {
+      urgencyLevel = 'info';
+      message = `💡 Payment required within 3 days to confirm this booking.`;
+    }
+    
+    return {
+      message,
+      urgencyLevel,
+      deadline: paymentDeadline.toLocaleString()
+    };
   };
 
   const handleSubmit = async () => {
@@ -339,6 +450,19 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         specialRequests: formData.specialRequests,
         totalCost: calculateTotalCost(),
         isSelfDrive: isSelfService,
+        // Enhanced payment and fee information
+        total_amount: calculateTotalCost(),
+        balance: calculateTotalCost(), // Initially, full amount is due
+        payment_deadline: paymentDeadline,
+        payment_deadline_hours: paymentDeadlineHours,
+        fee_breakdown: {
+          base_cost: ((Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1) * car.rent_price),
+          reservation_fee: fees.reservation_fee,
+          cleaning_fee: fees.cleaning_fee,
+          driver_fee: isSelfService ? 0 : fees.driver_fee * (Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1),
+          total_days: Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1
+        },
+        booking_status: 'pending_payment' // New status to track payment requirement
       };
 
       if (isWaitlist) {
@@ -375,6 +499,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
             `💰 Total Cost: ₱${calculateTotalCost().toLocaleString()}\n` +
             `⏰ Next Available: ${availableDates?.next_available_date ? new Date(availableDates.next_available_date).toLocaleDateString() : 'TBD'}\n\n` +
             `🏦 PAYMENT REQUIRED: To secure your dates, payment must be completed.\n` +
+            `⏰ Payment Deadline: ${paymentDeadline ? paymentDeadline.toLocaleString() : 'TBD'}\n` +
             `💡 Once paid, your requested dates will be reserved and unavailable to other customers.\n\n` +
             `✅ You'll be notified when the car becomes available for your requested dates!`;
           
@@ -394,6 +519,20 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         if (onBookingSuccess) {
           await onBookingSuccess(bookingData);
         }
+        
+        // Show success message with payment information
+        const deadlineInfo = formatPaymentDeadline();
+        const successMessage = `🎉 Booking created successfully!\n\n` +
+          `🚗 Vehicle: ${car.make} ${car.model}\n` +
+          `📅 Rental Period: ${formData.startDate} to ${formData.endDate}\n` +
+          `💰 Total Amount: ₱${calculateTotalCost().toLocaleString()}\n\n` +
+          `⚠️ IMPORTANT PAYMENT INFORMATION:\n` +
+          `${deadlineInfo.message}\n` +
+          `⏰ Payment Deadline: ${deadlineInfo.deadline}\n\n` +
+          `💡 Your booking is confirmed but requires payment to secure the vehicle.\n` +
+          `📱 You can make payment through the booking details in your dashboard.`;
+        
+        alert(successMessage);
         onClose();
       }
     } catch (error) {
@@ -1129,23 +1268,117 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
               <Card sx={{ backgroundColor: '#f0f8ff', border: '3px solid #c10007' }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#c10007' }}>
-                    💰 Total Cost
+                    💰 Cost Breakdown
                   </Typography>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Box>
-                      <Typography variant="body1" sx={{ mb: 1 }}>
+                  
+                  {/* Detailed Fee Breakdown */}
+                  <Box sx={{ mb: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2">
                         {Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1} days × ₱{car.rent_price?.toLocaleString()}/day
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {isSelfService ? 'Self-Drive Service' : 'With Professional Driver'}
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        ₱{((Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1) * car.rent_price).toLocaleString()}
                       </Typography>
                     </Box>
-                    <Typography variant="h4" sx={{ color: '#c10007', fontWeight: 'bold' }}>
-                      ₱{calculateTotalCost().toLocaleString()}
-                    </Typography>
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2">Reservation Fee</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        ₱{fees.reservation_fee.toLocaleString()}
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2">Cleaning Fee</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        ₱{fees.cleaning_fee.toLocaleString()}
+                      </Typography>
+                    </Box>
+                    
+                    {!isSelfService && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2">
+                          Driver Fee ({Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1} days)
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          ₱{(fees.driver_fee * (Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1)).toLocaleString()}
+                        </Typography>
+                      </Box>
+                    )}
+                    
+                    <Divider sx={{ my: 2 }} />
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                        Total Amount
+                      </Typography>
+                      <Typography variant="h4" sx={{ color: '#c10007', fontWeight: 'bold' }}>
+                        ₱{calculateTotalCost().toLocaleString()}
+                      </Typography>
+                    </Box>
                   </Box>
                 </CardContent>
               </Card>
+
+              {/* Payment Deadline Notice */}
+              {formData.startDate && paymentDeadlineHours && (
+                <Card sx={{ 
+                  backgroundColor: formatPaymentDeadline().urgencyLevel === 'error' ? '#ffebee' :
+                                 formatPaymentDeadline().urgencyLevel === 'warning' ? '#fff8e1' : '#e3f2fd',
+                  border: `2px solid ${formatPaymentDeadline().urgencyLevel === 'error' ? '#f44336' :
+                                     formatPaymentDeadline().urgencyLevel === 'warning' ? '#ff9800' : '#2196f3'}`
+                }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <HiClock size={24} color={
+                        formatPaymentDeadline().urgencyLevel === 'error' ? '#f44336' :
+                        formatPaymentDeadline().urgencyLevel === 'warning' ? '#ff9800' : '#2196f3'
+                      } />
+                      <Typography variant="h6" sx={{ 
+                        fontWeight: 'bold', 
+                        color: formatPaymentDeadline().urgencyLevel === 'error' ? '#f44336' :
+                               formatPaymentDeadline().urgencyLevel === 'warning' ? '#ff9800' : '#2196f3'
+                      }}>
+                        Payment Deadline
+                      </Typography>
+                    </Box>
+                    
+                    <Typography variant="body1" sx={{ mb: 2 }}>
+                      {formatPaymentDeadline().message}
+                    </Typography>
+                    
+                    <Typography variant="body2" sx={{ 
+                      fontWeight: 'bold',
+                      color: formatPaymentDeadline().urgencyLevel === 'error' ? '#f44336' :
+                             formatPaymentDeadline().urgencyLevel === 'warning' ? '#ff9800' : '#2196f3'
+                    }}>
+                      Deadline: {formatPaymentDeadline().deadline}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Special Notice for Same-Day Bookings */}
+              {formData.startDate && new Date(formData.startDate).toDateString() === new Date().toDateString() && (
+                <Card sx={{ backgroundColor: '#fff3e0', border: '2px solid #ff9800' }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#ff9800' }}>
+                        ⚡ Same-Day Booking Notice
+                      </Typography>
+                    </Box>
+                    
+                    <Typography variant="body1" sx={{ mb: 2 }}>
+                      <strong>Service Availability:</strong> For same-day bookings, the vehicle service will be available 3 hours after payment confirmation.
+                    </Typography>
+                    
+                    <Typography variant="body2" color="text.secondary">
+                      This allows time for vehicle preparation, cleaning, and delivery coordination.
+                    </Typography>
+                  </CardContent>
+                </Card>
+              )}
             </Box>
           </Box>
         )}

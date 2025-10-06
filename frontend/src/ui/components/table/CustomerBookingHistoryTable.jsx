@@ -37,20 +37,8 @@ const CustomerBookingHistoryTable = ({ bookings }) => {
       field: 'amount',
       headerName: 'Amount',
       flex: 1,
-      minWidth: 100,
-      renderCell: (p) => (p.value != null ? `₱${p.value}` : ''),
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
-      flex: 1,
       minWidth: 120,
-      renderCell: (p) =>
-        p.value === 'Paid' ? (
-          <Chip label="Paid" color="success" size="small" />
-        ) : (
-          <Chip label="Unpaid" color="error" size="small" />
-        ),
+      renderCell: (p) => (p.value != null ? `₱${p.value}` : ''),
     },
   ];
 

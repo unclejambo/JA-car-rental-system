@@ -11,8 +11,8 @@ const router = express.Router();
 // Driver profile routes - all require authentication
 router.use(verifyToken); // Apply authentication middleware to all routes
 
-router.get("/", getDriverProfile);
 router.put("/", updateDriverProfile);
+router.get("/", getDriverProfile);
 router.patch("/change-password", changeDriverPassword);
 
 export default router;

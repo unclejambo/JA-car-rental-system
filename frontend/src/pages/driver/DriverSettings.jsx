@@ -63,9 +63,11 @@ export default function DriverSettings() {
     try {
       console.log(
         'Fetching driver profile from:',
-        `${API_BASE}/driver-profile`
+        `${API_BASE}/api/driver-profile`
       );
-      const response = await authenticatedFetch(`${API_BASE}/driver-profile`);
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/driver-profile`
+      );
       if (response.ok) {
         const result = await response.json();
         if (result.success) {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
+import { Chip } from '@mui/material';
 
 const CustomerBookingHistoryTable = ({ bookings }) => {
   const formatDate = (iso) => {
@@ -39,7 +40,18 @@ const CustomerBookingHistoryTable = ({ bookings }) => {
       minWidth: 100,
       renderCell: (p) => (p.value != null ? `₱${p.value}` : ''),
     },
-    { field: 'status', headerName: 'Status', flex: 1, minWidth: 120 },
+    {
+      field: 'status',
+      headerName: 'Status',
+      flex: 1,
+      minWidth: 120,
+      renderCell: (p) =>
+        p.value === 'Paid' ? (
+          <Chip label="Paid" color="success" size="small" />
+        ) : (
+          <Chip label="Unpaid" color="error" size="small" />
+        ),
+    },
   ];
 
   // ✅ Normalize rows to ensure DataGrid always gets an array

@@ -11,6 +11,7 @@ import {
   CircularProgress,
   Card,
   CardContent,
+  Button,
 } from '@mui/material';
 import { HiRefresh } from 'react-icons/hi';
 import { HiOutlineClipboardDocumentCheck, HiCreditCard } from 'react-icons/hi2';
@@ -77,10 +78,13 @@ function CustomerBookingHistory() {
     });
 
     try {
-      const resBookings = await authFetch(`${API_BASE}/bookings/me`, {
-        headers: { Accept: 'application/json' },
-      });
-      const resPayments = await authFetch(`${API_BASE}/payments/me`, {
+      const resBookings = await authFetch(
+        `${API_BASE}/bookings/my-bookings/list`,
+        {
+          headers: { Accept: 'application/json' },
+        }
+      );
+      const resPayments = await authFetch(`${API_BASE}/payments/my-payments`, {
         headers: { Accept: 'application/json' },
       });
 
@@ -97,8 +101,36 @@ function CustomerBookingHistory() {
       const dataBookings = await resBookings.json();
       const dataPayments = await resPayments.json();
 
-      setBookings(Array.isArray(dataBookings) ? dataBookings : []);
-      setPayments(Array.isArray(dataPayments) ? dataPayments : []);
+      // Map backend booking data to table row shape
+      const mappedBookings = Array.isArray(dataBookings)
+        ? dataBookings.map((b) => ({
+            booking_id: b.booking_id,
+            booking_date: b.booking_date,
+            car_model: b.car_details?.display_name || '',
+            start_date: b.start_date,
+            end_date: b.end_date,
+            amount: b.total_amount ?? '',
+            status: b.has_outstanding_balance ? 'Unpaid' : 'Paid',
+          }))
+        : [];
+      setBookings(mappedBookings);
+      // Map backend payment data to table row shape
+      const mappedPayments = Array.isArray(dataPayments)
+        ? dataPayments.map((p) => ({
+            transactionId: p.payment_id,
+            paidDate: p.paid_date
+              ? typeof p.paid_date === 'string'
+                ? p.paid_date.split('T')[0]
+                : new Date(p.paid_date).toISOString().split('T')[0]
+              : '',
+            description: p.description || '',
+            totalAmount: p.amount ?? '',
+            paymentMethod: p.payment_method || '',
+            referenceNo: p.reference_no || '',
+            status: p.balance === 0 ? 'Paid' : 'Unpaid',
+          }))
+        : [];
+      setPayments(mappedPayments);
     } catch (err) {
       console.error('Error fetching history:', err);
       setError('Failed to load booking/payment history');
@@ -162,114 +194,152 @@ function CustomerBookingHistory() {
           mt: { xs: '64px', sm: '64px', md: '56px' },
         }}
       >
-        {/* Page Header */}
-        <Box sx={{ mb: 3 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: 1,
-            }}
-          >
-            <Typography
-              variant="h4"
+        <Card
+          sx={{
+            p: { xs: 2, sm: 3 },
+            borderRadius: 3,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            backgroundColor: '#fff',
+          }}
+        >
+          <CardContent>
+            {/* Page Header */}
+            <Box sx={{ mb: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 1,
+                }}
+              >
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 'bold',
+                    color: '#c10007',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <HiOutlineClipboardDocumentCheck
+                    size={28}
+                    style={{ marginRight: '8px' }}
+                  />
+                  Booking History
+                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<HiRefresh />}
+                  onClick={fetchData}
+                  disabled={loading}
+                  sx={{
+                    borderColor: '#c10007',
+                    color: '#c10007',
+                    '&:hover': {
+                      borderColor: '#a50006',
+                      backgroundColor: '#fff5f5',
+                    },
+                  }}
+                >
+                  Refresh
+                </Button>
+              </Box>
+              <Typography variant="body1" color="text.secondary">
+                View your past bookings and payments
+              </Typography>
+            </Box>
+
+            {/* Tabs */}
+            <Box
               sx={{
-                fontWeight: 'bold',
-                color: '#c10007',
+                borderBottom: 1,
+                borderColor: 'divider',
+                mb: 3,
                 display: 'flex',
-                alignItems: 'center',
+                justifyContent: 'flex-start',
               }}
             >
-              <HiOutlineClipboardDocumentCheck
-                size={28}
-                style={{ marginRight: '8px' }}
-              />
-              Booking History
-            </Typography>
-            <Box>
-              <HiRefresh
-                size={22}
-                style={{ cursor: 'pointer', color: '#c10007' }}
-                onClick={fetchData}
-              />
+              <Tabs
+                value={activeTab}
+                onChange={handleTabChange}
+                sx={{
+                  alignItems: 'flex-start',
+                  '& .MuiTabs-flexContainer': {
+                    justifyContent: 'flex-start',
+                  },
+                  '& .MuiTab-root': {
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    minWidth: 120,
+                  },
+                  '& .Mui-selected': {
+                    color: '#c10007 !important',
+                  },
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: '#c10007',
+                  },
+                }}
+              >
+                <Tab
+                  label={`Bookings History (${bookings?.length || 0})`}
+                  icon={<HiOutlineClipboardDocumentCheck />}
+                  iconPosition="start"
+                />
+                <Tab
+                  label={`Payments History (${payments?.length || 0})`}
+                  icon={<HiCreditCard />}
+                  iconPosition="start"
+                />
+              </Tabs>
             </Box>
-          </Box>
-          <Typography variant="body1" color="text.secondary">
-            View your past bookings and payments
-          </Typography>
-        </Box>
 
-        {/* Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            sx={{
-              '& .MuiTab-root': {
-                textTransform: 'none',
-                fontWeight: 'bold',
-                fontSize: '1rem',
-                minWidth: 120,
-              },
-              '& .Mui-selected': {
-                color: '#c10007 !important',
-              },
-              '& .MuiTabs-indicator': {
-                backgroundColor: '#c10007',
-              },
-            }}
-          >
-            <Tab
-              label={`Bookings History (${bookings?.length || 0})`}
-              icon={<HiOutlineClipboardDocumentCheck />}
-              iconPosition="start"
-            />
-            <Tab
-              label={`Payments History (${payments?.length || 0})`}
-              icon={<HiCreditCard />}
-              iconPosition="start"
-            />
-          </Tabs>
-        </Box>
+            {/* Error Alert */}
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
+            )}
 
-        {/* Error Alert */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+            {/* Tab Panels */}
+            <TabPanel value={activeTab} index={0}>
+              {bookings && bookings.length > 0 ? (
+                <CustomerBookingHistoryTable
+                  bookings={bookings}
+                  loading={loading}
+                />
+              ) : (
+                <EmptyState
+                  icon={HiOutlineClipboardDocumentCheck}
+                  title="No Bookings Found"
+                  message="You haven’t made any bookings yet."
+                />
+              )}
+            </TabPanel>
 
-        {/* Tab Panels */}
-        <TabPanel value={activeTab} index={0}>
-          {bookings && bookings.length > 0 ? (
-            <CustomerBookingHistoryTable rows={bookings} loading={loading} />
-          ) : (
-            <EmptyState
-              icon={HiOutlineClipboardDocumentCheck}
-              title="No Bookings Found"
-              message="You haven’t made any bookings yet."
-            />
-          )}
-        </TabPanel>
+            <TabPanel value={activeTab} index={1}>
+              {payments && payments.length > 0 ? (
+                <CustomerPaymentHistoryTable
+                  payments={payments}
+                  loading={loading}
+                />
+              ) : (
+                <EmptyState
+                  icon={HiCreditCard}
+                  title="No Payments Found"
+                  message="You haven’t made any payments yet."
+                />
+              )}
+            </TabPanel>
 
-        <TabPanel value={activeTab} index={1}>
-          {payments && payments.length > 0 ? (
-            <CustomerPaymentHistoryTable rows={payments} loading={loading} />
-          ) : (
-            <EmptyState
-              icon={HiCreditCard}
-              title="No Payments Found"
-              message="You haven’t made any payments yet."
-            />
-          )}
-        </TabPanel>
-
-        {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress sx={{ color: '#c10007' }} />
-          </Box>
-        )}
+            {loading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                <CircularProgress sx={{ color: '#c10007' }} />
+              </Box>
+            )}
+          </CardContent>
+        </Card>
       </Box>
     </Box>
   );

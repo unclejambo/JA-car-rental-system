@@ -15,7 +15,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 /**
  * Reusable confirmation modal for confirming changes
- * 
+ *
  * @param {boolean} open - Whether the modal is open
  * @param {function} onClose - Function to close the modal
  * @param {function} onConfirm - Function to call when user confirms
@@ -32,7 +32,7 @@ const ConfirmationModal = ({
   open = false,
   onClose,
   onConfirm,
-  options = {}
+  options = {},
 }) => {
   const {
     title = 'Confirm Changes',
@@ -67,7 +67,7 @@ const ConfirmationModal = ({
         sx: {
           borderRadius: 2,
           minHeight: 200,
-        }
+        },
       }}
     >
       <DialogTitle
@@ -100,30 +100,45 @@ const ConfirmationModal = ({
             <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
               Changes to be saved:
             </Typography>
-            <Box sx={{ 
-              maxHeight: 300, 
-              overflowY: 'auto',
-              border: '1px solid #e0e0e0',
-              borderRadius: 1,
-              p: 2,
-              bgcolor: '#fafafa'
-            }}>
+            <Box
+              sx={{
+                maxHeight: 300,
+                overflowY: 'auto',
+                border: '1px solid #e0e0e0',
+                borderRadius: 1,
+                p: 2,
+                bgcolor: '#fafafa',
+              }}
+            >
               {changes.map((change, index) => (
                 <Box key={index} sx={{ mb: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                    <Chip 
-                      label={change.field} 
-                      size="small" 
-                      color="primary" 
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      mb: 0.5,
+                    }}
+                  >
+                    <Chip
+                      label={change.field}
+                      size="small"
+                      color="primary"
                       variant="outlined"
                       sx={{ fontSize: '0.75rem' }}
                     />
                   </Box>
                   <Box sx={{ ml: 2 }}>
-                    <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.secondary', fontSize: '0.85rem' }}
+                    >
                       From: <strong>{change.from || '(empty)'}</strong>
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.primary', fontSize: '0.85rem' }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.primary', fontSize: '0.85rem' }}
+                    >
                       To: <strong>{change.to || '(empty)'}</strong>
                     </Typography>
                   </Box>
@@ -134,19 +149,22 @@ const ConfirmationModal = ({
         )}
 
         {showWarning && (
-          <Box sx={{ 
-            mt: 2, 
-            p: 2, 
-            bgcolor: '#fff3cd',
-            border: '1px solid #ffeaa7',
-            borderRadius: 1,
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 1
-          }}>
+          <Box
+            sx={{
+              mt: 2,
+              p: 2,
+              bgcolor: '#fff3cd',
+              border: '1px solid #ffeaa7',
+              borderRadius: 1,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 1,
+            }}
+          >
             <WarningIcon color="warning" fontSize="small" sx={{ mt: 0.25 }} />
             <Typography variant="body2" sx={{ color: '#856404' }}>
-              This action cannot be undone. Please review your changes carefully before proceeding.
+              This action cannot be undone. Please review your changes carefully
+              before proceeding.
             </Typography>
           </Box>
         )}

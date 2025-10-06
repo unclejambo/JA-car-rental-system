@@ -5,6 +5,7 @@ import {
   createDriver,
   deleteDriver,
   updateDriver,
+  getMyDriverSchedules,
 } from "../controllers/driverController.js";
 import { verifyToken, adminOrStaff } from "../middleware/authMiddleware.js";
 
@@ -16,5 +17,7 @@ router.get("/:id", verifyToken, getDriverById); // Allow authenticated users to 
 router.post("/", verifyToken, adminOrStaff, createDriver); // Admin only to create drivers
 router.delete("/:id", verifyToken, adminOrStaff, deleteDriver); // Admin only to delete drivers
 router.put("/:id", verifyToken, adminOrStaff, updateDriver); // Admin only to update drivers
+// Get schedules for authenticated driver
+router.get("/schedules/me", verifyToken, getMyDriverSchedules); // Add this route before export
 
 export default router;

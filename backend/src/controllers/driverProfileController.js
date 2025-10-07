@@ -28,9 +28,12 @@ export const getDriverProfile = async (req, res) => {
       });
     }
 
+    // Get license info
     const license = await prisma.driverLicense.findUnique({
+      where: { driver_license_no: driver.driver_license_no },
     });
 
+    // Format for frontend
     const formattedDriver = {
       drivers_id: driver.drivers_id,
       first_name: driver.first_name,
@@ -64,6 +67,7 @@ export const getDriverProfile = async (req, res) => {
  */
 export const updateDriverProfile = async (req, res) => {
   try {
+    const driverId = parseInt(req.user.sub);
     const {
       first_name,
       last_name,
@@ -127,6 +131,7 @@ export const updateDriverProfile = async (req, res) => {
     const existingDriver = await prisma.driver.findFirst({
       where: {
         AND: [
+          { drivers_id: { not: driverId } },
           {
             OR: [{ email: email }, { username: username }],
           },
@@ -144,10 +149,6 @@ export const updateDriverProfile = async (req, res) => {
       });
     }
 
-    // Check if license number is being changed and if it exists
-    if (license_number !== currentDriver.driver_license_no) {
-      const licenseExists = await prisma.driverLicense.findUnique({
-        where: { driver_license_no: license_number },
     // Ensure license exists
     const licenseRecord = await prisma.driverLicense.findUnique({
       where: { driver_license_no: license_number },
@@ -159,6 +160,7 @@ export const updateDriverProfile = async (req, res) => {
       });
     }
 
+    // ✅ Update driver info
     const updatedDriver = await prisma.driver.update({
       where: { drivers_id: driverId },
       data: {
@@ -194,6 +196,7 @@ export const updateDriverProfile = async (req, res) => {
       where: { driver_license_no: license_number },
     });
 
+    // ✅ Format response
     const formattedDriver = {
       drivers_id: updatedDriver.drivers_id,
       first_name: updatedDriver.first_name,
@@ -235,6 +238,7 @@ export const updateDriverProfile = async (req, res) => {
 };
 
 /**
+ * Change driver password
  */
 export const changeDriverPassword = async (req, res) => {
   try {

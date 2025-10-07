@@ -363,8 +363,8 @@ export const createBooking = async (req, res) => {
         data: {
           booking_id: newBooking.booking_id,
           customer_id: parseInt(customerId),
-          description: `Payment for ${newBooking.car.make} ${newBooking.car.model} booking`,
-          amount: bookingData.total_amount,
+          description: "User Booked the Car",
+          amount: 0, // No payment made yet - customer hasn't paid anything
           payment_method: null, // Will be filled when customer pays
           paid_date: null, // Will be filled when customer pays
           balance: bookingData.total_amount, // Full amount initially unpaid
@@ -878,8 +878,8 @@ export const createMissingPaymentRecords = async (req, res) => {
           data: {
             booking_id: booking.booking_id,
             customer_id: booking.customer_id,
-            description: `Payment for ${booking.car.make} ${booking.car.model} booking`,
-            amount: booking.total_amount || 0,
+            description: "User Booked the Car",
+            amount: 0, // No payment made yet
             balance: booking.total_amount || 0,
             payment_method: null,
             paid_date: null,

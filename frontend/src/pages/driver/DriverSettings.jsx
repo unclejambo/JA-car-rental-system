@@ -8,7 +8,12 @@ import {
   Button,
   Alert,
   Snackbar,
+  Tabs,
+  Tab,
 } from '@mui/material';
+
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import BadgeIcon from '@mui/icons-material/Badge';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
@@ -21,6 +26,11 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
 
 export default function DriverSettings() {
+  const [activeTab, setActiveTab] = useState(0);
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -53,9 +63,11 @@ export default function DriverSettings() {
     try {
       console.log(
         'Fetching driver profile from:',
-        `${API_BASE}/driver-profile`
+        `${API_BASE}/api/driver-profile`
       );
-      const response = await authenticatedFetch(`${API_BASE}/driver-profile`);
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/driver-profile`
+      );
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
@@ -394,105 +406,140 @@ export default function DriverSettings() {
                 Manage your driver account information
               </Typography>
             </Box>
-            <Box
-              sx={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-                alignItems: 'center',
-                mt: 2,
-              }}
-            >
-              {/* Settings Card */}
-              <Box
-                sx={{
-                  width: '100%',
-                  minWidth: '100%',
-                  maxWidth: 900,
-                  bgcolor: '#ffffff',
-                  borderRadius: 2,
-                  p: 2,
-                  pb: isEditing ? 1 : 2,
-                  boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
-                  border: '2px solid #e6e6e6',
-                  position: 'relative',
-                }}
-              >
-                {/* Inner rounded panel with thicker outline */}
-                <Box
+            {/* MUI Tabs (Info / License) */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <Tabs
+                  value={activeTab}
+                  onChange={handleTabChange}
                   sx={{
-                    borderRadius: '18px',
-                    p: 3,
-                    pb: isEditing ? 1.5 : 3,
-                    position: 'relative',
-                    overflow: 'hidden',
-                    bgcolor: 'transparent',
+                    '& .MuiTabs-flexContainer': {
+                      justifyContent: 'flex-start',
+                    },
+                    '& .MuiTab-root': {
+                      textTransform: 'none',
+                      fontWeight: 'bold',
+                      fontSize: '1rem',
+                      minWidth: 120,
+                    },
+                    '& .Mui-selected': {
+                      color: '#c10007 !important',
+                    },
+                    '& .MuiTabs-indicator': {
+                      backgroundColor: '#c10007',
+                    },
                   }}
                 >
-                  {/* Edit / Save controls */}
+                  <Tab
+                    label={
+                      <span style={{ display: 'flex', alignItems: 'center' }}>
+                        <AccountCircleIcon style={{ marginRight: 8 }} /> Info
+                      </span>
+                    }
+                  />
+                  <Tab
+                    label={
+                      <span style={{ display: 'flex', alignItems: 'center' }}>
+                        <BadgeIcon style={{ marginRight: 8 }} /> License
+                      </span>
+                    }
+                  />
+                </Tabs>
+              </Box>
+            </Box>
+            {/* Tab Panels */}
+            {activeTab === 0 && (
+              <Box
+                sx={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                  mt: 2,
+                }}
+              >
+                {/* Settings Card (Info) */}
+                <Box
+                  sx={{
+                    width: '100%',
+                    minWidth: '100%',
+                    maxWidth: 900,
+                    bgcolor: '#ffffff',
+                    borderRadius: 2,
+                    p: 2,
+                    pb: isEditing ? 1 : 2,
+                    boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
+                    border: '2px solid #e6e6e6',
+                    position: 'relative',
+                  }}
+                >
+                  {/* Inner panel */}
                   <Box
                     sx={{
-                      position: { xs: 'relative', md: 'relative' },
-                      top: { md: 12 },
-                      right: { md: 12 },
-                      zIndex: 30,
-                      display: 'flex',
-                      justifyContent: 'flex-end',
-                      mb: { xs: 1, md: 0 },
+                      borderRadius: '18px',
+                      p: 3,
+                      pb: isEditing ? 1.5 : 3,
+                      position: 'relative',
+                      overflow: 'hidden',
+                      bgcolor: 'transparent',
                     }}
                   >
-                    {!isEditing && (
-                      <IconButton
-                        size="small"
-                        onClick={handleEditToggle}
-                        aria-label="edit"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    )}
-                  </Box>
-
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      flexDirection: { xs: 'column', md: 'row' },
-                    }}
-                  >
-                    {/* Left: Avatar (stacked on mobile) */}
+                    {/* Edit / Save controls */}
                     <Box
                       sx={{
-                        width: { xs: '100%', md: 160 },
-                        position: 'relative',
+                        position: { xs: 'relative', md: 'relative' },
+                        top: { md: 12 },
+                        right: { md: 12 },
+                        zIndex: 30,
                         display: 'flex',
-                        justifyContent: { xs: 'center', md: 'flex-start' },
-                        mb: { xs: 2, md: 0 },
+                        justifyContent: 'flex-end',
+                        mb: { xs: 1, md: 0 },
                       }}
                     >
-                      <Avatar
-                        src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-                        sx={{
-                          width: { xs: 96, md: 120 },
-                          height: { xs: 96, md: 120 },
-                          position: { xs: 'static', md: 'absolute' },
-                          left: { md: 8 },
-                          top: { md: 25 },
-                          boxShadow: 2,
-                        }}
-                      />
+                      {!isEditing && (
+                        <IconButton
+                          size="small"
+                          onClick={handleEditToggle}
+                          aria-label="edit"
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      )}
                     </Box>
-
-                    {/* Right: Details */}
-                    <Box sx={{ flex: 1, pl: { xs: 0, md: 6 }, width: '100%' }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        flexDirection: { xs: 'column', md: 'row' },
+                      }}
+                    >
+                      {/* Left: Avatar */}
                       <Box
                         sx={{
-                          mb: 2,
+                          width: { xs: '100%', md: 160 },
+                          position: 'relative',
                           display: 'flex',
-                          flexDirection: 'column',
-                          gap: 1,
+                          justifyContent: { xs: 'center', md: 'flex-start' },
+                          mb: { xs: 2, md: 0 },
                         }}
                       >
+                        <Avatar
+                          src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                          sx={{
+                            width: { xs: 96, md: 120 },
+                            height: { xs: 96, md: 120 },
+                            position: { xs: 'static', md: 'absolute' },
+                            left: { md: 8 },
+                            top: { md: 25 },
+                            boxShadow: 2,
+                          }}
+                        />
+                      </Box>
+                      {/* Right: Details (all except license number) */}
+                      <Box
+                        sx={{ flex: 1, pl: { xs: 0, md: 6 }, width: '100%' }}
+                      >
+                        {/* First Name, Last Name, Contact, Email, Address, User Type, Username, Password, Error, Save/Cancel */}
                         {isEditing ? (
                           <Box
                             sx={{
@@ -507,7 +554,6 @@ export default function DriverSettings() {
                               value={draft.firstName || ''}
                               onChange={handleChange}
                               size="small"
-                              fullWidth={false}
                               required
                             />
                             <TextField
@@ -516,7 +562,6 @@ export default function DriverSettings() {
                               value={draft.lastName || ''}
                               onChange={handleChange}
                               size="small"
-                              fullWidth={false}
                               required
                             />
                           </Box>
@@ -528,7 +573,6 @@ export default function DriverSettings() {
                             </span>
                           </Typography>
                         )}
-
                         {!isEditing && (
                           <Typography sx={{ fontWeight: 700 }}>
                             Last Name:{' '}
@@ -537,7 +581,6 @@ export default function DriverSettings() {
                             </span>
                           </Typography>
                         )}
-
                         {isEditing ? (
                           <TextField
                             label="Contact Number"
@@ -555,7 +598,6 @@ export default function DriverSettings() {
                             </span>
                           </Typography>
                         )}
-
                         {isEditing ? (
                           <TextField
                             label="Email"
@@ -575,27 +617,6 @@ export default function DriverSettings() {
                             </span>
                           </Typography>
                         )}
-
-                        {isEditing ? (
-                          <TextField
-                            label="License Number"
-                            name="licenseNumber"
-                            value={draft.licenseNumber || ''}
-                            onChange={handleChange}
-                            size="small"
-                            sx={{ width: { xs: '100%', md: '70%' } }}
-                            required
-                            placeholder="e.g., K01-17-002807"
-                          />
-                        ) : (
-                          <Typography sx={{ fontWeight: 700 }}>
-                            License Number:{' '}
-                            <span style={{ fontWeight: 400 }}>
-                              {profile.licenseNumber || 'N/A'}
-                            </span>
-                          </Typography>
-                        )}
-
                         {isEditing ? (
                           <TextField
                             label="Address"
@@ -616,7 +637,6 @@ export default function DriverSettings() {
                             </span>
                           </Typography>
                         )}
-
                         {!isEditing && (
                           <Typography sx={{ fontWeight: 700 }}>
                             User Type:{' '}
@@ -630,142 +650,232 @@ export default function DriverSettings() {
                             </span>
                           </Typography>
                         )}
-                      </Box>
-
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 2,
-                          width: { xs: '100%', md: '70%' },
-                        }}
-                      >
+                        {/* Add gap between User Type and Username */}
+                        <Box sx={{ mt: 2 }} />
                         <Box
                           sx={{
                             display: 'flex',
-                            alignItems: 'center',
-                            bgcolor: '#e9e9e9',
-                            borderRadius: 4,
-                            p: 1.2,
+                            flexDirection: 'column',
+                            gap: 2,
+                            width: { xs: '100%', md: '70%' },
                           }}
                         >
-                          {isEditing ? (
-                            <TextField
-                              label="Username"
-                              name="username"
-                              value={draft.username || ''}
-                              onChange={handleChange}
-                              size="small"
-                              sx={{ flex: 1, background: 'transparent' }}
-                              fullWidth={true}
-                              required
-                            />
-                          ) : (
-                            <Typography sx={{ flex: 1, pl: 2 }}>
-                              <strong>Username:</strong>{' '}
-                              {profile.username || 'N/A'}
-                            </Typography>
-                          )}
-                        </Box>
-
-                        {isEditing && (
-                          <Box
-                            sx={{
-                              mt: 2,
-                              p: 2,
-                              bgcolor: '#f5f5f5',
-                              borderRadius: 2,
-                            }}
-                          >
-                            <Typography
-                              variant="subtitle2"
-                              sx={{ mb: 2, fontWeight: 600 }}
-                            >
-                              Change Password (Optional)
-                            </Typography>
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 2,
-                              }}
-                            >
-                              <TextField
-                                label="Current Password"
-                                type="password"
-                                value={passwordData.currentPassword}
-                                onChange={handlePasswordChange}
-                                name="currentPassword"
-                                size="small"
-                                fullWidth
-                              />
-                              <TextField
-                                label="New Password"
-                                type="password"
-                                value={passwordData.newPassword}
-                                onChange={handlePasswordChange}
-                                name="newPassword"
-                                size="small"
-                                fullWidth
-                                helperText="Leave blank to keep current password"
-                              />
-                              <TextField
-                                label="Confirm New Password"
-                                type="password"
-                                value={passwordData.confirmPassword}
-                                onChange={handlePasswordChange}
-                                name="confirmPassword"
-                                size="small"
-                                fullWidth
-                              />
-                            </Box>
-                          </Box>
-                        )}
-
-                        {error && (
-                          <Alert severity="error" sx={{ mt: 2 }}>
-                            {error}
-                          </Alert>
-                        )}
-
-                        {isEditing && (
                           <Box
                             sx={{
                               display: 'flex',
-                              flexDirection: { xs: 'column', md: 'row' },
-                              gap: 1,
-                              width: '100%',
-                              mt: 2,
+                              alignItems: 'center',
+                              bgcolor: '#e9e9e9',
+                              borderRadius: 4,
+                              p: 1.2,
                             }}
                           >
-                            <Button
-                              variant="contained"
-                              color="primary"
-                              size="small"
-                              startIcon={<SaveIcon />}
-                              onClick={handleSaveClick}
-                              sx={{ width: { xs: '100%', md: '100%' } }}
-                            >
-                              Save Changes
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              color="inherit"
-                              size="small"
-                              startIcon={<CloseIcon />}
-                              onClick={handleCancel}
-                              sx={{ width: { xs: '100%', md: '100%' } }}
-                            >
-                              Cancel
-                            </Button>
+                            {isEditing ? (
+                              <TextField
+                                label="Username"
+                                name="username"
+                                value={draft.username || ''}
+                                onChange={handleChange}
+                                size="small"
+                                sx={{ flex: 1, background: 'transparent' }}
+                                fullWidth
+                                required
+                              />
+                            ) : (
+                              <Typography sx={{ flex: 1, pl: 2 }}>
+                                <strong>Username:</strong>{' '}
+                                {profile.username || 'N/A'}
+                              </Typography>
+                            )}
                           </Box>
-                        )}
+                          {isEditing && (
+                            <Box
+                              sx={{
+                                mt: 2,
+                                p: 2,
+                                bgcolor: '#f5f5f5',
+                                borderRadius: 2,
+                              }}
+                            >
+                              <Typography
+                                variant="subtitle2"
+                                sx={{ mb: 2, fontWeight: 600 }}
+                              >
+                                Change Password (Optional)
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 2,
+                                }}
+                              >
+                                <TextField
+                                  label="Current Password"
+                                  type="password"
+                                  value={passwordData.currentPassword}
+                                  onChange={handlePasswordChange}
+                                  name="currentPassword"
+                                  size="small"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="New Password"
+                                  type="password"
+                                  value={passwordData.newPassword}
+                                  onChange={handlePasswordChange}
+                                  name="newPassword"
+                                  size="small"
+                                  fullWidth
+                                  helperText="Leave blank to keep current password"
+                                />
+                                <TextField
+                                  label="Confirm New Password"
+                                  type="password"
+                                  value={passwordData.confirmPassword}
+                                  onChange={handlePasswordChange}
+                                  name="confirmPassword"
+                                  size="small"
+                                  fullWidth
+                                />
+                              </Box>
+                            </Box>
+                          )}
+                          {error && (
+                            <Alert severity="error" sx={{ mt: 2 }}>
+                              {error}
+                            </Alert>
+                          )}
+                          {isEditing && (
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: { xs: 'column', md: 'row' },
+                                gap: 1,
+                                width: '100%',
+                                mt: 2,
+                              }}
+                            >
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                size="small"
+                                startIcon={<SaveIcon />}
+                                onClick={handleSaveClick}
+                                sx={{ width: { xs: '100%', md: '100%' } }}
+                              >
+                                Save Changes
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                color="inherit"
+                                size="small"
+                                startIcon={<CloseIcon />}
+                                onClick={handleCancel}
+                                sx={{ width: { xs: '100%', md: '100%' } }}
+                              >
+                                Cancel
+                              </Button>
+                            </Box>
+                          )}
+                        </Box>
                       </Box>
                     </Box>
                   </Box>
                 </Box>
               </Box>
-            </Box>
+            )}
+            {activeTab === 1 && (
+              <Box
+                sx={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                  mt: 2,
+                }}
+              >
+                {/* License Tab Content */}
+                <Box
+                  sx={{
+                    width: '100%',
+                    minWidth: '100%',
+                    maxWidth: 900,
+                    bgcolor: '#ffffff',
+                    borderRadius: 2,
+                    p: 2,
+                    boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
+                    border: '2px solid #e6e6e6',
+                    position: 'relative',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      borderRadius: '18px',
+                      p: 3,
+                      position: 'relative',
+                      overflow: 'hidden',
+                      bgcolor: 'transparent',
+                      display: 'flex',
+                      flexDirection: { xs: 'column', md: 'row' },
+                      gap: 4,
+                      minHeight: '230px',
+                    }}
+                  >
+                    {/* License Details */}
+                    <Box
+                      sx={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                      }}
+                    >
+                      <Typography sx={{ fontWeight: 700 }}>
+                        License Number:{' '}
+                        <span style={{ fontWeight: 400 }}>
+                          {profile.licenseNumber || 'N/A'}
+                        </span>
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        Restrictions:{' '}
+                        <span style={{ fontWeight: 400 }}>
+                          {profile.licenseRestrictions || 'N/A'}
+                        </span>
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        Expiry Date:{' '}
+                        <span style={{ fontWeight: 400 }}>
+                          {profile.licenseExpiration || 'N/A'}
+                        </span>
+                      </Typography>
+                    </Box>
+                    {/* License Image Placeholder */}
+                    <Box
+                      sx={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 2,
+                      }}
+                    >
+                      <Box sx={{ position: 'relative' }}>
+                        <Avatar
+                          src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                          sx={{
+                            width: 120,
+                            height: 120,
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                            objectFit: 'contain',
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+            )}
           </Box>
         </Box>
       </Box>

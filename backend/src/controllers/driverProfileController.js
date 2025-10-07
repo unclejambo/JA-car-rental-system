@@ -1,5 +1,5 @@
-import prisma from '../config/prisma.js';
-import bcrypt from 'bcryptjs';
+import prisma from "../config/prisma.js";
+import bcrypt from "bcryptjs";
 
 /**
  * Get driver profile information - SIMPLIFIED VERSION
@@ -7,34 +7,34 @@ import bcrypt from 'bcryptjs';
 export const getDriverProfile = async (req, res) => {
   try {
     const driverId = parseInt(req.user.sub);
-    console.log('Driver profile request - driverId:', driverId);
-    
+    console.log("Driver profile request - driverId:", driverId);
+
     if (isNaN(driverId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid driver ID'
+        message: "Invalid driver ID",
       });
     }
-    
+
     // Get driver basic info only - NO INCLUDE OR SELECT CONFLICTS
     const driver = await prisma.driver.findUnique({
-      where: { 
-        drivers_id: driverId 
-      }
+      where: {
+        drivers_id: driverId,
+      },
     });
-    
+
     if (!driver) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Driver not found' 
+      return res.status(404).json({
+        success: false,
+        message: "Driver not found",
       });
     }
-    
+
     // Get license info separately to avoid conflicts
     const license = await prisma.driverLicense.findUnique({
       where: {
-        driver_license_no: driver.driver_license_no
-      }
+        driver_license_no: driver.driver_license_no,
+      },
     });
 
     // Format response to match frontend expectations
@@ -47,7 +47,7 @@ export const getDriverProfile = async (req, res) => {
       email: driver.email,
       username: driver.username,
       license_number: driver.driver_license_no,
-      user_type: 'driver',
+      user_type: "driver",
       status: driver.status,
       license_expiry: license?.expiry_date,
       license_restrictions: license?.restrictions,
@@ -55,13 +55,13 @@ export const getDriverProfile = async (req, res) => {
 
     res.json({
       success: true,
-      data: formattedDriver
+      data: formattedDriver,
     });
   } catch (error) {
-    console.error('Error fetching driver profile:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch profile' 
+    console.error("Error fetching driver profile:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch profile",
     });
   }
 };
@@ -72,54 +72,58 @@ export const getDriverProfile = async (req, res) => {
 export const updateDriverProfile = async (req, res) => {
   try {
     const driverId = parseInt(req.user.sub); // From JWT token middleware - convert to number
-    const { 
-      first_name, 
-      last_name, 
+    const {
+      first_name,
+      last_name,
       address,
-      contact_no, 
-      email, 
-      username, 
+      contact_no,
+      email,
+      username,
       license_number,
-      password, 
-      currentPassword 
+      password,
+      currentPassword,
     } = req.body;
 
     // Validate required fields
     if (!first_name || !last_name || !email || !username || !license_number) {
       return res.status(400).json({
         success: false,
-        message: 'First name, last name, email, username, and license number are required'
+        message:
+          "First name, last name, email, username, and license number are required",
       });
     }
 
     // Get current driver data
     const currentDriver = await prisma.driver.findUnique({
-      where: { drivers_id: driverId }
+      where: { drivers_id: driverId },
     });
 
     if (!currentDriver) {
       return res.status(404).json({
         success: false,
-        message: 'Driver not found'
+        message: "Driver not found",
       });
     }
 
     // If password is being changed, validate current password
     let hashedPassword = currentDriver.password;
-    if (password && password.trim() !== '') {
+    if (password && password.trim() !== "") {
       if (!currentPassword) {
         return res.status(400).json({
           success: false,
-          message: 'Current password is required to change password'
+          message: "Current password is required to change password",
         });
       }
 
       // Verify current password
-      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, currentDriver.password);
+      const isCurrentPasswordValid = await bcrypt.compare(
+        currentPassword,
+        currentDriver.password
+      );
       if (!isCurrentPasswordValid) {
         return res.status(400).json({
           success: false,
-          message: 'Current password is incorrect'
+          message: "Current password is incorrect",
         });
       }
 
@@ -133,33 +137,32 @@ export const updateDriverProfile = async (req, res) => {
         AND: [
           { drivers_id: { not: driverId } }, // Exclude current driver
           {
-            OR: [
-              { email: email },
-              { username: username }
-            ]
-          }
-        ]
-      }
+            OR: [{ email: email }, { username: username }],
+          },
+        ],
+      },
     });
 
     if (existingDriver) {
-      const field = existingDriver.email === email ? 'email' : 'username';
+      const field = existingDriver.email === email ? "email" : "username";
       return res.status(400).json({
         success: false,
-        message: `${field.charAt(0).toUpperCase() + field.slice(1)} is already taken`
+        message: `${
+          field.charAt(0).toUpperCase() + field.slice(1)
+        } is already taken`,
       });
     }
 
     // Check if license number is being changed and if it exists
     if (license_number !== currentDriver.driver_license_no) {
       const licenseExists = await prisma.driverLicense.findUnique({
-        where: { driver_license_no: license_number }
+        where: { driver_license_no: license_number },
       });
 
       if (!licenseExists) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid license number. License not found in system.'
+          message: "Invalid license number. License not found in system.",
         });
       }
     }
@@ -192,10 +195,10 @@ export const updateDriverProfile = async (req, res) => {
             driver_license_no: true,
             expiry_date: true,
             restrictions: true,
-          }
+          },
         },
         // Don't return password
-      }
+      },
     });
 
     // Format response to match frontend expectations
@@ -208,7 +211,7 @@ export const updateDriverProfile = async (req, res) => {
       email: updatedDriver.email,
       username: updatedDriver.username,
       license_number: updatedDriver.driver_license_no,
-      user_type: 'driver',
+      user_type: "driver",
       status: updatedDriver.status,
       license_expiry: updatedDriver.driver_license?.expiry_date,
       license_restrictions: updatedDriver.driver_license?.restrictions,
@@ -216,24 +219,26 @@ export const updateDriverProfile = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Profile updated successfully',
-      data: formattedDriver
+      message: "Profile updated successfully",
+      data: formattedDriver,
     });
   } catch (error) {
-    console.error('Error updating driver profile:', error);
-    
+    console.error("Error updating driver profile:", error);
+
     // Handle Prisma unique constraint errors
-    if (error.code === 'P2002') {
-      const field = error.meta?.target?.[0] || 'field';
+    if (error.code === "P2002") {
+      const field = error.meta?.target?.[0] || "field";
       return res.status(400).json({
         success: false,
-        message: `${field.charAt(0).toUpperCase() + field.slice(1)} is already taken`
+        message: `${
+          field.charAt(0).toUpperCase() + field.slice(1)
+        } is already taken`,
       });
     }
-    
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to update profile' 
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to update profile",
     });
   }
 };
@@ -249,55 +254,58 @@ export const changeDriverPassword = async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Both current and new passwords are required'
+        message: "Both current and new passwords are required",
       });
     }
 
     if (newPassword.length < 6) {
       return res.status(400).json({
         success: false,
-        message: 'New password must be at least 6 characters long'
+        message: "New password must be at least 6 characters long",
       });
     }
 
     // Get current driver
     const driver = await prisma.driver.findUnique({
-      where: { drivers_id: driverId }
+      where: { drivers_id: driverId },
     });
 
     if (!driver) {
       return res.status(404).json({
         success: false,
-        message: 'Driver not found'
+        message: "Driver not found",
       });
     }
 
     // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, driver.password);
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      driver.password
+    );
     if (!isCurrentPasswordValid) {
       return res.status(400).json({
         success: false,
-        message: 'Current password is incorrect'
+        message: "Current password is incorrect",
       });
     }
 
     // Hash and update new password
     const hashedPassword = await bcrypt.hash(newPassword, 12);
-    
+
     await prisma.driver.update({
       where: { drivers_id: driverId },
-      data: { password: hashedPassword }
+      data: { password: hashedPassword },
     });
 
     res.json({
       success: true,
-      message: 'Password changed successfully'
+      message: "Password changed successfully",
     });
   } catch (error) {
-    console.error('Error changing driver password:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to change password' 
+    console.error("Error changing driver password:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to change password",
     });
   }
 };

@@ -2,7 +2,7 @@ import prisma from "../config/prisma.js";
 import bcrypt from "bcryptjs";
 
 /**
- * Get driver profile information - SIMPLIFIED VERSION
+ * Get driver profile information
  */
 export const getDriverProfile = async (req, res) => {
   try {
@@ -16,11 +16,9 @@ export const getDriverProfile = async (req, res) => {
       });
     }
 
-    // Get driver basic info only - NO INCLUDE OR SELECT CONFLICTS
+    // Get driver info
     const driver = await prisma.driver.findUnique({
-      where: {
-        drivers_id: driverId,
-      },
+      where: { drivers_id: driverId },
     });
 
     if (!driver) {
@@ -30,14 +28,9 @@ export const getDriverProfile = async (req, res) => {
       });
     }
 
-    // Get license info separately to avoid conflicts
     const license = await prisma.driverLicense.findUnique({
-      where: {
-        driver_license_no: driver.driver_license_no,
-      },
     });
 
-    // Format response to match frontend expectations
     const formattedDriver = {
       drivers_id: driver.drivers_id,
       first_name: driver.first_name,
@@ -71,7 +64,6 @@ export const getDriverProfile = async (req, res) => {
  */
 export const updateDriverProfile = async (req, res) => {
   try {
-    const driverId = parseInt(req.user.sub); // From JWT token middleware - convert to number
     const {
       first_name,
       last_name,
@@ -82,6 +74,8 @@ export const updateDriverProfile = async (req, res) => {
       license_number,
       password,
       currentPassword,
+      license_restrictions,
+      license_expiry,
     } = req.body;
 
     // Validate required fields
@@ -93,7 +87,7 @@ export const updateDriverProfile = async (req, res) => {
       });
     }
 
-    // Get current driver data
+    // Get current driver
     const currentDriver = await prisma.driver.findUnique({
       where: { drivers_id: driverId },
     });
@@ -105,7 +99,7 @@ export const updateDriverProfile = async (req, res) => {
       });
     }
 
-    // If password is being changed, validate current password
+    // Handle password change
     let hashedPassword = currentDriver.password;
     if (password && password.trim() !== "") {
       if (!currentPassword) {
@@ -115,7 +109,6 @@ export const updateDriverProfile = async (req, res) => {
         });
       }
 
-      // Verify current password
       const isCurrentPasswordValid = await bcrypt.compare(
         currentPassword,
         currentDriver.password
@@ -127,15 +120,13 @@ export const updateDriverProfile = async (req, res) => {
         });
       }
 
-      // Hash new password
       hashedPassword = await bcrypt.hash(password, 12);
     }
 
-    // Check if email or username is already taken by another driver
+    // Check for duplicate email/username
     const existingDriver = await prisma.driver.findFirst({
       where: {
         AND: [
-          { drivers_id: { not: driverId } }, // Exclude current driver
           {
             OR: [{ email: email }, { username: username }],
           },
@@ -157,17 +148,17 @@ export const updateDriverProfile = async (req, res) => {
     if (license_number !== currentDriver.driver_license_no) {
       const licenseExists = await prisma.driverLicense.findUnique({
         where: { driver_license_no: license_number },
+    // Ensure license exists
+    const licenseRecord = await prisma.driverLicense.findUnique({
+      where: { driver_license_no: license_number },
+    });
+    if (!licenseRecord) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid license number. License not found in system.",
       });
-
-      if (!licenseExists) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid license number. License not found in system.",
-        });
-      }
     }
 
-    // Update driver profile
     const updatedDriver = await prisma.driver.update({
       where: { drivers_id: driverId },
       data: {
@@ -180,28 +171,29 @@ export const updateDriverProfile = async (req, res) => {
         driver_license_no: license_number,
         password: hashedPassword,
       },
-      select: {
-        drivers_id: true,
-        first_name: true,
-        last_name: true,
-        address: true,
-        contact_no: true,
-        email: true,
-        username: true,
-        driver_license_no: true,
-        status: true,
-        driver_license: {
-          select: {
-            driver_license_no: true,
-            expiry_date: true,
-            restrictions: true,
-          },
-        },
-        // Don't return password
-      },
     });
 
-    // Format response to match frontend expectations
+    // ✅ Update driver license info (restrictions + expiry)
+    if (license_restrictions !== undefined || license_expiry !== undefined) {
+      await prisma.driverLicense.update({
+        where: { driver_license_no: license_number },
+        data: {
+          restrictions:
+            license_restrictions !== undefined
+              ? license_restrictions
+              : licenseRecord.restrictions,
+          expiry_date: license_expiry
+            ? new Date(license_expiry)
+            : licenseRecord.expiry_date,
+        },
+      });
+    }
+
+    // ✅ Re-fetch latest license info
+    const refreshedLicense = await prisma.driverLicense.findUnique({
+      where: { driver_license_no: license_number },
+    });
+
     const formattedDriver = {
       drivers_id: updatedDriver.drivers_id,
       first_name: updatedDriver.first_name,
@@ -213,8 +205,8 @@ export const updateDriverProfile = async (req, res) => {
       license_number: updatedDriver.driver_license_no,
       user_type: "driver",
       status: updatedDriver.status,
-      license_expiry: updatedDriver.driver_license?.expiry_date,
-      license_restrictions: updatedDriver.driver_license?.restrictions,
+      license_expiry: refreshedLicense?.expiry_date,
+      license_restrictions: refreshedLicense?.restrictions,
     };
 
     res.json({
@@ -225,7 +217,6 @@ export const updateDriverProfile = async (req, res) => {
   } catch (error) {
     console.error("Error updating driver profile:", error);
 
-    // Handle Prisma unique constraint errors
     if (error.code === "P2002") {
       const field = error.meta?.target?.[0] || "field";
       return res.status(400).json({
@@ -244,7 +235,6 @@ export const updateDriverProfile = async (req, res) => {
 };
 
 /**
- * Change driver password (alternative endpoint)
  */
 export const changeDriverPassword = async (req, res) => {
   try {

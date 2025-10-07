@@ -52,10 +52,7 @@ export default function SaveCancelModal({ open, onClose, onConfirm, type }) {
             variant="contained"
             onClick={onConfirm}
             sx={{
-              backgroundColor: '#d32f2f',
-              '&:hover': {
-                backgroundColor: '#b71c1c',
-              },
+              backgroundColor: '##0000FF',
             }}
           >
             Yes

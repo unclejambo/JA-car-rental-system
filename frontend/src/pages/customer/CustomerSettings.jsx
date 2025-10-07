@@ -10,6 +10,8 @@ import {
   InputAdornment,
   Tabs,
   Tab,
+  Snackbar,
+  Alert, // ✅ Added
 } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import BadgeIcon from '@mui/icons-material/Badge';
@@ -24,19 +26,22 @@ import Loading from '../../ui/components/Loading';
 import { HiCog8Tooth } from 'react-icons/hi2';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import { useCustomerStore } from '../../store/customer';
-import SaveCancelModal from '../../ui/components/modal/SaveCancelModal'; // adjust path as needed
+import SaveCancelModal from '../../ui/components/modal/SaveCancelModal';
 import { updateLicense } from '../../store/license';
 import ConfirmationModal from '../../ui/components/modal/ConfirmationModal';
 import { FormControlLabel, Checkbox } from '@mui/material';
 
 export default function CustomerSettings() {
+  // ✅ Added Snackbar state
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
   // License save loading state
   const [savingLicense, setSavingLicense] = useState(false);
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [saving, setSaving] = useState(false);
   function getChanges() {
-    // Example: compare draft and profile, return array of changes
     const changes = [];
     Object.keys(profile).forEach((key) => {
       if (draft[key] !== profile[key]) {
@@ -45,12 +50,11 @@ export default function CustomerSettings() {
     });
     return changes;
   }
+
   function handleConfirmSave() {
     setSaving(true);
     let user = JSON.parse(localStorage.getItem('userInfo'));
     const customerId = user?.id;
-    // Only send changed fields
-    // Map frontend keys to backend keys
     const fieldMap = {
       firstName: 'first_name',
       lastName: 'last_name',
@@ -86,6 +90,9 @@ export default function CustomerSettings() {
         });
         setIsEditing(false);
         setShowConfirmModal(false);
+        // ✅ Added success prompt
+        setSuccessMessage('Profile updated successfully!');
+        setShowSuccess(true);
       })
       .catch((err) => {
         console.error('Failed to update customer:', err);
@@ -94,11 +101,11 @@ export default function CustomerSettings() {
         setSaving(false);
       });
   }
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, _setLoading] = useState(true);
   const [error, _setError] = useState(null);
 
-  // Profile state
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
     firstName: '',
@@ -115,23 +122,19 @@ export default function CustomerSettings() {
   const [showPassword, setShowPassword] = useState(false);
   const [draft, setDraft] = useState(profile);
 
-  // Tabs (MUI)
   const [activeTab, setActiveTab] = useState(0);
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
 
-  // Modals
   const [openInfoSaveModal, setOpenInfoSaveModal] = useState(false);
   const [openInfoCancelModal, setOpenInfoCancelModal] = useState(false);
   const [openLicenseSaveModal, setOpenLicenseSaveModal] = useState(false);
   const [openLicenseCancelModal, setOpenLicenseCancelModal] = useState(false);
 
-  // Checkbox
   const [receiveUpdatesPhone, setReceiveUpdatesPhone] = useState(false);
   const [receiveUpdatesEmail, setReceiveUpdatesEmail] = useState(false);
 
-  // License state
   const [isEditingLicense, setIsEditingLicense] = useState(false);
   const [licenseNo, setLicenseNo] = useState('');
   const [licenseRestrictions, setLicenseRestrictions] = useState('');
@@ -144,7 +147,6 @@ export default function CustomerSettings() {
   const [draftLicenseImage, setDraftLicenseImage] = useState(null);
   const [openLicenseModal, setOpenLicenseModal] = useState(false);
 
-  // Store hook
   const { getCustomerById } = useCustomerStore();
 
   useEffect(() => {
@@ -154,9 +156,7 @@ export default function CustomerSettings() {
         _setLoading(true);
         _setError(null);
         const customer = await getCustomerById(user?.id);
-
         if (customer) {
-          // Defensive: handle if license fields are objects
           const licenseNo =
             typeof customer.driver_license_no === 'string'
               ? customer.driver_license_no
@@ -179,7 +179,6 @@ export default function CustomerSettings() {
           setLicenseRestrictions(licenseRestrictions);
           setLicenseExpiration(licenseExpiration);
           setLicenseImage(licenseImage);
-
           setProfile((prev) => ({
             ...prev,
             firstName: customer.first_name || '',
@@ -198,11 +197,9 @@ export default function CustomerSettings() {
         _setLoading(false);
       }
     };
-
     loadCustomer();
   }, [getCustomerById]);
 
-  // keep draft synced with profile
   useEffect(() => {
     setDraft(profile);
   }, [profile]);
@@ -237,19 +234,18 @@ export default function CustomerSettings() {
     setIsEditing(false);
     setOpenInfoCancelModal(false);
   }
+
   function handleLicenseSaveConfirm() {
-    // Map frontend license fields to backend
     const user = JSON.parse(localStorage.getItem('userInfo'));
     const customerId = user?.id;
     const changedLicenseFields = {};
     if (draftLicenseRestrictions !== licenseRestrictions)
       changedLicenseFields.restrictions = draftLicenseRestrictions;
     if (draftLicenseExpiration !== licenseExpiration) {
-      // Convert to ISO string for backend
       const isoDate = new Date(draftLicenseExpiration).toISOString();
       changedLicenseFields.expiry_date = isoDate;
     }
-    // Optionally handle license image upload here
+
     Promise.all([
       draftLicenseNo !== licenseNo
         ? useCustomerStore
@@ -264,11 +260,12 @@ export default function CustomerSettings() {
         setLicenseNo(draftLicenseNo);
         setLicenseRestrictions(draftLicenseRestrictions);
         setLicenseExpiration(draftLicenseExpiration);
-        if (draftLicenseImage) {
-          setLicenseImage(previewLicenseImage);
-        }
+        if (draftLicenseImage) setLicenseImage(previewLicenseImage);
         setIsEditingLicense(false);
         setOpenLicenseSaveModal(false);
+        // ✅ Added success prompt
+        setSuccessMessage('License information updated successfully!');
+        setShowSuccess(true);
       })
       .catch((err) => {
         console.error('Failed to update license info:', err);
@@ -313,7 +310,6 @@ export default function CustomerSettings() {
     );
   }
 
-  // Main render (not loading)
   return (
     <>
       <Box sx={{ display: 'flex' }}>
@@ -481,7 +477,7 @@ export default function CustomerSettings() {
                         sx={{
                           position: { xs: 'relative', md: 'relative' },
                           top: { md: 12 },
-                          right: { md: 12 },
+                          right: { md: 40 },
                           zIndex: 30,
                           display: 'flex',
                           justifyContent: 'flex-end',
@@ -542,7 +538,7 @@ export default function CustomerSettings() {
                               mb: 2,
                               display: 'flex',
                               flexDirection: 'column',
-                              gap: 0,
+                              gap: 1,
                             }}
                           >
                             {isEditing ? (
@@ -829,7 +825,7 @@ export default function CustomerSettings() {
                           sx={{
                             position: 'absolute',
                             top: 12,
-                            right: 12,
+                            right: 50,
                             backgroundColor: '#fff',
                             boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                             '&:hover': { backgroundColor: '#f5f5f5' },
@@ -895,9 +891,11 @@ export default function CustomerSettings() {
                             <Typography sx={{ fontWeight: 700 }}>
                               Expiration Date:{' '}
                               <span style={{ fontWeight: 400 }}>
-                                {typeof licenseExpiration === 'string'
-                                  ? licenseExpiration
-                                  : ''}
+                                {licenseExpiration
+                                  ? new Date(licenseExpiration)
+                                      .toISOString()
+                                      .split('T')[0]
+                                  : 'N/A'}
                               </span>
                             </Typography>
                           </>
@@ -1182,6 +1180,20 @@ export default function CustomerSettings() {
           </Box>
         </Box>
       </Modal>
+      <Snackbar
+        open={showSuccess}
+        autoHideDuration={4000}
+        onClose={() => setShowSuccess(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }} // ⬅️ moved to top-right
+      >
+        <Alert
+          onClose={() => setShowSuccess(false)}
+          severity="success"
+          sx={{ width: '100%' }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

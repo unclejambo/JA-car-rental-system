@@ -477,18 +477,25 @@ export default function CustomerSettings() {
                         sx={{
                           position: { xs: 'relative', md: 'relative' },
                           top: { md: 12 },
-                          right: { md: 40 },
+                          right: { md: 12 },
                           zIndex: 30,
                           display: 'flex',
                           justifyContent: 'flex-end',
+
                           mb: { xs: 1, md: 0 },
                         }}
                       >
                         {!isEditing && (
                           <IconButton
-                            size="small"
                             onClick={handleEditToggle}
-                            aria-label="edit"
+                            sx={{
+                              position: 'absolute',
+                              top: 10,
+                              right: 40,
+                              backgroundColor: '#fff',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                              '&:hover': { backgroundColor: '#f5f5f5' },
+                            }}
                           >
                             <EditIcon />
                           </IconButton>

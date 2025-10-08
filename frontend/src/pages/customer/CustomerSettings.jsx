@@ -785,7 +785,7 @@ export default function CustomerSettings() {
                                   startIcon={<SaveIcon />}
                                   onClick={() => setShowConfirmModal(true)}
                                 >
-                                  Save
+                                  Save Changes
                                 </Button>
                                 <Button
                                   variant="outlined"
@@ -986,7 +986,7 @@ export default function CustomerSettings() {
                             startIcon={<SaveIcon />}
                             onClick={() => setOpenLicenseSaveModal(true)}
                           >
-                            Save
+                            Save Changes
                           </Button>
                           <Button
                             variant="outlined"

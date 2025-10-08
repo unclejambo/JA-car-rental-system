@@ -951,7 +951,7 @@ export default function DriverSettings() {
                                 color="primary"
                                 size="small"
                                 startIcon={<SaveIcon />}
-                                onClick={() => setShowLicenseConfirmModal(true)}
+                                onClick={() => setShowConfirmModal(true)}
                                 sx={{ width: { xs: '100%', md: '100%' } }}
                               >
                                 Save Changes
@@ -1151,15 +1151,18 @@ export default function DriverSettings() {
                           display: 'flex',
                           justifyContent: 'center',
                           gap: 2,
-                          width: { xs: '100%', md: 'auto' },
+                          width: '30%',
                         }}
                       >
                         <Button
                           variant="contained"
-                          sx={{ backgroundColor: '#c10007' }}
+                          color="primary"
+                          size="small"
+                          startIcon={<SaveIcon />}
                           onClick={() => setShowLicenseConfirmModal(true)} // open confirm modal
+                          sx={{ width: { xs: '100%', md: '100%' } }}
                         >
-                          Save
+                          Save Changes
                         </Button>
 
                         <Button
@@ -1316,11 +1319,10 @@ export default function DriverSettings() {
         open={showLicenseCancelModal}
         onClose={() => setShowLicenseCancelModal(false)}
         onConfirm={() => {
-          setIsEditingLicense(false);
+          handleLicenseCancelConfirm();
           setShowLicenseCancelModal(false);
         }}
-        title="Discard Changes?"
-        message="Are you sure you want to discard your changes?"
+        type="cancel"
       />
 
       {/* Avatar modal */}

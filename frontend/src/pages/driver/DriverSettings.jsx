@@ -380,19 +380,19 @@ export default function DriverSettings() {
 
     try {
       const updateData = {
-        license_number: licenseNumber,
-        license_restrictions: licenseRestrictions,
-        license_expiry: licenseExpiration,
-        first_name: profile.firstName,
-        last_name: profile.lastName,
-        contact_no: profile.contactNo,
-        email: profile.email,
-        username: profile.username,
-        address: profile.address,
+        restrictions: draftLicenseRestrictions || licenseRestrictions,
+        expiry_date: draftLicenseExpiration || licenseExpiration,
+        dl_img_url: licenseImage || previewLicenseImage || '',
       };
 
+      console.log('🚀 Sending to backend:', {
+        restrictions: licenseRestrictions,
+        expiry_date: licenseExpiration,
+        dl_img_url: licenseImage || previewLicenseImage || '',
+      });
+
       const response = await authenticatedFetch(
-        `${API_BASE}/api/driver-profile`,
+        `${API_BASE}/api/driver-license/${licenseNumber}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -402,45 +402,29 @@ export default function DriverSettings() {
 
       const result = await response.json();
 
-      if (response.ok && result.success) {
-        const updated = result.data || {};
+      if (response.ok) {
+        console.log('✅ License updated:', result);
 
-        // ✅ Update the local license-related states immediately
-        setLicenseNumber(updated.license_number || licenseNumber);
-        setLicenseRestrictions(
-          updated.license_restrictions || licenseRestrictions
-        );
-        setLicenseExpiration(updated.license_expiry || licenseExpiration);
-        console.log('Updated from backend:', updated);
-        console.log(
-          'After save - restrictions state:',
-          updated.license_restrictions
-        );
+        // ✅ Update local state
+        setLicenseRestrictions(updateData.restrictions);
+        setLicenseExpiration(updateData.expiry_date);
+        setLicenseImage(updateData.dl_img_url);
 
         // ✅ Exit edit mode and close modals
         setIsEditingLicense(false);
         setShowLicenseConfirmModal(false);
         setShowLicenseCancelModal(false);
 
-        // ✅ Update the displayed profile (optional sync)
-        setProfile((prev) => ({
-          ...prev,
-          license_number: updated.license_number || prev.license_number,
-          license_restrictions:
-            updated.license_restrictions || prev.license_restrictions,
-          license_expiry: updated.license_expiry || prev.license_expiry,
-        }));
-
-        // ✅ Show success message
+        // ✅ Show success
         setSuccessMessage('License information updated successfully!');
         setShowSuccess(true);
       } else {
-        console.error('Failed to update license info:', result.message);
-        setError(result.message || 'Failed to update license info');
+        console.error('❌ Failed to update license:', result);
+        setError(result.error || 'Failed to update license');
       }
     } catch (error) {
-      console.error('Failed to update license info:', error);
-      setError('Failed to update license info');
+      console.error('❌ Error updating license:', error);
+      setError('Unexpected error updating license');
     } finally {
       setSaving(false);
     }
@@ -1041,8 +1025,15 @@ export default function DriverSettings() {
                           <TextField
                             label="License No"
                             value={draftLicenseNo}
-                            onChange={(e) => setDraftLicenseNo(e.target.value)}
                             fullWidth
+                            InputProps={{
+                              readOnly: true,
+                            }}
+                            sx={{
+                              '& .MuiInputBase-input.Mui-disabled': {
+                                WebkitTextFillColor: '#000', // ensure black text color
+                              },
+                            }}
                           />
                           <TextField
                             label="Restrictions"
@@ -1144,14 +1135,17 @@ export default function DriverSettings() {
                       <Box
                         sx={{
                           position: { xs: 'static', md: 'absolute' },
-                          mt: { xs: 3, md: 0 },
-                          bottom: { md: 10 },
+                          mt: { xs: 2, md: 0 },
+                          bottom: { md: 16 },
                           left: { md: '50%' },
                           transform: { md: 'translateX(-50%)' },
                           display: 'flex',
+                          flexDirection: { xs: 'column', sm: 'row' }, // stack on xs, side by side on sm+
                           justifyContent: 'center',
-                          gap: 2,
-                          width: '30%',
+                          alignItems: 'center',
+                          gap: { xs: 1.5, md: 2 },
+                          width: { xs: '80%', sm: 'auto' },
+                          px: { xs: 2, sm: 0 },
                         }}
                       >
                         <Button
@@ -1162,7 +1156,7 @@ export default function DriverSettings() {
                           onClick={() => setShowLicenseConfirmModal(true)} // open confirm modal
                           sx={{ width: { xs: '100%', md: '100%' } }}
                         >
-                          Save Changes
+                          Save
                         </Button>
 
                         <Button

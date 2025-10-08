@@ -62,6 +62,7 @@ app.use("/transactions", transactionRoutes);
 app.use("/api/admin-profile", adminProfileRoutes);
 app.use("/api/driver-profile", driverProfileRoutes);
 app.use("/api/driver-license", driverLicenseRoutes);
+app.use("/api/customer-license", driverLicenseRoutes);
 app.use("/analytics", analyticsRoutes);
 app.use("/cars/:carId/maintenance", maintenanceRoutes); // <--- added maintenance routes
 app.use("/manage-fees", manageFeesRoutes); // <--- added manage fees routes

@@ -30,6 +30,7 @@ import SaveCancelModal from '../../ui/components/modal/SaveCancelModal';
 import { updateLicense } from '../../store/license';
 import ConfirmationModal from '../../ui/components/modal/ConfirmationModal';
 import { FormControlLabel, Checkbox } from '@mui/material';
+import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
 
 export default function CustomerSettings() {
   // ✅ Added Snackbar state
@@ -50,6 +51,13 @@ export default function CustomerSettings() {
     });
     return changes;
   }
+
+  const API_BASE = getApiBase();
+  const authenticatedFetch = createAuthenticatedFetch(() => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userInfo');
+    window.location.href = '/login';
+  });
 
   function handleConfirmSave() {
     setSaving(true);
@@ -235,46 +243,50 @@ export default function CustomerSettings() {
     setOpenInfoCancelModal(false);
   }
 
-  function handleLicenseSaveConfirm() {
-    const user = JSON.parse(localStorage.getItem('userInfo'));
-    const customerId = user?.id;
-    const changedLicenseFields = {};
-    if (draftLicenseRestrictions !== licenseRestrictions)
-      changedLicenseFields.restrictions = draftLicenseRestrictions;
-    if (draftLicenseExpiration !== licenseExpiration) {
-      const isoDate = new Date(draftLicenseExpiration).toISOString();
-      changedLicenseFields.expiry_date = isoDate;
-    }
+  async function handleLicenseSaveConfirm() {
+    setSavingLicense(true);
 
-    Promise.all([
-      draftLicenseNo !== licenseNo
-        ? useCustomerStore
-            .getState()
-            .updateCustomer(customerId, { driver_license_no: draftLicenseNo })
-        : Promise.resolve(),
-      Object.keys(changedLicenseFields).length > 0
-        ? updateLicense(draftLicenseNo, changedLicenseFields)
-        : Promise.resolve(),
-    ])
-      .then(() => {
-        setLicenseNo(draftLicenseNo);
-        setLicenseRestrictions(draftLicenseRestrictions);
-        setLicenseExpiration(draftLicenseExpiration);
-        if (draftLicenseImage) setLicenseImage(previewLicenseImage);
+    try {
+      const updateData = {
+        restrictions: draftLicenseRestrictions,
+        expiry_date: draftLicenseExpiration,
+        dl_img_url: licenseImage || previewLicenseImage || '',
+      };
+
+      console.log('🚀 Sending to backend:', updateData);
+
+      const response = await fetch(
+        `http://localhost:3001/api/driver-license/${draftLicenseNo}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+          },
+          body: JSON.stringify(updateData),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log('✅ License updated:', result);
+        setLicenseRestrictions(updateData.restrictions);
+        setLicenseExpiration(updateData.expiry_date);
+        setLicenseImage(updateData.dl_img_url);
         setIsEditingLicense(false);
         setOpenLicenseSaveModal(false);
-        // ✅ Added success prompt
+        setOpenLicenseCancelModal(false);
         setSuccessMessage('License information updated successfully!');
         setShowSuccess(true);
-      })
-      .catch((err) => {
-        console.error('Failed to update license info:', err);
-        setIsEditingLicense(false);
-        setOpenLicenseSaveModal(false);
-      })
-      .finally(() => {
-        setSavingLicense(false);
-      });
+      } else {
+        console.error('❌ Failed to update license:', result);
+      }
+    } catch (error) {
+      console.error('❌ Error updating license:', error);
+    } finally {
+      setSavingLicense(false);
+    }
   }
 
   function handleLicenseCancelConfirm() {
@@ -855,10 +867,15 @@ export default function CustomerSettings() {
                             <TextField
                               label="License No"
                               value={draftLicenseNo}
-                              onChange={(e) =>
-                                setDraftLicenseNo(e.target.value)
-                              }
                               fullWidth
+                              InputProps={{
+                                readOnly: true,
+                              }}
+                              sx={{
+                                '& .MuiInputBase-input.Mui-disabled': {
+                                  WebkitTextFillColor: '#000', // ensure black text color
+                                },
+                              }}
                             />
                             <TextField
                               label="Restrictions"

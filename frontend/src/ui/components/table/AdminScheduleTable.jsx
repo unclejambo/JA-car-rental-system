@@ -203,7 +203,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       };
 
       // Show release button if today is start date and status is 'Confirmed'
-      if ('2025-08-19' === startDate && params.row.status === 'Confirmed') {
+      if (today === startDate && params.row.status === 'Confirmed') {
         return (
           <Button
             variant="contained"
@@ -264,7 +264,9 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
             <Button
               variant="contained"
               color="success"
-              onClick={() => {/* TODO: Implement GPS tracking */}}
+              onClick={() => {
+                /* TODO: Implement GPS tracking */
+              }}
               size="small"
               sx={{
                 borderRadius: '50%',

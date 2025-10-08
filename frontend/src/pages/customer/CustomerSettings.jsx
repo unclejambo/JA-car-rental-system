@@ -625,7 +625,7 @@ export default function CustomerSettings() {
                             {isEditing ? (
                               <TextField
                                 label="Contactnumber"
-                                name="contactnumber"
+                                name="contactNumber"
                                 value={draft.contactNumber}
                                 onChange={handleChange}
                                 size="small"

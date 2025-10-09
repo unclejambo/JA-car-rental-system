@@ -239,16 +239,18 @@ model VerificationCode {
 }
 
 model Return {
-  return_id    BigInt        @id @unique @default(autoincrement())
+  return_id    BigInt   @id @unique @default(autoincrement())
   booking_id   Int?
   damage_check String?
-  damage_img   String?       @db.VarChar
+  damage_img   String?  @db.VarChar
   equipment    String?
-  gas_level    BigInt?
+  gas_level    String?
   odometer     BigInt?
   total_fee    Int?
-  damage       damage_level? @default(No_Damage)
-  Booking      Booking?      @relation(fields: [booking_id], references: [booking_id], onDelete: NoAction, onUpdate: NoAction)
+  equip_others String?
+  isClean      Boolean? @default(true)
+  hasStain     Boolean? @default(false)
+  Booking      Booking? @relation(fields: [booking_id], references: [booking_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.

@@ -23,6 +23,7 @@ import waitlistRoutes from './routes/waitlistRoutes.js'; // <--- added waitlist 
 import manageFeesRoutes from './routes/manageFeesRoutes.js'; // <--- added manage fees routes
 import releaseRoutes from './routes/releaseRoute.js'; // <--- added release routes
 import releasePaymentRoutes from './routes/releasePaymentRoute.js'; // <--- added release payment routes
+import returnRoutes from './routes/returnRoutes.js'; // <--- added return routes
 import adminRoutes from './routes/adminRoutes.js'
 
 
@@ -66,6 +67,7 @@ app.use('/cars/:carId/maintenance', maintenanceRoutes); // <--- added maintenanc
 app.use('/manage-fees', manageFeesRoutes); // <--- added manage fees routes
 app.use('/releases', releaseRoutes); // <--- added release routes
 app.use('/release-payments', releasePaymentRoutes); // <--- added release payment routes
+app.use('/returns', returnRoutes); // <--- added return routes
 app.use('/admins', adminRoutes)
 
 // Error handling middleware

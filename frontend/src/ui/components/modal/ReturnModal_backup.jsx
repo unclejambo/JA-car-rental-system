@@ -3,8 +3,33 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Button,
+  DialogAct  // Handler functions
+  const handleInputChange = (e) => {
+    const { name,      const submitData = {
+        ...formData,
+        totalFees: total,
+        damageImageUrl: damageImageUrl,
+        paymentData: directPayment ? paymentData : null
+      };e, type, checked } = e.target;
+    let finalValue = value;
+    
+    // Handle boolean values for radio buttons
+    if (name === 'isClean') {
+      finalValue = value === 'true';
+    } else if (type === 'checkbox') {
+      finalValue = checked;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: finalValue
+    }));
+
+    // Show damage upload when major/minor is selected
+    if (name === 'damageStatus') {
+      setShowDamageUpload(value === 'major' || value === 'minor');
+    }
+  };on,
   TextField,
   RadioGroup,
   FormControlLabel,
@@ -38,12 +63,14 @@ export default function ReturnModal({ show, onClose, bookingId }) {
   const [selectedImage, setSelectedImage] = useState('');
   const [showDamageUpload, setShowDamageUpload] = useState(false);
   const [damageImageFile, setDamageImageFile] = useState(null);
+  const [damageImageUrl, setDamageImageUrl] = useState(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   const [formData, setFormData] = useState({
     gasLevel: 'High',
     odometer: '',
     damageStatus: 'noDamage',
+    damageDetails: '',
     equipmentStatus: 'complete',
     equip_others: '',
     isClean: true,
@@ -51,11 +78,6 @@ export default function ReturnModal({ show, onClose, bookingId }) {
   });
 
   const [releaseData, setReleaseData] = useState(null);
-
-  // Debug: Log when releaseData changes
-  useEffect(() => {
-    console.log('releaseData updated:', releaseData);
-  }, [releaseData]);
   const [calculatedFees, setCalculatedFees] = useState({
     gasLevelFee: 0,
     equipmentLossFee: 0,
@@ -77,32 +99,8 @@ export default function ReturnModal({ show, onClose, bookingId }) {
         try {
           setLoading(true);
           const response = await returnAPI.getReturnData(bookingId);
-          // Extract release data from the response structure
-          if (
-            response.booking &&
-            response.booking.releases &&
-            response.booking.releases.length > 0
-          ) {
-            const release = response.booking.releases[0];
-
-            // Debug: Log release data and image URLs
-            console.log('Release data found:', release);
-            console.log('Image URLs:', {
-              front_img: release.front_img,
-              back_img: release.back_img,
-              right_img: release.right_img,
-              left_img: release.left_img,
-            });
-
-            setReleaseData({
-              gas_level: release.gas_level,
-              equip_others: release.equip_others,
-              front_img: release.front_img,
-              back_img: release.back_img,
-              right_img: release.right_img,
-              left_img: release.left_img,
-            });
-          }
+          console.log('Return data response:', response);
+          setReleaseData(response.releaseData);
         } catch (err) {
           setError('Failed to load return data');
           console.error(err);
@@ -148,22 +146,18 @@ export default function ReturnModal({ show, onClose, bookingId }) {
   // Handler functions
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    let processedValue = value;
-
-    // Handle different input types
-    if (type === 'checkbox') {
-      processedValue = checked;
-    } else if (name === 'isClean') {
-      // Convert string boolean to actual boolean for isClean
-      processedValue = value === 'true';
-    } else {
-      processedValue = value;
+    let finalValue = value;
+    
+    // Handle boolean values for radio buttons
+    if (name === 'isClean') {
+      finalValue = value === 'true';
+    } else if (type === 'checkbox') {
+      finalValue = checked;
     }
 
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [name]: processedValue,
+      [name]: finalValue
     }));
 
     // Show damage upload when major/minor is selected
@@ -183,7 +177,8 @@ export default function ReturnModal({ show, onClose, bookingId }) {
       formDataUpload.append('damageImage', file);
       formDataUpload.append('damageType', formData.damageStatus);
 
-      await returnAPI.uploadDamageImage(bookingId, formDataUpload);
+      const response = await returnAPI.uploadDamageImage(bookingId, formDataUpload);
+      setDamageImageUrl(response.imagePath);
       setSuccess('Damage image uploaded successfully');
     } catch (err) {
       setError('Failed to upload damage image');
@@ -209,6 +204,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
       const submitData = {
         ...formData,
         totalFees: total,
+        damageImageUrl: damageImageUrl,
         paymentData: directPayment ? paymentData : null,
       };
 
@@ -238,7 +234,6 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     { label: 'Equipment Loss Fee', amount: calculatedFees.equipmentLossFee },
     { label: 'Damage Fee', amount: calculatedFees.damageFee },
     { label: 'Cleaning Fee', amount: calculatedFees.cleaningFee },
-    { label: 'Stain Removal Fee', amount: calculatedFees.stainRemovalFee },
   ].filter((fee) => fee.amount > 0);
 
   const total = calculatedFees.total;
@@ -355,59 +350,20 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                                 borderRadius: 1,
                                 overflow: 'hidden',
                                 position: 'relative',
-                                bgcolor: '#f5f5f5',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
                               }}
                               onClick={() =>
                                 handleImageClick(releaseData[imgKey])
                               }
                             >
-                              {releaseData[imgKey] &&
-                              releaseData[imgKey].trim() !== '' ? (
-                                <img
-                                  src={releaseData[imgKey]}
-                                  alt={imgKey.replace('_', ' ')}
-                                  style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover',
-                                  }}
-                                  onLoad={() =>
-                                    console.log(
-                                      `${imgKey} loaded successfully from:`,
-                                      releaseData[imgKey]
-                                    )
-                                  }
-                                  onError={(e) => {
-                                    console.error(
-                                      `Failed to load ${imgKey}:`,
-                                      releaseData[imgKey]
-                                    );
-                                    console.error('Image error:', e);
-                                    // Try to show a broken image indicator
-                                    e.target.style.display = 'none';
-                                    e.target.nextSibling.style.display =
-                                      'block';
-                                  }}
-                                />
-                              ) : null}
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  fontSize: 8,
-                                  color: 'text.secondary',
-                                  display:
-                                    releaseData[imgKey] &&
-                                    releaseData[imgKey].trim() !== ''
-                                      ? 'none'
-                                      : 'block',
-                                  textAlign: 'center',
+                              <img
+                                src={releaseData[imgKey]}
+                                alt={imgKey.replace('_', ' ')}
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'cover',
                                 }}
-                              >
-                                {releaseData[imgKey] ? 'Error' : 'No Image'}
-                              </Typography>
+                              />
                               <ZoomInIcon
                                 sx={{
                                   position: 'absolute',
@@ -422,22 +378,6 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                           ))}
                         </Stack>
                       </Box>
-                    )}
-
-                    {/* Show message when no release data */}
-                    {!releaseData && (
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          display: 'block',
-                          mb: 1,
-                          color: 'warning.main',
-                          fontStyle: 'italic',
-                        }}
-                      >
-                        No release data available. Please ensure the car has
-                        been released first.
-                      </Typography>
                     )}
 
                     <RadioGroup
@@ -538,36 +478,36 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                     <RadioGroup
                       row
                       name="isClean"
-                      value={formData.isClean}
+                      value={formData.isClean.toString()}
                       onChange={handleInputChange}
                     >
                       <FormControlLabel
-                        value={true}
+                        value="true"
                         control={<Radio />}
                         label="Yes"
                       />
                       <FormControlLabel
-                        value={false}
+                        value="false"
                         control={<Radio />}
                         label="No"
                       />
-                      {!formData.isClean && (
-                        <Box>
-                          <FormGroup>
-                            <FormControlLabel
-                              control={
-                                <Checkbox
-                                  name="hasStain"
-                                  checked={formData.hasStain}
-                                  onChange={handleInputChange}
-                                />
-                              }
-                              label="Stain"
-                            />
-                          </FormGroup>
-                        </Box>
-                      )}
                     </RadioGroup>
+                    {formData.isClean === false && (
+                      <Box sx={{ mt: 1 }}>
+                        <FormGroup>
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                name="hasStain"
+                                checked={formData.hasStain}
+                                onChange={handleInputChange}
+                              />
+                            }
+                            label="Stain"
+                          />
+                        </FormGroup>
+                      </Box>
+                    )}
                   </Box>
 
                   {isMobile && (

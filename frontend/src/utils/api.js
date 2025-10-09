@@ -60,3 +60,45 @@ export const getApiBase = () => {
     'http://localhost:3001'
   );
 };
+
+// Return API functions
+export const returnAPI = {
+  // Get return data for a booking
+  getReturnData: async (bookingId, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/returns/${bookingId}`);
+    return await response.json();
+  },
+  
+  // Calculate return fees
+  calculateFees: async (bookingId, formData, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/returns/${bookingId}/calculate-fees`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
+    return await response.json();
+  },
+  
+  // Upload damage image
+  uploadDamageImage: async (bookingId, formData, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/returns/${bookingId}/upload-damage-image`, {
+      method: 'POST',
+      body: formData // FormData object
+    });
+    return await response.json();
+  },
+  
+  // Submit return
+  submitReturn: async (bookingId, data, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/returns/${bookingId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return await response.json();
+  }
+};

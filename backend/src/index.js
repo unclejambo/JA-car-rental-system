@@ -17,6 +17,7 @@ import refundRoutes from "./routes/refundRoute.js";
 import transactionRoutes from "./routes/transactionRoutes.js";
 import adminProfileRoutes from "./routes/adminProfileRoutes.js";
 import driverProfileRoutes from "./routes/driverProfileRoutes.js";
+import customerProfileRoutes from "./routes/customerProfileRoutes.js";
 import driverLicenseRoutes from "./routes/driverLicenseRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import maintenanceRoutes from "./routes/maintenanceRoutes.js"; // <--- added maintenance routes
@@ -61,6 +62,7 @@ app.use("/refunds", refundRoutes);
 app.use("/transactions", transactionRoutes);
 app.use("/api/admin-profile", adminProfileRoutes);
 app.use("/api/driver-profile", driverProfileRoutes);
+app.use("/api/customer-profile", customerProfileRoutes);
 app.use("/api/driver-license", driverLicenseRoutes);
 app.use("/api/customer-license", driverLicenseRoutes);
 app.use("/analytics", analyticsRoutes);

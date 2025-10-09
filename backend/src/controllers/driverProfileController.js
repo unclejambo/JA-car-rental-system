@@ -45,6 +45,7 @@ export const getDriverProfile = async (req, res) => {
       license_number: driver.driver_license_no,
       user_type: "driver",
       status: driver.status,
+      profile_img_url: driver.profile_img_url,
       license_expiry: license?.expiry_date,
       license_restrictions: license?.restrictions,
     };
@@ -172,6 +173,7 @@ export const updateDriverProfile = async (req, res) => {
         username,
         driver_license_no: license_number,
         password: hashedPassword,
+        profile_img_url: req.body.profile_img_url || null,
       },
     });
 
@@ -208,6 +210,7 @@ export const updateDriverProfile = async (req, res) => {
       license_number: updatedDriver.driver_license_no,
       user_type: "driver",
       status: updatedDriver.status,
+      profile_img_url: updatedDriver.profile_img_url,
       license_expiry: refreshedLicense?.expiry_date,
       license_restrictions: refreshedLicense?.restrictions,
     };

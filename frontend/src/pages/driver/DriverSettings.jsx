@@ -12,6 +12,7 @@ import {
   Tab,
   Alert,
   Snackbar,
+  CircularProgress, // ✅ Added
 } from '@mui/material';
 
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
@@ -99,6 +100,11 @@ export default function DriverSettings() {
   // Avatar modal
   const [avatarOpen, setAvatarOpen] = useState(false);
 
+  // Profile picture state
+  const [profileImage, setProfileImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [imageUploading, setImageUploading] = useState(false);
+
   // Auth + API
   const { logout } = useAuth();
   const authenticatedFetch = createAuthenticatedFetch(logout);
@@ -134,10 +140,12 @@ export default function DriverSettings() {
         username: data.username || '',
         userType: data.user_type || '',
         address: data.address || '',
+        profileImageUrl: data.profile_img_url || '', // ✅ Store profile image URL
       };
 
       setProfile(driverData);
       setDraft(driverData);
+      setImagePreview(data.profile_img_url || ''); // ✅ Set profile image preview
 
       // license fields (defensive)
       setLicenseNumber(data.license_number || data.driver_license_no || '');
@@ -283,6 +291,12 @@ export default function DriverSettings() {
     setShowConfirmModal(false);
 
     try {
+      // Upload profile image first if changed
+      let imageUrl = null;
+      if (profileImage) {
+        imageUrl = await uploadProfileImage();
+      }
+
       const updateData = {
         first_name: draft.firstName,
         last_name: draft.lastName,
@@ -292,6 +306,11 @@ export default function DriverSettings() {
         address: draft.address,
         license_number: licenseNumber, // ✅ backend requires this
       };
+
+      // Add profile image URL if uploaded
+      if (imageUrl) {
+        updateData.profile_img_url = imageUrl;
+      }
 
       // Include password fields only if user is changing password
       if (passwordData.newPassword && passwordData.newPassword.trim() !== '') {
@@ -323,10 +342,12 @@ export default function DriverSettings() {
           username: updated.username || '',
           userType: updated.user_type || profile.userType || 'driver',
           address: updated.address || '',
+          profileImageUrl: updated.profile_img_url || imageUrl || profile.profileImageUrl || '',
         };
 
         setProfile(updatedProfile);
         setDraft(updatedProfile);
+        setProfileImage(null); // Clear the file after upload
 
         // Update license-related data if returned
         if (updated.license_number) setLicenseNumber(updated.license_number);
@@ -438,6 +459,143 @@ export default function DriverSettings() {
     setDraftLicenseImage(null);
     setIsEditingLicense(false);
     setOpenLicenseCancelModal(false);
+  };
+
+  // Profile image validation
+  const validateImageFile = (file) => {
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+    if (!allowedTypes.includes(file.type)) {
+      return 'Only JPG, PNG, and WEBP files are allowed';
+    }
+
+    if (file.size > maxSize) {
+      return 'File size must be less than 5MB';
+    }
+
+    return null;
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const validation = validateImageFile(file);
+    if (validation) {
+      setError(validation);
+      return;
+    }
+
+    setProfileImage(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setImagePreview(event.target.result);
+    };
+    reader.readAsDataURL(file);
+    setError(null);
+  };
+
+  const handleRemoveImage = async () => {
+    try {
+      if (profile.profileImageUrl) {
+        setImageUploading(true);
+        const response = await authenticatedFetch(
+          `${API_BASE}/api/storage/profile-images`,
+          {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filePath: profile.profileImageUrl }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to delete image from storage');
+        }
+      }
+
+      setImagePreview('');
+      setProfileImage(null);
+      setProfile((prev) => ({ ...prev, profileImageUrl: '' }));
+      setDraft((prev) => ({ ...prev, profileImageUrl: '' }));
+
+      // Update profile in database
+      const updateResponse = await authenticatedFetch(
+        `${API_BASE}/api/driver-profile`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...draft, profile_img_url: '' }),
+        }
+      );
+
+      if (updateResponse.ok) {
+        setSuccessMessage('Profile picture removed successfully!');
+        setShowSuccess(true);
+      }
+    } catch (error) {
+      console.error('Error removing image:', error);
+      setError('Failed to remove profile picture');
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  const uploadProfileImage = async () => {
+    if (!profileImage) return null;
+
+    try {
+      setImageUploading(true);
+
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+      const driverId = userInfo.id || userInfo.drivers_id || 'unknown';
+
+      const formData = new FormData();
+      formData.append('profileImage', profileImage);
+      formData.append('userId', driverId);
+      formData.append('userType', 'driver');
+
+      console.log('🚀 Uploading profile image...');
+
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/storage/profile-images`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      const result = await response.json();
+      console.log('📦 Upload response:', result);
+
+      if (!response.ok || (!result.ok && !result.success)) {
+        throw new Error(result.message || 'Upload failed');
+      }
+
+      const imageUrl =
+        result.data?.url ||
+        result.data?.driver?.profile_img_url ||
+        result.publicUrl;
+
+      if (!imageUrl) {
+        throw new Error('No image URL returned from upload');
+      }
+
+      console.log('✅ Image uploaded successfully:', imageUrl);
+
+      // Update the preview immediately
+      setImagePreview(imageUrl);
+
+      return imageUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setError('Failed to upload profile picture');
+      return null;
+    } finally {
+      setImageUploading(false);
+    }
   };
 
   // UI: loading / error states
@@ -676,12 +834,16 @@ export default function DriverSettings() {
                           width: { xs: '100%', md: 160 },
                           position: 'relative',
                           display: 'flex',
-                          justifyContent: { xs: 'center', md: 'flex-start' },
+                          flexDirection: 'column',
+                          alignItems: { xs: 'center', md: 'flex-start' },
                           mb: { xs: 2, md: 0 },
                         }}
                       >
                         <Avatar
-                          src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                          src={
+                            imagePreview ||
+                            'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+                          }
                           sx={{
                             width: { xs: 96, md: 120 },
                             height: { xs: 96, md: 120 },
@@ -690,9 +852,66 @@ export default function DriverSettings() {
                             top: { md: 25 },
                             boxShadow: 2,
                             cursor: 'pointer',
+                            border: imagePreview ? '3px solid #e0e0e0' : 'none',
                           }}
                           onClick={() => setAvatarOpen(true)}
                         />
+
+                        {isEditing && (
+                          <Box
+                            sx={{
+                              mt: { xs: 2, md: 0 },
+                              position: { md: 'absolute' },
+                              top: { md: 155 },
+                              left: { md: 8 },
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 1,
+                              alignItems: 'center',
+                            }}
+                          >
+                            <Button
+                              variant="contained"
+                              component="label"
+                              size="small"
+                              disabled={imageUploading}
+                              sx={{
+                                fontSize: '0.75rem',
+                                px: 1.5,
+                                minWidth: 'auto',
+                              }}
+                            >
+                              {imagePreview ? 'Change' : 'Upload'}
+                              <input
+                                type="file"
+                                hidden
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                onChange={handleImageChange}
+                              />
+                            </Button>
+
+                            {imagePreview && (
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                color="error"
+                                onClick={handleRemoveImage}
+                                disabled={imageUploading}
+                                sx={{
+                                  fontSize: '0.75rem',
+                                  px: 1.5,
+                                  minWidth: 'auto',
+                                }}
+                              >
+                                Remove
+                              </Button>
+                            )}
+
+                            {imageUploading && (
+                              <CircularProgress size={20} sx={{ mt: 1 }} />
+                            )}
+                          </Box>
+                        )}
                       </Box>
 
                       {/* Details */}

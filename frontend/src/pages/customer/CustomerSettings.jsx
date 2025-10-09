@@ -11,7 +11,8 @@ import {
   Tabs,
   Tab,
   Snackbar,
-  Alert, // ✅ Added
+  Alert,
+  CircularProgress, // ✅ Added
 } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import BadgeIcon from '@mui/icons-material/Badge';
@@ -42,6 +43,12 @@ export default function CustomerSettings() {
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  
+  // Profile picture state
+  const [profileImage, setProfileImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [imageUploading, setImageUploading] = useState(false);
+  
   function getChanges() {
     const changes = [];
     Object.keys(profile).forEach((key) => {
@@ -79,9 +86,18 @@ export default function CustomerSettings() {
         changedFields[fieldMap[key]] = draft[key];
       }
     });
-    useCustomerStore
-      .getState()
-      .updateCustomer(customerId, changedFields)
+
+    // Upload profile image if changed
+    const updatePromise = profileImage 
+      ? uploadProfileImage().then(imageUrl => {
+          if (imageUrl) {
+            changedFields.profile_img_url = imageUrl;
+          }
+          return useCustomerStore.getState().updateCustomer(customerId, changedFields);
+        })
+      : useCustomerStore.getState().updateCustomer(customerId, changedFields);
+
+    updatePromise
       .then((updated) => {
         setProfile({
           firstName: updated.first_name || profile.firstName || '',
@@ -95,7 +111,9 @@ export default function CustomerSettings() {
             typeof updated.password === 'string' && updated.password !== ''
               ? updated.password
               : draft.password || profile.password || '',
+          profileImageUrl: updated.profile_img_url || profile.profileImageUrl || '',
         });
+        setProfileImage(null); // Clear the file after upload
         setIsEditing(false);
         setShowConfirmModal(false);
         // ✅ Added success prompt
@@ -187,6 +205,7 @@ export default function CustomerSettings() {
           setLicenseRestrictions(licenseRestrictions);
           setLicenseExpiration(licenseExpiration);
           setLicenseImage(licenseImage);
+          setImagePreview(customer.profile_img_url || ''); // ✅ Set profile image preview
           setProfile((prev) => ({
             ...prev,
             firstName: customer.first_name || '',
@@ -196,6 +215,7 @@ export default function CustomerSettings() {
             contactNumber: customer.contact_no || '',
             username: customer.username || '',
             password: customer.password || '',
+            profileImageUrl: customer.profile_img_url || '', // ✅ Store profile image URL
           }));
         }
       } catch (err) {
@@ -298,6 +318,142 @@ export default function CustomerSettings() {
     setIsEditingLicense(false);
     setOpenLicenseCancelModal(false);
   }
+
+  // Profile image validation
+  const validateImageFile = (file) => {
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+    if (!allowedTypes.includes(file.type)) {
+      return 'Only JPG, PNG, and WEBP files are allowed';
+    }
+
+    if (file.size > maxSize) {
+      return 'File size must be less than 5MB';
+    }
+
+    return null;
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const validation = validateImageFile(file);
+    if (validation) {
+      setSuccessMessage(validation);
+      setShowSuccess(true);
+      return;
+    }
+
+    setProfileImage(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setImagePreview(event.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = async () => {
+    try {
+      if (profile.profileImageUrl) {
+        setImageUploading(true);
+        const response = await authenticatedFetch(
+          `${API_BASE}/api/storage/profile-images`,
+          {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filePath: profile.profileImageUrl }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to delete image from storage');
+        }
+      }
+
+      setImagePreview('');
+      setProfileImage(null);
+      setProfile((prev) => ({ ...prev, profileImageUrl: '' }));
+      setDraft((prev) => ({ ...prev, profileImageUrl: '' }));
+
+      // Update profile in database
+      let user = JSON.parse(localStorage.getItem('userInfo'));
+      const customerId = user?.id;
+      const updateResponse = await useCustomerStore.getState().updateCustomer(customerId, { 
+        profile_img_url: '' 
+      });
+
+      if (updateResponse) {
+        setSuccessMessage('Profile picture removed successfully!');
+        setShowSuccess(true);
+      }
+    } catch (error) {
+      console.error('Error removing image:', error);
+      setSuccessMessage('Failed to remove profile picture');
+      setShowSuccess(true);
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  const uploadProfileImage = async () => {
+    if (!profileImage) return null;
+
+    try {
+      setImageUploading(true);
+
+      let user = JSON.parse(localStorage.getItem('userInfo'));
+      const customerId = user?.id;
+
+      const formData = new FormData();
+      formData.append('profileImage', profileImage);
+      formData.append('userId', customerId || 'unknown');
+      formData.append('userType', 'customer');
+
+      console.log('🚀 Uploading profile image...');
+
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/storage/profile-images`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      const result = await response.json();
+      console.log('📦 Upload response:', result);
+
+      if (!response.ok || (!result.ok && !result.success)) {
+        throw new Error(result.message || 'Upload failed');
+      }
+
+      const imageUrl =
+        result.data?.url ||
+        result.data?.customer?.profile_img_url ||
+        result.publicUrl;
+
+      if (!imageUrl) {
+        throw new Error('No image URL returned from upload');
+      }
+
+      console.log('✅ Image uploaded successfully:', imageUrl);
+
+      // Update the preview immediately
+      setImagePreview(imageUrl);
+
+      return imageUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setSuccessMessage('Failed to upload profile picture');
+      setShowSuccess(true);
+      return null;
+    } finally {
+      setImageUploading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -526,12 +682,16 @@ export default function CustomerSettings() {
                             width: { xs: '100%', md: 160 },
                             position: 'relative',
                             display: 'flex',
-                            justifyContent: { xs: 'center', md: 'flex-start' },
+                            flexDirection: 'column',
+                            alignItems: { xs: 'center', md: 'flex-start' },
                             mb: { xs: 2, md: 0 },
                           }}
                         >
                           <Avatar
-                            src="/jude.jpg"
+                            src={
+                              imagePreview ||
+                              'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+                            }
                             onClick={() => setAvatarOpen(true)}
                             sx={{
                               width: { xs: 96, md: 120 },
@@ -542,11 +702,68 @@ export default function CustomerSettings() {
                               boxShadow: 2,
                               cursor: 'pointer',
                               transition: 'transform 0.2s ease',
+                              border: imagePreview ? '3px solid #e0e0e0' : 'none',
                               '&:hover': {
                                 transform: 'scale(1.05)',
                               },
                             }}
                           />
+
+                          {isEditing && (
+                            <Box
+                              sx={{
+                                mt: { xs: 2, md: 0 },
+                                position: { md: 'absolute' },
+                                top: { md: 155 },
+                                left: { md: 8 },
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 1,
+                                alignItems: 'center',
+                              }}
+                            >
+                              <Button
+                                variant="contained"
+                                component="label"
+                                size="small"
+                                disabled={imageUploading}
+                                sx={{
+                                  fontSize: '0.75rem',
+                                  px: 1.5,
+                                  minWidth: 'auto',
+                                }}
+                              >
+                                {imagePreview ? 'Change' : 'Upload'}
+                                <input
+                                  type="file"
+                                  hidden
+                                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                                  onChange={handleImageChange}
+                                />
+                              </Button>
+
+                              {imagePreview && (
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  color="error"
+                                  onClick={handleRemoveImage}
+                                  disabled={imageUploading}
+                                  sx={{
+                                    fontSize: '0.75rem',
+                                    px: 1.5,
+                                    minWidth: 'auto',
+                                  }}
+                                >
+                                  Remove
+                                </Button>
+                              )}
+
+                              {imageUploading && (
+                                <CircularProgress size={20} sx={{ mt: 1 }} />
+                              )}
+                            </Box>
+                          )}
                         </Box>
                         {/* Right: Details */}
                         <Box

@@ -218,7 +218,10 @@ export const updateDriverProfile = async (req, res) => {
         username,
         driver_license_no: license_number,
         password: hashedPassword,
-        profile_img_url: req.body.profile_img_url || null,
+        // Only update profile_img_url if provided, otherwise preserve existing
+        profile_img_url: req.body.profile_img_url !== undefined 
+          ? req.body.profile_img_url 
+          : currentDriver.profile_img_url,
       },
     });
 

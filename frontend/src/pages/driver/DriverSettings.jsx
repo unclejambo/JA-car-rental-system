@@ -309,9 +309,12 @@ export default function DriverSettings() {
         license_number: licenseNumber, // ✅ backend requires this
       };
 
-      // Add profile image URL if uploaded
+      // Add profile image URL - either new upload or preserve existing
       if (imageUrl) {
         updateData.profile_img_url = imageUrl;
+      } else if (profile.profileImageUrl) {
+        // Preserve existing profile image URL
+        updateData.profile_img_url = profile.profileImageUrl;
       }
 
       // Include password fields only if user is changing password
@@ -350,6 +353,9 @@ export default function DriverSettings() {
         setProfile(updatedProfile);
         setDraft(updatedProfile);
         setProfileImage(null); // Clear the file after upload
+        
+        // Update image preview to match the saved profile image
+        setImagePreview(updatedProfile.profileImageUrl);
 
         // Update license-related data if returned
         if (updated.license_number) setLicenseNumber(updated.license_number);
@@ -445,11 +451,11 @@ export default function DriverSettings() {
   };
 
   const handleLicenseSaveConfirm = async () => {
-    setSaving(true);
+    setSavingLicense(true);
 
     try {
       // Upload license image first if there's a new image
-      let uploadedImageUrl = licenseImage;
+      let uploadedImageUrl = null;
       if (draftLicenseImage) {
         try {
           uploadedImageUrl = await uploadLicenseImage();
@@ -459,7 +465,7 @@ export default function DriverSettings() {
         } catch (uploadError) {
           console.error('❌ License image upload failed:', uploadError);
           setError('Failed to upload license image. Please try again.');
-          setSaving(false);
+          setSavingLicense(false);
           return;
         }
       }
@@ -467,7 +473,8 @@ export default function DriverSettings() {
       const updateData = {
         restrictions: draftLicenseRestrictions || licenseRestrictions,
         expiry_date: draftLicenseExpiration || licenseExpiration,
-        dl_img_url: uploadedImageUrl || '',
+        // Use new image if uploaded, otherwise preserve existing
+        dl_img_url: uploadedImageUrl || licenseImage,
       };
 
       console.log('🚀 Sending to backend:', updateData);
@@ -486,10 +493,11 @@ export default function DriverSettings() {
       if (response.ok) {
         console.log('✅ License updated:', result);
 
-        // ✅ Update local state
-        setLicenseRestrictions(updateData.restrictions);
-        setLicenseExpiration(updateData.expiry_date);
-        setLicenseImage(updateData.dl_img_url);
+        // ✅ Update local state from backend response
+        setLicenseRestrictions(result.restrictions || updateData.restrictions);
+        setLicenseExpiration(result.expiry_date || updateData.expiry_date);
+        // Use the response image URL (which may be a signed URL)
+        setLicenseImage(result.dl_img_url || updateData.dl_img_url);
 
         // ✅ Clear draft image states
         setDraftLicenseImage(null);
@@ -511,7 +519,7 @@ export default function DriverSettings() {
       console.error('❌ Error updating license:', error);
       setError('Unexpected error updating license');
     } finally {
-      setSaving(false);
+      setSavingLicense(false);
     }
   };
 
@@ -585,13 +593,22 @@ export default function DriverSettings() {
       setProfile((prev) => ({ ...prev, profileImageUrl: '' }));
       setDraft((prev) => ({ ...prev, profileImageUrl: '' }));
 
-      // Update profile in database
+      // Update profile in database to remove image URL
       const updateResponse = await authenticatedFetch(
         `${API_BASE}/api/driver-profile`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...draft, profile_img_url: '' }),
+          body: JSON.stringify({
+            first_name: draft.firstName,
+            last_name: draft.lastName,
+            contact_no: draft.contactNo,
+            email: draft.email,
+            username: draft.username,
+            address: draft.address,
+            license_number: licenseNumber,
+            profile_img_url: '', // Explicitly remove the image
+          }),
         }
       );
 
@@ -1479,7 +1496,7 @@ export default function DriverSettings() {
                           size="small"
                           startIcon={<SaveIcon />}
                           onClick={() => setShowLicenseConfirmModal(true)} // open confirm modal
-                          disabled={saving || licenseImageUploading}
+                          disabled={savingLicense || licenseImageUploading}
                           sx={{ width: { xs: '100%', md: '100%' } }}
                         >
                           Save
@@ -1491,7 +1508,7 @@ export default function DriverSettings() {
                           size="small"
                           startIcon={<CloseIcon />}
                           onClick={() => setShowLicenseCancelModal(true)}
-                          disabled={saving || licenseImageUploading}
+                          disabled={savingLicense || licenseImageUploading}
                           sx={{ width: { xs: '100%', md: '100%' } }}
                         >
                           Cancel
@@ -1669,7 +1686,11 @@ export default function DriverSettings() {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+              src={
+                imagePreview ||
+                profile.profileImageUrl ||
+                'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+              }
               alt="Profile"
               style={{
                 maxWidth: '90vw',

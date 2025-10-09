@@ -136,6 +136,7 @@ function CustomerBookings() {
     switch (status?.toLowerCase()) {
       case 'pending': return 'warning';
       case 'approved': return 'info';
+      case 'confirmed': return 'info';
       case 'ongoing': return 'primary';
       case 'completed': return 'success';
       case 'cancelled': return 'error';
@@ -449,7 +450,7 @@ function CustomerBookings() {
                       {/* Action Buttons */}
                       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                         {/* Edit Button - Only for pending bookings */}
-                        {booking.booking_status === 'pending' && (
+                        {booking.booking_status?.toLowerCase() === 'pending' && (
                           <Button
                             size="small"
                             variant="outlined"
@@ -469,8 +470,8 @@ function CustomerBookings() {
                           </Button>
                         )}
 
-                        {/* Cancel Button - Only for approved bookings */}
-                        {booking.booking_status === 'approved' && (
+                        {/* Cancel Button - For pending bookings */}
+                        {booking.booking_status?.toLowerCase() === 'pending' && (
                           <Button
                             size="small"
                             variant="outlined"
@@ -512,7 +513,9 @@ function CustomerBookings() {
                         )}
 
                         {/* Pay Now Button - For bookings with outstanding balance */}
-                        {booking.has_outstanding_balance && booking.booking_status !== 'cancelled' && (
+                        {booking.has_outstanding_balance && 
+                         booking.booking_status?.toLowerCase() !== 'cancelled' && 
+                         booking.booking_status?.toLowerCase() !== 'completed' && (
                           <Button
                             size="small"
                             variant="contained"
@@ -596,9 +599,14 @@ function CustomerBookings() {
                         <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
                           {payment.payment_method || 'Not specified'}
                         </Typography>
-                        {payment.gcash_no && (
+                        {payment.payment_method === 'GCash' && payment.gcash_no && (
                           <Typography variant="body2" color="text.secondary">
                             GCash: {payment.gcash_no}
+                          </Typography>
+                        )}
+                        {payment.payment_method === 'GCash' && payment.reference_no && (
+                          <Typography variant="body2" color="text.secondary">
+                            Ref: {payment.reference_no}
                           </Typography>
                         )}
                       </Grid>
@@ -610,11 +618,6 @@ function CustomerBookings() {
                         <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#c10007' }}>
                           ₱{payment.amount?.toLocaleString()}
                         </Typography>
-                        {payment.reference_no && (
-                          <Typography variant="body2" color="text.secondary">
-                            Ref: {payment.reference_no}
-                          </Typography>
-                        )}
                       </Grid>
                       
                       <Grid item xs={12} sm={2}>

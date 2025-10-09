@@ -54,7 +54,6 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
     deliveryLocation: '',
     dropoffLocation: '',
     selectedDriver: '',
-    specialRequests: '',
   });
 
   const steps = ['Service Type', 'Booking Details', 'Confirmation'];
@@ -74,7 +73,6 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
         deliveryLocation: booking.delivery_location || '',
         dropoffLocation: booking.dropoff_location || '',
         selectedDriver: booking.drivers_id ? booking.drivers_id.toString() : '',
-        specialRequests: booking.special_requests || '',
       });
       
       setActiveTab(isDelivery ? 0 : 1);
@@ -181,7 +179,6 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
         delivery_location: activeTab === 0 ? formData.deliveryLocation : '',
         is_self_drive: isSelfService,
         drivers_id: isSelfService ? null : parseInt(formData.selectedDriver),
-        special_requests: formData.specialRequests,
       };
 
       const response = await authenticatedFetch(`${API_BASE}/bookings/${booking.booking_id}/update`, {
@@ -449,18 +446,6 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
               </Select>
             </FormControl>
           )}
-        </Grid>
-
-        {/* Special Requests */}
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Special Requests (Optional)"
-            value={formData.specialRequests}
-            onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
-            multiline
-            rows={3}
-          />
         </Grid>
       </Grid>
     </Box>

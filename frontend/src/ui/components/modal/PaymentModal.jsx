@@ -108,11 +108,10 @@ export default function PaymentModal({ open, onClose, booking, onPaymentSuccess 
         setError('Please enter a valid GCash number (09XXXXXXXXX)');
         return false;
       }
-    }
-
-    if (!paymentData.reference_no) {
-      setError('Please enter the reference number');
-      return false;
+      if (!paymentData.reference_no) {
+        setError('Please enter the GCash reference number');
+        return false;
+      }
     }
 
     return true;
@@ -327,28 +326,26 @@ export default function PaymentModal({ open, onClose, booking, onPaymentSuccess 
                     1. Visit our office during business hours<br />
                     2. Bring the exact amount: ₱{paymentData.amount}<br />
                     3. Present your booking ID: #{booking?.booking_id}<br />
-                    4. Get the receipt and enter the reference number below
+                    4. Get the receipt for your records
                   </Typography>
                 </Alert>
               </Grid>
             )}
 
-            {/* Reference Number */}
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Reference Number"
-                value={paymentData.reference_no}
-                onChange={(e) => handleInputChange('reference_no', e.target.value)}
-                placeholder={paymentData.payment_method === 'GCash' ? 'Enter GCash reference number' : 'Enter receipt reference number'}
-                required
-                helperText={
-                  paymentData.payment_method === 'GCash' 
-                    ? 'Enter the reference number from your GCash transaction'
-                    : 'Enter the reference number from your payment receipt'
-                }
-              />
-            </Grid>
+            {/* Reference Number - Only for GCash */}
+            {paymentData.payment_method === 'GCash' && (
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Reference Number *"
+                  value={paymentData.reference_no}
+                  onChange={(e) => handleInputChange('reference_no', e.target.value)}
+                  placeholder="Enter GCash reference number"
+                  required
+                  helperText="Enter the reference number from your GCash transaction"
+                />
+              </Grid>
+            )}
           </Grid>
         </Box>
       </Box>
@@ -412,17 +409,16 @@ export default function PaymentModal({ open, onClose, booking, onPaymentSuccess 
                       {paymentData.gcash_no}
                     </Typography>
                   </Box>
+                  
+                  <Divider />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">Reference Number</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                      {paymentData.reference_no}
+                    </Typography>
+                  </Box>
                 </>
               )}
-
-              <Divider />
-              
-              <Box>
-                <Typography variant="body2" color="text.secondary">Reference Number</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  {paymentData.reference_no}
-                </Typography>
-              </Box>
             </Box>
           </CardContent>
         </Card>

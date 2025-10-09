@@ -150,8 +150,21 @@ export const submitReturn = async (req, res) => {
       isClean,
       hasStain,
       totalFees,
-      paymentData
+      paymentData,
+      damageImageUrl // Add this to receive the uploaded image URL
     } = req.body;
+
+    console.log('📝 Submitting return for booking:', bookingId);
+    console.log('Return data:', {
+      gasLevel,
+      odometer,
+      damageStatus,
+      equipmentStatus,
+      equip_others,
+      isClean,
+      hasStain,
+      damageImageUrl
+    });
 
     // Start transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -198,18 +211,39 @@ export const submitReturn = async (req, res) => {
       }
 
       // Equipment loss fee calculation
-      if (equipmentStatus === 'no' && equip_others && release.equip_others) {
-        const releaseEquip = release.equip_others.split(',').map(item => item.trim().toLowerCase());
-        const returnEquip = equip_others.split(',').map(item => item.trim().toLowerCase());
+      // Check if release equipment was complete and return equipment status
+      // If release.equipment = 'complete' and return equipmentStatus = 'no', charge for items in equip_others
+      if (release.equipment === 'complete' && equipmentStatus === 'no' && equip_others) {
+        // All items in return equip_others are damaged/missing since release was complete
+        const returnEquip = equip_others.split(',').map(item => item.trim().toLowerCase()).filter(item => item);
+        const lostItemCount = returnEquip.length;
         
-        let missingItems = 0;
-        releaseEquip.forEach(item => {
-          if (!returnEquip.includes(item)) {
-            missingItems++;
-          }
+        console.log('Equipment check (submit - release was complete):', {
+          releaseEquipmentStatus: release.equipment,
+          returnEquipmentStatus: equipmentStatus,
+          damagedItems: returnEquip,
+          lostItemCount
         });
         
-        calculatedFees += missingItems * (feesObject.equipment_loss_fee || 0);
+        calculatedFees += lostItemCount * (feesObject.equipment_loss_fee || 0);
+      } 
+      // If release already had issues, compare release equip_others with return equip_others
+      else if (release.equipment !== 'complete' && equipmentStatus === 'no' && equip_others && release.equip_others) {
+        const releaseEquip = release.equip_others.split(',').map(item => item.trim().toLowerCase()).filter(item => item);
+        const returnEquip = equip_others.split(',').map(item => item.trim().toLowerCase()).filter(item => item);
+        
+        // Find NEW items that are in return but NOT in release (newly damaged/missing items)
+        const newItems = returnEquip.filter(item => !releaseEquip.includes(item));
+        const lostItemCount = newItems.length;
+        
+        console.log('Equipment check (submit - release had issues):', {
+          releaseEquip,
+          returnEquip,
+          newItems,
+          lostItemCount
+        });
+        
+        calculatedFees += lostItemCount * (feesObject.equipment_loss_fee || 0);
       }
 
       // Damage fee calculation
@@ -232,16 +266,19 @@ export const submitReturn = async (req, res) => {
       const returnRecord = await tx.return.create({
         data: {
           booking_id: parseInt(bookingId),
-          damage_check: damageStatus,
-          damage_img: damageImageFile ? `/uploads/licenses/return_images/${damageImageFile}` : null,
+          damage_check: damageStatus === 'noDamage' ? 'No Damage' : damageStatus,
+          damage_img: damageImageUrl || null, // Use the uploaded image URL
           equipment: equipmentStatus,
-          gas_level: BigInt(returnGasLevel),
+          equip_others: equip_others || null,
+          gas_level: gasLevel,
           odometer: BigInt(parseInt(odometer)),
           total_fee: calculatedFees,
-          damage: damageStatus === 'noDamage' ? 'No_Damage' : 
-                 damageStatus === 'minor' ? 'Minor' : 'Major'
+          isClean: isClean === true || isClean === 'true',
+          hasStain: hasStain === true || hasStain === 'true'
         }
       });
+
+      console.log('✅ Return record created:', returnRecord);
 
       // Update car mileage
       await tx.car.update({
@@ -280,12 +317,35 @@ export const submitReturn = async (req, res) => {
         });
       }
 
+      // Create transaction record
+      // For completed bookings, use today's date as completion_date
+      // For cancelled bookings (handled elsewhere), use cancellation_date
+      await tx.transaction.create({
+        data: {
+          booking_id: parseInt(bookingId),
+          customer_id: booking.customer_id,
+          car_id: booking.car_id,
+          completion_date: new Date(), // Set to current date since booking is being completed
+          cancellation_date: null // This is a completion, not a cancellation
+        }
+      });
+
+      console.log('✅ Transaction record created for completed booking');
+
       return { returnRecord, updatedBooking, calculatedFees };
     });
 
+    // Convert BigInt fields to strings for JSON serialization
+    const serializableReturn = {
+      ...result.returnRecord,
+      return_id: result.returnRecord.return_id.toString(),
+      odometer: result.returnRecord.odometer ? result.returnRecord.odometer.toString() : null,
+      booking_id: result.returnRecord.booking_id
+    };
+
     res.json({
       message: 'Return submitted successfully',
-      return: result.returnRecord,
+      return: serializableReturn,
       booking: result.updatedBooking,
       totalFees: result.calculatedFees
     });
@@ -306,6 +366,10 @@ export const uploadDamageImage = async (req, res) => {
       return res.status(400).json({ error: 'No image file provided' });
     }
 
+    if (!damageType || (damageType !== 'major' && damageType !== 'minor')) {
+      return res.status(400).json({ error: 'Invalid damage type. Must be "major" or "minor"' });
+    }
+
     // Get booking and customer info
     const booking = await prisma.booking.findUnique({
       where: { booking_id: parseInt(bookingId) },
@@ -323,31 +387,72 @@ export const uploadDamageImage = async (req, res) => {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
-    // Create filename
-    const today = new Date().toISOString().split('T')[0];
-    const customerName = `${booking.customer.first_name}_${booking.customer.last_name}`;
-    const filename = `${today}_${bookingId}_${customerName}_${damageType}.jpg`;
-    
-    // Create directory if it doesn't exist
-    const uploadDir = path.join(__dirname, '../../uploads/licenses/return_images');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    // Create filename with specified format: {today's date}_{booking ID}_{Customer firstname}_{Major/Minor Damages}.jpg
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const customerFirstName = booking.customer.first_name.replace(/[^a-zA-Z0-9]/g, ''); // Sanitize
+    const damageLevel = damageType.charAt(0).toUpperCase() + damageType.slice(1); // Capitalize
+    const filename = `${today}_${bookingId}_${customerFirstName}_${damageLevel}_Damages.jpg`;
+
+    console.log('📸 Uploading damage image:', filename);
+
+    // Upload to Supabase storage: licenses/return_images/
+    const bucket = 'licenses';
+    const storagePath = `return_images/${filename}`;
+
+    try {
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(storagePath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('❌ Supabase upload error:', uploadError);
+        return res.status(500).json({ 
+          error: 'Failed to upload image to storage',
+          details: uploadError.message 
+        });
+      }
+
+      console.log('✅ Damage image uploaded to:', storagePath);
+
+      // Generate a signed URL for the private bucket (1 year expiration)
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(storagePath, 60 * 60 * 24 * 365); // 1 year
+
+      if (signedUrlError) {
+        console.error('❌ Error generating signed URL:', signedUrlError);
+        // Still return success with the storage path
+        return res.json({
+          success: true,
+          message: 'Damage image uploaded successfully',
+          imagePath: storagePath,
+          filename: filename
+        });
+      }
+
+      console.log('✅ Signed URL generated:', signedUrlData.signedUrl);
+
+      res.json({
+        success: true,
+        message: 'Damage image uploaded successfully',
+        imagePath: signedUrlData.signedUrl,
+        storagePath: storagePath,
+        filename: filename
+      });
+
+    } catch (uploadError) {
+      console.error('❌ Error uploading to Supabase:', uploadError);
+      return res.status(500).json({ 
+        error: 'Failed to upload image to storage',
+        details: uploadError.message 
+      });
     }
 
-    // Save file
-    const filePath = path.join(uploadDir, filename);
-    fs.writeFileSync(filePath, req.file.buffer);
-
-    // Store path for later use in return submission
-    req.damageImagePath = `/uploads/licenses/return_images/${filename}`;
-
-    res.json({
-      message: 'Damage image uploaded successfully',
-      imagePath: req.damageImagePath
-    });
-
   } catch (error) {
-    console.error('Error uploading damage image:', error);
+    console.error('❌ Error uploading damage image:', error);
     res.status(500).json({ error: 'Failed to upload damage image' });
   }
 };
@@ -420,18 +525,39 @@ export const calculateReturnFees = async (req, res) => {
     }
 
     // Equipment loss fee calculation
-    if (equipmentStatus === 'no' && equip_others && release.equip_others) {
-      const releaseEquip = release.equip_others.split(',').map(item => item.trim().toLowerCase());
-      const returnEquip = equip_others.split(',').map(item => item.trim().toLowerCase());
+    // Check if release equipment was complete and return equipment status
+    // If release.equipment = 'complete' and return equipmentStatus = 'no', charge for items in equip_others
+    if (release.equipment === 'complete' && equipmentStatus === 'no' && equip_others) {
+      // All items in return equip_others are damaged/missing since release was complete
+      const returnEquip = equip_others.split(',').map(item => item.trim().toLowerCase()).filter(item => item);
+      const lostItemCount = returnEquip.length;
       
-      let missingItems = 0;
-      releaseEquip.forEach(item => {
-        if (!returnEquip.includes(item)) {
-          missingItems++;
-        }
+      console.log('Equipment check (release was complete):', {
+        releaseEquipmentStatus: release.equipment,
+        returnEquipmentStatus: equipmentStatus,
+        damagedItems: returnEquip,
+        lostItemCount
       });
       
-      calculatedFees.equipmentLossFee = missingItems * (feesObject.equipment_loss_fee || 0);
+      calculatedFees.equipmentLossFee = lostItemCount * (feesObject.equipment_loss_fee || 0);
+    } 
+    // If release already had issues, compare release equip_others with return equip_others
+    else if (release.equipment !== 'complete' && equipmentStatus === 'no' && equip_others && release.equip_others) {
+      const releaseEquip = release.equip_others.split(',').map(item => item.trim().toLowerCase()).filter(item => item);
+      const returnEquip = equip_others.split(',').map(item => item.trim().toLowerCase()).filter(item => item);
+      
+      // Find NEW items that are in return but NOT in release (newly damaged/missing items)
+      const newItems = returnEquip.filter(item => !releaseEquip.includes(item));
+      const lostItemCount = newItems.length;
+      
+      console.log('Equipment check (release had issues):', {
+        releaseEquip,
+        returnEquip,
+        newItems,
+        lostItemCount
+      });
+      
+      calculatedFees.equipmentLossFee = lostItemCount * (feesObject.equipment_loss_fee || 0);
     }
 
     // Damage fee calculation

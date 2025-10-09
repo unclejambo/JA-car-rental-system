@@ -1,4 +1,40 @@
 import prisma from "../config/prisma.js";
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+/**
+ * Helper function to generate signed URL for license image
+ */
+async function getSignedLicenseUrl(dl_img_url) {
+  if (!dl_img_url) return null;
+  
+  try {
+    // Extract the path from the URL if it's already a full URL
+    let path = dl_img_url;
+    if (dl_img_url.includes('/licenses/')) {
+      path = dl_img_url.split('/licenses/')[1];
+      // Decode any URL-encoded characters
+      path = decodeURIComponent(path);
+    }
+    
+    const { data, error } = await supabase.storage
+      .from('licenses')
+      .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
+    
+    if (error) {
+      console.error('Error generating signed URL:', error);
+      return dl_img_url; // Return original URL as fallback
+    }
+    
+    return data.signedUrl;
+  } catch (err) {
+    console.error('Exception generating signed URL:', err);
+    return dl_img_url; // Return original URL as fallback
+  }
+}
 
 // @desc    Update a driver license
 // @route   PUT /driver-license/:id
@@ -32,7 +68,15 @@ export const updateDriverLicense = async (req, res) => {
     });
 
     console.log("✅ Prisma updated license:", updated);
-    res.json(updated);
+    
+    // Generate signed URL for the response
+    const signedUrl = await getSignedLicenseUrl(updated.dl_img_url);
+    const response = {
+      ...updated,
+      dl_img_url: signedUrl || updated.dl_img_url,
+    };
+    
+    res.json(response);
   } catch (error) {
     console.error("❌ Error updating driver license:", error);
     res.status(500).json({ error: "Failed to update driver license" });

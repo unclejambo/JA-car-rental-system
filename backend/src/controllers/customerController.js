@@ -1,4 +1,40 @@
 import prisma from "../config/prisma.js";
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+/**
+ * Helper function to generate signed URL for license image
+ */
+async function getSignedLicenseUrl(dl_img_url) {
+  if (!dl_img_url) return null;
+  
+  try {
+    // Extract the path from the URL if it's already a full URL
+    let path = dl_img_url;
+    if (dl_img_url.includes('/licenses/')) {
+      path = dl_img_url.split('/licenses/')[1];
+      // Decode any URL-encoded characters
+      path = decodeURIComponent(path);
+    }
+    
+    const { data, error } = await supabase.storage
+      .from('licenses')
+      .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
+    
+    if (error) {
+      console.error('Error generating signed URL:', error);
+      return dl_img_url; // Return original URL as fallback
+    }
+    
+    return data.signedUrl;
+  } catch (err) {
+    console.error('Exception generating signed URL:', err);
+    return dl_img_url; // Return original URL as fallback
+  }
+}
 
 // @desc    Get all customers
 // @route   GET /customers
@@ -31,6 +67,13 @@ export const getCustomerById = async (req, res) => {
     });
 
     if (!customer) return res.status(404).json({ error: "Customer not found" });
+    
+    // Generate signed URL for license image if it exists
+    if (customer.driver_license?.dl_img_url) {
+      const signedUrl = await getSignedLicenseUrl(customer.driver_license.dl_img_url);
+      customer.driver_license.dl_img_url = signedUrl || customer.driver_license.dl_img_url;
+    }
+    
     res.json(customer);
   } catch (error) {
     console.error("Error fetching customer:", error);

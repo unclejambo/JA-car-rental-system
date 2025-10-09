@@ -1,5 +1,44 @@
 import prisma from "../config/prisma.js";
 import bcrypt from "bcryptjs";
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+/**
+ * Helper function to generate signed URL for license image
+ */
+async function getSignedLicenseUrl(dl_img_url) {
+  if (!dl_img_url) return null;
+  
+  try {
+    // Extract the path from the URL if it's already a full URL
+    let path = dl_img_url;
+    if (dl_img_url.includes('/licenses/')) {
+      path = dl_img_url.split('/licenses/')[1];
+      // Decode any URL-encoded characters
+      path = decodeURIComponent(path);
+    }
+    
+    console.log('Generating signed URL for path:', path);
+    
+    const { data, error } = await supabase.storage
+      .from('licenses')
+      .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
+    
+    if (error) {
+      console.error('Error generating signed URL:', error);
+      return dl_img_url; // Return original URL as fallback
+    }
+    
+    console.log('Generated signed URL:', data.signedUrl);
+    return data.signedUrl;
+  } catch (err) {
+    console.error('Exception generating signed URL:', err);
+    return dl_img_url; // Return original URL as fallback
+  }
+}
 
 /**
  * Get driver profile information
@@ -33,6 +72,11 @@ export const getDriverProfile = async (req, res) => {
       where: { driver_license_no: driver.driver_license_no },
     });
 
+    // Generate signed URL for license image if it exists
+    const licenseImageUrl = license?.dl_img_url 
+      ? await getSignedLicenseUrl(license.dl_img_url)
+      : null;
+
     // Format for frontend
     const formattedDriver = {
       drivers_id: driver.drivers_id,
@@ -48,6 +92,7 @@ export const getDriverProfile = async (req, res) => {
       profile_img_url: driver.profile_img_url,
       license_expiry: license?.expiry_date,
       license_restrictions: license?.restrictions,
+      license_img_url: licenseImageUrl,
     };
 
     res.json({
@@ -198,6 +243,11 @@ export const updateDriverProfile = async (req, res) => {
       where: { driver_license_no: license_number },
     });
 
+    // Generate signed URL for license image if it exists
+    const licenseImageUrl = refreshedLicense?.dl_img_url 
+      ? await getSignedLicenseUrl(refreshedLicense.dl_img_url)
+      : null;
+
     // ✅ Format response
     const formattedDriver = {
       drivers_id: updatedDriver.drivers_id,
@@ -213,6 +263,7 @@ export const updateDriverProfile = async (req, res) => {
       profile_img_url: updatedDriver.profile_img_url,
       license_expiry: refreshedLicense?.expiry_date,
       license_restrictions: refreshedLicense?.restrictions,
+      license_img_url: licenseImageUrl,
     };
 
     res.json({

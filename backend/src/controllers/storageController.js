@@ -23,6 +23,43 @@ export async function uploadLicense(req, res, next) {
     const file = req.file;
     const { licenseNumber, username } = req.body;
     
+    // Check if there's an existing license image to delete
+    if (licenseNumber) {
+      try {
+        const existingLicense = await prisma.driverLicense.findUnique({
+          where: { driver_license_no: licenseNumber },
+        });
+
+        if (existingLicense?.dl_img_url) {
+          console.log('🗑️ Deleting old license image:', existingLicense.dl_img_url);
+          
+          // Extract the path from the URL
+          let oldPath = existingLicense.dl_img_url;
+          if (oldPath.includes('/licenses/')) {
+            oldPath = oldPath.split('/licenses/')[1];
+            // Remove any query parameters (from signed URLs)
+            oldPath = oldPath.split('?')[0];
+            oldPath = decodeURIComponent(oldPath);
+          }
+
+          // Delete the old file from Supabase
+          const { error: deleteError } = await supabase.storage
+            .from('licenses')
+            .remove([oldPath]);
+
+          if (deleteError) {
+            console.warn('⚠️ Failed to delete old license image:', deleteError);
+            // Continue with upload even if delete fails
+          } else {
+            console.log('✅ Old license image deleted successfully');
+          }
+        }
+      } catch (err) {
+        console.warn('⚠️ Error checking/deleting old license image:', err);
+        // Continue with upload even if delete check fails
+      }
+    }
+    
     const timestamp = Date.now();
     const fileExt = file.originalname.split('.').pop();
     const filename = `${licenseNumber || 'license'}_${username || 'user'}_${timestamp}.${fileExt}`;
@@ -48,17 +85,28 @@ export async function uploadLicense(req, res, next) {
       });
     }
 
-    const { data: publicUrlData } = supabase.storage
+    // Generate signed URL for private bucket (1 year expiration)
+    const { data: signedUrlData, error: signedError } = await supabase.storage
       .from(bucket)
-      .getPublicUrl(path);
+      .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
+
+    if (signedError) {
+      console.error('Error creating signed URL:', signedError);
+      return res.status(500).json({ 
+        ok: false, 
+        error: 'Failed to create signed URL',
+        message: 'Failed to create signed URL'
+      });
+    }
 
     const responseData = { 
       ok: true,
       message: 'File uploaded successfully',
-      filePath: publicUrlData.publicUrl,
-      path: publicUrlData.publicUrl,
-      url: publicUrlData.publicUrl,
-      publicUrl: publicUrlData.publicUrl,  // Add this field
+      filePath: signedUrlData.signedUrl,
+      path: signedUrlData.signedUrl,
+      url: signedUrlData.signedUrl,
+      publicUrl: signedUrlData.signedUrl,
+      signedUrl: signedUrlData.signedUrl,
       filename: filename,
       originalName: file.originalname,
       size: file.size,

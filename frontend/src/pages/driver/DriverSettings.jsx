@@ -78,13 +78,14 @@ export default function DriverSettings() {
   const [licenseNumber, setLicenseNumber] = useState('');
   const [licenseRestrictions, setLicenseRestrictions] = useState('');
   const [licenseExpiration, setLicenseExpiration] = useState('');
-  const [licenseImage, setLicenseImage] = useState('/license.png');
+  const [licenseImage, setLicenseImage] = useState('https://cdn-icons-png.flaticon.com/512/3135/3135715.png');
 
   const [draftLicenseNo, setDraftLicenseNo] = useState('');
   const [draftLicenseRestrictions, setDraftLicenseRestrictions] = useState('');
   const [draftLicenseExpiration, setDraftLicenseExpiration] = useState('');
   const [draftLicenseImage, setDraftLicenseImage] = useState(null);
   const [previewLicenseImage, setPreviewLicenseImage] = useState(null);
+  const [licenseImageUploading, setLicenseImageUploading] = useState(false);
 
   // Modals for license image and save/cancel confirmations
   const [openLicenseModal, setOpenLicenseModal] = useState(false);
@@ -166,7 +167,8 @@ export default function DriverSettings() {
           ''
       );
       setLicenseImage(
-        data.license_image_url ||
+        data.license_img_url ||
+          data.license_image_url ||
           data.DriverLicense?.dl_img_url ||
           data.license_img ||
           'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
@@ -391,8 +393,54 @@ export default function DriverSettings() {
   const handleLicenseFileChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file
+      const validation = validateImageFile(file);
+      if (validation) {
+        setError(validation);
+        return;
+      }
+      
       setDraftLicenseImage(file);
       setPreviewLicenseImage(URL.createObjectURL(file));
+      setError(null);
+    }
+  };
+
+  const uploadLicenseImage = async () => {
+    if (!draftLicenseImage) return null;
+
+    setLicenseImageUploading(true);
+    try {
+      console.log('🚀 Uploading license image...');
+
+      const formData = new FormData();
+      formData.append('file', draftLicenseImage);
+      formData.append('licenseNumber', licenseNumber);
+      formData.append('username', profile.username);
+
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/storage/licenses`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      console.log('📡 Response status:', response.status);
+      const result = await response.json();
+      console.log('📦 Upload response:', result);
+
+      if (result.ok && result.filePath) {
+        console.log('✅ License image uploaded successfully:', result.filePath);
+        return result.filePath;
+      } else {
+        throw new Error(result.error || result.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('❌ Error uploading license image:', error);
+      throw error;
+    } finally {
+      setLicenseImageUploading(false);
     }
   };
 
@@ -400,17 +448,29 @@ export default function DriverSettings() {
     setSaving(true);
 
     try {
+      // Upload license image first if there's a new image
+      let uploadedImageUrl = licenseImage;
+      if (draftLicenseImage) {
+        try {
+          uploadedImageUrl = await uploadLicenseImage();
+          if (!uploadedImageUrl) {
+            throw new Error('Failed to upload license image');
+          }
+        } catch (uploadError) {
+          console.error('❌ License image upload failed:', uploadError);
+          setError('Failed to upload license image. Please try again.');
+          setSaving(false);
+          return;
+        }
+      }
+
       const updateData = {
         restrictions: draftLicenseRestrictions || licenseRestrictions,
         expiry_date: draftLicenseExpiration || licenseExpiration,
-        dl_img_url: licenseImage || previewLicenseImage || '',
+        dl_img_url: uploadedImageUrl || '',
       };
 
-      console.log('🚀 Sending to backend:', {
-        restrictions: licenseRestrictions,
-        expiry_date: licenseExpiration,
-        dl_img_url: licenseImage || previewLicenseImage || '',
-      });
+      console.log('🚀 Sending to backend:', updateData);
 
       const response = await authenticatedFetch(
         `${API_BASE}/api/driver-license/${licenseNumber}`,
@@ -430,6 +490,10 @@ export default function DriverSettings() {
         setLicenseRestrictions(updateData.restrictions);
         setLicenseExpiration(updateData.expiry_date);
         setLicenseImage(updateData.dl_img_url);
+
+        // ✅ Clear draft image states
+        setDraftLicenseImage(null);
+        setPreviewLicenseImage(null);
 
         // ✅ Exit edit mode and close modals
         setIsEditingLicense(false);
@@ -1327,25 +1391,67 @@ export default function DriverSettings() {
                             objectFit: 'contain',
                             cursor: isEditingLicense ? 'default' : 'pointer',
                             transition: 'transform 0.2s ease',
+                            opacity: licenseImageUploading ? 0.5 : 1,
                           }}
                           onClick={() =>
                             !isEditingLicense && setOpenLicenseModal(true)
                           }
                         />
                         {isEditingLicense && (
-                          <IconButton
-                            color="primary"
-                            component="label"
-                            sx={{ mt: 1 }}
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: 1,
+                              mt: 1,
+                            }}
                           >
-                            <PhotoCamera />
-                            <input
-                              type="file"
-                              accept="image/*"
-                              hidden
-                              onChange={handleLicenseFileChange}
-                            />
-                          </IconButton>
+                            <Button
+                              variant="contained"
+                              component="label"
+                              size="small"
+                              disabled={licenseImageUploading}
+                              startIcon={<PhotoCamera />}
+                              sx={{
+                                fontSize: '0.75rem',
+                                px: 1.5,
+                                minWidth: 'auto',
+                              }}
+                            >
+                              {previewLicenseImage ? 'Change Image' : 'Upload Image'}
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                hidden
+                                onChange={handleLicenseFileChange}
+                              />
+                            </Button>
+
+                            {previewLicenseImage && (
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                color="error"
+                                onClick={() => {
+                                  setDraftLicenseImage(null);
+                                  setPreviewLicenseImage(null);
+                                }}
+                                disabled={licenseImageUploading}
+                                sx={{
+                                  fontSize: '0.75rem',
+                                  px: 1.5,
+                                  minWidth: 'auto',
+                                }}
+                              >
+                                Remove
+                              </Button>
+                            )}
+
+                            {licenseImageUploading && (
+                              <CircularProgress size={20} sx={{ mt: 1 }} />
+                            )}
+                          </Box>
                         )}
                       </Box>
                     </Box>
@@ -1373,6 +1479,7 @@ export default function DriverSettings() {
                           size="small"
                           startIcon={<SaveIcon />}
                           onClick={() => setShowLicenseConfirmModal(true)} // open confirm modal
+                          disabled={saving || licenseImageUploading}
                           sx={{ width: { xs: '100%', md: '100%' } }}
                         >
                           Save
@@ -1384,6 +1491,7 @@ export default function DriverSettings() {
                           size="small"
                           startIcon={<CloseIcon />}
                           onClick={() => setShowLicenseCancelModal(true)}
+                          disabled={saving || licenseImageUploading}
                           sx={{ width: { xs: '100%', md: '100%' } }}
                         >
                           Cancel

@@ -165,12 +165,13 @@ export default function CustomerSettings() {
   const [licenseNo, setLicenseNo] = useState('');
   const [licenseRestrictions, setLicenseRestrictions] = useState('');
   const [licenseExpiration, setLicenseExpiration] = useState('');
-  const [licenseImage, setLicenseImage] = useState('');
+  const [licenseImage, setLicenseImage] = useState('https://cdn-icons-png.flaticon.com/512/3135/3135715.png');
   const [draftLicenseNo, setDraftLicenseNo] = useState('');
   const [draftLicenseRestrictions, setDraftLicenseRestrictions] = useState('');
   const [draftLicenseExpiration, setDraftLicenseExpiration] = useState('');
   const [previewLicenseImage, setPreviewLicenseImage] = useState(null);
   const [draftLicenseImage, setDraftLicenseImage] = useState(null);
+  const [licenseImageUploading, setLicenseImageUploading] = useState(false);
   const [openLicenseModal, setOpenLicenseModal] = useState(false);
 
   const { getCustomerById } = useCustomerStore();
@@ -196,10 +197,9 @@ export default function CustomerSettings() {
               ? customer.driver_license?.expiry_date
               : customer.driver_license?.expiry_date?.expiry_date || '';
           const licenseImage =
-            typeof customer.DriverLicense?.dl_img_url === 'string'
-              ? customer.DriverLicense?.dl_img_url
-              : customer.DriverLicense?.dl_img_url?.dl_img_url ||
-                '/license.png';
+            customer.driver_license?.dl_img_url ||
+            customer.DriverLicense?.dl_img_url ||
+            'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
 
           setLicenseNo(licenseNo);
           setLicenseRestrictions(licenseRestrictions);
@@ -263,14 +263,81 @@ export default function CustomerSettings() {
     setOpenInfoCancelModal(false);
   }
 
+  // Handle license file selection
+  function handleLicenseFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setSuccessMessage(validationError);
+      setShowSuccess(true);
+      return;
+    }
+
+    setDraftLicenseImage(file);
+    setPreviewLicenseImage(URL.createObjectURL(file));
+  }
+
+  // Upload license image to Supabase
+  async function uploadLicenseImage() {
+    if (!draftLicenseImage) return null;
+
+    setLicenseImageUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', draftLicenseImage);
+      formData.append('licenseNumber', draftLicenseNo);
+      formData.append('username', profile.username || '');
+
+      const response = await fetch(`${getApiBase()}/api/storage/licenses`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Upload failed:', errorData);
+        return null;
+      }
+
+      const result = await response.json();
+      console.log('📦 Customer license upload response:', result);
+      
+      // Return the uploaded image URL (use filePath which contains the public URL)
+      return result.filePath || result.url || result.publicUrl;
+    } catch (error) {
+      console.error('Error uploading license image:', error);
+      return null;
+    } finally {
+      setLicenseImageUploading(false);
+    }
+  }
+
   async function handleLicenseSaveConfirm() {
     setSavingLicense(true);
 
     try {
+      // Upload image first if a new one was selected
+      let uploadedImageUrl = licenseImage;
+      if (draftLicenseImage) {
+        uploadedImageUrl = await uploadLicenseImage();
+        if (!uploadedImageUrl) {
+          setSuccessMessage('Failed to upload license image. Please try again.');
+          setShowSuccess(true);
+          setSavingLicense(false);
+          return; // Stop execution if upload fails
+        }
+      }
+
       const updateData = {
         restrictions: draftLicenseRestrictions,
         expiry_date: draftLicenseExpiration,
-        dl_img_url: licenseImage || previewLicenseImage || '',
+        dl_img_url: uploadedImageUrl || '',
       };
 
       console.log('🚀 Sending to backend:', updateData);
@@ -293,7 +360,9 @@ export default function CustomerSettings() {
         console.log('✅ License updated:', result);
         setLicenseRestrictions(updateData.restrictions);
         setLicenseExpiration(updateData.expiry_date);
-        setLicenseImage(updateData.dl_img_url);
+        setLicenseImage(uploadedImageUrl);
+        setDraftLicenseImage(null); // Clear draft after successful save
+        setPreviewLicenseImage(null); // Clear preview
         setIsEditingLicense(false);
         setOpenLicenseSaveModal(false);
         setOpenLicenseCancelModal(false);
@@ -301,9 +370,13 @@ export default function CustomerSettings() {
         setShowSuccess(true);
       } else {
         console.error('❌ Failed to update license:', result);
+        setSuccessMessage(result.error || 'Failed to update license');
+        setShowSuccess(true);
       }
     } catch (error) {
       console.error('❌ Error updating license:', error);
+      setSuccessMessage('Error updating license');
+      setShowSuccess(true);
     } finally {
       setSavingLicense(false);
     }
@@ -1168,34 +1241,50 @@ export default function CustomerSettings() {
                               objectFit: 'contain',
                               cursor: isEditingLicense ? 'default' : 'pointer',
                               transition: 'transform 0.2s ease',
+                              opacity: licenseImageUploading ? 0.5 : 1,
                             }}
                             onClick={() =>
                               !isEditingLicense && setOpenLicenseModal(true)
                             }
                           />
-                          {/* Camera Icon Upload Button (Only in Edit Mode) */}
+                          {/* Upload/Change/Remove Buttons (Only in Edit Mode) */}
                           {isEditingLicense && (
-                            <IconButton
-                              color="primary"
-                              component="label"
-                              sx={{ mt: 1 }}
-                            >
-                              <PhotoCamera />
-                              <input
-                                type="file"
-                                accept="image/*"
-                                hidden
-                                onChange={(e) => {
-                                  const file = e.target.files[0];
-                                  if (file) {
-                                    setDraftLicenseImage(file);
-                                    setPreviewLicenseImage(
-                                      URL.createObjectURL(file)
-                                    );
-                                  }
-                                }}
-                              />
-                            </IconButton>
+                            <Box sx={{ mt: 2, display: 'flex', gap: 1, flexDirection: 'column', alignItems: 'center' }}>
+                              {licenseImageUploading ? (
+                                <CircularProgress size={24} />
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="contained"
+                                    component="label"
+                                    startIcon={<PhotoCamera />}
+                                    disabled={savingLicense}
+                                  >
+                                    {previewLicenseImage ? 'Change Image' : 'Upload Image'}
+                                    <input
+                                      type="file"
+                                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                                      hidden
+                                      onChange={handleLicenseFileChange}
+                                    />
+                                  </Button>
+                                  {previewLicenseImage && (
+                                    <Button
+                                      variant="outlined"
+                                      color="error"
+                                      size="small"
+                                      onClick={() => {
+                                        setDraftLicenseImage(null);
+                                        setPreviewLicenseImage(null);
+                                      }}
+                                      disabled={savingLicense}
+                                    >
+                                      Remove
+                                    </Button>
+                                  )}
+                                </>
+                              )}
+                            </Box>
                           )}
                         </Box>
                       </Box>
@@ -1219,6 +1308,7 @@ export default function CustomerSettings() {
                             color="primary"
                             startIcon={<SaveIcon />}
                             onClick={() => setOpenLicenseSaveModal(true)}
+                            disabled={savingLicense || licenseImageUploading}
                           >
                             Save Changes
                           </Button>
@@ -1227,6 +1317,7 @@ export default function CustomerSettings() {
                             color="inherit"
                             startIcon={<CloseIcon />}
                             onClick={() => setOpenLicenseCancelModal(true)}
+                            disabled={savingLicense || licenseImageUploading}
                           >
                             Cancel
                           </Button>

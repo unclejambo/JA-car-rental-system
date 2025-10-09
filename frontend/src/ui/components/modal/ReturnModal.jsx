@@ -348,8 +348,8 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                             <Box
                               key={imgKey}
                               sx={{
-                                width: 60,
-                                height: 40,
+                                width: { xs: 50, sm: 80 },
+                                height: { xs: 50, sm: 80 },
                                 cursor: 'pointer',
                                 border: '1px solid #ddd',
                                 borderRadius: 1,

@@ -78,6 +78,22 @@ export const createRelease = async (req, res) => {
       }
     });
 
+    // Update the booking to set isRelease to true and status to In Progress
+    await prisma.booking.update({
+      where: { booking_id: Number(booking_id) },
+      data: { 
+        isRelease: true,
+        booking_status: 'In Progress'
+      }
+    });
+
+    console.log('Release created and booking updated:', {
+      release_id: release.release_id,
+      booking_id: release.booking_id,
+      isRelease: true,
+      booking_status: 'In Progress'
+    });
+
     res.status(201).json({
       success: true,
       message: 'Release created successfully',

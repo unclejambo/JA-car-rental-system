@@ -2,9 +2,46 @@ import prisma from '../config/prisma.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize Supabase client
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+/**
+ * Helper function to generate signed URL for release images
+ */
+async function getSignedReleaseImageUrl(imageUrl) {
+  if (!imageUrl) return null;
+  
+  try {
+    // Extract the path from the URL if it's already a full URL
+    let path = imageUrl;
+    if (imageUrl.includes('/release_images/')) {
+      path = imageUrl.split('/release_images/')[1];
+      // Decode any URL-encoded characters
+      path = decodeURIComponent(path);
+    }
+    
+    const { data, error } = await supabase.storage
+      .from('licenses')
+      .createSignedUrl(`release_images/${path}`, 60 * 60 * 24 * 365); // 1 year
+    
+    if (error) {
+      console.error('Error generating signed URL for:', path, error);
+      return imageUrl; // Return original URL as fallback
+    }
+    
+    return data.signedUrl;
+  } catch (err) {
+    console.error('Exception generating signed URL:', err);
+    return imageUrl; // Return original URL as fallback
+  }
+}
 
 // Get return data for a specific booking
 export const getReturnData = async (req, res) => {
@@ -40,7 +77,42 @@ export const getReturnData = async (req, res) => {
     // Debug: Log release image data
     console.log('Return data - booking.releases:', booking.releases);
     if (booking.releases && booking.releases.length > 0) {
-      console.log('First release images:', {
+      console.log('First release images (before signed URLs):', {
+        front_img: booking.releases[0].front_img,
+        back_img: booking.releases[0].back_img,
+        right_img: booking.releases[0].right_img,
+        left_img: booking.releases[0].left_img
+      });
+    }
+
+    // Generate signed URLs for release images
+    if (booking.releases && booking.releases.length > 0) {
+      const releasesWithSignedUrls = await Promise.all(
+        booking.releases.map(async (release) => {
+          const [front_img, back_img, right_img, left_img, valid_id_img1, valid_id_img2] = await Promise.all([
+            getSignedReleaseImageUrl(release.front_img),
+            getSignedReleaseImageUrl(release.back_img),
+            getSignedReleaseImageUrl(release.right_img),
+            getSignedReleaseImageUrl(release.left_img),
+            getSignedReleaseImageUrl(release.valid_id_img1),
+            getSignedReleaseImageUrl(release.valid_id_img2)
+          ]);
+
+          return {
+            ...release,
+            front_img,
+            back_img,
+            right_img,
+            left_img,
+            valid_id_img1,
+            valid_id_img2
+          };
+        })
+      );
+
+      booking.releases = releasesWithSignedUrls;
+
+      console.log('First release images (after signed URLs):', {
         front_img: booking.releases[0].front_img,
         back_img: booking.releases[0].back_img,
         right_img: booking.releases[0].right_img,

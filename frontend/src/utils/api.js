@@ -102,3 +102,53 @@ export const returnAPI = {
     return await response.json();
   }
 };
+
+// Booking API functions
+export const bookingAPI = {
+  // Confirm booking and update isPay
+  confirmBooking: async (bookingId, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/bookings/${bookingId}/confirm`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to confirm booking' }));
+      console.error('Confirm booking error response:', error);
+      throw new Error(error.message || error.error || 'Failed to confirm booking');
+    }
+    return await response.json();
+  },
+
+  // Update isPay status
+  updateIsPay: async (bookingId, isPay, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/bookings/${bookingId}/is-pay`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPay })
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to update isPay status' }));
+      throw new Error(error.message || error.error || 'Failed to update isPay status');
+    }
+    return await response.json();
+  }
+};
+
+// Payment API functions
+export const paymentAPI = {
+  // Delete payment by booking ID
+  deletePaymentByBookingId: async (bookingId, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/payments/booking/${bookingId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to delete payment' }));
+      throw new Error(error.message || error.error || 'Failed to delete payment');
+    }
+    return await response.json();
+  }
+};

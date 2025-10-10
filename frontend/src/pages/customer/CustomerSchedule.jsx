@@ -183,7 +183,7 @@ function CustomerSchedule() {
                 </Button>
               </Box>
               <Typography variant="body1" color="text.secondary">
-                View your upcoming booking schedules
+                View your upcoming schedules and past bookings.
               </Typography>
             </Box>
 

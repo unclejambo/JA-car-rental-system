@@ -36,8 +36,13 @@ import { updateLicense } from '../../store/license'; // same approach as Custome
 
 export default function DriverSettings() {
   // Tabs
-  const [activeTab, setActiveTab] = useState(0);
-  const handleTabChange = (event, newValue) => setActiveTab(newValue);
+  const [activeTab, setActiveTab] = useState(
+    parseInt(localStorage.getItem('driverSettingsTab') || '0', 10)
+  );
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+    localStorage.setItem('driverSettingsTab', newValue.toString());
+  };
 
   // Layout / UI
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -78,7 +83,9 @@ export default function DriverSettings() {
   const [licenseNumber, setLicenseNumber] = useState('');
   const [licenseRestrictions, setLicenseRestrictions] = useState('');
   const [licenseExpiration, setLicenseExpiration] = useState('');
-  const [licenseImage, setLicenseImage] = useState('https://cdn-icons-png.flaticon.com/512/3135/3135715.png');
+  const [licenseImage, setLicenseImage] = useState(
+    'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+  );
 
   const [draftLicenseNo, setDraftLicenseNo] = useState('');
   const [draftLicenseRestrictions, setDraftLicenseRestrictions] = useState('');
@@ -347,13 +354,17 @@ export default function DriverSettings() {
           username: updated.username || '',
           userType: updated.user_type || profile.userType || 'driver',
           address: updated.address || '',
-          profileImageUrl: updated.profile_img_url || imageUrl || profile.profileImageUrl || '',
+          profileImageUrl:
+            updated.profile_img_url ||
+            imageUrl ||
+            profile.profileImageUrl ||
+            '',
         };
 
         setProfile(updatedProfile);
         setDraft(updatedProfile);
         setProfileImage(null); // Clear the file after upload
-        
+
         // Update image preview to match the saved profile image
         setImagePreview(updatedProfile.profileImageUrl);
 
@@ -405,7 +416,7 @@ export default function DriverSettings() {
         setError(validation);
         return;
       }
-      
+
       setDraftLicenseImage(file);
       setPreviewLicenseImage(URL.createObjectURL(file));
       setError(null);
@@ -1436,7 +1447,9 @@ export default function DriverSettings() {
                                 minWidth: 'auto',
                               }}
                             >
-                              {previewLicenseImage ? 'Change Image' : 'Upload Image'}
+                              {previewLicenseImage
+                                ? 'Change Image'
+                                : 'Upload Image'}
                               <input
                                 type="file"
                                 accept="image/jpeg,image/jpg,image/png,image/webp"

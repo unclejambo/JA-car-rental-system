@@ -60,11 +60,19 @@ function EmptyState({ icon: Icon, title, message }) {
 
 function CustomerBookingHistory() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
   const [bookings, setBookings] = useState(null);
   const [payments, setPayments] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const [activeTab, setActiveTab] = useState(
+    parseInt(localStorage.getItem('customerSettingsTab') || '0', 10)
+  );
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+    localStorage.setItem('customerSettingsTab', newValue.toString());
+  };
 
   const API_BASE = getApiBase().replace(/\/$/, '');
 
@@ -144,10 +152,6 @@ function CustomerBookingHistory() {
   useEffect(() => {
     fetchData();
   }, []);
-
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
 
   if (loading && (bookings === null || payments === null)) {
     return (

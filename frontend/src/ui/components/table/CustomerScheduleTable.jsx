@@ -55,7 +55,7 @@ const ScheduleTable = ({ rows, loading }) => {
     {
       field: 'start_date',
       headerName: 'Start Date',
-      flex: 1,
+      flex: 0.5,
       minWidth: 100,
       renderCell: (params) => (
         <span>{formatDate(params?.row?.start_date ?? params?.value)}</span>
@@ -64,7 +64,7 @@ const ScheduleTable = ({ rows, loading }) => {
     {
       field: 'pickup_time',
       headerName: 'Pickup Time',
-      flex: 1,
+      flex: 0.5,
       minWidth: 140,
       renderCell: (params) => (
         <span>{formatTime(params?.row?.pickup_time ?? params?.value)}</span>
@@ -73,13 +73,13 @@ const ScheduleTable = ({ rows, loading }) => {
     {
       field: 'pickup_loc',
       headerName: 'Pickup Location',
-      flex: 1,
+      flex: 1.5,
       minWidth: 120,
     },
     {
       field: 'end_date',
       headerName: 'End Date',
-      flex: 1,
+      flex: 0.5,
       minWidth: 100,
       renderCell: (params) => (
         <span>{formatDate(params?.row?.end_date ?? params?.value)}</span>
@@ -88,7 +88,7 @@ const ScheduleTable = ({ rows, loading }) => {
     {
       field: 'dropoff_time',
       headerName: 'Drop Off Time',
-      flex: 1,
+      flex: 0.5,
       minWidth: 140,
       renderCell: (params) => (
         <span>{formatTime(params?.row?.dropoff_time ?? params?.value)}</span>
@@ -97,7 +97,7 @@ const ScheduleTable = ({ rows, loading }) => {
     {
       field: 'dropoff_loc',
       headerName: 'Drop Off Location',
-      flex: 1,
+      flex: 1.5,
       minWidth: 120,
     },
     {

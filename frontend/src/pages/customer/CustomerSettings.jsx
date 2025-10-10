@@ -151,9 +151,13 @@ export default function CustomerSettings() {
   const [showPassword, setShowPassword] = useState(false);
   const [draft, setDraft] = useState(profile);
 
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(
+    parseInt(localStorage.getItem('customerSettingsTab') || '0', 10)
+  );
+
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
+    localStorage.setItem('customerSettingsTab', newValue.toString());
   };
 
   const [openInfoSaveModal, setOpenInfoSaveModal] = useState(false);

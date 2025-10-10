@@ -908,3 +908,117 @@ export const createMissingPaymentRecords = async (req, res) => {
     res.status(500).json({ error: "Failed to create missing payment records" });
   }
 };
+
+// Confirm booking - Logic based on isPay TRUE and booking status
+export const confirmBooking = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+
+    // Get current booking
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId }
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    // Log current booking state for debugging
+    console.log('Confirming booking:', {
+      bookingId,
+      currentStatus: booking.booking_status,
+      currentIsPay: booking.isPay,
+      isPay_type: typeof booking.isPay
+    });
+
+    // Normalize booking status comparison (case-insensitive)
+    const normalizedStatus = booking.booking_status?.toLowerCase();
+    
+    // Check if isPay is TRUE (required for both cases)
+    if (booking.isPay !== true) {
+      return res.status(400).json({ 
+        error: 'Cannot confirm booking',
+        message: 'isPay must be TRUE to confirm booking',
+        currentIsPay: booking.isPay
+      });
+    }
+
+    let updateData = {};
+    
+    // Case 1: isPay is TRUE and status is Pending -> Change to Confirmed and isPay to FALSE
+    if (normalizedStatus === 'pending') {
+      updateData = {
+        booking_status: 'Confirmed',
+        isPay: false
+      };
+      console.log('Action: Pending -> Confirmed, isPay -> false');
+    } 
+    // Case 2: isPay is TRUE and status is Confirmed -> Just set isPay to FALSE
+    else if (normalizedStatus === 'confirmed') {
+      updateData = {
+        isPay: false
+      };
+      console.log('Action: isPay -> false (status remains Confirmed)');
+    } 
+    // Invalid state
+    else {
+      console.log('Invalid state for confirmation:', {
+        normalizedStatus,
+        isPay: booking.isPay
+      });
+      return res.status(400).json({ 
+        error: 'Invalid booking state for confirmation',
+        message: `Cannot confirm booking with status "${booking.booking_status}". Expected status "Pending" or "Confirmed" with isPay TRUE.`,
+        currentStatus: booking.booking_status,
+        currentIsPay: booking.isPay
+      });
+    }
+
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: updateData
+    });
+
+    console.log('Booking confirmed successfully:', {
+      bookingId,
+      newStatus: updatedBooking.booking_status,
+      newIsPay: updatedBooking.isPay
+    });
+
+    res.json({
+      message: 'Booking confirmed successfully',
+      booking: updatedBooking
+    });
+  } catch (error) {
+    console.error('Error confirming booking:', error);
+    res.status(500).json({ 
+      error: 'Failed to confirm booking',
+      details: error.message 
+    });
+  }
+};
+
+// Update isPay status
+export const updateIsPayStatus = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const { isPay } = req.body;
+
+    if (typeof isPay !== 'boolean') {
+      return res.status(400).json({ error: 'isPay must be a boolean value' });
+    }
+
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: { isPay }
+    });
+
+    res.json({
+      message: 'isPay status updated successfully',
+      booking: updatedBooking
+    });
+  } catch (error) {
+    console.error('Error updating isPay status:', error);
+    res.status(500).json({ error: 'Failed to update isPay status' });
+  }
+};

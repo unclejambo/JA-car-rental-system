@@ -37,6 +37,7 @@ model Customer {
   status            String?
   driver_license_no String?
   isRecUpdate       String?
+  profile_img_url   String?
   bookings          Booking[]
   driver_license    DriverLicense? @relation("CustomerDriverLicense", fields: [driver_license_no], references: [driver_license_no])
   payments          Payment[]
@@ -65,6 +66,7 @@ model Driver {
   password          String
   driver_license_no String
   status            String?
+  profile_img_url   String?
   bookings          Booking[]
   driver_license    DriverLicense @relation(fields: [driver_license_no], references: [driver_license_no])
   releases          Release[]
@@ -201,10 +203,10 @@ model Release {
   equip_others      String?
   gas_level         String?
   license_presented Boolean? @default(false)
-  front_img         String?  @default("https://yiehortophscxugrjlie.supabase.co/storage/v1/object/public/licenses/dl_img/DL80808080_gronk_1758978590592.png")
-  back_img          String?  @default("https://yiehortophscxugrjlie.supabase.co/storage/v1/object/public/licenses/dl_img/DL80808080_gronk_1758978590592.png")
-  right_img         String?  @default("https://yiehortophscxugrjlie.supabase.co/storage/v1/object/public/licenses/dl_img/DL80808080_gronk_1758978590592.png")
-  left_img          String?  @default("https://yiehortophscxugrjlie.supabase.co/storage/v1/object/public/licenses/dl_img/DL80808080_gronk_1758978590592.png")
+  front_img         String?
+  back_img          String?
+  right_img         String?
+  left_img          String?
   booking           Booking  @relation(fields: [booking_id], references: [booking_id])
   driver            Driver   @relation(fields: [drivers_id], references: [drivers_id])
 }

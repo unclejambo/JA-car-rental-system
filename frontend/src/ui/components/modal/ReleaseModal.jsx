@@ -416,6 +416,16 @@ export default function ReleaseModal({
           </Box>
 
           {/* Payment */}
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              Remaining Balance: ₱
+              {(reservation?.balance || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </Typography>
+          </Box>
+
           <Grid container spacing={2}>
             <Grid>
               <TextField

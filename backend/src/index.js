@@ -41,6 +41,12 @@ app.use(express.urlencoded({ extended: true })); // <--- added
 // Serve static files (uploaded images)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// Debug middleware - log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
+
 // Test route
 app.get('/', (req, res) => {
   res.send('JA Car Rental Backend is running!');

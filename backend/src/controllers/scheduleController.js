@@ -18,6 +18,7 @@ export const getSchedules = async (req, res) => {
         dropoff_loc: true,
         isSelfDriver: true,
         booking_status: true,
+        balance: true,
         customer: {
           select: { first_name: true, last_name: true },
         },
@@ -46,6 +47,7 @@ export const getSchedules = async (req, res) => {
       }${s.car?.model ?? ""}`.trim(),
       isSelfDriver: s.isSelfDriver,
       booking_status: s.booking_status,
+      balance: s.balance,
     }));
 
     res.json(mapped);

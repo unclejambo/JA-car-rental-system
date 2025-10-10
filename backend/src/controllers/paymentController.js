@@ -250,6 +250,97 @@ export const deletePayment = async (req, res) => {
   }
 };
 
+// Delete payment by booking ID (latest payment)
+export const deletePaymentByBookingId = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.bookingId);
+    
+    // Get the booking with all its payments
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+      include: {
+        payments: {
+          orderBy: { paid_date: 'desc' } // Get latest payment first
+        }
+      }
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    if (!booking.payments || booking.payments.length === 0) {
+      return res.status(404).json({ error: 'No payments found for this booking' });
+    }
+
+    // Get the latest payment
+    const latestPayment = booking.payments[0];
+
+    console.log('Deleting payment:', {
+      bookingId,
+      paymentId: latestPayment.payment_id,
+      amount: latestPayment.amount
+    });
+
+    // Calculate total paid after removing this payment
+    const totalPaidAfterDeletion = booking.payments
+      .filter(p => p.payment_id !== latestPayment.payment_id)
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
+    
+    // Calculate new balance
+    const newBalance = (booking.total_amount || 0) - totalPaidAfterDeletion;
+    
+    // Determine new booking status based on remaining payments
+    const newBookingStatus = determineBookingStatus(
+      totalPaidAfterDeletion, 
+      booking.total_amount, 
+      booking.booking_status
+    );
+    
+    // Delete the payment
+    await prisma.payment.delete({
+      where: { payment_id: latestPayment.payment_id },
+    });
+
+    // Update booking with new balance and payment status
+    // Note: isPay is already set to false by the updateIsPayStatus call from frontend
+    await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: {
+        balance: newBalance,
+        payment_status: newBalance <= 0 ? 'Paid' : 'Unpaid',
+        booking_status: newBookingStatus,
+      },
+    });
+
+    // Recalculate balances for remaining payments
+    await recalculatePaymentBalances(bookingId);
+
+    console.log('Payment deleted successfully:', {
+      bookingId,
+      deletedPaymentId: latestPayment.payment_id,
+      newBalance,
+      newPaymentStatus: newBalance <= 0 ? 'Paid' : 'Unpaid',
+      newBookingStatus
+    });
+
+    res.status(200).json({
+      message: 'Payment deleted successfully',
+      deleted_payment: latestPayment,
+      booking_update: {
+        booking_id: bookingId,
+        new_balance: newBalance,
+        new_payment_status: newBalance <= 0 ? 'Paid' : 'Unpaid',
+        new_booking_status: newBookingStatus,
+        total_paid: totalPaidAfterDeletion,
+      },
+    });
+  } catch (error) {
+    console.error('Error deleting payment by booking ID:', error);
+    res.status(500).json({ error: 'Failed to delete payment' });
+  }
+};
+
 // Utility function to fix all booking status inconsistencies
 export const fixAllBookingStatusInconsistencies = async (req, res) => {
   try {

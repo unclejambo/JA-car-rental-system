@@ -51,6 +51,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
   });
 
   const [releaseData, setReleaseData] = useState(null);
+  const [bookingData, setBookingData] = useState(null); // Store full booking data for customer info
 
   // Debug: Log when releaseData changes
   useEffect(() => {
@@ -102,6 +103,9 @@ export default function ReturnModal({ show, onClose, bookingId }) {
               right_img: release.right_img,
               left_img: release.left_img,
             });
+
+            // Store booking data for customer info
+            setBookingData(response.booking);
           }
         } catch (err) {
           setError('Failed to load return data');
@@ -114,26 +118,32 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     loadData();
   }, [show, bookingId]);
 
-  // Calculate fees whenever form data changes
+  // Calculate fees whenever form data changes (with debouncing)
   useEffect(() => {
-    const calculateFeesAsync = async () => {
-      if (bookingId && releaseData) {
-        try {
-          const response = await returnAPI.calculateFees(bookingId, {
-            gasLevel: formData.gasLevel,
-            damageStatus: formData.damageStatus,
-            equipmentStatus: formData.equipmentStatus,
-            equip_others: formData.equip_others,
-            isClean: formData.isClean,
-            hasStain: formData.hasStain,
-          });
-          setCalculatedFees(response.fees);
-        } catch (err) {
-          console.error('Failed to calculate fees:', err);
+    // Debounce the API call to prevent excessive requests
+    const timeoutId = setTimeout(() => {
+      const calculateFeesAsync = async () => {
+        if (bookingId && releaseData) {
+          try {
+            const response = await returnAPI.calculateFees(bookingId, {
+              gasLevel: formData.gasLevel,
+              damageStatus: formData.damageStatus,
+              equipmentStatus: formData.equipmentStatus,
+              equip_others: formData.equip_others,
+              isClean: formData.isClean,
+              hasStain: formData.hasStain,
+            });
+            setCalculatedFees(response.fees);
+          } catch (err) {
+            console.error('Failed to calculate fees:', err);
+          }
         }
-      }
-    };
-    calculateFeesAsync();
+      };
+      calculateFeesAsync();
+    }, 300); // 300ms debounce
+
+    // Cleanup function to cancel the timeout if dependencies change
+    return () => clearTimeout(timeoutId);
   }, [
     bookingId,
     formData.gasLevel,
@@ -168,7 +178,13 @@ export default function ReturnModal({ show, onClose, bookingId }) {
 
     // Show damage upload when major/minor is selected
     if (name === 'damageStatus') {
-      setShowDamageUpload(value === 'major' || value === 'minor');
+      const shouldShowUpload = value === 'major' || value === 'minor';
+      setShowDamageUpload(shouldShowUpload);
+      
+      // Clear damage image when switching to "No Damages"
+      if (value === 'noDamage') {
+        setDamageImageFile(null);
+      }
     }
   };
 
@@ -178,21 +194,19 @@ export default function ReturnModal({ show, onClose, bookingId }) {
   };
 
   const handleDamageImageUpload = async (file) => {
-    try {
-      const formDataUpload = new FormData();
-      formDataUpload.append('damageImage', file);
-      formDataUpload.append('damageType', formData.damageStatus);
-
-      await returnAPI.uploadDamageImage(bookingId, formDataUpload);
-      setSuccess('Damage image uploaded successfully');
-    } catch (err) {
-      setError('Failed to upload damage image');
-      console.error(err);
-    }
+    // Just store the file locally, don't upload yet
+    setDamageImageFile(file);
+    console.log('📎 Damage image selected:', file.name);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate damage image is selected for major/minor damages
+    if ((formData.damageStatus === 'major' || formData.damageStatus === 'minor') && !damageImageFile) {
+      setError('Please upload a damage image before submitting');
+      return;
+    }
 
     if (total > 0) {
       setShowPaymentForm(true);
@@ -206,11 +220,27 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     try {
       setLoading(true);
 
+      // If there's a damage image file, upload it first
+      let uploadedImageUrl = null;
+      if (damageImageFile) {
+        const formDataUpload = new FormData();
+        formDataUpload.append('damageImage', damageImageFile);
+        formDataUpload.append('damageType', formData.damageStatus === 'minorDamage' ? 'minor' : 'major');
+
+        console.log('📸 Uploading damage image for booking:', bookingId);
+        const uploadResponse = await returnAPI.uploadDamageImage(bookingId, formDataUpload);
+        uploadedImageUrl = uploadResponse.imagePath;
+        console.log('✅ Damage image uploaded:', uploadedImageUrl);
+      }
+
       const submitData = {
         ...formData,
         totalFees: total,
         paymentData: directPayment ? paymentData : null,
+        damageImageUrl: uploadedImageUrl || null,
       };
+
+      console.log('📝 Submitting return with data:', submitData);
 
       await returnAPI.submitReturn(bookingId, submitData);
 
@@ -220,7 +250,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
       }, 2000);
     } catch (err) {
       setError('Failed to submit return');
-      console.error(err);
+      console.error('❌ Error submitting return:', err);
     } finally {
       setLoading(false);
     }
@@ -291,7 +321,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                       variant="caption"
                       sx={{ display: 'block', color: 'text.secondary' }}
                     >
-                      Release level: {releaseData?.gas_level || 'N/A'}
+                      Gas level (Before): {releaseData?.gas_level || 'N/A'}
                     </Typography>
                     <RadioGroup
                       row
@@ -348,8 +378,8 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                             <Box
                               key={imgKey}
                               sx={{
-                                width: 60,
-                                height: 40,
+                                width: { xs: 50, sm: 80 },
+                                height: { xs: 50, sm: 80 },
                                 cursor: 'pointer',
                                 border: '1px solid #ddd',
                                 borderRadius: 1,
@@ -470,7 +500,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                           variant="caption"
                           sx={{ display: 'block', mb: 1 }}
                         >
-                          Upload damage image:
+                          Upload damage image: {damageImageFile && '✅ Selected'}
                         </Typography>
                         <input
                           type="file"
@@ -483,6 +513,14 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                             }
                           }}
                         />
+                        {damageImageFile && (
+                          <Typography
+                            variant="caption"
+                            sx={{ display: 'block', mt: 0.5, color: 'success.main' }}
+                          >
+                            Image selected: {damageImageFile.name}
+                          </Typography>
+                        )}
                       </Box>
                     )}
                   </Box>
@@ -497,7 +535,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                         variant="caption"
                         sx={{ display: 'block', color: 'text.secondary' }}
                       >
-                        Release equipment: {releaseData.equip_others}
+                        Missing/Damaged equipment (Before): {releaseData.equip_others}
                       </Typography>
                     )}
                     <RadioGroup
@@ -807,23 +845,13 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                 control={<Radio />}
                 label="GCash"
               />
-              <FormControlLabel
-                value="Bank Transfer"
-                control={<Radio />}
-                label="Bank Transfer"
-              />
             </RadioGroup>
 
-            {(paymentData.payment_method === 'GCash' ||
-              paymentData.payment_method === 'Bank Transfer') && (
+            {paymentData.payment_method === 'GCash' && (
               <>
                 <TextField
                   name="gcash_no"
-                  label={
-                    paymentData.payment_method === 'GCash'
-                      ? 'GCash Number'
-                      : 'Account Number'
-                  }
+                  label={"GCash Number"}
                   value={paymentData.gcash_no}
                   onChange={(e) =>
                     setPaymentData((prev) => ({

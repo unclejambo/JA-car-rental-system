@@ -43,12 +43,12 @@ export default function CustomerSettings() {
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [saving, setSaving] = useState(false);
-  
+
   // Profile picture state
   const [profileImage, setProfileImage] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [imageUploading, setImageUploading] = useState(false);
-  
+
   function getChanges() {
     const changes = [];
     Object.keys(profile).forEach((key) => {
@@ -88,12 +88,14 @@ export default function CustomerSettings() {
     });
 
     // Upload profile image if changed
-    const updatePromise = profileImage 
-      ? uploadProfileImage().then(imageUrl => {
+    const updatePromise = profileImage
+      ? uploadProfileImage().then((imageUrl) => {
           if (imageUrl) {
             changedFields.profile_img_url = imageUrl;
           }
-          return useCustomerStore.getState().updateCustomer(customerId, changedFields);
+          return useCustomerStore
+            .getState()
+            .updateCustomer(customerId, changedFields);
         })
       : useCustomerStore.getState().updateCustomer(customerId, changedFields);
 
@@ -111,7 +113,8 @@ export default function CustomerSettings() {
             typeof updated.password === 'string' && updated.password !== ''
               ? updated.password
               : draft.password || profile.password || '',
-          profileImageUrl: updated.profile_img_url || profile.profileImageUrl || '',
+          profileImageUrl:
+            updated.profile_img_url || profile.profileImageUrl || '',
         });
         setProfileImage(null); // Clear the file after upload
         setIsEditing(false);
@@ -165,7 +168,9 @@ export default function CustomerSettings() {
   const [licenseNo, setLicenseNo] = useState('');
   const [licenseRestrictions, setLicenseRestrictions] = useState('');
   const [licenseExpiration, setLicenseExpiration] = useState('');
-  const [licenseImage, setLicenseImage] = useState('https://cdn-icons-png.flaticon.com/512/3135/3135715.png');
+  const [licenseImage, setLicenseImage] = useState(
+    'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+  );
   const [draftLicenseNo, setDraftLicenseNo] = useState('');
   const [draftLicenseRestrictions, setDraftLicenseRestrictions] = useState('');
   const [draftLicenseExpiration, setDraftLicenseExpiration] = useState('');
@@ -307,7 +312,7 @@ export default function CustomerSettings() {
 
       const result = await response.json();
       console.log('📦 Customer license upload response:', result);
-      
+
       // Return the uploaded image URL (use filePath which contains the public URL)
       return result.filePath || result.url || result.publicUrl;
     } catch (error) {
@@ -327,7 +332,9 @@ export default function CustomerSettings() {
       if (draftLicenseImage) {
         uploadedImageUrl = await uploadLicenseImage();
         if (!uploadedImageUrl) {
-          setSuccessMessage('Failed to upload license image. Please try again.');
+          setSuccessMessage(
+            'Failed to upload license image. Please try again.'
+          );
           setShowSuccess(true);
           setSavingLicense(false);
           return; // Stop execution if upload fails
@@ -455,9 +462,11 @@ export default function CustomerSettings() {
       // Update profile in database
       let user = JSON.parse(localStorage.getItem('userInfo'));
       const customerId = user?.id;
-      const updateResponse = await useCustomerStore.getState().updateCustomer(customerId, { 
-        profile_img_url: '' 
-      });
+      const updateResponse = await useCustomerStore
+        .getState()
+        .updateCustomer(customerId, {
+          profile_img_url: '',
+        });
 
       if (updateResponse) {
         setSuccessMessage('Profile picture removed successfully!');
@@ -775,7 +784,9 @@ export default function CustomerSettings() {
                               boxShadow: 2,
                               cursor: 'pointer',
                               transition: 'transform 0.2s ease',
-                              border: imagePreview ? '3px solid #e0e0e0' : 'none',
+                              border: imagePreview
+                                ? '3px solid #e0e0e0'
+                                : 'none',
                               '&:hover': {
                                 transform: 'scale(1.05)',
                               },
@@ -1249,7 +1260,15 @@ export default function CustomerSettings() {
                           />
                           {/* Upload/Change/Remove Buttons (Only in Edit Mode) */}
                           {isEditingLicense && (
-                            <Box sx={{ mt: 2, display: 'flex', gap: 1, flexDirection: 'column', alignItems: 'center' }}>
+                            <Box
+                              sx={{
+                                mt: 2,
+                                display: 'flex',
+                                gap: 1,
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                              }}
+                            >
                               {licenseImageUploading ? (
                                 <CircularProgress size={24} />
                               ) : (
@@ -1260,7 +1279,9 @@ export default function CustomerSettings() {
                                     startIcon={<PhotoCamera />}
                                     disabled={savingLicense}
                                   >
-                                    {previewLicenseImage ? 'Change Image' : 'Upload Image'}
+                                    {previewLicenseImage
+                                      ? 'Change Image'
+                                      : 'Upload Image'}
                                     <input
                                       type="file"
                                       accept="image/jpeg,image/jpg,image/png,image/webp"
@@ -1486,7 +1507,11 @@ export default function CustomerSettings() {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src="/jude.jpg"
+              src={
+                imagePreview ||
+                profile.profileImageUrl ||
+                'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+              }
               alt="Profile"
               style={{
                 maxWidth: '90vw',

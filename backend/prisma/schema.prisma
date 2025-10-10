@@ -203,10 +203,10 @@ model Release {
   equip_others      String?
   gas_level         String?
   license_presented Boolean? @default(false)
-  front_img         String?  @default("https://yiehortophscxugrjlie.supabase.co/storage/v1/object/public/licenses/dl_img/DL80808080_gronk_1758978590592.png")
-  back_img          String?  @default("https://yiehortophscxugrjlie.supabase.co/storage/v1/object/public/licenses/dl_img/DL80808080_gronk_1758978590592.png")
-  right_img         String?  @default("https://yiehortophscxugrjlie.supabase.co/storage/v1/object/public/licenses/dl_img/DL80808080_gronk_1758978590592.png")
-  left_img          String?  @default("https://yiehortophscxugrjlie.supabase.co/storage/v1/object/public/licenses/dl_img/DL80808080_gronk_1758978590592.png")
+  front_img         String?
+  back_img          String?
+  right_img         String?
+  left_img          String?
   booking           Booking  @relation(fields: [booking_id], references: [booking_id])
   driver            Driver   @relation(fields: [drivers_id], references: [drivers_id])
 }

@@ -72,11 +72,11 @@ export const recalculatePaymentBalances = async (bookingId) => {
 // Utility function to determine appropriate booking status based on payments
 const determineBookingStatus = (totalPaid, totalAmount, currentStatus) => {
   if (totalPaid <= 0) {
-    // No payments made - should be pending
-    return 'pending';
+    // No payments made - should be Pending (capitalized)
+    return 'Pending';
   } else if (totalPaid >= totalAmount) {
     // Fully paid - should be confirmed or maintain current status if already progressed
-    return ['Confirmed', 'In Progress', 'Completed', 'Returned'].includes(currentStatus?.toLowerCase()) 
+    return ['Confirmed', 'In Progress', 'Completed', 'Returned'].includes(currentStatus) 
       ? currentStatus 
       : 'Confirmed';
   } else {
@@ -387,19 +387,23 @@ export const processBookingPayment = async (req, res) => {
       },
     });
 
-    // Update booking payment status if fully paid
+    // Update booking payment status and isPay flag
+    // isPay should be true whenever customer makes any payment
     if (payment.balance === 0) {
       await prisma.booking.update({
         where: { booking_id: parseInt(booking_id) },
         data: {
-          payment_status: "paid",
+          payment_status: "Paid",
           isPay: true,
         },
       });
     } else {
       await prisma.booking.update({
         where: { booking_id: parseInt(booking_id) },
-        data: { payment_status: "partial" },
+        data: { 
+          payment_status: "Unpaid",
+          isPay: true, // Set to true whenever customer makes payment
+        },
       });
     }
 

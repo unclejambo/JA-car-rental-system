@@ -288,8 +288,8 @@ export const createBooking = async (req, res) => {
       total_amount: Math.round(
         parseFloat(total_amount || totalCost || rental_fee || 0)
       ),
-      payment_status: "pending",
-      booking_status: "pending",
+      payment_status: "Unpaid", // Changed from "pending" to "Unpaid"
+      booking_status: "Pending", // Changed from "pending" to "Pending"
       isSelfDriver:
         isSelfDriver !== undefined
           ? isSelfDriver
@@ -302,7 +302,9 @@ export const createBooking = async (req, res) => {
       isRelease: false,
       isReturned: false,
       isPay: false,
-      balance: 0,
+      balance: Math.round(
+        parseFloat(total_amount || totalCost || rental_fee || 0)
+      ), // Balance equals total_amount by default
       isDeliver: deliveryType === "delivery",
       deliver_loc:
         deliveryType === "delivery" ? deliveryLocation || pickup_loc : null,

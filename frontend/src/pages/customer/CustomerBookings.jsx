@@ -148,7 +148,6 @@ function CustomerBookings() {
   const getPaymentStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'paid': return 'success';
-      case 'partial': return 'warning';
       case 'unpaid': return 'error';
       default: return 'default';
     }
@@ -470,8 +469,9 @@ function CustomerBookings() {
                           </Button>
                         )}
 
-                        {/* Cancel Button - For pending bookings */}
-                        {booking.booking_status?.toLowerCase() === 'pending' && (
+                        {/* Cancel Button - For pending and confirmed bookings */}
+                        {(booking.booking_status?.toLowerCase() === 'pending' || 
+                          booking.booking_status?.toLowerCase() === 'confirmed') && (
                           <Button
                             size="small"
                             variant="outlined"
@@ -491,8 +491,8 @@ function CustomerBookings() {
                           </Button>
                         )}
 
-                        {/* Extend Button - Only for ongoing bookings */}
-                        {booking.booking_status === 'ongoing' && (
+                        {/* Extend Button - For In Progress bookings */}
+                        {booking.booking_status?.toLowerCase() === 'in progress' && (
                           <Button
                             size="small"
                             variant="outlined"
@@ -512,8 +512,8 @@ function CustomerBookings() {
                           </Button>
                         )}
 
-                        {/* Pay Now Button - For bookings with outstanding balance */}
-                        {booking.has_outstanding_balance && 
+                        {/* Pay Now Button - Only show if balance > 0 */}
+                        {booking.balance > 0 && 
                          booking.booking_status?.toLowerCase() !== 'cancelled' && 
                          booking.booking_status?.toLowerCase() !== 'completed' && (
                           <Button

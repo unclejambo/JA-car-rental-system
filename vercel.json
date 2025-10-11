@@ -1,8 +1,4 @@
 {
-  "buildCommand": "npm run build --prefix frontend",
-  "outputDirectory": "frontend/dist",
-  "installCommand": "npm install --prefix frontend",
-  "devCommand": "npm run dev --prefix frontend",
   "routes": [
     {
       "handle": "filesystem"

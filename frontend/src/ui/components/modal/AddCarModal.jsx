@@ -1,8 +1,18 @@
 import { useState, useRef } from 'react';
 import { FaUpload } from 'react-icons/fa';
-import Button from '@mui/material/Button';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+import {
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  TextField,
+  Stack,
+  Alert,
+  InputAdornment,
+} from '@mui/material';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api.js';
 
@@ -18,6 +28,7 @@ export default function AddCarModal({ show, onClose }) {
   const [formData, setFormData] = useState({
     make: '',
     model: '',
+    car_type: '',
     year: '',
     mileage: '',
     no_of_seat: '',
@@ -61,7 +72,9 @@ export default function AddCarModal({ show, onClose }) {
     }
 
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      setError('Unsupported file type. Please select a PNG, JPEG, or JPG image.');
+      setError(
+        'Unsupported file type. Please select a PNG, JPEG, or JPG image.'
+      );
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -88,18 +101,26 @@ export default function AddCarModal({ show, onClose }) {
     uploadFormData.append('model', formData.model);
     uploadFormData.append('licensePlate', formData.license_plate);
 
-    console.log('Uploading car image to:', `${API_BASE}/api/storage/car-images`);
+    console.log(
+      'Uploading car image to:',
+      `${API_BASE}/api/storage/car-images`
+    );
 
-    const response = await authenticatedFetch(`${API_BASE}/api/storage/car-images`, {
-      method: 'POST',
-      body: uploadFormData,
-    });
+    const response = await authenticatedFetch(
+      `${API_BASE}/api/storage/car-images`,
+      {
+        method: 'POST',
+        body: uploadFormData,
+      }
+    );
 
     const result = await response.json();
     console.log('Car image upload response:', result);
 
     if (!response.ok) {
-      throw new Error(result.error || result.message || 'Failed to upload car image');
+      throw new Error(
+        result.error || result.message || 'Failed to upload car image'
+      );
     }
 
     return result.filePath || result.path || result.url || result.publicUrl;
@@ -112,7 +133,7 @@ export default function AddCarModal({ show, onClose }) {
 
     try {
       let carImageUrl = 'default-car-image.jpg';
-      
+
       // Upload car image first if one is selected
       if (carImageFile) {
         console.log('Uploading car image...');
@@ -123,6 +144,7 @@ export default function AddCarModal({ show, onClose }) {
       const carData = {
         make: formData.make,
         model: formData.model,
+        car_type: formData.car_type,
         year: formData.year ? parseInt(formData.year) : null,
         license_plate: formData.license_plate,
         no_of_seat: parseInt(formData.no_of_seat) || 5, // Default to 5 seats if not provided
@@ -131,8 +153,6 @@ export default function AddCarModal({ show, onClose }) {
         car_img_url: carImageUrl,
         mileage: formData.mileage !== '' ? parseInt(formData.mileage) : 0,
       };
-
-
 
       const response = await authenticatedFetch(`${API_BASE}/cars`, {
         method: 'POST',
@@ -147,12 +167,11 @@ export default function AddCarModal({ show, onClose }) {
         throw new Error(errorData.error || 'Failed to create car');
       }
 
-
-
       // Reset form and close modal
       setFormData({
         make: '',
         model: '',
+        type: '',
         year: '',
         mileage: '',
         no_of_seat: '',
@@ -161,7 +180,7 @@ export default function AddCarModal({ show, onClose }) {
       });
       setCarImageFile(null);
       onClose();
-      
+
       // Refresh the page to show the new car
       window.location.reload();
     } catch (err) {
@@ -173,195 +192,186 @@ export default function AddCarModal({ show, onClose }) {
   };
 
   return (
-    <>
-      {show && (
-        <div className="modal-overlay" onClick={onClose}>
-          <form
-            className="modal"
-            onClick={(e) => e.stopPropagation()}
-            onSubmit={handleSubmit}
-          >
-            <h1 className="font-pathway" style={{ margin: '0 0 10px 0' }}>
-              ADD CAR
-            </h1>
+    <Dialog
+      open={!!show}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      disableScrollLock
+    >
+      <DialogTitle>Add Car</DialogTitle>
+      <DialogContent dividers>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+        <form id="addCarForm" onSubmit={handleSubmit}>
+          <Stack spacing={2}>
+            <TextField
+              name="make"
+              label="Make"
+              value={formData.make}
+              onChange={handleChange}
+              fullWidth
+              required
+              placeholder="e.g., Toyota"
+            />
 
-            {error && <div className="error-message" style={{
-              fontSize: '0.875rem', 
-              color: '#DC2626', 
-              backgroundColor: '#FEF2F2', 
-              padding: '12px', 
-              borderRadius: '4px', 
-              border: '1px solid #FECACA',
-              marginBottom: '16px'
-            }}>{error}</div>}
+            <TextField
+              name="model"
+              label="Model"
+              value={formData.model}
+              onChange={handleChange}
+              fullWidth
+              required
+              placeholder="e.g., Camry"
+            />
 
-            <div className="field-row">
-              <label className="field-label font-pathway">Make</label>
-              <input
-                className="font-pathway"
-                name="make"
-                value={formData.make}
-                onChange={handleChange}
-                placeholder="Make"
-                required
-              />
-            </div>
-            <div className="field-row">
-              <label className="field-label font-pathway">Model</label>
-              <input
-                className="font-pathway"
-                name="model"
-                value={formData.model}
-                onChange={handleChange}
-                placeholder="Model"
-                required
-              />
-            </div>
-            <div className="field-row">
-              <label className="field-label font-pathway">Year</label>
-              <input
-                className="font-pathway"
-                name="year"
-                type="number"
-                min="1900"
-                max={new Date().getFullYear() + 1}
-                value={formData.year}
-                onChange={handleChange}
-                placeholder="Year"
-                required
-              />
-            </div>
-            <div className="field-row">
-              <label className="field-label font-pathway">Mileage</label>
-              <input
-                className="font-pathway"
-                name="mileage"
-                type="number"
-                min="0"
-                value={formData.mileage}
-                onChange={handleChange}
-                placeholder="Mileage"
-              />
-            </div>
-            <div className="field-row">
-              <label className="field-label font-pathway">Seats</label>
-              <input
-                className="font-pathway"
-                name="no_of_seat"
-                type="number"
-                min="1"
-                max="20"
-                value={formData.no_of_seat}
-                onChange={handleChange}
-                placeholder="Seats"
-                required
-              />
-            </div>
-            <div className="field-row">
-              <label className="field-label font-pathway">Rent Price</label>
-              <input
-                className="font-pathway"
-                name="rent_price"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.rent_price}
-                onChange={handleChange}
-                placeholder="Rent Price"
-                required
-              />
-            </div>
-            <div className="field-row">
-              <label className="field-label font-pathway">License Plate</label>
-              <input
-                className="font-pathway"
-                name="license_plate"
-                value={formData.license_plate}
-                onChange={handleChange}
-                placeholder="License Plate"
-                required
-              />
-            </div>
-            
-            {/* Car Image Upload */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: '600', mb: 1 }}>
-                CAR IMAGE
-              </Typography>
-              <Box>
-                <input
-                  ref={fileInputRef}
-                  id="carImageUpload"
-                  name="file"
-                  type="file"
-                  onChange={handleFileChange}
-                  accept={ALLOWED_FILE_TYPES.join(',')}
-                  style={{ display: 'none' }}
-                />
-                <Button
-                  variant="outlined"
-                  component="label"
-                  htmlFor="carImageUpload"
-                  startIcon={<FaUpload />}
-                  sx={{
-                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
-                    borderColor: 'rgba(156, 163, 175, 0.5)',
-                    color: 'rgba(75, 85, 99, 1)',
-                    '&:hover': {
-                      backgroundColor: 'rgba(209, 213, 219, 0.8)',
-                      borderColor: 'rgba(156, 163, 175, 0.8)',
-                    },
-                  }}>
-                  {carImageFile ? 'Change Image' : 'Upload Car Image'}
-                </Button>
-                
-                {carImageFile && (
-                  <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'rgba(75, 85, 99, 1)', flex: 1 }}>
-                      {carImageFile.name}
-                    </Typography>
-                    <Button
-                      type="button"
-                      onClick={removeFile}
-                      variant="text"
-                      color="error"
-                      size="small"
-                      sx={{ fontSize: '0.875rem', textDecoration: 'underline', minWidth: 'auto' }}
-                    >
-                      Remove
-                    </Button>
-                  </Box>
-                )}
-              </Box>
-            </Box>
+            <TextField
+              name="car_type"
+              label="Car Type"
+              value={formData.car_type}
+              onChange={handleChange}
+              fullWidth
+              required
+              placeholder="e.g., Sedan, SUV, Hatchback"
+            />
 
-            <div
-              className="btn-container"
-              style={{
-                display: 'flex',
-                gap: '10px',
-                marginTop: '15px',
+            <TextField
+              name="year"
+              label="Year"
+              type="number"
+              value={formData.year}
+              onChange={handleChange}
+              inputProps={{ min: 2000, max: new Date().getFullYear() + 1 }}
+              fullWidth
+              required
+              placeholder="e.g., 2020"
+            />
+
+            <TextField
+              name="mileage"
+              label="Mileage (km)"
+              type="number"
+              value={formData.mileage}
+              onChange={handleChange}
+              inputProps={{ min: 0 }}
+              fullWidth
+              placeholder="e.g., 50000"
+            />
+
+            <TextField
+              name="no_of_seat"
+              label="Number of Seats"
+              type="number"
+              value={formData.no_of_seat}
+              onChange={handleChange}
+              inputProps={{ min: 2, max: 20 }}
+              fullWidth
+              required
+              placeholder="e.g., 5"
+            />
+
+            <TextField
+              name="rent_price"
+              label="Rent Price"
+              type="number"
+              value={formData.rent_price}
+              onChange={handleChange}
+              inputProps={{ min: 0 }}
+              fullWidth
+              required
+              placeholder="Daily rental price"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">₱</InputAdornment>
+                ),
               }}
-            >
-              <button
-                type="submit"
-                className="font-pathway save-btn"
-                disabled={isLoading}
+            />
+
+            <TextField
+              name="license_plate"
+              label="License Plate"
+              value={formData.license_plate}
+              onChange={handleChange}
+              fullWidth
+              required
+              placeholder="e.g., ABC-123"
+            />
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                Car Image
+              </Typography>
+              <input
+                ref={fileInputRef}
+                id="carImageUpload"
+                type="file"
+                accept={ALLOWED_FILE_TYPES.join(',')}
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
+              <Button
+                variant="outlined"
+                startIcon={<FaUpload />}
+                onClick={() => fileInputRef.current?.click()}
+                fullWidth
               >
-                {isLoading ? 'Saving...' : 'Save'}
-              </button>
-              <button
-                type="button"
-                className="font-pathway cancel-btn"
-                onClick={onClose}
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-    </>
+                {carImageFile ? 'Change Image' : 'Upload Image'}
+              </Button>
+              {carImageFile && (
+                <Box
+                  sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}
+                >
+                  <Typography variant="body2" sx={{ flex: 1 }}>
+                    {carImageFile.name}
+                  </Typography>
+                  <Button
+                    type="button"
+                    onClick={removeFile}
+                    color="error"
+                    size="small"
+                  >
+                    Remove
+                  </Button>
+                </Box>
+              )}
+            </Box>
+          </Stack>
+        </form>
+      </DialogContent>
+      <DialogActions sx={{ px: 3 }}>
+        <Box
+          sx={{
+            width: '100%',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            gap: 1,
+          }}
+        >
+          <Button
+            type="submit"
+            form="addCarForm"
+            variant="contained"
+            color="success"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Adding...' : 'Add Car'}
+          </Button>
+          <Button
+            onClick={onClose}
+            variant="outlined"
+            color="error"
+            disabled={isLoading}
+            sx={{
+              '&:hover': { backgroundColor: 'error.main', color: 'white' },
+            }}
+          >
+            Cancel
+          </Button>
+        </Box>
+      </DialogActions>
+    </Dialog>
   );
 }

@@ -11,6 +11,7 @@ import {
   Stack,
   Box, // ADD
 } from '@mui/material';
+import { createAuthenticatedFetch } from '../../../utils/api';
 
 // Schema (dynamic GCash rules, requires a valid resolved customer + booking)
 const paymentSchema = z
@@ -109,7 +110,11 @@ export default function AddPaymentModal({ show, onClose }) {
       setFormData((fd) => ({ ...fd, bookingId: '' }));
       return;
     }
+    // Filter bookings for this customer, and show all bookings (not just those with balances)
+    // This allows payments to be added for any booking, including those with zero balance
     const list = bookings.filter((b) => b.customer_id === custId);
+    console.log(`📋 Bookings for customer ${custId}:`, list.length, 'found');
+    console.log('📋 Sample booking data:', list[0] || 'None');
     setBookingOptions(list);
     setFormData((fd) =>
       list.some((b) => b.booking_id === Number(fd.bookingId))
@@ -124,6 +129,7 @@ export default function AddPaymentModal({ show, onClose }) {
     if (name === 'customerName') {
       const match = findCustomerByName(value);
       next.customerId = match ? match.customer_id : undefined;
+      console.log('🔍 Customer search:', value, '→ Found:', match ? `${match.first_name} ${match.last_name} (ID: ${match.customer_id})` : 'No match');
       updateBookingOptions(next.customerId);
     }
     setFormData(next);
@@ -162,6 +168,10 @@ export default function AddPaymentModal({ show, onClose }) {
     if (!validate(formData)) return;
     try {
       setSubmitting(true);
+      const authFetch = createAuthenticatedFetch(() => {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+      });
       const base =
         import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL || '';
       const payload = {
@@ -174,7 +184,7 @@ export default function AddPaymentModal({ show, onClose }) {
         amount: Number(formData.paymentAmount),
         paid_date: new Date().toISOString(),
       };
-      const res = await fetch(`${base}/payments`, {
+      const res = await authFetch(`${base}/payments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -198,14 +208,25 @@ export default function AddPaymentModal({ show, onClose }) {
     const load = async () => {
       try {
         setLoadingData(true);
+        const authFetch = createAuthenticatedFetch(() => {
+          localStorage.removeItem('authToken');
+          window.location.href = '/login';
+        });
         const base =
           import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL || '';
         const [cRes, bRes] = await Promise.all([
-          fetch(`${base}/customers`),
-          fetch(`${base}/bookings`),
+          authFetch(`${base}/customers`),
+          authFetch(`${base}/bookings`),
         ]);
+        
+        if (!cRes.ok || !bRes.ok) {
+          throw new Error('Failed to fetch data - authentication required');
+        }
+        
         const [cData, bData] = await Promise.all([cRes.json(), bRes.json()]);
         if (!cancel) {
+          console.log('🏪 Loaded customers:', cData?.length || 0);
+          console.log('📋 Loaded bookings:', bData?.length || 0);
           setCustomers(Array.isArray(cData) ? cData : []);
           setBookings(Array.isArray(bData) ? bData : []);
           if (formData.customerName) {
@@ -215,6 +236,7 @@ export default function AddPaymentModal({ show, onClose }) {
         }
       } catch (err) {
         console.error('Failed to fetch customers/bookings', err);
+        setErrors((prev) => ({ ...prev, form: 'Failed to load data. Please ensure you are logged in.' }));
       } finally {
         if (!cancel) setLoadingData(false);
       }
@@ -237,6 +259,13 @@ export default function AddPaymentModal({ show, onClose }) {
       <DialogTitle>Add Payment</DialogTitle>
 
       <DialogContent dividers>
+        {errors.form && (
+          <Box sx={{ mb: 2, p: 2, backgroundColor: 'error.light', borderRadius: 1 }}>
+            <Box component="span" sx={{ color: 'error.contrastText', fontSize: '0.875rem' }}>
+              {errors.form}
+            </Box>
+          </Box>
+        )}
         <form id="addPaymentForm" onSubmit={handleSubmit}>
           <Stack spacing={2}>
             <TextField

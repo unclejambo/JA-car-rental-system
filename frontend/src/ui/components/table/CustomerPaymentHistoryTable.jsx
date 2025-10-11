@@ -7,27 +7,32 @@ const CustomerPaymentHistoryTable = ({ payments }) => {
     {
       field: 'paidDate',
       headerName: 'Paid Date',
-      flex: 1,
+      flex: 1.2,
       minWidth: 120,
     },
-    { field: 'description', headerName: 'Description', flex: 1, minWidth: 180 },
+    {
+      field: 'description',
+      headerName: 'Description',
+      flex: 1.5,
+      minWidth: 180,
+    },
     {
       field: 'totalAmount',
       headerName: 'Amount',
-      flex: 1,
+      flex: 1.2,
       minWidth: 100,
       renderCell: (p) => (p.value != null ? `₱${p.value}` : ''),
     },
     {
       field: 'paymentMethod',
       headerName: 'Method',
-      flex: 1,
+      flex: 1.2,
       minWidth: 120,
     },
     {
       field: 'referenceNo',
       headerName: 'Reference No',
-      flex: 1,
+      flex: 1.2,
       minWidth: 150,
     },
     {

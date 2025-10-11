@@ -9,6 +9,7 @@ import {
   CircularProgress,
   Card,
   CardContent,
+  Button,
 } from '@mui/material';
 import { HiCalendarDays } from 'react-icons/hi2';
 import { HiRefresh } from 'react-icons/hi';
@@ -133,61 +134,84 @@ function CustomerSchedule() {
           flexDirection: 'column',
         }}
       >
-        {/* Page Header */}
-        <Box sx={{ mb: 3 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: 1,
-            }}
-          >
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 'bold', color: '#c10007' }}
-            >
-              <HiCalendarDays
-                style={{ verticalAlign: '-3px', marginRight: '8px' }}
-              />
-              Schedule
-            </Typography>
-            <Box>
-              <HiRefresh
-                size={22}
-                style={{ cursor: 'pointer', color: '#c10007' }}
-                onClick={fetchData}
-              />
+        <Card
+          sx={{
+            p: { xs: 2, sm: 3 },
+            borderRadius: 3,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: '#fff',
+          }}
+        >
+          <CardContent sx={{ flexGrow: 1 }}>
+            {/* Page Header */}
+            <Box sx={{ mb: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 1,
+                }}
+              >
+                <Typography
+                  variant="h4"
+                  sx={{ fontWeight: 'bold', color: '#c10007' }}
+                >
+                  <HiCalendarDays
+                    style={{ verticalAlign: '-3px', marginRight: '8px' }}
+                  />
+                  Schedule
+                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<HiRefresh />}
+                  onClick={fetchData}
+                  disabled={loading}
+                  sx={{
+                    borderColor: '#c10007',
+                    color: '#c10007',
+                    '&:hover': {
+                      borderColor: '#a50006',
+                      backgroundColor: '#fff5f5',
+                    },
+                  }}
+                >
+                  Refresh
+                </Button>
+              </Box>
+              <Typography variant="body1" color="text.secondary">
+                View your upcoming schedules and past bookings.
+              </Typography>
             </Box>
-          </Box>
-          <Typography variant="body1" color="text.secondary">
-            View your upcoming booking schedules
-          </Typography>
-        </Box>
 
-        {/* Error */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+            {/* Error */}
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
+            )}
 
-        {/* Schedule Table or Empty State */}
-        {!schedule || schedule.length === 0 ? (
-          <EmptyState
-            icon={HiCalendarDays}
-            title="No Schedule Found"
-            message="You don’t have any schedules yet."
-          />
-        ) : (
-          <CustomerScheduleTable rows={schedule} loading={loading} />
-        )}
+            {/* Schedule Table or Empty State */}
+            {!schedule || schedule.length === 0 ? (
+              <EmptyState
+                icon={HiCalendarDays}
+                title="No Schedule Found"
+                message="You don’t have any schedules yet."
+              />
+            ) : (
+              <CustomerScheduleTable rows={schedule} loading={loading} />
+            )}
 
-        {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress sx={{ color: '#c10007' }} />
-          </Box>
-        )}
+            {loading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                <CircularProgress sx={{ color: '#c10007' }} />
+              </Box>
+            )}
+          </CardContent>
+        </Card>
       </Box>
     </Box>
   );

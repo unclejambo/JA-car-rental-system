@@ -1,4 +1,44 @@
 import prisma from "../config/prisma.js";
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+/**
+ * Generate fresh signed URL for car image if it exists
+ */
+const refreshCarImageUrl = async (carImgUrl) => {
+  if (!carImgUrl) return null;
+  
+  try {
+    // Extract the path from the existing URL
+    // Format: https://...supabase.co/storage/v1/object/sign/licenses/car_img/filename?token=...
+    const urlParts = carImgUrl.split('/');
+    const bucketIndex = urlParts.findIndex(part => part === 'licenses');
+    
+    if (bucketIndex === -1) return carImgUrl; // Return original if can't parse
+    
+    const encodedPath = urlParts.slice(bucketIndex + 1).join('/').split('?')[0]; // Remove query params
+    
+    // Decode URL encoding (e.g., %20 -> space)
+    const path = decodeURIComponent(encodedPath);
+    
+    const { data: signedUrlData, error } = await supabase.storage
+      .from('licenses')
+      .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year expiration
+    
+    if (error) {
+      console.error('Error refreshing car image signed URL:', error);
+      return carImgUrl; // Return original URL if refresh fails
+    }
+    
+    return signedUrlData.signedUrl;
+  } catch (error) {
+    console.error('Error parsing car image URL:', error);
+    return carImgUrl; // Return original URL if parsing fails
+  }
+};
 
 // @desc    Get dashboard statistics
 // @route   GET /analytics/dashboard
@@ -305,9 +345,15 @@ export const getCarUtilization = async (req, res) => {
       throw new Error('Invalid date calculation');
     }
 
-    // Get car usage statistics
+    // Get car usage statistics - select all car fields including car_img_url
     const carUsage = await prisma.car.findMany({
-      include: {
+      select: {
+        car_id: true,
+        make: true,
+        model: true,
+        car_img_url: true,
+        year: true,
+        car_type: true,
         bookings: {
           where: {
             start_date: { gte: startDate, lte: endDate },
@@ -325,16 +371,34 @@ export const getCarUtilization = async (req, res) => {
     // Calculate the number of days in the date range for utilization calculation
     const rangeDays = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
 
-    const utilization = carUsage.map(car => ({
-      carId: car.car_id,
-      make: car.make,
-      model: car.model,
-      bookingCount: car.bookings.length,
-      utilization: car.bookings.length > 0 ? (car.bookings.length / rangeDays * 100) : 0
+    const utilization = await Promise.all(carUsage.map(async (car) => {
+      // Refresh signed URL if car image exists
+      const refreshedImgUrl = car.car_img_url ? await refreshCarImageUrl(car.car_img_url) : null;
+      
+      return {
+        carId: car.car_id,
+        make: car.make,
+        model: car.model,
+        carImgUrl: refreshedImgUrl,
+        year: car.year,
+        carType: car.car_type,
+        bookingCount: car.bookings.length,
+        utilization: car.bookings.length > 0 ? (car.bookings.length / rangeDays * 100) : 0
+      };
     }));
 
     // Sort by booking count descending to show top cars first
     utilization.sort((a, b) => b.bookingCount - a.bookingCount);
+
+    // Log the top car for debugging
+    if (utilization.length > 0) {
+      console.log('📊 Top Car:', {
+        make: utilization[0].make,
+        model: utilization[0].model,
+        carImgUrl: utilization[0].carImgUrl ? 'URL refreshed' : 'No image',
+        hasImage: !!utilization[0].carImgUrl
+      });
+    }
 
     res.json(utilization);
   } catch (error) {

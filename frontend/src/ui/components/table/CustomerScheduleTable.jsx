@@ -26,7 +26,12 @@ const ScheduleTable = ({ rows, loading }) => {
   // Normalize incoming rows to the keys the grid expects
   const normalizedRows = Array.isArray(rows)
     ? rows.map((r) => {
-        const id = r.reservationId ?? r.booking_id ?? r.id;
+        const id =
+          r.schedule_id ??
+          r.reservationId ??
+          r.booking_id ??
+          r.id ??
+          Math.random();
         return {
           ...r,
           id,
@@ -36,7 +41,8 @@ const ScheduleTable = ({ rows, loading }) => {
           pickup_time: r.pickup_time ?? r.pickupTime,
           dropoff_time: r.dropoff_time ?? r.dropoffTime,
           pickup_loc: r.pickup_loc ?? r.pickup_location,
-          dropoff_location: r.dropoff_loc ?? r.dropoff_loc ?? r.dropoff_loc,
+          dropoff_loc:
+            r.dropoff_loc ?? r.dropoff_location ?? r.drop_location ?? 'N/A',
           car_model:
             r.car_model ??
             r.car?.model ??
@@ -49,7 +55,7 @@ const ScheduleTable = ({ rows, loading }) => {
     {
       field: 'start_date',
       headerName: 'Start Date',
-      flex: 1,
+      flex: 0.5,
       minWidth: 100,
       renderCell: (params) => (
         <span>{formatDate(params?.row?.start_date ?? params?.value)}</span>
@@ -58,7 +64,7 @@ const ScheduleTable = ({ rows, loading }) => {
     {
       field: 'pickup_time',
       headerName: 'Pickup Time',
-      flex: 1,
+      flex: 0.5,
       minWidth: 140,
       renderCell: (params) => (
         <span>{formatTime(params?.row?.pickup_time ?? params?.value)}</span>
@@ -67,14 +73,14 @@ const ScheduleTable = ({ rows, loading }) => {
     {
       field: 'pickup_loc',
       headerName: 'Pickup Location',
-      flex: 1,
-      minWidth: 90,
+      flex: 1.5,
+      minWidth: 120,
     },
     {
       field: 'end_date',
       headerName: 'End Date',
-      flex: 1,
-      minWidth: 90,
+      flex: 0.5,
+      minWidth: 100,
       renderCell: (params) => (
         <span>{formatDate(params?.row?.end_date ?? params?.value)}</span>
       ),
@@ -82,8 +88,8 @@ const ScheduleTable = ({ rows, loading }) => {
     {
       field: 'dropoff_time',
       headerName: 'Drop Off Time',
-      flex: 1,
-      minWidth: 90,
+      flex: 0.5,
+      minWidth: 140,
       renderCell: (params) => (
         <span>{formatTime(params?.row?.dropoff_time ?? params?.value)}</span>
       ),
@@ -91,14 +97,14 @@ const ScheduleTable = ({ rows, loading }) => {
     {
       field: 'dropoff_loc',
       headerName: 'Drop Off Location',
-      flex: 1,
-      minWidth: 90,
+      flex: 1.5,
+      minWidth: 120,
     },
     {
       field: 'car_model',
       headerName: 'Car Model',
       flex: 1,
-      minWidth: 80,
+      minWidth: 100,
     },
   ];
 
@@ -142,7 +148,9 @@ const ScheduleTable = ({ rows, loading }) => {
       <DataGrid
         rows={normalizedRows}
         columns={columns}
-        getRowId={(row) => row.booking_id ?? row.id}
+        getRowId={(row) =>
+          row.schedule_id || row.booking_id || row.reservationId || row.id
+        }
         loading={loading}
         autoHeight
         hideFooterSelectedRowCount

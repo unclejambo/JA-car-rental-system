@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './styles/index.css';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
+import NotFoundPage from './pages/NotFoundPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminBookingPage from './pages/admin/AdminBookingPage';
 import AdminCarPage from './pages/admin/AdminCarPage';
@@ -33,20 +34,15 @@ createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         <AuthProvider>
         <Routes>
+          {/* Redirect root to home */}
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/home" element={<HomePage />} />
 
           {/* Protected Admin Routes */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
           <Route
             path="/admindashboard"
             element={
@@ -193,7 +189,8 @@ createRoot(document.getElementById('root')).render(
             }
           />
 
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          {/* 404 Not Found Route */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

@@ -33,6 +33,35 @@ export default function AdminBookingPage() {
     setSelectedBooking(null);
   };
 
+  // Filter rows based on active tab
+  const getFilteredRows = () => {
+    if (!rows || rows.length === 0) return [];
+
+    switch (activeTab) {
+      case 'BOOKINGS':
+        // Show all confirmed and pending bookings
+        return rows;
+      case 'CANCELLATION':
+        // Only show bookings where isCancel === 'TRUE'
+        return rows.filter(
+          (row) =>
+            row.isCancel === true ||
+            row.isCancel === 'true' ||
+            row.isCancel === 'TRUE'
+        );
+      case 'EXTENSION':
+        // Only show bookings where isExtend === 'TRUE'
+        return rows.filter(
+          (row) =>
+            row.isExtend === true ||
+            row.isExtend === 'true' ||
+            row.isExtend === 'TRUE'
+        );
+      default:
+        return rows;
+    }
+  };
+
   const fetchBookings = () => {
     setLoading(true);
 
@@ -263,7 +292,7 @@ export default function AdminBookingPage() {
               }}
             >
               <ManageBookingsTable
-                rows={rows}
+                rows={getFilteredRows()}
                 loading={loading}
                 activeTab={activeTab}
                 onViewDetails={openBookingDetailsModal}

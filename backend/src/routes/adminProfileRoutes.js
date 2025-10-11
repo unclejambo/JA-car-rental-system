@@ -1,11 +1,11 @@
 import express from 'express';
-import { getAdminProfile, updateAdminProfile, changeAdminPassword, getAllAdmins } from '../controllers/adminProfileController.js';
+import { getAdminProfile, updateAdminProfile, changeAdminPassword, getAllAdminProfiles } from '../controllers/adminProfileController.js';
 import { adminOnly, adminOrStaff } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 // GET /admin-profile/all - Get all admins/staff (admin only)
-router.get('/all', adminOnly, getAllAdmins);
+router.get('/all', adminOnly, getAllAdminProfiles);
 
 // GET /admin-profile - Get admin profile (admin or staff)
 router.get('/', adminOrStaff, getAdminProfile);

@@ -1,11 +1,48 @@
+import { createClient } from '@supabase/supabase-js';
 import prisma from '../config/prisma.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
 /**
- * Get all admins/staff (for manage users page)
+ * Generate fresh signed URL for profile image if it exists
  */
-export const getAllAdmins = async (req, res) => {
+const refreshProfileImageUrl = async (profileImgUrl) => {
+  if (!profileImgUrl) return null;
+  
+  try {
+    // Extract the path from the existing URL
+    // Format: https://...supabase.co/storage/v1/object/sign/licenses/profile_img/filename?token=...
+    const urlParts = profileImgUrl.split('/');
+    const bucketIndex = urlParts.findIndex(part => part === 'licenses');
+    
+    if (bucketIndex === -1) return profileImgUrl; // Return original if can't parse
+    
+    const path = urlParts.slice(bucketIndex + 1).join('/').split('?')[0]; // Remove query params
+    
+    const { data: signedUrlData, error } = await supabase.storage
+      .from('licenses')
+      .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year expiration
+    
+    if (error) {
+      console.error('Error refreshing signed URL:', error);
+      return profileImgUrl; // Return original URL if refresh fails
+    }
+    
+    return signedUrlData.signedUrl;
+  } catch (error) {
+    console.error('Error parsing profile image URL:', error);
+    return profileImgUrl; // Return original URL if parsing fails
+  }
+};
+
+/**
+ * Get all admin/staff profiles (admin only)
+ */
+export const getAllAdminProfiles = async (req, res) => {
   try {
     const admins = await prisma.admin.findMany({
       select: {
@@ -16,29 +53,31 @@ export const getAllAdmins = async (req, res) => {
         email: true,
         username: true,
         user_type: true,
+        profile_img_url: true,
         isActive: true,
-        address: true,
         // Don't return password
       },
       orderBy: {
-        admin_id: 'asc'
+        first_name: 'asc'
       }
     });
 
-    // Format data for frontend compatibility
-    const formattedAdmins = admins.map(admin => ({
-      ...admin,
-      id: admin.admin_id, // Required by DataGrid
-      contact_number: admin.contact_no,
-      status: admin.isActive === true || admin.isActive === null ? 'Active' : 'Inactive'
-    }));
+    // Refresh profile image URLs for all admins
+    const adminsWithFreshUrls = await Promise.all(
+      admins.map(async (admin) => {
+        if (admin.profile_img_url) {
+          admin.profile_img_url = await refreshProfileImageUrl(admin.profile_img_url);
+        }
+        return admin;
+      })
+    );
 
-    res.json(formattedAdmins);
+    res.json(adminsWithFreshUrls);
   } catch (error) {
-    console.error('Error fetching admins:', error);
+    console.error('Error fetching all admin profiles:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Failed to fetch admins' 
+      message: 'Failed to fetch admin profiles' 
     });
   }
 };
@@ -62,6 +101,7 @@ export const getAdminProfile = async (req, res) => {
         email: true,
         username: true,
         user_type: true,
+        profile_img_url: true,
         // Don't return password
       }
     });
@@ -71,6 +111,11 @@ export const getAdminProfile = async (req, res) => {
         success: false, 
         message: 'Admin not found' 
       });
+    }
+
+    // Refresh the profile image URL if it exists (for private bucket signed URLs)
+    if (admin.profile_img_url) {
+      admin.profile_img_url = await refreshProfileImageUrl(admin.profile_img_url);
     }
 
     res.json({
@@ -99,8 +144,18 @@ export const updateAdminProfile = async (req, res) => {
       email, 
       username, 
       password, 
-      currentPassword 
+      currentPassword,
+      profile_img_url 
     } = req.body;
+    
+    console.log('🔄 Admin profile update request:', { 
+      adminId, 
+      first_name, 
+      last_name, 
+      email, 
+      username, 
+      profile_img_url: profile_img_url ? 'URL provided' : 'No URL' 
+    });
 
     // Validate required fields
     if (!first_name || !last_name || !email || !username) {
@@ -178,6 +233,7 @@ export const updateAdminProfile = async (req, res) => {
         email,
         username,
         password: hashedPassword,
+        profile_img_url: profile_img_url || null,
       },
       select: {
         admin_id: true,
@@ -187,9 +243,15 @@ export const updateAdminProfile = async (req, res) => {
         email: true,
         username: true,
         user_type: true,
+        profile_img_url: true,
         // Don't return password
       }
     });
+
+    // Refresh the profile image URL if it exists (for private bucket signed URLs)
+    if (updatedAdmin.profile_img_url) {
+      updatedAdmin.profile_img_url = await refreshProfileImageUrl(updatedAdmin.profile_img_url);
+    }
 
     res.json({
       success: true,

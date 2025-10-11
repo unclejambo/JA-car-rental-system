@@ -9,11 +9,13 @@ import {
   CircularProgress,
   Card,
   CardContent,
+  Button,
+  Tabs,
+  Tab,
 } from '@mui/material';
-import { HiCalendar } from 'react-icons/hi2';
 import { HiRefresh } from 'react-icons/hi';
+import { HiCalendar, HiCalendarDays } from 'react-icons/hi2';
 import DriverScheduleTable from '../../ui/components/table/DriverScheduleTable';
-import Loading from '../../ui/components/Loading';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 
 function EmptyState({ icon: Icon, title, message }) {
@@ -40,9 +42,12 @@ function EmptyState({ icon: Icon, title, message }) {
   );
 }
 
-function DriverSchedule() {
+export default function DriverSchedule() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [schedule, setSchedule] = useState(null);
+  const [tab, setTab] = useState(
+    parseInt(localStorage.getItem('driverScheduleTab') || '0', 10)
+  );
+  const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -58,7 +63,7 @@ function DriverSchedule() {
     });
 
     try {
-      const res = await authFetch(`${API_BASE}/driver/schedules/me`, {
+      const res = await authFetch(`${API_BASE}/schedules/driver/me`, {
         headers: { Accept: 'application/json' },
       });
 
@@ -72,11 +77,11 @@ function DriverSchedule() {
         throw new Error(`Failed to fetch driver schedules: ${res.status}`);
 
       const data = await res.json();
-      setSchedule(Array.isArray(data) ? data : []);
+      setSchedules(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching driver schedules:', err);
       setError('Failed to load driver schedule');
-      setSchedule([]);
+      setSchedules([]);
     } finally {
       setLoading(false);
     }
@@ -86,32 +91,24 @@ function DriverSchedule() {
     fetchData();
   }, []);
 
-  if (loading && schedule === null) {
+  // ✅ Save selected tab to localStorage
+  const handleTabChange = (event, newValue) => {
+    setTab(newValue);
+    localStorage.setItem('driverScheduleTab', newValue.toString());
+  };
+
+  // ✅ Filter schedules
+  const activeSchedules = schedules.filter((s) => {
+    const status = (s.booking_status || '').toLowerCase();
+    return status === 'confirmed' || status === 'in progress';
+  });
+
+  const historySchedules = schedules.filter((s) => {
+    const status = (s.booking_status || '').toLowerCase();
     return (
-      <>
-        <Header
-          onMenuClick={() => setMobileOpen(true)}
-          isMenuOpen={mobileOpen}
-        />
-        <DriverSideBar
-          mobileOpen={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-        />
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            mt: '80px',
-          }}
-        >
-          <Loading />
-        </Box>
-      </>
+      status === 'completed' || status === 'cancelled' || status === 'canceled'
     );
-  }
+  });
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -130,65 +127,153 @@ function DriverSchedule() {
           width: `calc(100% - 18.7dvw)`,
           ml: { xs: '0px', sm: '0px', md: '18.7dvw' },
           mt: { xs: '64px', sm: '64px', md: '56px' },
-          display: 'flex',
-          flexDirection: 'column',
         }}
       >
-        {/* Page Header */}
-        <Box sx={{ mb: 3 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: 2,
-            }}
-          >
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 'bold', color: '#c10007' }}
-            >
-              <HiCalendar
-                style={{ verticalAlign: '-3px', marginRight: '8px' }}
-              />
-              Driver Schedule
-            </Typography>
-            <Box>
-              <HiRefresh
-                size={22}
-                style={{ cursor: 'pointer', color: '#c10007' }}
-                onClick={fetchData}
-              />
+        <Card
+          sx={{
+            p: { xs: 2, sm: 3 },
+            borderRadius: 3,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            backgroundColor: '#fff',
+          }}
+        >
+          <CardContent>
+            {/* Page Header */}
+            <Box sx={{ mb: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 1,
+                }}
+              >
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 'bold',
+                    color: '#c10007',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <HiCalendar size={28} style={{ marginRight: '8px' }} />
+                  Driver Schedule
+                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<HiRefresh />}
+                  onClick={fetchData}
+                  disabled={loading}
+                  sx={{
+                    borderColor: '#c10007',
+                    color: '#c10007',
+                    '&:hover': {
+                      borderColor: '#a50006',
+                      backgroundColor: '#fff5f5',
+                    },
+                  }}
+                >
+                  Refresh
+                </Button>
+              </Box>
+              <Typography variant="body1" color="text.secondary">
+                View your assigned and completed driving schedules
+              </Typography>
             </Box>
-          </Box>
-        </Box>
 
-        {/* Error */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+            {/* Tabs with Counts */}
+            <Box
+              sx={{
+                borderBottom: 1,
+                borderColor: 'divider',
+                mb: 3,
+                display: 'flex',
+                justifyContent: 'flex-start',
+              }}
+            >
+              <Tabs
+                value={tab}
+                onChange={handleTabChange}
+                sx={{
+                  alignItems: 'flex-start',
+                  '& .MuiTabs-flexContainer': {
+                    justifyContent: 'flex-start',
+                  },
+                  '& .MuiTab-root': {
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    minWidth: 160,
+                    fontFamily: 'Roboto, sans-serif',
+                  },
+                  '& .Mui-selected': {
+                    color: '#c10007 !important',
+                  },
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: '#c10007',
+                  },
+                }}
+              >
+                <Tab
+                  label={`Active Schedules (${activeSchedules?.length || 0})`}
+                  icon={<HiCalendar />}
+                  iconPosition="start"
+                />
+                <Tab
+                  label={`History (${historySchedules?.length || 0})`}
+                  icon={<HiCalendarDays />}
+                  iconPosition="start"
+                />
+              </Tabs>
+            </Box>
 
-        {/* Schedule Table or Empty State */}
-        {!schedule || schedule.length === 0 ? (
-          <EmptyState
-            icon={HiCalendar}
-            title="No Schedule Found"
-            message="You don’t have any assigned schedules yet."
-          />
-        ) : (
-          <DriverScheduleTable rows={schedule} loading={loading} />
-        )}
+            {/* Error */}
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
+            )}
 
-        {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress sx={{ color: '#c10007' }} />
-          </Box>
-        )}
+            {/* Loading */}
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                <CircularProgress sx={{ color: '#c10007' }} />
+              </Box>
+            ) : (
+              <>
+                {tab === 0 && (
+                  <>
+                    {activeSchedules.length === 0 ? (
+                      <EmptyState
+                        icon={HiCalendarDays}
+                        title="No Active Schedules"
+                        message="You don’t have any active schedules at the moment."
+                      />
+                    ) : (
+                      <DriverScheduleTable schedules={activeSchedules} />
+                    )}
+                  </>
+                )}
+
+                {tab === 1 && (
+                  <>
+                    {historySchedules.length === 0 ? (
+                      <EmptyState
+                        icon={HiCalendarDays}
+                        title="No History"
+                        message="You don’t have any completed or cancelled schedules yet."
+                      />
+                    ) : (
+                      <DriverScheduleTable schedules={historySchedules} />
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
       </Box>
     </Box>
   );
 }
-
-export default DriverSchedule;

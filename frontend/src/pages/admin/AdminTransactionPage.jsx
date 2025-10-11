@@ -55,30 +55,38 @@ export default function AdminTransactionPage() {
       });
       if (!res.ok) throw new Error('Failed to load booking details');
       const data = await res.json();
-      // Map booking shape to what BookingDetailsModal expects (aligning with ManageBookingsTable mapping)
+      // Pass the raw booking data - BookingDetailsModal expects the original field names
       const mapped = {
-        id: data.booking_id,
-        customerName: data.customer_name,
-        carModel: data.car_model,
-        carPlateNumber: data.plate_number || data.car_plate_number,
-        bookingDate: data.booking_date,
+        ...data, // Include all original fields
+        // Add/ensure required fields for the modal
+        booking_id: data.booking_id,
+        customer_id: data.customer_id,
+        customer_name: data.customer_name,
+        car_id: data.car_id,
+        car_model: data.car_model,
+        drivers_id: data.drivers_id,
+        driver_name: data.driver_name,
+        booking_date: data.booking_date,
         purpose: data.purpose,
-        startDate: data.start_date,
-        endDate: data.end_date,
-        pickupTime: data.pickup_time,
-        dropoffTime: data.dropoff_time,
-        deliveryLocation: data.pickup_loc || data.delivery_location,
-        dropoffLocation: data.dropoff_loc,
-        selfDrive: data.isSelfDriver,
-        driverName: data.driver_name,
-        phoneNumber: data.phone_number,
-        fbLink: data.fb_link,
-        reservationFee: data.reservation_fee,
-        driverFee: data.driver_fee,
-        deliveryFee: data.delivery_fee,
-        totalAmount: data.total_amount,
-        paymentStatus: data.payment_status,
-        bookingStatus: data.booking_status,
+        start_date: data.start_date,
+        end_date: data.end_date,
+        pickup_time: data.pickup_time,
+        dropoff_time: data.dropoff_time,
+        pickup_loc: data.pickup_loc,
+        dropoff_loc: data.dropoff_loc,
+        isSelfDriver: data.isSelfDriver,
+        total_amount: data.total_amount,
+        balance: data.balance,
+        total_paid: data.total_paid,
+        payment_status: data.payment_status,
+        booking_status: data.booking_status,
+        isExtend: data.isExtend,
+        isCancel: data.isCancel,
+        isDeliver: data.isDeliver,
+        isRelease: data.isRelease,
+        isReturned: data.isReturned,
+        new_end_date: data.new_end_date,
+        deliver_loc: data.deliver_loc,
       };
       setSelectedBooking(mapped);
       setShowBookingDetailsModal(true);

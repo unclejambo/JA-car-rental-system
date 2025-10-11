@@ -59,7 +59,7 @@ export default function AdminManageUser() {
             endpoint = `${API_BASE}/customers`;
             break;
           case 'STAFF':
-            endpoint = `${API_BASE}/admin-profile/all`;
+            endpoint = `${API_BASE}/admins`;
             break;
           case 'DRIVER':
             endpoint = `${API_BASE}/drivers`;
@@ -143,53 +143,6 @@ export default function AdminManageUser() {
     fetchData(activeTab);
   }, [activeTab, fetchData]);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex' }}>
-        <Header onMenuClick={() => setMobileOpen(true)} />
-        <AdminSideBar
-          mobileOpen={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-        />
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-          }}
-        >
-          <Loading />
-        </Box>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ display: 'flex' }}>
-        <Header onMenuClick={() => setMobileOpen(true)} />
-        <AdminSideBar
-          mobileOpen={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-        />
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-          }}
-          color="error.main"
-        >
-          <Typography>{error}</Typography>
-        </Box>
-      </Box>
-    );
-  }
-  
   return (
     <Box sx={{ display: 'flex' }}>
       <title>Manage Users</title>
@@ -235,15 +188,15 @@ export default function AdminManageUser() {
 
           {userRole !== 'staff' && (
             <ManageUserHeader
-            activeTab={activeTab}
-            onTabChange={(tab) => {
-              // Prevent staff users from accessing STAFF and DRIVER tabs
-              setActiveTab(tab);
-            }}
-            userType={userRole}
-          />)
-          }
-          
+              activeTab={activeTab}
+              onTabChange={(tab) => {
+                // Prevent staff users from accessing STAFF and DRIVER tabs
+                setActiveTab(tab);
+              }}
+              userType={userRole}
+            />
+          )}
+
           <Box
             sx={{
               flexGrow: 1,

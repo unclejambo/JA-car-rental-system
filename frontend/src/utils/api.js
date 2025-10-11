@@ -133,6 +133,20 @@ export const bookingAPI = {
       throw new Error(error.message || error.error || 'Failed to update isPay status');
     }
     return await response.json();
+  },
+
+  // Admin cancel booking
+  adminCancelBooking: async (bookingId, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/bookings/${bookingId}/admin-cancel`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to cancel booking' }));
+      throw new Error(error.message || error.error || 'Failed to cancel booking');
+    }
+    return await response.json();
   }
 };
 

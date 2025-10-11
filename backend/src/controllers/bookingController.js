@@ -666,6 +666,92 @@ export const cancelMyBooking = async (req, res) => {
   }
 };
 
+// @desc    Cancel booking by Admin/Staff
+// @route   PUT /bookings/:id/admin-cancel
+// @access  Private (Admin/Staff only)
+export const adminCancelBooking = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const adminId = req.user?.sub || req.user?.admin_id || req.user?.id;
+
+    console.log('Admin cancelling booking:', {
+      bookingId,
+      adminId,
+      userRole: req.user?.role
+    });
+
+    // Find the booking with all necessary details
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+      include: {
+        car: { select: { car_id: true, make: true, model: true, year: true } },
+        customer: { select: { customer_id: true, first_name: true, last_name: true } }
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    // Check if booking can be cancelled
+    if (booking.booking_status === "Cancelled") {
+      return res.status(400).json({ error: "Booking is already cancelled" });
+    }
+
+    if (booking.booking_status === "In Progress") {
+      return res.status(400).json({ 
+        error: "Cannot cancel an in-progress booking. Please return the vehicle first." 
+      });
+    }
+
+    if (booking.booking_status === "Completed") {
+      return res.status(400).json({ error: "Cannot cancel a completed booking" });
+    }
+
+    // Update booking status to Cancelled
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: {
+        booking_status: "Cancelled",
+        isCancel: true,
+      },
+      include: {
+        car: { select: { make: true, model: true, year: true } },
+        customer: { select: { first_name: true, last_name: true } }
+      },
+    });
+
+    // Create a transaction record for the cancellation
+    try {
+      await prisma.transaction.create({
+        data: {
+          booking_id: bookingId,
+          customer_id: booking.customer.customer_id,
+          car_id: booking.car.car_id,
+          completion_date: null,
+          cancellation_date: new Date(),
+        },
+      });
+      console.log(`Transaction record created for cancelled booking ${bookingId}`);
+    } catch (transactionError) {
+      console.error('Error creating transaction record:', transactionError);
+      // Don't fail the cancellation if transaction record creation fails
+    }
+
+    res.json({
+      success: true,
+      message: `Booking for ${updatedBooking.car.make} ${updatedBooking.car.model} has been cancelled`,
+      booking: updatedBooking,
+    });
+  } catch (error) {
+    console.error("Error cancelling booking:", error);
+    res.status(500).json({ 
+      error: "Failed to cancel booking",
+      details: error.message 
+    });
+  }
+};
+
 // @desc    Extend customer's ongoing booking
 // @route   PUT /bookings/:id/extend
 // @access  Private (Customer - own bookings only)

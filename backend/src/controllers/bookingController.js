@@ -943,22 +943,24 @@ export const confirmBooking = async (req, res) => {
       });
     }
 
-    let updateData = {};
+    let updateData = {
+      isPay: false  // Always set isPay to false
+    };
     
     // Case 1: isPay is TRUE and status is Pending -> Change to Confirmed and isPay to FALSE
     if (normalizedStatus === 'pending') {
-      updateData = {
-        booking_status: 'Confirmed',
-        isPay: false
-      };
+      updateData.booking_status = 'Confirmed';
       console.log('Action: Pending -> Confirmed, isPay -> false');
     } 
     // Case 2: isPay is TRUE and status is Confirmed -> Just set isPay to FALSE
     else if (normalizedStatus === 'confirmed') {
-      updateData = {
-        isPay: false
-      };
       console.log('Action: isPay -> false (status remains Confirmed)');
+    }
+    
+    // Check if balance is 0 or less and update payment_status to Paid
+    if (booking.balance <= 0) {
+      updateData.payment_status = 'Paid';
+      console.log('Balance is 0 or less - Setting payment_status to Paid');
     } 
     // Invalid state
     else {

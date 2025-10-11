@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import { uploadLicense, uploadImage, uploadCarImage, uploadReleaseImage, uploadProfileImage, deleteProfileImage } from '../controllers/storageController.js';
-import { adminOrStaff } from '../middleware/authMiddleware.js';
+import { adminOrStaff, verifyToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 const upload = multer(); // memory storage
@@ -19,9 +19,11 @@ router.post('/car-images', upload.single('image'), uploadCarImage);
 router.post('/release-images', upload.single('image'), uploadReleaseImage);
 
 // POST /api/storage/profile-images (for profile images to license bucket/profile_img folder)
-router.post('/profile-images', adminOrStaff, upload.single('profileImage'), uploadProfileImage);
+// Allow all authenticated users (admin, staff, customer, driver) to upload profile images
+router.post('/profile-images', verifyToken, upload.single('profileImage'), uploadProfileImage);
 
 // DELETE /api/storage/profile-images (delete profile image from supabase)
-router.delete('/profile-images', adminOrStaff, deleteProfileImage);
+// Allow all authenticated users to delete their own profile images
+router.delete('/profile-images', verifyToken, deleteProfileImage);
 
 export default router;

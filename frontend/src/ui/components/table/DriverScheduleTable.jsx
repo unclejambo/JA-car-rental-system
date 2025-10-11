@@ -31,10 +31,10 @@ const DriverScheduleTable = ({ schedules = [] }) => {
             sx={{ backgroundColor: '#ff9800', color: 'white', fontWeight: 600 }}
           />
         );
-      case 'ongoing':
+      case 'confirmed':
         return (
           <Chip
-            label="Ongoing"
+            label="Confirmed"
             size="small"
             sx={{ backgroundColor: '#1976d2', color: 'white', fontWeight: 600 }}
           />
@@ -61,7 +61,7 @@ const DriverScheduleTable = ({ schedules = [] }) => {
           <Chip
             label={status}
             size="small"
-            sx={{ backgroundColor: '#9e9e9e', color: 'white', fontWeight: 600 }}
+            sx={{ backgroundColor: '#bfbb3d', color: 'white', fontWeight: 600 }}
           />
         );
     }

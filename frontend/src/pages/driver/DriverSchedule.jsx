@@ -10,11 +10,12 @@ import {
   Card,
   CardContent,
   Button,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import { HiRefresh } from 'react-icons/hi';
 import { HiCalendar, HiCalendarDays } from 'react-icons/hi2';
 import DriverScheduleTable from '../../ui/components/table/DriverScheduleTable';
-import Loading from '../../ui/components/Loading';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 
 function EmptyState({ icon: Icon, title, message }) {
@@ -43,6 +44,9 @@ function EmptyState({ icon: Icon, title, message }) {
 
 export default function DriverSchedule() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [tab, setTab] = useState(
+    parseInt(localStorage.getItem('driverScheduleTab') || '0', 10)
+  );
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -59,12 +63,9 @@ export default function DriverSchedule() {
     });
 
     try {
-      // ✅ new backend endpoint
       const res = await authFetch(`${API_BASE}/schedules/driver/me`, {
         headers: { Accept: 'application/json' },
       });
-
-      console.log('res', res);
 
       if (res.status === 401) {
         localStorage.removeItem('authToken');
@@ -89,11 +90,25 @@ export default function DriverSchedule() {
   useEffect(() => {
     fetchData();
   }, []);
-  useEffect(() => {
-    if (schedules) {
-      console.log('schedules', schedules);
-    }
-  }, [schedules]);
+
+  // ✅ Save selected tab to localStorage
+  const handleTabChange = (event, newValue) => {
+    setTab(newValue);
+    localStorage.setItem('driverScheduleTab', newValue.toString());
+  };
+
+  // ✅ Filter schedules
+  const activeSchedules = schedules.filter((s) => {
+    const status = (s.booking_status || '').toLowerCase();
+    return status === 'confirmed' || status === 'in progress';
+  });
+
+  const historySchedules = schedules.filter((s) => {
+    const status = (s.booking_status || '').toLowerCase();
+    return (
+      status === 'completed' || status === 'cancelled' || status === 'canceled'
+    );
+  });
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -130,16 +145,19 @@ export default function DriverSchedule() {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  mb: 2,
+                  mb: 1,
                 }}
               >
                 <Typography
                   variant="h4"
-                  sx={{ fontWeight: 'bold', color: '#c10007' }}
+                  sx={{
+                    fontWeight: 'bold',
+                    color: '#c10007',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
                 >
-                  <HiCalendar
-                    style={{ verticalAlign: '-3px', marginRight: '8px' }}
-                  />
+                  <HiCalendar size={28} style={{ marginRight: '8px' }} />
                   Driver Schedule
                 </Typography>
                 <Button
@@ -159,6 +177,55 @@ export default function DriverSchedule() {
                   Refresh
                 </Button>
               </Box>
+              <Typography variant="body1" color="text.secondary">
+                View your assigned and completed driving schedules
+              </Typography>
+            </Box>
+
+            {/* Tabs with Counts */}
+            <Box
+              sx={{
+                borderBottom: 1,
+                borderColor: 'divider',
+                mb: 3,
+                display: 'flex',
+                justifyContent: 'flex-start',
+              }}
+            >
+              <Tabs
+                value={tab}
+                onChange={handleTabChange}
+                sx={{
+                  alignItems: 'flex-start',
+                  '& .MuiTabs-flexContainer': {
+                    justifyContent: 'flex-start',
+                  },
+                  '& .MuiTab-root': {
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    minWidth: 160,
+                    fontFamily: 'Roboto, sans-serif',
+                  },
+                  '& .Mui-selected': {
+                    color: '#c10007 !important',
+                  },
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: '#c10007',
+                  },
+                }}
+              >
+                <Tab
+                  label={`Active Schedules (${activeSchedules?.length || 0})`}
+                  icon={<HiCalendar />}
+                  iconPosition="start"
+                />
+                <Tab
+                  label={`History (${historySchedules?.length || 0})`}
+                  icon={<HiCalendarDays />}
+                  iconPosition="start"
+                />
+              </Tabs>
             </Box>
 
             {/* Error */}
@@ -173,14 +240,36 @@ export default function DriverSchedule() {
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
                 <CircularProgress sx={{ color: '#c10007' }} />
               </Box>
-            ) : schedules.length === 0 ? (
-              <EmptyState
-                icon={HiCalendarDays}
-                title="No Schedule Found"
-                message="You don’t have any assigned schedules yet."
-              />
             ) : (
-              <DriverScheduleTable schedules={schedules} />
+              <>
+                {tab === 0 && (
+                  <>
+                    {activeSchedules.length === 0 ? (
+                      <EmptyState
+                        icon={HiCalendarDays}
+                        title="No Active Schedules"
+                        message="You don’t have any active schedules at the moment."
+                      />
+                    ) : (
+                      <DriverScheduleTable schedules={activeSchedules} />
+                    )}
+                  </>
+                )}
+
+                {tab === 1 && (
+                  <>
+                    {historySchedules.length === 0 ? (
+                      <EmptyState
+                        icon={HiCalendarDays}
+                        title="No History"
+                        message="You don’t have any completed or cancelled schedules yet."
+                      />
+                    ) : (
+                      <DriverScheduleTable schedules={historySchedules} />
+                    )}
+                  </>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

@@ -10,6 +10,9 @@ import {
   InputAdornment,
   Tabs,
   Tab,
+  Snackbar,
+  Alert,
+  CircularProgress, // ✅ Added
 } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import BadgeIcon from '@mui/icons-material/Badge';
@@ -24,19 +27,29 @@ import Loading from '../../ui/components/Loading';
 import { HiCog8Tooth } from 'react-icons/hi2';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import { useCustomerStore } from '../../store/customer';
-import SaveCancelModal from '../../ui/components/modal/SaveCancelModal'; // adjust path as needed
+import SaveCancelModal from '../../ui/components/modal/SaveCancelModal';
 import { updateLicense } from '../../store/license';
 import ConfirmationModal from '../../ui/components/modal/ConfirmationModal';
 import { FormControlLabel, Checkbox } from '@mui/material';
+import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
 
 export default function CustomerSettings() {
+  // ✅ Added Snackbar state
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
   // License save loading state
   const [savingLicense, setSavingLicense] = useState(false);
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Profile picture state
+  const [profileImage, setProfileImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [imageUploading, setImageUploading] = useState(false);
+
   function getChanges() {
-    // Example: compare draft and profile, return array of changes
     const changes = [];
     Object.keys(profile).forEach((key) => {
       if (draft[key] !== profile[key]) {
@@ -45,12 +58,18 @@ export default function CustomerSettings() {
     });
     return changes;
   }
+
+  const API_BASE = getApiBase();
+  const authenticatedFetch = createAuthenticatedFetch(() => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userInfo');
+    window.location.href = '/login';
+  });
+
   function handleConfirmSave() {
     setSaving(true);
     let user = JSON.parse(localStorage.getItem('userInfo'));
     const customerId = user?.id;
-    // Only send changed fields
-    // Map frontend keys to backend keys
     const fieldMap = {
       firstName: 'first_name',
       lastName: 'last_name',
@@ -67,9 +86,20 @@ export default function CustomerSettings() {
         changedFields[fieldMap[key]] = draft[key];
       }
     });
-    useCustomerStore
-      .getState()
-      .updateCustomer(customerId, changedFields)
+
+    // Upload profile image if changed
+    const updatePromise = profileImage
+      ? uploadProfileImage().then((imageUrl) => {
+          if (imageUrl) {
+            changedFields.profile_img_url = imageUrl;
+          }
+          return useCustomerStore
+            .getState()
+            .updateCustomer(customerId, changedFields);
+        })
+      : useCustomerStore.getState().updateCustomer(customerId, changedFields);
+
+    updatePromise
       .then((updated) => {
         setProfile({
           firstName: updated.first_name || profile.firstName || '',
@@ -83,9 +113,15 @@ export default function CustomerSettings() {
             typeof updated.password === 'string' && updated.password !== ''
               ? updated.password
               : draft.password || profile.password || '',
+          profileImageUrl:
+            updated.profile_img_url || profile.profileImageUrl || '',
         });
+        setProfileImage(null); // Clear the file after upload
         setIsEditing(false);
         setShowConfirmModal(false);
+        // ✅ Added success prompt
+        setSuccessMessage('Profile updated successfully!');
+        setShowSuccess(true);
       })
       .catch((err) => {
         console.error('Failed to update customer:', err);
@@ -94,11 +130,11 @@ export default function CustomerSettings() {
         setSaving(false);
       });
   }
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, _setLoading] = useState(true);
   const [error, _setError] = useState(null);
 
-  // Profile state
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
     firstName: '',
@@ -115,36 +151,38 @@ export default function CustomerSettings() {
   const [showPassword, setShowPassword] = useState(false);
   const [draft, setDraft] = useState(profile);
 
-  // Tabs (MUI)
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(
+    parseInt(localStorage.getItem('customerSettingsTab') || '0', 10)
+  );
+
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
+    localStorage.setItem('customerSettingsTab', newValue.toString());
   };
 
-  // Modals
   const [openInfoSaveModal, setOpenInfoSaveModal] = useState(false);
   const [openInfoCancelModal, setOpenInfoCancelModal] = useState(false);
   const [openLicenseSaveModal, setOpenLicenseSaveModal] = useState(false);
   const [openLicenseCancelModal, setOpenLicenseCancelModal] = useState(false);
 
-  // Checkbox
   const [receiveUpdatesPhone, setReceiveUpdatesPhone] = useState(false);
   const [receiveUpdatesEmail, setReceiveUpdatesEmail] = useState(false);
 
-  // License state
   const [isEditingLicense, setIsEditingLicense] = useState(false);
   const [licenseNo, setLicenseNo] = useState('');
   const [licenseRestrictions, setLicenseRestrictions] = useState('');
   const [licenseExpiration, setLicenseExpiration] = useState('');
-  const [licenseImage, setLicenseImage] = useState('');
+  const [licenseImage, setLicenseImage] = useState(
+    'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+  );
   const [draftLicenseNo, setDraftLicenseNo] = useState('');
   const [draftLicenseRestrictions, setDraftLicenseRestrictions] = useState('');
   const [draftLicenseExpiration, setDraftLicenseExpiration] = useState('');
   const [previewLicenseImage, setPreviewLicenseImage] = useState(null);
   const [draftLicenseImage, setDraftLicenseImage] = useState(null);
+  const [licenseImageUploading, setLicenseImageUploading] = useState(false);
   const [openLicenseModal, setOpenLicenseModal] = useState(false);
 
-  // Store hook
   const { getCustomerById } = useCustomerStore();
 
   useEffect(() => {
@@ -154,9 +192,7 @@ export default function CustomerSettings() {
         _setLoading(true);
         _setError(null);
         const customer = await getCustomerById(user?.id);
-
         if (customer) {
-          // Defensive: handle if license fields are objects
           const licenseNo =
             typeof customer.driver_license_no === 'string'
               ? customer.driver_license_no
@@ -170,16 +206,15 @@ export default function CustomerSettings() {
               ? customer.driver_license?.expiry_date
               : customer.driver_license?.expiry_date?.expiry_date || '';
           const licenseImage =
-            typeof customer.DriverLicense?.dl_img_url === 'string'
-              ? customer.DriverLicense?.dl_img_url
-              : customer.DriverLicense?.dl_img_url?.dl_img_url ||
-                '/license.png';
+            customer.driver_license?.dl_img_url ||
+            customer.DriverLicense?.dl_img_url ||
+            'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
 
           setLicenseNo(licenseNo);
           setLicenseRestrictions(licenseRestrictions);
           setLicenseExpiration(licenseExpiration);
           setLicenseImage(licenseImage);
-
+          setImagePreview(customer.profile_img_url || ''); // ✅ Set profile image preview
           setProfile((prev) => ({
             ...prev,
             firstName: customer.first_name || '',
@@ -189,6 +224,7 @@ export default function CustomerSettings() {
             contactNumber: customer.contact_no || '',
             username: customer.username || '',
             password: customer.password || '',
+            profileImageUrl: customer.profile_img_url || '', // ✅ Store profile image URL
           }));
         }
       } catch (err) {
@@ -198,11 +234,9 @@ export default function CustomerSettings() {
         _setLoading(false);
       }
     };
-
     loadCustomer();
   }, [getCustomerById]);
 
-  // keep draft synced with profile
   useEffect(() => {
     setDraft(profile);
   }, [profile]);
@@ -237,47 +271,126 @@ export default function CustomerSettings() {
     setIsEditing(false);
     setOpenInfoCancelModal(false);
   }
-  function handleLicenseSaveConfirm() {
-    // Map frontend license fields to backend
-    const user = JSON.parse(localStorage.getItem('userInfo'));
-    const customerId = user?.id;
-    const changedLicenseFields = {};
-    if (draftLicenseRestrictions !== licenseRestrictions)
-      changedLicenseFields.restrictions = draftLicenseRestrictions;
-    if (draftLicenseExpiration !== licenseExpiration) {
-      // Convert to ISO string for backend
-      const isoDate = new Date(draftLicenseExpiration).toISOString();
-      changedLicenseFields.expiry_date = isoDate;
+
+  // Handle license file selection
+  function handleLicenseFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setSuccessMessage(validationError);
+      setShowSuccess(true);
+      return;
     }
-    // Optionally handle license image upload here
-    Promise.all([
-      draftLicenseNo !== licenseNo
-        ? useCustomerStore
-            .getState()
-            .updateCustomer(customerId, { driver_license_no: draftLicenseNo })
-        : Promise.resolve(),
-      Object.keys(changedLicenseFields).length > 0
-        ? updateLicense(draftLicenseNo, changedLicenseFields)
-        : Promise.resolve(),
-    ])
-      .then(() => {
-        setLicenseNo(draftLicenseNo);
-        setLicenseRestrictions(draftLicenseRestrictions);
-        setLicenseExpiration(draftLicenseExpiration);
-        if (draftLicenseImage) {
-          setLicenseImage(previewLicenseImage);
-        }
-        setIsEditingLicense(false);
-        setOpenLicenseSaveModal(false);
-      })
-      .catch((err) => {
-        console.error('Failed to update license info:', err);
-        setIsEditingLicense(false);
-        setOpenLicenseSaveModal(false);
-      })
-      .finally(() => {
-        setSavingLicense(false);
+
+    setDraftLicenseImage(file);
+    setPreviewLicenseImage(URL.createObjectURL(file));
+  }
+
+  // Upload license image to Supabase
+  async function uploadLicenseImage() {
+    if (!draftLicenseImage) return null;
+
+    setLicenseImageUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', draftLicenseImage);
+      formData.append('licenseNumber', draftLicenseNo);
+      formData.append('username', profile.username || '');
+
+      const response = await fetch(`${getApiBase()}/api/storage/licenses`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: formData,
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Upload failed:', errorData);
+        return null;
+      }
+
+      const result = await response.json();
+      console.log('📦 Customer license upload response:', result);
+
+      // Return the uploaded image URL (use filePath which contains the public URL)
+      return result.filePath || result.url || result.publicUrl;
+    } catch (error) {
+      console.error('Error uploading license image:', error);
+      return null;
+    } finally {
+      setLicenseImageUploading(false);
+    }
+  }
+
+  async function handleLicenseSaveConfirm() {
+    setSavingLicense(true);
+
+    try {
+      // Upload image first if a new one was selected
+      let uploadedImageUrl = licenseImage;
+      if (draftLicenseImage) {
+        uploadedImageUrl = await uploadLicenseImage();
+        if (!uploadedImageUrl) {
+          setSuccessMessage(
+            'Failed to upload license image. Please try again.'
+          );
+          setShowSuccess(true);
+          setSavingLicense(false);
+          return; // Stop execution if upload fails
+        }
+      }
+
+      const updateData = {
+        restrictions: draftLicenseRestrictions,
+        expiry_date: draftLicenseExpiration,
+        dl_img_url: uploadedImageUrl || '',
+      };
+
+      console.log('🚀 Sending to backend:', updateData);
+
+      const response = await fetch(
+        `http://localhost:3001/api/driver-license/${draftLicenseNo}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+          },
+          body: JSON.stringify(updateData),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log('✅ License updated:', result);
+        setLicenseRestrictions(updateData.restrictions);
+        setLicenseExpiration(updateData.expiry_date);
+        setLicenseImage(uploadedImageUrl);
+        setDraftLicenseImage(null); // Clear draft after successful save
+        setPreviewLicenseImage(null); // Clear preview
+        setIsEditingLicense(false);
+        setOpenLicenseSaveModal(false);
+        setOpenLicenseCancelModal(false);
+        setSuccessMessage('License information updated successfully!');
+        setShowSuccess(true);
+      } else {
+        console.error('❌ Failed to update license:', result);
+        setSuccessMessage(result.error || 'Failed to update license');
+        setShowSuccess(true);
+      }
+    } catch (error) {
+      console.error('❌ Error updating license:', error);
+      setSuccessMessage('Error updating license');
+      setShowSuccess(true);
+    } finally {
+      setSavingLicense(false);
+    }
   }
 
   function handleLicenseCancelConfirm() {
@@ -289,6 +402,144 @@ export default function CustomerSettings() {
     setIsEditingLicense(false);
     setOpenLicenseCancelModal(false);
   }
+
+  // Profile image validation
+  const validateImageFile = (file) => {
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+    if (!allowedTypes.includes(file.type)) {
+      return 'Only JPG, PNG, and WEBP files are allowed';
+    }
+
+    if (file.size > maxSize) {
+      return 'File size must be less than 5MB';
+    }
+
+    return null;
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const validation = validateImageFile(file);
+    if (validation) {
+      setSuccessMessage(validation);
+      setShowSuccess(true);
+      return;
+    }
+
+    setProfileImage(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setImagePreview(event.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = async () => {
+    try {
+      if (profile.profileImageUrl) {
+        setImageUploading(true);
+        const response = await authenticatedFetch(
+          `${API_BASE}/api/storage/profile-images`,
+          {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filePath: profile.profileImageUrl }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to delete image from storage');
+        }
+      }
+
+      setImagePreview('');
+      setProfileImage(null);
+      setProfile((prev) => ({ ...prev, profileImageUrl: '' }));
+      setDraft((prev) => ({ ...prev, profileImageUrl: '' }));
+
+      // Update profile in database
+      let user = JSON.parse(localStorage.getItem('userInfo'));
+      const customerId = user?.id;
+      const updateResponse = await useCustomerStore
+        .getState()
+        .updateCustomer(customerId, {
+          profile_img_url: '',
+        });
+
+      if (updateResponse) {
+        setSuccessMessage('Profile picture removed successfully!');
+        setShowSuccess(true);
+      }
+    } catch (error) {
+      console.error('Error removing image:', error);
+      setSuccessMessage('Failed to remove profile picture');
+      setShowSuccess(true);
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  const uploadProfileImage = async () => {
+    if (!profileImage) return null;
+
+    try {
+      setImageUploading(true);
+
+      let user = JSON.parse(localStorage.getItem('userInfo'));
+      const customerId = user?.id;
+
+      const formData = new FormData();
+      formData.append('profileImage', profileImage);
+      formData.append('userId', customerId || 'unknown');
+      formData.append('userType', 'customer');
+
+      console.log('🚀 Uploading profile image...');
+
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/storage/profile-images`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      const result = await response.json();
+      console.log('📦 Upload response:', result);
+
+      if (!response.ok || (!result.ok && !result.success)) {
+        throw new Error(result.message || 'Upload failed');
+      }
+
+      const imageUrl =
+        result.data?.url ||
+        result.data?.customer?.profile_img_url ||
+        result.publicUrl;
+
+      if (!imageUrl) {
+        throw new Error('No image URL returned from upload');
+      }
+
+      console.log('✅ Image uploaded successfully:', imageUrl);
+
+      // Update the preview immediately
+      setImagePreview(imageUrl);
+
+      return imageUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setSuccessMessage('Failed to upload profile picture');
+      setShowSuccess(true);
+      return null;
+    } finally {
+      setImageUploading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -313,7 +564,6 @@ export default function CustomerSettings() {
     );
   }
 
-  // Main render (not loading)
   return (
     <>
       <Box sx={{ display: 'flex' }}>
@@ -485,14 +735,21 @@ export default function CustomerSettings() {
                           zIndex: 30,
                           display: 'flex',
                           justifyContent: 'flex-end',
+
                           mb: { xs: 1, md: 0 },
                         }}
                       >
                         {!isEditing && (
                           <IconButton
-                            size="small"
                             onClick={handleEditToggle}
-                            aria-label="edit"
+                            sx={{
+                              position: 'absolute',
+                              top: 10,
+                              right: 40,
+                              backgroundColor: '#fff',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                              '&:hover': { backgroundColor: '#f5f5f5' },
+                            }}
                           >
                             <EditIcon />
                           </IconButton>
@@ -511,12 +768,16 @@ export default function CustomerSettings() {
                             width: { xs: '100%', md: 160 },
                             position: 'relative',
                             display: 'flex',
-                            justifyContent: { xs: 'center', md: 'flex-start' },
+                            flexDirection: 'column',
+                            alignItems: { xs: 'center', md: 'flex-start' },
                             mb: { xs: 2, md: 0 },
                           }}
                         >
                           <Avatar
-                            src="/jude.jpg"
+                            src={
+                              imagePreview ||
+                              'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+                            }
                             onClick={() => setAvatarOpen(true)}
                             sx={{
                               width: { xs: 96, md: 120 },
@@ -527,11 +788,70 @@ export default function CustomerSettings() {
                               boxShadow: 2,
                               cursor: 'pointer',
                               transition: 'transform 0.2s ease',
+                              border: imagePreview
+                                ? '3px solid #e0e0e0'
+                                : 'none',
                               '&:hover': {
                                 transform: 'scale(1.05)',
                               },
                             }}
                           />
+
+                          {isEditing && (
+                            <Box
+                              sx={{
+                                mt: { xs: 2, md: 0 },
+                                position: { md: 'absolute' },
+                                top: { md: 155 },
+                                left: { md: 8 },
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 1,
+                                alignItems: 'center',
+                              }}
+                            >
+                              <Button
+                                variant="contained"
+                                component="label"
+                                size="small"
+                                disabled={imageUploading}
+                                sx={{
+                                  fontSize: '0.75rem',
+                                  px: 1.5,
+                                  minWidth: 'auto',
+                                }}
+                              >
+                                {imagePreview ? 'Change' : 'Upload'}
+                                <input
+                                  type="file"
+                                  hidden
+                                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                                  onChange={handleImageChange}
+                                />
+                              </Button>
+
+                              {imagePreview && (
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  color="error"
+                                  onClick={handleRemoveImage}
+                                  disabled={imageUploading}
+                                  sx={{
+                                    fontSize: '0.75rem',
+                                    px: 1.5,
+                                    minWidth: 'auto',
+                                  }}
+                                >
+                                  Remove
+                                </Button>
+                              )}
+
+                              {imageUploading && (
+                                <CircularProgress size={20} sx={{ mt: 1 }} />
+                              )}
+                            </Box>
+                          )}
                         </Box>
                         {/* Right: Details */}
                         <Box
@@ -542,7 +862,7 @@ export default function CustomerSettings() {
                               mb: 2,
                               display: 'flex',
                               flexDirection: 'column',
-                              gap: 0,
+                              gap: 1,
                             }}
                           >
                             {isEditing ? (
@@ -622,7 +942,7 @@ export default function CustomerSettings() {
                             {isEditing ? (
                               <TextField
                                 label="Contactnumber"
-                                name="contactnumber"
+                                name="contactNumber"
                                 value={draft.contactNumber}
                                 onChange={handleChange}
                                 size="small"
@@ -782,7 +1102,7 @@ export default function CustomerSettings() {
                                   startIcon={<SaveIcon />}
                                   onClick={() => setShowConfirmModal(true)}
                                 >
-                                  Save
+                                  Save Changes
                                 </Button>
                                 <Button
                                   variant="outlined"
@@ -829,7 +1149,7 @@ export default function CustomerSettings() {
                           sx={{
                             position: 'absolute',
                             top: 12,
-                            right: 12,
+                            right: 50,
                             backgroundColor: '#fff',
                             boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                             '&:hover': { backgroundColor: '#f5f5f5' },
@@ -852,10 +1172,15 @@ export default function CustomerSettings() {
                             <TextField
                               label="License No"
                               value={draftLicenseNo}
-                              onChange={(e) =>
-                                setDraftLicenseNo(e.target.value)
-                              }
                               fullWidth
+                              InputProps={{
+                                readOnly: true,
+                              }}
+                              sx={{
+                                '& .MuiInputBase-input.Mui-disabled': {
+                                  WebkitTextFillColor: '#000', // ensure black text color
+                                },
+                              }}
                             />
                             <TextField
                               label="Restrictions"
@@ -895,9 +1220,11 @@ export default function CustomerSettings() {
                             <Typography sx={{ fontWeight: 700 }}>
                               Expiration Date:{' '}
                               <span style={{ fontWeight: 400 }}>
-                                {typeof licenseExpiration === 'string'
-                                  ? licenseExpiration
-                                  : ''}
+                                {licenseExpiration
+                                  ? new Date(licenseExpiration)
+                                      .toISOString()
+                                      .split('T')[0]
+                                  : 'N/A'}
                               </span>
                             </Typography>
                           </>
@@ -929,34 +1256,60 @@ export default function CustomerSettings() {
                               objectFit: 'contain',
                               cursor: isEditingLicense ? 'default' : 'pointer',
                               transition: 'transform 0.2s ease',
+                              opacity: licenseImageUploading ? 0.5 : 1,
                             }}
                             onClick={() =>
                               !isEditingLicense && setOpenLicenseModal(true)
                             }
                           />
-                          {/* Camera Icon Upload Button (Only in Edit Mode) */}
+                          {/* Upload/Change/Remove Buttons (Only in Edit Mode) */}
                           {isEditingLicense && (
-                            <IconButton
-                              color="primary"
-                              component="label"
-                              sx={{ mt: 1 }}
+                            <Box
+                              sx={{
+                                mt: 2,
+                                display: 'flex',
+                                gap: 1,
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                              }}
                             >
-                              <PhotoCamera />
-                              <input
-                                type="file"
-                                accept="image/*"
-                                hidden
-                                onChange={(e) => {
-                                  const file = e.target.files[0];
-                                  if (file) {
-                                    setDraftLicenseImage(file);
-                                    setPreviewLicenseImage(
-                                      URL.createObjectURL(file)
-                                    );
-                                  }
-                                }}
-                              />
-                            </IconButton>
+                              {licenseImageUploading ? (
+                                <CircularProgress size={24} />
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="contained"
+                                    component="label"
+                                    startIcon={<PhotoCamera />}
+                                    disabled={savingLicense}
+                                  >
+                                    {previewLicenseImage
+                                      ? 'Change Image'
+                                      : 'Upload Image'}
+                                    <input
+                                      type="file"
+                                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                                      hidden
+                                      onChange={handleLicenseFileChange}
+                                    />
+                                  </Button>
+                                  {previewLicenseImage && (
+                                    <Button
+                                      variant="outlined"
+                                      color="error"
+                                      size="small"
+                                      onClick={() => {
+                                        setDraftLicenseImage(null);
+                                        setPreviewLicenseImage(null);
+                                      }}
+                                      disabled={savingLicense}
+                                    >
+                                      Remove
+                                    </Button>
+                                  )}
+                                </>
+                              )}
+                            </Box>
                           )}
                         </Box>
                       </Box>
@@ -980,14 +1333,16 @@ export default function CustomerSettings() {
                             color="primary"
                             startIcon={<SaveIcon />}
                             onClick={() => setOpenLicenseSaveModal(true)}
+                            disabled={savingLicense || licenseImageUploading}
                           >
-                            Save
+                            Save Changes
                           </Button>
                           <Button
                             variant="outlined"
                             color="inherit"
                             startIcon={<CloseIcon />}
                             onClick={() => setOpenLicenseCancelModal(true)}
+                            disabled={savingLicense || licenseImageUploading}
                           >
                             Cancel
                           </Button>
@@ -1156,7 +1511,11 @@ export default function CustomerSettings() {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src="/jude.jpg"
+              src={
+                imagePreview ||
+                profile.profileImageUrl ||
+                'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+              }
               alt="Profile"
               style={{
                 maxWidth: '90vw',
@@ -1182,6 +1541,20 @@ export default function CustomerSettings() {
           </Box>
         </Box>
       </Modal>
+      <Snackbar
+        open={showSuccess}
+        autoHideDuration={4000}
+        onClose={() => setShowSuccess(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }} // ⬅️ moved to top-right
+      >
+        <Alert
+          onClose={() => setShowSuccess(false)}
+          severity="success"
+          sx={{ width: '100%' }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

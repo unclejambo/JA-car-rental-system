@@ -23,6 +23,43 @@ export async function uploadLicense(req, res, next) {
     const file = req.file;
     const { licenseNumber, username } = req.body;
     
+    // Check if there's an existing license image to delete
+    if (licenseNumber) {
+      try {
+        const existingLicense = await prisma.driverLicense.findUnique({
+          where: { driver_license_no: licenseNumber },
+        });
+
+        if (existingLicense?.dl_img_url) {
+          console.log('🗑️ Deleting old license image:', existingLicense.dl_img_url);
+          
+          // Extract the path from the URL
+          let oldPath = existingLicense.dl_img_url;
+          if (oldPath.includes('/licenses/')) {
+            oldPath = oldPath.split('/licenses/')[1];
+            // Remove any query parameters (from signed URLs)
+            oldPath = oldPath.split('?')[0];
+            oldPath = decodeURIComponent(oldPath);
+          }
+
+          // Delete the old file from Supabase
+          const { error: deleteError } = await supabase.storage
+            .from('licenses')
+            .remove([oldPath]);
+
+          if (deleteError) {
+            console.warn('⚠️ Failed to delete old license image:', deleteError);
+            // Continue with upload even if delete fails
+          } else {
+            console.log('✅ Old license image deleted successfully');
+          }
+        }
+      } catch (err) {
+        console.warn('⚠️ Error checking/deleting old license image:', err);
+        // Continue with upload even if delete check fails
+      }
+    }
+    
     const timestamp = Date.now();
     const fileExt = file.originalname.split('.').pop();
     const filename = `${licenseNumber || 'license'}_${username || 'user'}_${timestamp}.${fileExt}`;
@@ -48,17 +85,28 @@ export async function uploadLicense(req, res, next) {
       });
     }
 
-    const { data: publicUrlData } = supabase.storage
+    // Generate signed URL for private bucket (1 year expiration)
+    const { data: signedUrlData, error: signedError } = await supabase.storage
       .from(bucket)
-      .getPublicUrl(path);
+      .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
+
+    if (signedError) {
+      console.error('Error creating signed URL:', signedError);
+      return res.status(500).json({ 
+        ok: false, 
+        error: 'Failed to create signed URL',
+        message: 'Failed to create signed URL'
+      });
+    }
 
     const responseData = { 
       ok: true,
       message: 'File uploaded successfully',
-      filePath: publicUrlData.publicUrl,
-      path: publicUrlData.publicUrl,
-      url: publicUrlData.publicUrl,
-      publicUrl: publicUrlData.publicUrl,  // Add this field
+      filePath: signedUrlData.signedUrl,
+      path: signedUrlData.signedUrl,
+      url: signedUrlData.signedUrl,
+      publicUrl: signedUrlData.signedUrl,
+      signedUrl: signedUrlData.signedUrl,
       filename: filename,
       originalName: file.originalname,
       size: file.size,
@@ -314,32 +362,56 @@ export async function uploadProfileImage(req, res, next) {
       });
     }
 
-    // Get admin ID from JWT token (set by auth middleware)
-    const adminId = req.user?.sub;
-    if (!adminId) {
+    // Get user ID and role from JWT token (set by auth middleware)
+    const userId = req.user?.sub;
+    const userRole = req.user?.role;
+    
+    if (!userId) {
       return res.status(401).json({
         ok: false,
         error: 'Authentication required',
-        message: 'Admin ID not found in token'
+        message: 'User ID not found in token'
       });
     }
 
     const file = req.file;
-    const { userType = 'admin' } = req.body;
     
-    // Get current admin to check for existing profile image
-    const currentAdmin = await prisma.admin.findUnique({
-      where: { admin_id: parseInt(adminId) },
-      select: { profile_img_url: true }
-    });
+    // Determine which table to query based on user role
+    let currentUser;
+    let whereClause;
+    let selectClause;
+    
+    if (userRole === 'customer') {
+      whereClause = { customer_id: parseInt(userId) };
+      selectClause = { profile_img_url: true };
+      currentUser = await prisma.customer.findUnique({
+        where: whereClause,
+        select: selectClause
+      });
+    } else if (userRole === 'driver') {
+      whereClause = { drivers_id: parseInt(userId) }; // Note: drivers_id (plural) in schema
+      selectClause = { profile_img_url: true };
+      currentUser = await prisma.driver.findUnique({
+        where: whereClause,
+        select: selectClause
+      });
+    } else {
+      // Default to admin for admin/staff roles
+      whereClause = { admin_id: parseInt(userId) };
+      selectClause = { profile_img_url: true };
+      currentUser = await prisma.admin.findUnique({
+        where: whereClause,
+        select: selectClause
+      });
+    }
 
     // Delete old profile image if exists
-    if (currentAdmin?.profile_img_url) {
+    if (currentUser?.profile_img_url) {
       try {
-        console.log('🗑️ Deleting old profile image:', currentAdmin.profile_img_url);
+        console.log('🗑️ Deleting old profile image:', currentUser.profile_img_url);
         
         // Extract the path from the existing URL
-        const urlParts = currentAdmin.profile_img_url.split('/');
+        const urlParts = currentUser.profile_img_url.split('/');
         const bucketIndex = urlParts.findIndex(part => part === 'licenses');
         
         if (bucketIndex !== -1) {
@@ -364,12 +436,12 @@ export async function uploadProfileImage(req, res, next) {
     
     const timestamp = Date.now();
     const fileExt = file.originalname.split('.').pop();
-    const filename = `${userType}_${adminId}_profile_${timestamp}.${fileExt}`;
+    const filename = `${userRole}_${userId}_profile_${timestamp}.${fileExt}`;
     
     const bucket = 'licenses';
     const path = `profile_img/${filename}`;
 
-    console.log('🚀 Uploading new profile image to Supabase:', { bucket, path, size: file.size });
+    console.log('🚀 Uploading new profile image to Supabase:', { bucket, path, size: file.size, userRole });
 
     const { data, error } = await supabase.storage
       .from(bucket)
@@ -403,21 +475,46 @@ export async function uploadProfileImage(req, res, next) {
 
     const imageUrl = signedUrlData.signedUrl;
     
-    // Update admin profile with new image URL
-    console.log('Updating admin profile with image URL:', { adminId, imageUrl });
+    // Update user profile with new image URL based on role
+    console.log('Updating user profile with image URL:', { userId, userRole, imageUrl });
     
-    const updatedAdmin = await prisma.admin.update({
-      where: { admin_id: parseInt(adminId) },
-      data: { profile_img_url: imageUrl },
-      select: {
-        admin_id: true,
-        first_name: true,
-        last_name: true,
-        profile_img_url: true
-      }
-    });
+    let updatedUser;
+    if (userRole === 'customer') {
+      updatedUser = await prisma.customer.update({
+        where: { customer_id: parseInt(userId) },
+        data: { profile_img_url: imageUrl },
+        select: {
+          customer_id: true,
+          first_name: true,
+          last_name: true,
+          profile_img_url: true
+        }
+      });
+    } else if (userRole === 'driver') {
+      updatedUser = await prisma.driver.update({
+        where: { drivers_id: parseInt(userId) }, // Note: drivers_id (plural) in schema
+        data: { profile_img_url: imageUrl },
+        select: {
+          drivers_id: true,
+          first_name: true,
+          last_name: true,
+          profile_img_url: true
+        }
+      });
+    } else {
+      updatedUser = await prisma.admin.update({
+        where: { admin_id: parseInt(userId) },
+        data: { profile_img_url: imageUrl },
+        select: {
+          admin_id: true,
+          first_name: true,
+          last_name: true,
+          profile_img_url: true
+        }
+      });
+    }
 
-    console.log('Admin profile updated successfully:', updatedAdmin);
+    console.log('User profile updated successfully:', updatedUser);
 
     const responseData = { 
       ok: true,
@@ -431,7 +528,8 @@ export async function uploadProfileImage(req, res, next) {
         publicUrl: imageUrl,
         originalName: file.originalname,
         size: file.size,
-        admin: updatedAdmin
+        user: updatedUser,
+        userRole: userRole
       }
     };
 
@@ -513,16 +611,30 @@ export async function deleteProfileImage(req, res, next) {
       });
     }
 
-    // If this is called manually (not during upload), also clear the admin's profile_img_url
-    // Get admin ID from JWT token if available
-    const adminId = req.user?.sub;
-    if (adminId) {
+    // If this is called manually (not during upload), also clear the user's profile_img_url
+    // Get user ID and role from JWT token if available
+    const userId = req.user?.sub;
+    const userRole = req.user?.role;
+    
+    if (userId && userRole) {
       try {
-        await prisma.admin.update({
-          where: { admin_id: parseInt(adminId) },
-          data: { profile_img_url: null }
-        });
-        console.log('✅ Admin profile_img_url cleared from database');
+        if (userRole === 'customer') {
+          await prisma.customer.update({
+            where: { customer_id: parseInt(userId) },
+            data: { profile_img_url: null }
+          });
+        } else if (userRole === 'driver') {
+          await prisma.driver.update({
+            where: { drivers_id: parseInt(userId) }, // Note: drivers_id (plural) in schema
+            data: { profile_img_url: null }
+          });
+        } else {
+          await prisma.admin.update({
+            where: { admin_id: parseInt(userId) },
+            data: { profile_img_url: null }
+          });
+        }
+        console.log(`✅ ${userRole} profile_img_url cleared from database`);
       } catch (dbError) {
         console.warn('Warning: Could not clear profile_img_url from database:', dbError);
         // Don't fail the request if database update fails

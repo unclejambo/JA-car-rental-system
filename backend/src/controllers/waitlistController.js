@@ -104,7 +104,7 @@ export const joinWaitlist = async (req, res) => {
         total_cost,
         position: nextPosition,
         status: 'waiting',
-        payment_status: 'unpaid'
+        payment_status: 'Unpaid' // Capitalized for consistency
       },
       include: {
         customer: {
@@ -187,7 +187,7 @@ export const getAvailableDates = async (req, res) => {
     const paidWaitlistEntries = await prisma.waitlist.findMany({
       where: {
         car_id: carId,
-        payment_status: 'paid',
+        payment_status: 'Paid', // Capitalized for consistency
         status: { not: 'cancelled' }
       },
       select: {
@@ -398,7 +398,7 @@ export const processWaitlistPayment = async (req, res) => {
     }
 
     // Check if already paid
-    if (waitlistEntry.payment_status === 'paid') {
+    if (waitlistEntry.payment_status === 'Paid') { // Capitalized for consistency
       return res.status(400).json({ error: 'Waitlist entry is already paid' });
     }
 
@@ -430,7 +430,7 @@ export const processWaitlistPayment = async (req, res) => {
       const updatedWaitlist = await tx.waitlist.update({
         where: { waitlist_id: waitlistId },
         data: {
-          payment_status: 'paid',
+          payment_status: 'Paid', // Capitalized for consistency
           paid_date: new Date()
         },
         include: {

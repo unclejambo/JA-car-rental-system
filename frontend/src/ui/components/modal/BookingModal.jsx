@@ -77,7 +77,6 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
     pickupLocation: '',
     dropoffLocation: '',
     selectedDriver: '',
-    specialRequests: '',
   });
 
   // Create refs for form fields
@@ -130,7 +129,6 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         pickupLocation: '',
         dropoffLocation: '',
         selectedDriver: '',
-        specialRequests: '',
       });
       setError('');
       setIsSelfService(true);
@@ -447,7 +445,6 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         pickupLocation: activeTab === 0 ? null : 'JA Car Rental Office - 123 Main Street, Business District, City',
         dropoffLocation: activeTab === 0 ? formData.dropoffLocation : 'JA Car Rental Office - 123 Main Street, Business District, City',
         selectedDriver: isSelfService ? null : formData.selectedDriver,
-        specialRequests: formData.specialRequests,
         totalCost: calculateTotalCost(),
         isSelfDrive: isSelfService,
         // Enhanced payment and fee information
@@ -462,7 +459,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
           driver_fee: isSelfService ? 0 : fees.driver_fee * (Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1),
           total_days: Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1
         },
-        booking_status: 'pending_payment' // New status to track payment requirement
+        booking_status: 'Pending' // Customer can still edit/cancel
       };
 
       if (isWaitlist) {
@@ -478,7 +475,6 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
           delivery_type: activeTab === 0 ? 'delivery' : 'pickup',
           is_self_drive: isSelfService,
           selected_driver_id: isSelfService ? null : formData.selectedDriver,
-          special_requests: formData.specialRequests,
           total_cost: calculateTotalCost()
         };
 

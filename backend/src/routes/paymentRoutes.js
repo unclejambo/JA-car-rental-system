@@ -4,6 +4,9 @@ import {
   createPayment,
   processBookingPayment,
   getMyPayments,
+  deletePayment,
+  deletePaymentByBookingId,
+  fixAllBookingStatusInconsistencies,
 } from "../controllers/paymentController.js";
 import {
   verifyToken,
@@ -25,5 +28,8 @@ router.post(
   processBookingPayment
 );
 router.get("/my-payments", verifyToken, requireCustomer, getMyPayments);
+router.delete('/booking/:bookingId', verifyToken, adminOrStaff, deletePaymentByBookingId);
+router.delete('/:id', verifyToken, adminOrStaff, deletePayment);
+router.post('/fix-booking-status', verifyToken, adminOrStaff, fixAllBookingStatusInconsistencies);
 
 export default router;

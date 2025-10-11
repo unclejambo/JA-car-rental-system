@@ -128,7 +128,7 @@ export default function AdminSchedulePage() {
         <ReturnModal
           show={showReturnModal}
           onClose={() => setShowReturnModal(false)}
-          reservation={selectedReservation}
+          bookingId={selectedReservation?.booking_id}
         />
       )}
       <Box

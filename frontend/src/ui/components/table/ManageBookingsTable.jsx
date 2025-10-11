@@ -1,11 +1,113 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, Select, MenuItem } from '@mui/material';
+import { Box, Alert, Snackbar } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import { useState } from 'react';
+import { bookingAPI, paymentAPI } from '../../../utils/api';
+import { useNavigate } from 'react-router-dom';
 
-const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
+const ManageBookingsTable = ({
+  activeTab,
+  rows,
+  loading,
+  onViewDetails,
+  onDataChange,
+}) => {
+  const navigate = useNavigate();
+  const [processing, setProcessing] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  // Logout function for API calls
+  const logout = () => {
+    localStorage.removeItem('authToken');
+    navigate('/login');
+  };
+
+  // Show snackbar message
+  const showMessage = (message, severity = 'success') => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
+  // Close snackbar
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  // Handle check button click (Confirm)
+  const handleConfirm = async (row) => {
+    if (processing) return;
+
+    try {
+      setProcessing(true);
+      const bookingId = row.actualBookingId;
+
+      console.log('Confirming booking:', {
+        bookingId,
+        currentStatus: row.booking_status,
+        currentIsPay: row.isPay,
+      });
+
+      // Call the confirm booking API
+      const result = await bookingAPI.confirmBooking(bookingId, logout);
+
+      console.log('Confirm result:', result);
+
+      showMessage('Booking confirmed successfully!', 'success');
+
+      // Refresh data if callback provided
+      if (onDataChange && typeof onDataChange === 'function') {
+        onDataChange();
+      }
+    } catch (error) {
+      console.error('Error confirming booking:', error);
+      showMessage(error.message || 'Failed to confirm booking', 'error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Handle cancel button click (X)
+  const handleCancel = async (row) => {
+    if (processing) return;
+
+    try {
+      setProcessing(true);
+      const bookingId = row.actualBookingId;
+
+      console.log('Cancelling payment:', {
+        bookingId,
+        currentStatus: row.booking_status,
+        currentIsPay: row.isPay,
+      });
+
+      // Update isPay to false and delete payment
+      await bookingAPI.updateIsPay(bookingId, false, logout);
+      await paymentAPI.deletePaymentByBookingId(bookingId, logout);
+
+      showMessage('Payment cancelled successfully!', 'success');
+
+      // Refresh data if callback provided
+      if (onDataChange && typeof onDataChange === 'function') {
+        onDataChange();
+      }
+    } catch (error) {
+      console.error('Error cancelling payment:', error);
+      showMessage(error.message || 'Failed to cancel payment', 'error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   // Helper: return YYYY-MM-DD from an ISO datetime or Date
   const formatDateString = (value) => {
     if (!value && value !== 0) return '';
@@ -243,9 +345,8 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
                 size="small"
                 color="success"
                 aria-label="confirm"
-                onClick={() => {
-                  /* TODO: Handle confirm action */
-                }}
+                onClick={() => handleConfirm(params.row)}
+                disabled={processing}
                 sx={{
                   '&:hover': {
                     backgroundColor: 'rgba(46, 125, 50, 0.08)',
@@ -258,9 +359,8 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
                 size="small"
                 color="error"
                 aria-label="cancel"
-                onClick={() => {
-                  /* TODO: Handle cancel action */
-                }}
+                onClick={() => handleCancel(params.row)}
+                disabled={processing}
                 sx={{
                   '&:hover': {
                     backgroundColor: 'rgba(211, 47, 47, 0.08)',
@@ -380,6 +480,22 @@ const ManageBookingsTable = ({ activeTab, rows, loading, onViewDetails }) => {
           },
         }}
       />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

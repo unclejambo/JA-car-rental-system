@@ -12,13 +12,10 @@ We need to configure Vercel to redirect all requests to `index.html`, allowing R
 ## Files Added/Modified
 
 ### 1. `vercel.json` (Root Directory)
-This file tells Vercel how to build and serve your application:
+This file tells Vercel how to serve your application:
 
 ```json
 {
-  "buildCommand": "cd frontend && npm run build",
-  "outputDirectory": "frontend/dist",
-  "installCommand": "cd frontend && npm install",
   "rewrites": [
     {
       "source": "/(.*)",
@@ -29,10 +26,9 @@ This file tells Vercel how to build and serve your application:
 ```
 
 **What this does:**
-- `buildCommand`: Tells Vercel to run the build command in the frontend directory
-- `outputDirectory`: Specifies where the built files are located
-- `installCommand`: Tells Vercel how to install dependencies
 - `rewrites`: Redirects ALL requests to `index.html` (crucial for SPA routing)
+
+**Important:** Build commands are configured in the Vercel Dashboard, not in `vercel.json` for monorepo projects.
 
 ### 2. `frontend/public/_redirects` (Fallback)
 This is an additional fallback configuration that Vercel also recognizes:
@@ -62,22 +58,19 @@ This is an additional fallback configuration that Vercel also recognizes:
 2. Vercel will automatically redeploy with the new configuration
 3. Wait for the deployment to complete
 
-### Manual Vercel Dashboard Configuration (Alternative):
-If the `vercel.json` file doesn't work, you can configure it in the Vercel dashboard:
+### Required Vercel Dashboard Configuration:
+For monorepo projects, you **must** configure the Root Directory in the Vercel dashboard:
 
 1. Go to your project in Vercel Dashboard
 2. Navigate to **Settings** → **General**
 3. Set the following:
+   - **Root Directory**: `frontend` ← **CRITICAL! This must be set!**
    - **Framework Preset**: Vite
-   - **Root Directory**: `frontend`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-   - **Install Command**: `npm install`
+   - **Build Command**: `npm run build` (or leave default)
+   - **Output Directory**: `dist` (or leave default)
+   - **Install Command**: `npm install` (or leave default)
 
-4. Navigate to **Settings** → **Rewrites**
-5. Add a rewrite rule:
-   - **Source**: `/(.*)`
-   - **Destination**: `/index.html`
+**Note:** The `rewrites` configuration is already in `vercel.json`, so you don't need to add it manually in the dashboard.
 
 ## Testing After Deployment
 
@@ -121,11 +114,20 @@ User sees your custom 404 page with "Go Back" and "Go to Home/Dashboard" buttons
 
 ## Troubleshooting
 
-If you still see Vercel's 404 page:
+### Error: "cd: frontend: No such file or directory"
+
+**Cause:** This error occurs when `vercel.json` contains commands like `cd frontend` or when the Root Directory is not set correctly in Vercel dashboard.
+
+**Solution:**
+1. Remove any `buildCommand`, `installCommand`, or `outputDirectory` from `vercel.json`
+2. Set **Root Directory** to `frontend` in Vercel Dashboard → Settings → General
+3. Redeploy your project
+
+### If you still see Vercel's 404 page:
 
 1. **Check deployment logs**: Look for errors in the Vercel deployment logs
-2. **Verify file paths**: Ensure `vercel.json` is in the root directory
-3. **Check build output**: Verify that `frontend/dist` contains `index.html` after build
+2. **Verify file paths**: Ensure `vercel.json` is in the root directory and `_redirects` is in `frontend/public`
+3. **Check build output**: Verify that the build creates a `dist` folder with `index.html` inside
 4. **Clear cache**: Try clearing your browser cache or use incognito mode
 5. **Redeploy**: Trigger a new deployment in Vercel dashboard
 6. **Environment variables**: Make sure all necessary environment variables are set in Vercel dashboard

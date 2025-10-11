@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography, Button, Alert } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -19,6 +20,11 @@ class ErrorBoundary extends React.Component {
   handleRefresh = () => {
     this.setState({ hasError: false, error: null });
     window.location.reload();
+  };
+
+  handleGoBack = () => {
+    this.setState({ hasError: false, error: null });
+    window.history.back();
   };
 
   render() {
@@ -56,14 +62,24 @@ class ErrorBoundary extends React.Component {
             )}
           </Alert>
           
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<RefreshIcon />}
-            onClick={this.handleRefresh}
-          >
-            Refresh Page
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<ArrowBackIcon />}
+              onClick={this.handleGoBack}
+            >
+              Go Back
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<RefreshIcon />}
+              onClick={this.handleRefresh}
+            >
+              Refresh Page
+            </Button>
+          </Box>
         </Box>
       );
     }

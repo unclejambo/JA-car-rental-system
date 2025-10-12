@@ -165,7 +165,10 @@ function CustomerBookings() {
       
       if (response.ok) {
         const result = await response.json();
-        alert(`✅ ${result.message}`);
+        const message = result.pending_approval 
+          ? `✅ Cancellation request submitted! Your booking is pending admin approval. You'll be notified once it's confirmed.`
+          : `✅ ${result.message}`;
+        alert(message);
         fetchBookings(); // Refresh the list
         setShowCancelDialog(false);
         setSelectedBooking(null);
@@ -446,10 +449,34 @@ function CustomerBookings() {
                         </Box>
                       </Box>
 
+                      {/* Pending Approval Indicators */}
+                      {(booking.isCancel || booking.isExtend || (booking.isPay && booking.payment_status?.toLowerCase() !== 'paid')) && (
+                        <Box sx={{ mb: 2, p: 1.5, backgroundColor: '#fff3cd', borderRadius: 1, border: '1px solid #ffc107' }}>
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#856404', mb: 0.5 }}>
+                            ⏳ Pending Admin Approval
+                          </Typography>
+                          {booking.isCancel && (
+                            <Typography variant="caption" sx={{ color: '#856404', display: 'block' }}>
+                              • Cancellation request submitted
+                            </Typography>
+                          )}
+                          {booking.isExtend && (
+                            <Typography variant="caption" sx={{ color: '#856404', display: 'block' }}>
+                              • Extension request submitted
+                            </Typography>
+                          )}
+                          {booking.isPay && booking.payment_status?.toLowerCase() !== 'paid' && (
+                            <Typography variant="caption" sx={{ color: '#856404', display: 'block' }}>
+                              • Payment submitted - waiting for verification
+                            </Typography>
+                          )}
+                        </Box>
+                      )}
+
                       {/* Action Buttons */}
                       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                        {/* Edit Button - Only for pending bookings */}
-                        {booking.booking_status?.toLowerCase() === 'pending' && (
+                        {/* Edit Button - Only for pending bookings without pending actions */}
+                        {booking.booking_status?.toLowerCase() === 'pending' && !booking.isCancel && !booking.isExtend && (
                           <Button
                             size="small"
                             variant="outlined"
@@ -469,9 +496,10 @@ function CustomerBookings() {
                           </Button>
                         )}
 
-                        {/* Cancel Button - For pending and confirmed bookings */}
+                        {/* Cancel Button - For pending and confirmed bookings without pending cancellation */}
                         {(booking.booking_status?.toLowerCase() === 'pending' || 
-                          booking.booking_status?.toLowerCase() === 'confirmed') && (
+                          booking.booking_status?.toLowerCase() === 'confirmed') && 
+                          !booking.isCancel && (
                           <Button
                             size="small"
                             variant="outlined"
@@ -491,8 +519,8 @@ function CustomerBookings() {
                           </Button>
                         )}
 
-                        {/* Extend Button - For In Progress bookings */}
-                        {booking.booking_status?.toLowerCase() === 'in progress' && (
+                        {/* Extend Button - For In Progress bookings without pending extension */}
+                        {booking.booking_status?.toLowerCase() === 'in progress' && !booking.isExtend && (
                           <Button
                             size="small"
                             variant="outlined"
@@ -512,8 +540,9 @@ function CustomerBookings() {
                           </Button>
                         )}
 
-                        {/* Pay Now Button - Only show if balance > 0 */}
+                        {/* Pay Now Button - Only show if balance > 0 and isPay is false */}
                         {booking.balance > 0 && 
+                         !booking.isPay &&
                          booking.booking_status?.toLowerCase() !== 'cancelled' && 
                          booking.booking_status?.toLowerCase() !== 'completed' && (
                           <Button

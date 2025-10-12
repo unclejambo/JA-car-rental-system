@@ -78,6 +78,15 @@ export default function PaymentModal({ open, onClose, booking, onPaymentSuccess 
         setError('Please select a payment method');
         return;
       }
+      
+      // For Cash payments, automatically set amount to full remaining balance
+      if (paymentData.payment_method === 'Cash') {
+        setPaymentData(prev => ({
+          ...prev,
+          amount: getRemainingBalance().toString()
+        }));
+      }
+      
       setActiveStep(1);
     } else if (activeStep === 1) {
       if (validatePaymentDetails()) {
@@ -94,6 +103,12 @@ export default function PaymentModal({ open, onClose, booking, onPaymentSuccess 
   };
 
   const validatePaymentDetails = () => {
+    // For Cash payments, amount is automatically set, skip validation
+    if (paymentData.payment_method === 'Cash') {
+      return true; // Cash payments just show instructions, always valid
+    }
+    
+    // For GCash payments, validate amount and reference
     if (!paymentData.amount || parseFloat(paymentData.amount) <= 0) {
       setError('Please enter a valid payment amount');
       return false;
@@ -136,6 +151,17 @@ export default function PaymentModal({ open, onClose, booking, onPaymentSuccess 
       
       if (response.ok) {
         const result = await response.json();
+        
+        // Show appropriate message based on payment type and confirmation status
+        if (result.pending_admin_confirmation) {
+          const message = result.is_cash_payment
+            ? `✅ ${result.message}\n\n📍 Please visit our office to complete your cash payment.\n\n⏳ Your booking status will remain pending until payment is verified by our staff.`
+            : `✅ ${result.message}\n\n⏳ Your booking status will remain pending until payment is verified by our staff.`;
+          alert(message);
+        } else {
+          alert(`✅ ${result.message}`);
+        }
+        
         if (onPaymentSuccess) {
           onPaymentSuccess(result);
         }
@@ -237,114 +263,140 @@ export default function PaymentModal({ open, onClose, booking, onPaymentSuccess 
       <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
         <Box sx={{ width: '100%', maxWidth: { xs: '100%', sm: '500px' } }}>
           <Grid container spacing={3}>
-            {/* Payment Amount */}
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Payment Amount"
-                value={paymentData.amount}
-                onChange={(e) => handleInputChange('amount', e.target.value)}
-                required
-                InputProps={{
-                  startAdornment: <Typography sx={{ mr: 1 }}>₱</Typography>,
-                }}
-                inputProps={{ min: 1, max: getRemainingBalance() }}
-                helperText={`Outstanding balance: ₱${getRemainingBalance().toLocaleString()}`}
-              />
-            </Grid>
-
-            {/* GCash-specific fields */}
-            {paymentData.payment_method === 'GCash' && (
+            {/* Cash Payment Instructions - Show only instructions, no amount input */}
+            {paymentData.payment_method === 'Cash' ? (
+              <Grid item xs={12}>
+                <Paper sx={{ p: 4, textAlign: 'center', backgroundColor: '#fff8e1', borderRadius: 2, border: '2px solid #ff9800' }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                    <HiCash size={64} color="#ff9800" />
+                    <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#ff9800' }}>
+                      Cash Payment Instructions
+                    </Typography>
+                    
+                    <Alert severity="warning" sx={{ width: '100%', textAlign: 'left' }}>
+                      <Typography variant="body1" sx={{ mb: 2 }}>
+                        <strong>Please visit our office to complete your cash payment.</strong>
+                      </Typography>
+                      <Typography variant="body2" component="div">
+                        <strong>📍 Office Location:</strong><br />
+                        JA Car Rental Office<br />
+                        123 Main Street, Business District, City<br /><br />
+                        
+                        <strong>🕐 Business Hours:</strong><br />
+                        Monday - Friday: 8:00 AM - 5:00 PM<br />
+                        Saturday: 9:00 AM - 3:00 PM<br />
+                        Sunday: Closed<br /><br />
+                        
+                        <strong>💰 Amount Due:</strong><br />
+                        ₱{getRemainingBalance().toLocaleString()}<br /><br />
+                        
+                        <strong>📝 What to Bring:</strong><br />
+                        • Booking ID: #{booking?.booking_id}<br />
+                        • Valid ID<br />
+                        • Exact amount or sufficient cash<br /><br />
+                        
+                        <strong>⏳ Important:</strong><br />
+                        Your booking will remain pending until payment is verified by our staff at the office.
+                      </Typography>
+                    </Alert>
+                  </Box>
+                </Paper>
+              </Grid>
+            ) : (
               <>
+                {/* Payment Amount - Only for GCash */}
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="GCash Number"
-                    value={paymentData.gcash_no}
-                    onChange={(e) => handleInputChange('gcash_no', e.target.value)}
-                    placeholder="09XXXXXXXXX"
+                    type="number"
+                    label="Payment Amount"
+                    value={paymentData.amount}
+                    onChange={(e) => handleInputChange('amount', e.target.value)}
                     required
-                    helperText="Enter your 11-digit GCash number"
+                    InputProps={{
+                      startAdornment: <Typography sx={{ mr: 1 }}>₱</Typography>,
+                    }}
+                    inputProps={{ min: 1, max: getRemainingBalance() }}
+                    helperText={`Outstanding balance: ₱${getRemainingBalance().toLocaleString()}`}
                   />
                 </Grid>
 
-                {/* QR Code Section */}
-                <Grid item xs={12}>
-                  <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: '#f0f8ff', borderRadius: 2 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                      <HiQrcode size={48} color="#c10007" />
-                      <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#c10007' }}>
-                        GCash Payment
-                      </Typography>
-                      
-                      {/* QR Code Placeholder */}
-                      <Box
-                        sx={{
-                          width: { xs: 150, sm: 200 },
-                          height: { xs: 150, sm: 200 },
-                          backgroundColor: '#fff',
-                          border: '2px solid #e0e0e0',
-                          borderRadius: 2,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexDirection: 'column',
-                          gap: 1
-                        }}
-                      >
-                        <HiQrcode size={64} color="#c10007" />
-                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-                          GCash QR Code
-                          <br />
-                          Amount: ₱{paymentData.amount}
-                        </Typography>
-                      </Box>
-                      
-                      <Alert severity="info" sx={{ mt: 2, textAlign: 'left', maxWidth: '400px' }}>
-                        <Typography variant="body2">
-                          <strong>Steps:</strong><br />
-                          1. Open your GCash app<br />
-                          2. Scan the QR code above<br />
-                          3. Confirm payment amount: ₱{paymentData.amount}<br />
-                          4. Complete the transaction<br />
-                          5. Enter the reference number below
-                        </Typography>
-                      </Alert>
-                    </Box>
-                  </Paper>
-                </Grid>
+                {/* GCash-specific fields */}
+                {paymentData.payment_method === 'GCash' && (
+                  <>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="GCash Number"
+                        value={paymentData.gcash_no}
+                        onChange={(e) => handleInputChange('gcash_no', e.target.value)}
+                        placeholder="09XXXXXXXXX"
+                        required
+                        helperText="Enter your 11-digit GCash number"
+                      />
+                    </Grid>
+
+                    {/* QR Code Section */}
+                    <Grid item xs={12}>
+                      <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: '#f0f8ff', borderRadius: 2 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                          <HiQrcode size={48} color="#c10007" />
+                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#c10007' }}>
+                            GCash Payment
+                          </Typography>
+                          
+                          {/* QR Code Placeholder */}
+                          <Box
+                            sx={{
+                              width: { xs: 150, sm: 200 },
+                              height: { xs: 150, sm: 200 },
+                              backgroundColor: '#fff',
+                              border: '2px solid #e0e0e0',
+                              borderRadius: 2,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexDirection: 'column',
+                              gap: 1
+                            }}
+                          >
+                            <HiQrcode size={64} color="#c10007" />
+                            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                              GCash QR Code
+                              <br />
+                              Amount: ₱{paymentData.amount}
+                            </Typography>
+                          </Box>
+                          
+                          <Alert severity="info" sx={{ mt: 2, textAlign: 'left', maxWidth: '400px' }}>
+                            <Typography variant="body2">
+                              <strong>Steps:</strong><br />
+                              1. Open your GCash app<br />
+                              2. Scan the QR code above<br />
+                              3. Confirm payment amount: ₱{paymentData.amount}<br />
+                              4. Complete the transaction<br />
+                              5. Enter the reference number below
+                            </Typography>
+                          </Alert>
+                        </Box>
+                      </Paper>
+                    </Grid>
+
+                    {/* Reference Number - Only for GCash */}
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Reference Number *"
+                        value={paymentData.reference_no}
+                        onChange={(e) => handleInputChange('reference_no', e.target.value)}
+                        placeholder="Enter GCash reference number"
+                        required
+                        helperText="Enter the reference number from your GCash transaction"
+                      />
+                    </Grid>
+                  </>
+                )}
               </>
-            )}
-
-            {/* Cash payment instructions */}
-            {paymentData.payment_method === 'Cash' && (
-              <Grid item xs={12}>
-                <Alert severity="info">
-                  <Typography variant="body2">
-                    <strong>Cash Payment Instructions:</strong><br />
-                    1. Visit our office during business hours<br />
-                    2. Bring the exact amount: ₱{paymentData.amount}<br />
-                    3. Present your booking ID: #{booking?.booking_id}<br />
-                    4. Get the receipt for your records
-                  </Typography>
-                </Alert>
-              </Grid>
-            )}
-
-            {/* Reference Number - Only for GCash */}
-            {paymentData.payment_method === 'GCash' && (
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Reference Number *"
-                  value={paymentData.reference_no}
-                  onChange={(e) => handleInputChange('reference_no', e.target.value)}
-                  placeholder="Enter GCash reference number"
-                  required
-                  helperText="Enter the reference number from your GCash transaction"
-                />
-              </Grid>
             )}
           </Grid>
         </Box>

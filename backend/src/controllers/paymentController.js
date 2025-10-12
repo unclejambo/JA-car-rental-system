@@ -479,7 +479,7 @@ export const processBookingPayment = async (req, res) => {
         gcash_no,
         reference_no,
         amount: parseInt(amount),
-        paid_date: new Date(),
+        paid_date: getPhilippineTime(),
         balance: Math.max(0, (booking.total_amount || 0) - parseInt(amount)),
       },
       include: {
@@ -493,34 +493,23 @@ export const processBookingPayment = async (req, res) => {
       },
     });
 
-    // Update booking payment status and isPay flag
-    // isPay should be true whenever customer makes any payment
-    if (payment.balance === 0) {
-      await prisma.booking.update({
-        where: { booking_id: parseInt(booking_id) },
-        data: {
-          payment_status: "Paid",
-          isPay: true,
-        },
-      });
-    } else {
-      await prisma.booking.update({
-        where: { booking_id: parseInt(booking_id) },
-        data: { 
-          payment_status: "Unpaid",
-          isPay: true, // Set to true whenever customer makes payment
-        },
-      });
-    }
+    // For Cash payments: Keep status as pending until admin confirms
+    // For GCash: Also keep pending until admin confirms
+    // Do NOT automatically set isPay=true or payment_status="Paid"
+    // Wait for admin confirmation
+    
+    const isFullPayment = payment.balance === 0;
+    const paymentMessage = payment_method.toLowerCase() === 'cash' 
+      ? `Cash payment request submitted. Please visit our office to complete the payment. Your booking will be confirmed once the admin verifies your payment.`
+      : `Payment request submitted. Your booking will be confirmed once the admin verifies your payment.`;
 
     res.status(201).json({
       success: true,
-      message:
-        payment.balance === 0
-          ? "Payment completed successfully!"
-          : `Partial payment received. Remaining balance: ₱${payment.balance.toLocaleString()}`,
+      message: paymentMessage,
       payment: shapePayment(payment),
       remaining_balance: payment.balance,
+      pending_admin_confirmation: true,
+      is_cash_payment: payment_method.toLowerCase() === 'cash',
     });
   } catch (error) {
     console.error("Error processing payment:", error);

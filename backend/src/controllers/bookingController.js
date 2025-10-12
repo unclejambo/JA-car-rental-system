@@ -631,7 +631,11 @@ export const cancelMyBooking = async (req, res) => {
       return res.status(400).json({ error: "Booking is already cancelled" });
     }
 
-    if (booking.booking_status === "ongoing") {
+    if (booking.isCancel) {
+      return res.status(400).json({ error: "Cancellation request already pending admin approval" });
+    }
+
+    if (booking.booking_status === "ongoing" || booking.booking_status === "in progress") {
       return res
         .status(400)
         .json({ error: "Cannot cancel an ongoing booking" });
@@ -643,22 +647,25 @@ export const cancelMyBooking = async (req, res) => {
         .json({ error: "Cannot cancel a completed booking" });
     }
 
-    // Update booking status to cancelled
+    // Set isCancel flag to true - waiting for admin confirmation
+    // Do NOT change booking_status to cancelled yet
     const updatedBooking = await prisma.booking.update({
       where: { booking_id: bookingId },
       data: {
-        booking_status: "cancelled",
         isCancel: true,
+        // booking_status remains unchanged until admin confirms
       },
       include: {
         car: { select: { make: true, model: true, year: true } },
+        customer: { select: { first_name: true, last_name: true } },
       },
     });
 
     res.json({
       success: true,
-      message: `Booking for ${updatedBooking.car.make} ${updatedBooking.car.model} has been cancelled`,
+      message: `Cancellation request for ${updatedBooking.car.make} ${updatedBooking.car.model} has been submitted. Waiting for admin confirmation.`,
       booking: updatedBooking,
+      pending_approval: true,
     });
   } catch (error) {
     console.error("Error cancelling booking:", error);
@@ -796,12 +803,16 @@ export const extendMyBooking = async (req, res) => {
         .json({ error: "You can only extend your own bookings" });
     }
 
-    // Check if booking can be extended (must be ongoing)
-    if (booking.booking_status !== "ongoing") {
+    // Check if booking can be extended (must be ongoing or in progress)
+    if (booking.booking_status !== "ongoing" && booking.booking_status?.toLowerCase() !== "in progress") {
       return res.status(400).json({
-        error: "Only ongoing bookings can be extended",
+        error: "Only ongoing/in progress bookings can be extended",
         current_status: booking.booking_status,
       });
+    }
+
+    if (booking.isExtend) {
+      return res.status(400).json({ error: "Extension request already pending admin approval" });
     }
 
     // Calculate additional cost
@@ -820,26 +831,28 @@ export const extendMyBooking = async (req, res) => {
     const additionalCost = additionalDays * (booking.car.rent_price || 0);
     const newTotalAmount = (booking.total_amount || 0) + additionalCost;
 
-    // Update booking with extension
+    // Set isExtend flag to true - waiting for admin confirmation
+    // Do NOT update end_date and total_amount yet
     const updatedBooking = await prisma.booking.update({
       where: { booking_id: bookingId },
       data: {
-        new_end_date: new Date(new_end_date),
-        total_amount: newTotalAmount,
-        // Create extension record instead of string field
-        // extensions field is handled through Extension model relation
+        isExtend: true,
+        new_end_date: newEndDate, // Store requested new end date
+        // end_date and total_amount remain unchanged until admin confirms
       },
       include: {
         car: { select: { make: true, model: true, year: true } },
+        customer: { select: { first_name: true, last_name: true } },
       },
     });
 
     res.json({
       success: true,
-      message: `Booking extended by ${additionalDays} days`,
+      message: `Extension request for ${additionalDays} days has been submitted. Waiting for admin confirmation.`,
       booking: updatedBooking,
       additional_cost: additionalCost,
       new_total: newTotalAmount,
+      pending_approval: true,
     });
   } catch (error) {
     console.error("Error extending booking:", error);

@@ -28,7 +28,7 @@ export default function AdminSideBar({
 
   const SidebarContent = (
     <div id="admin-sidebar" className="admin-sidebar" role="navigation">
-      <NavLink to="/#" onClick={onClose}>
+      <NavLink to="/admindashboard" onClick={onClose}>
         <HiMiniSquaresPlus
           style={{ verticalAlign: '-3px', marginRight: '5px' }}
         />

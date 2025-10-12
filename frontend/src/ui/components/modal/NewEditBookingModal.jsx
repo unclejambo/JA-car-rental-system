@@ -215,319 +215,327 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
   };
 
   const renderServiceTypeStep = () => (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>
-        Service Type
-      </Typography>
-      
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Card 
-            sx={{ 
-              cursor: 'pointer', 
-              border: activeTab === 0 ? '2px solid #c10007' : '1px solid #e0e0e0',
-              '&:hover': { borderColor: '#c10007' }
-            }}
-            onClick={() => setActiveTab(0)}
-          >
-            <CardContent sx={{ textAlign: 'center', p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
-                🚚 Delivery Service
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                We deliver the car to your location
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+    <Box sx={{ display: 'flex', justifyContent: 'center', p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ width: '100%', maxWidth: '600px' }}>
+        <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', textAlign: 'center' }}>
+          Service Type
+        </Typography>
         
-        <Grid item xs={12} md={6}>
-          <Card 
-            sx={{ 
-              cursor: 'pointer', 
-              border: activeTab === 1 ? '2px solid #c10007' : '1px solid #e0e0e0',
-              '&:hover': { borderColor: '#c10007' }
-            }}
-            onClick={() => setActiveTab(1)}
-          >
-            <CardContent sx={{ textAlign: 'center', p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
-                🏢 Office Pickup
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Pick up at our office location
-              </Typography>
-            </CardContent>
-          </Card>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <Card 
+              sx={{ 
+                cursor: 'pointer', 
+                border: activeTab === 0 ? '2px solid #c10007' : '1px solid #e0e0e0',
+                '&:hover': { borderColor: '#c10007' },
+                height: '100%'
+              }}
+              onClick={() => setActiveTab(0)}
+            >
+              <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  🚚 Delivery Service
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  We deliver the car to your location
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6}>
+            <Card 
+              sx={{ 
+                cursor: 'pointer', 
+                border: activeTab === 1 ? '2px solid #c10007' : '1px solid #e0e0e0',
+                '&:hover': { borderColor: '#c10007' },
+                height: '100%'
+              }}
+              onClick={() => setActiveTab(1)}
+            >
+              <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  🏢 Office Pickup
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Pick up at our office location
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-      </Grid>
+      </Box>
     </Box>
   );
 
   const renderBookingDetailsStep = () => (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>
-        Edit Booking Details
-      </Typography>
+    <Box sx={{ display: 'flex', justifyContent: 'center', p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ width: '100%', maxWidth: '800px' }}>
+        <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', textAlign: 'center' }}>
+          Edit Booking Details
+        </Typography>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Grid container spacing={3}>
-        {/* Purpose */}
-        <Grid item xs={12}>
-          <FormControl fullWidth required error={missingFields.includes('purpose')}>
-            <InputLabel>Purpose of Rental</InputLabel>
-            <Select
-              value={formData.purpose}
-              label="Purpose of Rental"
-              onChange={(e) => setFormData({ ...formData, purpose: e.target.value, customPurpose: '' })}
-            >
-              <MenuItem value="Personal">Personal</MenuItem>
-              <MenuItem value="Business">Business</MenuItem>
-              <MenuItem value="Family Trip">Family Trip</MenuItem>
-              <MenuItem value="Wedding">Wedding</MenuItem>
-              <MenuItem value="Others">Others</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-
-        {/* Custom Purpose */}
-        {formData.purpose === 'Others' && (
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Specify Purpose"
-              value={formData.customPurpose}
-              onChange={(e) => setFormData({ ...formData, customPurpose: e.target.value })}
-              required
-              error={missingFields.includes('customPurpose')}
-            />
-          </Grid>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
         )}
 
-        {/* Dates */}
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            type="date"
-            label="Start Date"
-            value={formData.startDate}
-            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-            InputLabelProps={{ shrink: true }}
-            inputProps={{ min: getMinimumDate() }}
-            required
-            error={missingFields.includes('startDate')}
-          />
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            type="date"
-            label="End Date"
-            value={formData.endDate}
-            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-            InputLabelProps={{ shrink: true }}
-            inputProps={{ min: formData.startDate || getMinimumDate() }}
-            required
-            error={missingFields.includes('endDate')}
-          />
-        </Grid>
-
-        {/* Times */}
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            type="time"
-            label="Pickup Time"
-            value={formData.pickupTime}
-            onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
-            InputLabelProps={{ shrink: true }}
-            required
-            error={missingFields.includes('pickupTime')}
-          />
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            type="time"
-            label="Drop-off Time"
-            value={formData.dropoffTime}
-            onChange={(e) => setFormData({ ...formData, dropoffTime: e.target.value })}
-            InputLabelProps={{ shrink: true }}
-            required
-            error={missingFields.includes('dropoffTime')}
-          />
-        </Grid>
-
-        {/* Location Fields */}
-        {activeTab === 0 ? (
-          // Delivery Service Fields
-          <>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Delivery Address"
-                value={formData.deliveryLocation}
-                onChange={(e) => setFormData({ ...formData, deliveryLocation: e.target.value })}
-                required
-                error={missingFields.includes('deliveryLocation')}
-                multiline
-                rows={2}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Drop-off Address"
-                value={formData.dropoffLocation}
-                onChange={(e) => setFormData({ ...formData, dropoffLocation: e.target.value })}
-                required
-                error={missingFields.includes('dropoffLocation')}
-                multiline
-                rows={2}
-              />
-            </Grid>
-          </>
-        ) : (
-          // Office Pickup Info
+        <Grid container spacing={3}>
+          {/* Purpose */}
           <Grid item xs={12}>
-            <Alert severity="info">
-              <Typography variant="body2">
-                <strong>Pickup & Return:</strong> J&A Car Rental Office
-              </Typography>
-            </Alert>
-          </Grid>
-        )}
-
-        {/* Driver Selection */}
-        <Grid item xs={12}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isSelfService}
-                onChange={(e) => setIsSelfService(e.target.checked)}
-                color="primary"
-              />
-            }
-            label="Self-Drive Service"
-          />
-
-          {!isSelfService && (
-            <FormControl fullWidth sx={{ mt: 2 }} required error={missingFields.includes('selectedDriver')}>
-              <InputLabel>Select Driver</InputLabel>
+            <FormControl fullWidth required error={missingFields.includes('purpose')}>
+              <InputLabel>Purpose of Rental</InputLabel>
               <Select
-                value={formData.selectedDriver}
-                label="Select Driver"
-                onChange={(e) => setFormData({ ...formData, selectedDriver: e.target.value })}
+                value={formData.purpose}
+                label="Purpose of Rental"
+                onChange={(e) => setFormData({ ...formData, purpose: e.target.value, customPurpose: '' })}
               >
-                {drivers.map((driver) => (
-                  <MenuItem key={driver.drivers_id} value={driver.drivers_id.toString()}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar sx={{ width: 32, height: 32 }}>
-                        {driver.first_name?.[0]}{driver.last_name?.[0]}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="body1">
-                          {driver.first_name} {driver.last_name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          License: {driver.license_number}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </MenuItem>
-                ))}
+                <MenuItem value="Personal">Personal</MenuItem>
+                <MenuItem value="Business">Business</MenuItem>
+                <MenuItem value="Family Trip">Family Trip</MenuItem>
+                <MenuItem value="Wedding">Wedding</MenuItem>
+                <MenuItem value="Others">Others</MenuItem>
               </Select>
             </FormControl>
+          </Grid>
+
+          {/* Custom Purpose */}
+          {formData.purpose === 'Others' && (
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Specify Purpose"
+                value={formData.customPurpose}
+                onChange={(e) => setFormData({ ...formData, customPurpose: e.target.value })}
+                required
+                error={missingFields.includes('customPurpose')}
+              />
+            </Grid>
           )}
+
+          {/* Dates */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Start Date"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ min: getMinimumDate() }}
+              required
+              error={missingFields.includes('startDate')}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              type="date"
+              label="End Date"
+              value={formData.endDate}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ min: formData.startDate || getMinimumDate() }}
+              required
+              error={missingFields.includes('endDate')}
+            />
+          </Grid>
+
+          {/* Times */}
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              type="time"
+              label="Pickup Time"
+              value={formData.pickupTime}
+              onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+              required
+              error={missingFields.includes('pickupTime')}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              type="time"
+              label="Drop-off Time"
+              value={formData.dropoffTime}
+              onChange={(e) => setFormData({ ...formData, dropoffTime: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+              required
+              error={missingFields.includes('dropoffTime')}
+            />
+          </Grid>
+
+          {/* Location Fields */}
+          {activeTab === 0 ? (
+            // Delivery Service Fields
+            <>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Delivery Address"
+                  value={formData.deliveryLocation}
+                  onChange={(e) => setFormData({ ...formData, deliveryLocation: e.target.value })}
+                  required
+                  error={missingFields.includes('deliveryLocation')}
+                  multiline
+                  rows={2}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Drop-off Address"
+                  value={formData.dropoffLocation}
+                  onChange={(e) => setFormData({ ...formData, dropoffLocation: e.target.value })}
+                  required
+                  error={missingFields.includes('dropoffLocation')}
+                  multiline
+                  rows={2}
+                />
+              </Grid>
+            </>
+          ) : (
+            // Office Pickup Info
+            <Grid item xs={12}>
+              <Alert severity="info">
+                <Typography variant="body2">
+                  <strong>Pickup & Return:</strong> J&A Car Rental Office
+                </Typography>
+              </Alert>
+            </Grid>
+          )}
+
+          {/* Driver Selection */}
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isSelfService}
+                  onChange={(e) => setIsSelfService(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label="Self-Drive Service"
+            />
+
+            {!isSelfService && (
+              <FormControl fullWidth sx={{ mt: 2 }} required error={missingFields.includes('selectedDriver')}>
+                <InputLabel>Select Driver</InputLabel>
+                <Select
+                  value={formData.selectedDriver}
+                  label="Select Driver"
+                  onChange={(e) => setFormData({ ...formData, selectedDriver: e.target.value })}
+                >
+                  {drivers.map((driver) => (
+                    <MenuItem key={driver.drivers_id} value={driver.drivers_id.toString()}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar sx={{ width: 32, height: 32 }}>
+                          {driver.first_name?.[0]}{driver.last_name?.[0]}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body1">
+                            {driver.first_name} {driver.last_name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            License: {driver.license_number}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </Grid>
         </Grid>
-      </Grid>
+      </Box>
     </Box>
   );
 
   const renderConfirmationStep = () => (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>
-        Confirm Changes
-      </Typography>
+    <Box sx={{ display: 'flex', justifyContent: 'center', p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ width: '100%', maxWidth: '800px' }}>
+        <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', textAlign: 'center' }}>
+          Confirm Changes
+        </Typography>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <Card sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2, color: '#c10007' }}>
-              Updated Booking Details
-            </Typography>
-            
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">Purpose:</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  {formData.purpose === 'Others' ? formData.customPurpose : formData.purpose}
-                </Typography>
-              </Grid>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={8}>
+            <Card sx={{ p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" sx={{ mb: 2, color: '#c10007' }}>
+                Updated Booking Details
+              </Typography>
               
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">Service:</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  {activeTab === 0 ? 'Delivery' : 'Office Pickup'}
-                </Typography>
-              </Grid>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">Purpose:</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    {formData.purpose === 'Others' ? formData.customPurpose : formData.purpose}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">Service:</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    {activeTab === 0 ? 'Delivery' : 'Office Pickup'}
+                  </Typography>
+                </Grid>
 
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">Start:</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  {new Date(formData.startDate).toLocaleDateString()} {formData.pickupTime}
-                </Typography>
-              </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">Start:</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    {new Date(formData.startDate).toLocaleDateString()} {formData.pickupTime}
+                  </Typography>
+                </Grid>
 
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">End:</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  {new Date(formData.endDate).toLocaleDateString()} {formData.dropoffTime}
-                </Typography>
-              </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">End:</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    {new Date(formData.endDate).toLocaleDateString()} {formData.dropoffTime}
+                  </Typography>
+                </Grid>
 
-              <Grid item xs={12}>
-                <Typography variant="body2" color="text.secondary">Driver:</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  {isSelfService ? 'Self-Drive' : 
-                    drivers.find(d => d.drivers_id.toString() === formData.selectedDriver)?.first_name + ' ' +
-                    drivers.find(d => d.drivers_id.toString() === formData.selectedDriver)?.last_name || 'Selected Driver'
-                  }
-                </Typography>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">Driver:</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    {isSelfService ? 'Self-Drive' : 
+                      drivers.find(d => d.drivers_id.toString() === formData.selectedDriver)?.first_name + ' ' +
+                      drivers.find(d => d.drivers_id.toString() === formData.selectedDriver)?.last_name || 'Selected Driver'
+                    }
+                  </Typography>
+                </Grid>
               </Grid>
-            </Grid>
-          </Card>
-        </Grid>
+            </Card>
+          </Grid>
 
-        <Grid item xs={12} md={4}>
-          <Card sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2, color: '#c10007' }}>
-              Vehicle
-            </Typography>
+          <Grid item xs={12} md={4}>
+            <Card sx={{ p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" sx={{ mb: 2, color: '#c10007' }}>
+                Vehicle
+              </Typography>
             
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              {booking?.car_details?.make} {booking?.car_details?.model}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {booking?.car_details?.year} • {booking?.car_details?.license_plate}
-            </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                {booking?.car_details?.make} {booking?.car_details?.model}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {booking?.car_details?.year} • {booking?.car_details?.license_plate}
+              </Typography>
 
-            <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 2 }} />
 
-            <Typography variant="body2" color="text.secondary">Total:</Typography>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#c10007' }}>
-              ₱{booking?.total_amount?.toLocaleString()}
-            </Typography>
-          </Card>
+              <Typography variant="body2" color="text.secondary">Total:</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#c10007' }}>
+                ₱{booking?.total_amount?.toLocaleString()}
+              </Typography>
+            </Card>
+          </Grid>
         </Grid>
-      </Grid>
+      </Box>
     </Box>
   );
 
@@ -535,16 +543,22 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
     <Dialog 
       open={open} 
       onClose={handleClose} 
-      maxWidth="lg" 
+      maxWidth="md" 
       fullWidth
-      PaperProps={{ sx: { minHeight: '80vh' } }}
+      PaperProps={{ 
+        sx: { 
+          minHeight: { xs: 'auto', sm: '70vh' },
+          maxHeight: '90vh'
+        } 
+      }}
     >
       <DialogTitle sx={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
         backgroundColor: '#c10007',
-        color: 'white'
+        color: 'white',
+        py: 2
       }}>
         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
           Edit Booking #{booking?.booking_id}
@@ -556,7 +570,7 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
 
       <DialogContent sx={{ p: 0 }}>
         {/* Stepper */}
-        <Box sx={{ p: 3, backgroundColor: '#f5f5f5' }}>
+        <Box sx={{ p: { xs: 2, sm: 3 }, backgroundColor: '#f5f5f5' }}>
           <Stepper activeStep={activeStep} alternativeLabel>
             {steps.map((label) => (
               <Step key={label}>
@@ -567,18 +581,19 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
         </Box>
 
         {/* Content */}
-        <Box sx={{ minHeight: '400px' }}>
+        <Box sx={{ minHeight: { xs: 'auto', sm: '300px' } }}>
           {activeStep === 0 && renderServiceTypeStep()}
           {activeStep === 1 && renderBookingDetailsStep()}
           {activeStep === 2 && renderConfirmationStep()}
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, backgroundColor: '#f5f5f5' }}>
+      <DialogActions sx={{ p: { xs: 2, sm: 3 }, backgroundColor: '#f5f5f5', gap: 1 }}>
         <Button
           onClick={handleBack}
           disabled={activeStep === 0 || loading}
           startIcon={<HiArrowLeft />}
+          sx={{ minWidth: '100px' }}
         >
           Back
         </Button>
@@ -593,7 +608,8 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
             endIcon={<HiArrowRight />}
             sx={{ 
               backgroundColor: '#c10007',
-              '&:hover': { backgroundColor: '#a50006' }
+              '&:hover': { backgroundColor: '#a50006' },
+              minWidth: '100px'
             }}
           >
             Next
@@ -606,7 +622,8 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
             startIcon={loading ? <CircularProgress size={20} /> : <HiCheck />}
             sx={{ 
               backgroundColor: '#c10007',
-              '&:hover': { backgroundColor: '#a50006' }
+              '&:hover': { backgroundColor: '#a50006' },
+              minWidth: '140px'
             }}
           >
             {loading ? 'Updating...' : 'Update Booking'}

@@ -358,6 +358,19 @@ export const createBooking = async (req, res) => {
       },
     });
 
+    // Update car status to 'Rented' immediately to prevent double booking
+    // This happens regardless of payment status
+    try {
+      await prisma.car.update({
+        where: { car_id: parseInt(car_id) },
+        data: { car_status: 'Rented' }
+      });
+      console.log(`Car ${car_id} status updated to 'Rented'`);
+    } catch (carUpdateError) {
+      console.error("Error updating car status:", carUpdateError);
+      // Don't fail the booking creation if car status update fails
+    }
+
     // Create an initial payment record for the booking
     // This represents the amount due that customer needs to pay
     try {
@@ -492,7 +505,29 @@ export const updateBooking = async (req, res) => {
 export const deleteBooking = async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
+    
+    // Get the booking to find the car_id before deleting
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+      select: { car_id: true }
+    });
+    
+    // Delete the booking
     await prisma.booking.delete({ where: { booking_id: bookingId } });
+    
+    // Update car status back to 'Available' after booking is deleted
+    if (booking?.car_id) {
+      try {
+        await prisma.car.update({
+          where: { car_id: booking.car_id },
+          data: { car_status: 'Available' }
+        });
+        console.log(`Car ${booking.car_id} status updated to 'Available' after booking deletion`);
+      } catch (carUpdateError) {
+        console.error("Error updating car status after deletion:", carUpdateError);
+      }
+    }
+    
     res.status(204).send();
   } catch (error) {
     console.error("Error deleting booking:", error);
@@ -727,6 +762,17 @@ export const adminCancelBooking = async (req, res) => {
         customer: { select: { first_name: true, last_name: true } }
       },
     });
+
+    // Update car status back to 'Available' when booking is cancelled
+    try {
+      await prisma.car.update({
+        where: { car_id: booking.car.car_id },
+        data: { car_status: 'Available' }
+      });
+      console.log(`Car ${booking.car.car_id} status updated to 'Available' after cancellation`);
+    } catch (carUpdateError) {
+      console.error("Error updating car status after cancellation:", carUpdateError);
+    }
 
     // Create a transaction record for the cancellation
     try {

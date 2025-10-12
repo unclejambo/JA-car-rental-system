@@ -479,7 +479,7 @@ export const processBookingPayment = async (req, res) => {
         gcash_no,
         reference_no,
         amount: parseInt(amount),
-        paid_date: getPhilippineTime(),
+        // paid_date: getPhilippineTime(),
         balance: Math.max(0, (booking.total_amount || 0) - parseInt(amount)),
       },
       include: {
@@ -493,10 +493,13 @@ export const processBookingPayment = async (req, res) => {
       },
     });
 
-    // For Cash payments: Keep status as pending until admin confirms
-    // For GCash: Also keep pending until admin confirms
-    // Do NOT automatically set isPay=true or payment_status="Paid"
-    // Wait for admin confirmation
+    // Set isPay to TRUE so admin can see the payment confirmation buttons
+    await prisma.booking.update({
+      where: { booking_id: parseInt(booking_id) },
+      data: {
+        isPay: true,
+      },
+    });
     
     const isFullPayment = payment.balance === 0;
     const paymentMessage = payment_method.toLowerCase() === 'cash' 

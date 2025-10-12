@@ -402,58 +402,60 @@ const ManageBookingsTable = ({
 
       return (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-          {/* View details button - only for BOOKINGS tab */}
+          {/* BOOKINGS TAB - View details and payment buttons */}
           {activeTab === 'BOOKINGS' && (
-            <IconButton
-              size="small"
-              color="primary"
-              aria-label="view details"
-              onClick={() => handleViewDetails(params.row)}
-              sx={{
-                '&:hover': {
-                  backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                },
-              }}
-            >
-              <MoreHorizIcon fontSize="small" />
-            </IconButton>
-          )}
-
-          {/* Payment confirmation buttons - only for BOOKINGS tab when isPay is true */}
-          {activeTab === 'BOOKINGS' && shouldShowPaymentButtons && (
             <>
               <IconButton
                 size="small"
-                color="success"
-                aria-label="confirm"
-                onClick={() => handleConfirm(params.row)}
-                disabled={processing}
+                color="primary"
+                aria-label="view details"
+                onClick={() => handleViewDetails(params.row)}
                 sx={{
                   '&:hover': {
-                    backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                    backgroundColor: 'rgba(25, 118, 210, 0.08)',
                   },
                 }}
               >
-                <CheckCircleIcon fontSize="small" />
+                <MoreHorizIcon fontSize="small" />
               </IconButton>
-              <IconButton
-                size="small"
-                color="error"
-                aria-label="cancel"
-                onClick={() => handleCancel(params.row)}
-                disabled={processing}
-                sx={{
-                  '&:hover': {
-                    backgroundColor: 'rgba(211, 47, 47, 0.08)',
-                  },
-                }}
-              >
-                <CancelIcon fontSize="small" />
-              </IconButton>
+
+              {/* Show payment buttons only when isPay is true */}
+              {shouldShowPaymentButtons && (
+                <>
+                  <IconButton
+                    size="small"
+                    color="success"
+                    aria-label="confirm"
+                    onClick={() => handleConfirm(params.row)}
+                    disabled={processing}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                      },
+                    }}
+                  >
+                    <CheckCircleIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    aria-label="cancel"
+                    onClick={() => handleCancel(params.row)}
+                    disabled={processing}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'rgba(211, 47, 47, 0.08)',
+                      },
+                    }}
+                  >
+                    <CancelIcon fontSize="small" />
+                  </IconButton>
+                </>
+              )}
             </>
           )}
 
-          {/* Cancellation confirmation buttons - only for CANCELLATION tab */}
+          {/* CANCELLATION TAB - Confirm and reject buttons */}
           {activeTab === 'CANCELLATION' && (
             <>
               <IconButton

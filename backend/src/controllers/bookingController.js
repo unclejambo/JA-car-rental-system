@@ -759,6 +759,149 @@ export const adminCancelBooking = async (req, res) => {
   }
 };
 
+// @desc    Confirm cancellation request (from CANCELLATION tab)
+// @route   PUT /bookings/:id/confirm-cancellation
+// @access  Private (Admin/Staff only)
+export const confirmCancellationRequest = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const adminId = req.user?.sub || req.user?.admin_id || req.user?.id;
+
+    console.log('Confirming cancellation request:', {
+      bookingId,
+      adminId,
+      userRole: req.user?.role
+    });
+
+    // Find the booking with all necessary details
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+      include: {
+        car: { select: { car_id: true, make: true, model: true, year: true } },
+        customer: { select: { customer_id: true, first_name: true, last_name: true } }
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    // Check if booking has cancellation request
+    if (!booking.isCancel) {
+      return res.status(400).json({ error: "No cancellation request found for this booking" });
+    }
+
+    // Check if booking is already cancelled
+    if (booking.booking_status === "Cancelled") {
+      return res.status(400).json({ error: "Booking is already cancelled" });
+    }
+
+    // Update booking status to Cancelled
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: {
+        booking_status: "Cancelled",
+        isCancel: true,
+      },
+      include: {
+        car: { select: { make: true, model: true, year: true } },
+        customer: { select: { first_name: true, last_name: true } }
+      },
+    });
+
+    // Create a transaction record for the cancellation with PH timezone
+    try {
+      // Get current time in PH timezone (UTC+8)
+      const now = new Date();
+      const phDate = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+      
+      await prisma.transaction.create({
+        data: {
+          booking_id: bookingId,
+          customer_id: booking.customer.customer_id,
+          car_id: booking.car.car_id,
+          completion_date: null,
+          cancellation_date: phDate,
+        },
+      });
+      console.log(`Transaction record created for cancelled booking ${bookingId} with PH timezone`);
+    } catch (transactionError) {
+      console.error('Error creating transaction record:', transactionError);
+      // Don't fail the cancellation if transaction record creation fails
+    }
+
+    res.json({
+      success: true,
+      message: `Cancellation confirmed for ${updatedBooking.car.make} ${updatedBooking.car.model}`,
+      booking: updatedBooking,
+    });
+  } catch (error) {
+    console.error("Error confirming cancellation:", error);
+    res.status(500).json({ 
+      error: "Failed to confirm cancellation",
+      details: error.message 
+    });
+  }
+};
+
+// @desc    Reject cancellation request (set isCancel to false)
+// @route   PUT /bookings/:id/reject-cancellation
+// @access  Private (Admin/Staff only)
+export const rejectCancellationRequest = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const adminId = req.user?.sub || req.user?.admin_id || req.user?.id;
+
+    console.log('Rejecting cancellation request:', {
+      bookingId,
+      adminId,
+      userRole: req.user?.role
+    });
+
+    // Find the booking
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+      include: {
+        car: { select: { make: true, model: true, year: true } },
+        customer: { select: { first_name: true, last_name: true } }
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    // Check if booking has cancellation request
+    if (!booking.isCancel) {
+      return res.status(400).json({ error: "No cancellation request found for this booking" });
+    }
+
+    // Set isCancel to false to reject the request
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: {
+        isCancel: false,
+      },
+      include: {
+        car: { select: { make: true, model: true, year: true } },
+        customer: { select: { first_name: true, last_name: true } }
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Cancellation request rejected for ${updatedBooking.car.make} ${updatedBooking.car.model}`,
+      booking: updatedBooking,
+    });
+  } catch (error) {
+    console.error("Error rejecting cancellation:", error);
+    res.status(500).json({ 
+      error: "Failed to reject cancellation",
+      details: error.message 
+    });
+  }
+};
+
 // @desc    Extend customer's ongoing booking
 // @route   PUT /bookings/:id/extend
 // @access  Private (Customer - own bookings only)

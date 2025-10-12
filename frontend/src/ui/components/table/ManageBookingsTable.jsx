@@ -55,6 +55,7 @@ const ManageBookingsTable = ({
         bookingId,
         currentStatus: row.booking_status,
         currentIsPay: row.isPay,
+        activeTab,
       });
 
       // Call the confirm booking API
@@ -71,6 +72,81 @@ const ManageBookingsTable = ({
     } catch (error) {
       console.error('Error confirming booking:', error);
       showMessage(error.message || 'Failed to confirm booking', 'error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Handle confirm cancellation (for CANCELLATION tab)
+  const handleConfirmCancellation = async (row) => {
+    if (processing) return;
+
+    try {
+      setProcessing(true);
+      const bookingId = row.actualBookingId;
+
+      console.log('Confirming cancellation:', {
+        bookingId,
+        currentStatus: row.booking_status,
+        isCancel: row.isCancel,
+      });
+
+      // Call the confirm cancellation API
+      const result = await bookingAPI.confirmCancellationRequest(
+        bookingId,
+        logout
+      );
+
+      console.log('Confirm cancellation result:', result);
+
+      showMessage('Cancellation confirmed successfully!', 'success');
+
+      // Refresh data if callback provided
+      if (onDataChange && typeof onDataChange === 'function') {
+        onDataChange();
+      }
+    } catch (error) {
+      console.error('Error confirming cancellation:', error);
+      showMessage(error.message || 'Failed to confirm cancellation', 'error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Handle reject cancellation (for CANCELLATION tab)
+  const handleRejectCancellation = async (row) => {
+    if (processing) return;
+
+    try {
+      setProcessing(true);
+      const bookingId = row.actualBookingId;
+
+      console.log('Rejecting cancellation:', {
+        bookingId,
+        currentStatus: row.booking_status,
+        isCancel: row.isCancel,
+      });
+
+      // Call the reject cancellation API
+      const result = await bookingAPI.rejectCancellationRequest(
+        bookingId,
+        logout
+      );
+
+      console.log('Reject cancellation result:', result);
+
+      showMessage('Cancellation request rejected successfully!', 'success');
+
+      // Refresh data if callback provided
+      if (onDataChange && typeof onDataChange === 'function') {
+        onDataChange();
+      }
+    } catch (error) {
+      console.error('Error rejecting cancellation:', error);
+      showMessage(
+        error.message || 'Failed to reject cancellation request',
+        'error'
+      );
     } finally {
       setProcessing(false);
     }
@@ -318,7 +394,7 @@ const ManageBookingsTable = ({
     headerAlign: 'center',
     align: 'center',
     renderCell: (params) => {
-      // Check if isPay is true (for showing check/cancel buttons)
+      // Check if isPay is true (for showing check/cancel buttons in BOOKINGS tab)
       const shouldShowPaymentButtons =
         params.row.isPay === true ||
         params.row.isPay === 'true' ||
@@ -326,6 +402,7 @@ const ManageBookingsTable = ({
 
       return (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+          {/* View details button - only for BOOKINGS tab */}
           {activeTab === 'BOOKINGS' && (
             <IconButton
               size="small"
@@ -341,7 +418,9 @@ const ManageBookingsTable = ({
               <MoreHorizIcon fontSize="small" />
             </IconButton>
           )}
-          {shouldShowPaymentButtons && (
+
+          {/* Payment confirmation buttons - only for BOOKINGS tab when isPay is true */}
+          {activeTab === 'BOOKINGS' && shouldShowPaymentButtons && (
             <>
               <IconButton
                 size="small"
@@ -362,6 +441,40 @@ const ManageBookingsTable = ({
                 color="error"
                 aria-label="cancel"
                 onClick={() => handleCancel(params.row)}
+                disabled={processing}
+                sx={{
+                  '&:hover': {
+                    backgroundColor: 'rgba(211, 47, 47, 0.08)',
+                  },
+                }}
+              >
+                <CancelIcon fontSize="small" />
+              </IconButton>
+            </>
+          )}
+
+          {/* Cancellation confirmation buttons - only for CANCELLATION tab */}
+          {activeTab === 'CANCELLATION' && (
+            <>
+              <IconButton
+                size="small"
+                color="success"
+                aria-label="confirm cancellation"
+                onClick={() => handleConfirmCancellation(params.row)}
+                disabled={processing}
+                sx={{
+                  '&:hover': {
+                    backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                  },
+                }}
+              >
+                <CheckCircleIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                size="small"
+                color="error"
+                aria-label="reject cancellation"
+                onClick={() => handleRejectCancellation(params.row)}
                 disabled={processing}
                 sx={{
                   '&:hover': {

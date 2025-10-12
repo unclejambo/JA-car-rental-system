@@ -147,6 +147,34 @@ export const bookingAPI = {
       throw new Error(error.message || error.error || 'Failed to cancel booking');
     }
     return await response.json();
+  },
+
+  // Confirm cancellation request
+  confirmCancellationRequest: async (bookingId, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/bookings/${bookingId}/confirm-cancellation`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to confirm cancellation' }));
+      throw new Error(error.message || error.error || 'Failed to confirm cancellation');
+    }
+    return await response.json();
+  },
+
+  // Reject cancellation request
+  rejectCancellationRequest: async (bookingId, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/bookings/${bookingId}/reject-cancellation`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to reject cancellation' }));
+      throw new Error(error.message || error.error || 'Failed to reject cancellation');
+    }
+    return await response.json();
   }
 };
 

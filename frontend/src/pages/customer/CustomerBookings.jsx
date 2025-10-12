@@ -41,6 +41,13 @@ import {
 } from 'react-icons/hi';
 import { useAuth } from '../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
+import { 
+  formatPhilippineDate, 
+  formatPhilippineTime, 
+  formatPhilippineDateTime,
+  parseAndFormatTime,
+  formatDateForInput
+} from '../../utils/dateTime.js';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -236,7 +243,7 @@ function CustomerBookings() {
     if (!selectedBooking) return '';
     const endDate = new Date(selectedBooking.new_end_date || selectedBooking.end_date);
     endDate.setDate(endDate.getDate() + 1);
-    return endDate.toISOString().split('T')[0];
+    return formatDateForInput(endDate);
   };
 
   return (
@@ -414,14 +421,14 @@ function CustomerBookings() {
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                           <HiCalendar size={16} style={{ marginRight: '8px', color: '#c10007' }} />
                           <Typography variant="body2">
-                            {new Date(booking.start_date).toLocaleDateString()} - {new Date(booking.end_date).toLocaleDateString()}
+                            {formatPhilippineDate(booking.start_date, { month: 'short', day: 'numeric', year: 'numeric' })} - {formatPhilippineDate(booking.end_date, { month: 'short', day: 'numeric', year: 'numeric' })}
                           </Typography>
                         </Box>
                         
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                           <HiClock size={16} style={{ marginRight: '8px', color: '#c10007' }} />
                           <Typography variant="body2">
-                            {booking.pickup_time} - {booking.dropoff_time}
+                            {parseAndFormatTime(booking.pickup_time)} - {parseAndFormatTime(booking.dropoff_time)}
                           </Typography>
                         </Box>
 
@@ -654,7 +661,7 @@ function CustomerBookings() {
                           Date Paid
                         </Typography>
                         <Typography variant="body1">
-                          {payment.paid_date ? new Date(payment.paid_date).toLocaleDateString() : 'Pending'}
+                          {payment.paid_date ? formatPhilippineDate(payment.paid_date, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Pending'}
                         </Typography>
                       </Grid>
                       
@@ -716,7 +723,7 @@ function CustomerBookings() {
                   {selectedBooking.car_details.display_name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {new Date(selectedBooking.start_date).toLocaleDateString()} - {new Date(selectedBooking.end_date).toLocaleDateString()}
+                  {formatPhilippineDate(selectedBooking.start_date, { month: 'short', day: 'numeric', year: 'numeric' })} - {formatPhilippineDate(selectedBooking.end_date, { month: 'short', day: 'numeric', year: 'numeric' })}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Total Amount: ₱{selectedBooking.total_amount?.toLocaleString()}
@@ -757,7 +764,7 @@ function CustomerBookings() {
                   {selectedBooking.car_details.display_name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Current End Date: {new Date(selectedBooking.new_end_date || selectedBooking.end_date).toLocaleDateString()}
+                  Current End Date: {formatPhilippineDate(selectedBooking.new_end_date || selectedBooking.end_date, { month: 'long', day: 'numeric', year: 'numeric' })}
                 </Typography>
               </Box>
             )}

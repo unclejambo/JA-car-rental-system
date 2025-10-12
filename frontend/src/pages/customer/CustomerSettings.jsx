@@ -7,20 +7,17 @@ import {
   TextField,
   Button,
   Modal,
-  InputAdornment,
   Tabs,
   Tab,
   Snackbar,
   Alert,
-  CircularProgress, // ✅ Added
+  CircularProgress,
 } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import BadgeIcon from '@mui/icons-material/Badge';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Header from '../../ui/components/Header';
 import CustomerSideBar from '../../ui/components/CustomerSideBar';
 import Loading from '../../ui/components/Loading';
@@ -56,6 +53,14 @@ export default function CustomerSettings() {
         changes.push({ field: key, from: profile[key], to: draft[key] });
       }
     });
+
+    if (passwordData.newPassword && passwordData.newPassword.trim() !== '') {
+      changes.push({
+        field: 'Password',
+        from: '(hidden)',
+        to: '(new password)',
+      });
+    }
     return changes;
   }
 
@@ -87,6 +92,12 @@ export default function CustomerSettings() {
       }
     });
 
+    // Include password fields only if user is changing password
+    if (passwordData.newPassword && passwordData.newPassword.trim() !== '') {
+      changedFields.password = passwordData.newPassword;
+      changedFields.currentPassword = passwordData.currentPassword;
+    }
+
     // Upload profile image if changed
     const updatePromise = profileImage
       ? uploadProfileImage().then((imageUrl) => {
@@ -117,6 +128,13 @@ export default function CustomerSettings() {
             updated.profile_img_url || profile.profileImageUrl || '',
         });
         setProfileImage(null); // Clear the file after upload
+
+        // Reset password state
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
         setIsEditing(false);
         setShowConfirmModal(false);
         // ✅ Added success prompt
@@ -148,8 +166,14 @@ export default function CustomerSettings() {
   });
 
   const [avatarOpen, setAvatarOpen] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [draft, setDraft] = useState(profile);
+
+  // Password change block
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
 
   const [activeTab, setActiveTab] = useState(
     parseInt(localStorage.getItem('customerSettingsTab') || '0', 10)
@@ -247,6 +271,11 @@ export default function CustomerSettings() {
 
   function handleCancel() {
     setDraft(profile);
+    setPasswordData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    });
     setIsEditing(false);
   }
 
@@ -259,6 +288,11 @@ export default function CustomerSettings() {
     const { name, value } = e.target;
     setDraft((s) => ({ ...s, [name]: value }));
   }
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData((p) => ({ ...p, [name]: value }));
+  };
 
   function handleSaveConfirm() {
     setProfile(draft);
@@ -1000,54 +1034,61 @@ export default function CustomerSettings() {
                                   </Typography>
                                 )}
                               </Box>
-                              {/* Password */}
-                              <Typography sx={{ fontWeight: 700 }}>
-                                Password:
-                              </Typography>
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  bgcolor: '#e9e9e9',
-                                  borderRadius: 4,
-                                  p: 1.2,
-                                }}
-                              >
-                                {isEditing ? (
-                                  <TextField
-                                    name="password"
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={draft.password}
-                                    onChange={handleChange}
-                                    size="small"
-                                    sx={{ flex: 1, background: 'transparent' }}
-                                    fullWidth
-                                    InputProps={{
-                                      endAdornment: (
-                                        <InputAdornment position="end">
-                                          <IconButton
-                                            onClick={() =>
-                                              setShowPassword(!showPassword)
-                                            }
-                                          >
-                                            {showPassword ? (
-                                              <VisibilityOff />
-                                            ) : (
-                                              <Visibility />
-                                            )}
-                                          </IconButton>
-                                        </InputAdornment>
-                                      ),
-                                    }}
-                                  />
-                                ) : (
-                                  <Typography sx={{ flex: 1, pl: 2 }}>
-                                    {'•'.repeat(
-                                      (profile.password || '').length
-                                    )}
+
+                              {/* Password change area (only during edit) */}
+                              {isEditing && (
+                                <Box
+                                  sx={{
+                                    mt: 2,
+                                    p: 2,
+                                    bgcolor: '#f5f5f5',
+                                    borderRadius: 2,
+                                  }}
+                                >
+                                  <Typography
+                                    variant="subtitle2"
+                                    sx={{ mb: 2, fontWeight: 600 }}
+                                  >
+                                    Change Password (Optional)
                                   </Typography>
-                                )}
-                              </Box>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: 2,
+                                    }}
+                                  >
+                                    <TextField
+                                      label="Current Password"
+                                      type="password"
+                                      name="currentPassword"
+                                      value={passwordData.currentPassword}
+                                      onChange={handlePasswordChange}
+                                      size="small"
+                                      fullWidth
+                                    />
+                                    <TextField
+                                      label="New Password"
+                                      type="password"
+                                      name="newPassword"
+                                      value={passwordData.newPassword}
+                                      onChange={handlePasswordChange}
+                                      size="small"
+                                      fullWidth
+                                      helperText="Leave blank to keep current password"
+                                    />
+                                    <TextField
+                                      label="Confirm New Password"
+                                      type="password"
+                                      name="confirmPassword"
+                                      value={passwordData.confirmPassword}
+                                      onChange={handlePasswordChange}
+                                      size="small"
+                                      fullWidth
+                                    />
+                                  </Box>
+                                </Box>
+                              )}
                             </Box>
                             {/* CheckBox */}
                             <Box

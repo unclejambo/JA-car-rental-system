@@ -1185,6 +1185,20 @@ export const confirmBooking = async (req, res) => {
       });
     }
 
+    // Validate booking status first
+    if (normalizedStatus !== 'pending' && normalizedStatus !== 'confirmed') {
+      console.log('Invalid status for confirmation:', {
+        normalizedStatus,
+        isPay: booking.isPay
+      });
+      return res.status(400).json({ 
+        error: 'Invalid booking state for confirmation',
+        message: `Cannot confirm booking with status "${booking.booking_status}". Expected status "Pending" or "Confirmed" with isPay TRUE.`,
+        currentStatus: booking.booking_status,
+        currentIsPay: booking.isPay
+      });
+    }
+
     let updateData = {
       isPay: false  // Always set isPay to false
     };
@@ -1203,19 +1217,6 @@ export const confirmBooking = async (req, res) => {
     if (booking.balance <= 0) {
       updateData.payment_status = 'Paid';
       console.log('Balance is 0 or less - Setting payment_status to Paid');
-    } 
-    // Invalid state
-    else {
-      console.log('Invalid state for confirmation:', {
-        normalizedStatus,
-        isPay: booking.isPay
-      });
-      return res.status(400).json({ 
-        error: 'Invalid booking state for confirmation',
-        message: `Cannot confirm booking with status "${booking.booking_status}". Expected status "Pending" or "Confirmed" with isPay TRUE.`,
-        currentStatus: booking.booking_status,
-        currentIsPay: booking.isPay
-      });
     }
 
     const updatedBooking = await prisma.booking.update({

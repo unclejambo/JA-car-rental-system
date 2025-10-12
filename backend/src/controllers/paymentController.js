@@ -254,6 +254,7 @@ export const deletePayment = async (req, res) => {
 export const deletePaymentByBookingId = async (req, res) => {
   try {
     const bookingId = parseInt(req.params.bookingId);
+    const { keepStatus } = req.query; // Check if we should keep the current booking status
     
     // Get the booking with all its payments
     const booking = await prisma.booking.findUnique({
@@ -279,7 +280,9 @@ export const deletePaymentByBookingId = async (req, res) => {
     console.log('Deleting payment:', {
       bookingId,
       paymentId: latestPayment.payment_id,
-      amount: latestPayment.amount
+      amount: latestPayment.amount,
+      keepStatus: keepStatus === 'true',
+      currentBookingStatus: booking.booking_status
     });
 
     // Calculate total paid after removing this payment
@@ -290,12 +293,24 @@ export const deletePaymentByBookingId = async (req, res) => {
     // Calculate new balance
     const newBalance = (booking.total_amount || 0) - totalPaidAfterDeletion;
     
-    // Determine new booking status based on remaining payments
-    const newBookingStatus = determineBookingStatus(
-      totalPaidAfterDeletion, 
-      booking.total_amount, 
-      booking.booking_status
-    );
+    // Determine new booking status
+    // If keepStatus=true (from cancel button), keep the original status
+    // Otherwise, determine based on payment amount
+    const newBookingStatus = keepStatus === 'true' 
+      ? booking.booking_status // Keep the current status
+      : determineBookingStatus(
+          totalPaidAfterDeletion, 
+          booking.total_amount, 
+          booking.booking_status
+        );
+    
+    console.log('Status logic:', {
+      keepStatus: keepStatus === 'true',
+      currentStatus: booking.booking_status,
+      willBeStatus: newBookingStatus,
+      totalPaidAfterDeletion,
+      newBalance
+    });
     
     // Delete the payment
     await prisma.payment.delete({

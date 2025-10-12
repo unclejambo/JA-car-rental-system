@@ -153,9 +153,10 @@ export const bookingAPI = {
 // Payment API functions
 export const paymentAPI = {
   // Delete payment by booking ID
-  deletePaymentByBookingId: async (bookingId, logout) => {
+  deletePaymentByBookingId: async (bookingId, logout, keepStatus = false) => {
     const fetch = createAuthenticatedFetch(logout);
-    const response = await fetch(`${getApiBase()}/payments/booking/${bookingId}`, {
+    const queryParam = keepStatus ? '?keepStatus=true' : '';
+    const response = await fetch(`${getApiBase()}/payments/booking/${bookingId}${queryParam}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     });

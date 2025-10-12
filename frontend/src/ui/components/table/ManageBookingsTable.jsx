@@ -90,9 +90,11 @@ const ManageBookingsTable = ({
         currentIsPay: row.isPay,
       });
 
-      // Update isPay to false and delete payment
+      // Update isPay to false first
       await bookingAPI.updateIsPay(bookingId, false, logout);
-      await paymentAPI.deletePaymentByBookingId(bookingId, logout);
+
+      // Delete payment with keepStatus=true to maintain current booking status
+      await paymentAPI.deletePaymentByBookingId(bookingId, logout, true);
 
       showMessage('Payment cancelled successfully!', 'success');
 

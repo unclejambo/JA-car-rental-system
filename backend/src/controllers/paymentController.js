@@ -254,7 +254,6 @@ export const deletePayment = async (req, res) => {
 export const deletePaymentByBookingId = async (req, res) => {
   try {
     const bookingId = parseInt(req.params.bookingId);
-    const { keepStatus } = req.query; // Check if we should keep the current booking status
     
     // Get the booking with all its payments
     const booking = await prisma.booking.findUnique({
@@ -280,9 +279,7 @@ export const deletePaymentByBookingId = async (req, res) => {
     console.log('Deleting payment:', {
       bookingId,
       paymentId: latestPayment.payment_id,
-      amount: latestPayment.amount,
-      keepStatus: keepStatus === 'true',
-      currentBookingStatus: booking.booking_status
+      amount: latestPayment.amount
     });
 
     // Calculate total paid after removing this payment
@@ -293,24 +290,12 @@ export const deletePaymentByBookingId = async (req, res) => {
     // Calculate new balance
     const newBalance = (booking.total_amount || 0) - totalPaidAfterDeletion;
     
-    // Determine new booking status
-    // If keepStatus=true (from cancel button), keep the original status
-    // Otherwise, determine based on payment amount
-    const newBookingStatus = keepStatus === 'true' 
-      ? booking.booking_status // Keep the current status
-      : determineBookingStatus(
-          totalPaidAfterDeletion, 
-          booking.total_amount, 
-          booking.booking_status
-        );
-    
-    console.log('Status logic:', {
-      keepStatus: keepStatus === 'true',
-      currentStatus: booking.booking_status,
-      willBeStatus: newBookingStatus,
-      totalPaidAfterDeletion,
-      newBalance
-    });
+    // Determine new booking status based on remaining payments
+    const newBookingStatus = determineBookingStatus(
+      totalPaidAfterDeletion, 
+      booking.total_amount, 
+      booking.booking_status
+    );
     
     // Delete the payment
     await prisma.payment.delete({
@@ -479,7 +464,7 @@ export const processBookingPayment = async (req, res) => {
         gcash_no,
         reference_no,
         amount: parseInt(amount),
-        // paid_date: getPhilippineTime(),
+        paid_date: new Date(), // Set today's date as paid date
         balance: Math.max(0, (booking.total_amount || 0) - parseInt(amount)),
       },
       include: {
@@ -493,26 +478,31 @@ export const processBookingPayment = async (req, res) => {
       },
     });
 
-    // Set isPay to TRUE so admin can see the payment confirmation buttons
-    await prisma.booking.update({
-      where: { booking_id: parseInt(booking_id) },
-      data: {
-        isPay: true,
-      },
-    });
-    
-    const isFullPayment = payment.balance === 0;
-    const paymentMessage = payment_method.toLowerCase() === 'cash' 
-      ? `Cash payment request submitted. Please visit our office to complete the payment. Your booking will be confirmed once the admin verifies your payment.`
-      : `Payment request submitted. Your booking will be confirmed once the admin verifies your payment.`;
+    // Update booking payment status and isPay flag
+    // isPay should be true whenever customer makes any payment
+    if (payment.balance === 0) {
+      await prisma.booking.update({
+        where: { booking_id: parseInt(booking_id) },
+        data: {
+          payment_status: "Paid",
+          isPay: true,
+        },
+      });
+    } else {
+      await prisma.booking.update({
+        where: { booking_id: parseInt(booking_id) },
+        data: { 
+          payment_status: "Unpaid",
+          isPay: true, // Set to true whenever customer makes payment
+        },
+      });
+    }
 
     res.status(201).json({
       success: true,
-      message: paymentMessage,
+      message: "Payment completed successfully!",
       payment: shapePayment(payment),
       remaining_balance: payment.balance,
-      pending_admin_confirmation: true,
-      is_cash_payment: payment_method.toLowerCase() === 'cash',
     });
   } catch (error) {
     console.error("Error processing payment:", error);

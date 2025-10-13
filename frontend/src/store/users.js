@@ -30,7 +30,7 @@ export const useUserStore = create((set, get) => ({
     }
   },
 
-  loadCustomers: () => get()._fetch('CUSTOMER', '/customers'),
+  loadCustomers: () => get()._fetch('CUSTOMER', '/api/customers'), // ✅ Fixed: Added /api prefix
   loadAdmins: () => get()._fetch('ADMIN', '/admins'),
   loadDrivers: () => get()._fetch('DRIVER', '/drivers'),
 

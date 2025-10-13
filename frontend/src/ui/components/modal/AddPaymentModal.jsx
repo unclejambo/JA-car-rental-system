@@ -215,7 +215,7 @@ export default function AddPaymentModal({ show, onClose }) {
         const base =
           import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL || '';
         const [cRes, bRes] = await Promise.all([
-          authFetch(`${base}/customers`),
+          authFetch(`${base}/api/customers`), // ✅ Fixed: Added /api prefix
           authFetch(`${base}/bookings`),
         ]);
         

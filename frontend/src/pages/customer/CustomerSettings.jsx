@@ -61,6 +61,10 @@ export default function CustomerSettings() {
         to: '(new password)',
       });
     }
+    
+    // ✅ Don't include notification preferences in confirmation modal
+    // They are saved separately and should not require confirmation
+    
     return changes;
   }
 
@@ -98,7 +102,18 @@ export default function CustomerSettings() {
       changedFields.currentPassword = passwordData.currentPassword;
     }
 
-    // Upload profile image if changed
+    // ✅ Calculate isRecUpdate value based on notification preferences
+    // 0 = no notifications, 1 = SMS only, 2 = Email only, 3 = Both SMS and email
+    let isRecUpdateValue = 0;
+    if (receiveUpdatesPhone && receiveUpdatesEmail) {
+      isRecUpdateValue = 3; // Both
+    } else if (receiveUpdatesPhone) {
+      isRecUpdateValue = 1; // SMS only
+    } else if (receiveUpdatesEmail) {
+      isRecUpdateValue = 2; // Email only
+    }
+
+    // Upload profile image if changed, then update customer with all changes including notifications
     const updatePromise = profileImage
       ? uploadProfileImage().then((imageUrl) => {
           if (imageUrl) {
@@ -111,7 +126,43 @@ export default function CustomerSettings() {
       : useCustomerStore.getState().updateCustomer(customerId, changedFields);
 
     updatePromise
-      .then((updated) => {
+      .then(async (updated) => {
+        // ✅ Save notification settings separately using the dedicated endpoint
+        // Only save if notification preferences have changed
+        const notifChanged = 
+          receiveUpdatesPhone !== initialReceiveUpdatesPhone || 
+          receiveUpdatesEmail !== initialReceiveUpdatesEmail;
+          
+        if (notifChanged) {
+          try {
+            console.log('🔔 Saving notification settings...');
+            console.log('📱 SMS:', receiveUpdatesPhone, '📧 Email:', receiveUpdatesEmail);
+            
+            const notificationResponse = await authenticatedFetch(
+              `${API_BASE}/api/customers/me/notification-settings`,
+              {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isRecUpdate: isRecUpdateValue }),
+              }
+            );
+
+            if (!notificationResponse.ok) {
+              const errorData = await notificationResponse.json();
+              console.error('Failed to update notification settings:', errorData);
+            } else {
+              const result = await notificationResponse.json();
+              console.log('✅ Notification settings saved:', result);
+              
+              // Update initial values to reflect saved state
+              setInitialReceiveUpdatesPhone(receiveUpdatesPhone);
+              setInitialReceiveUpdatesEmail(receiveUpdatesEmail);
+            }
+          } catch (notifError) {
+            console.error('Error updating notification settings:', notifError);
+          }
+        }
+
         setProfile({
           firstName: updated.first_name || profile.firstName || '',
           lastName: updated.last_name || profile.lastName || '',
@@ -191,6 +242,8 @@ export default function CustomerSettings() {
 
   const [receiveUpdatesPhone, setReceiveUpdatesPhone] = useState(false);
   const [receiveUpdatesEmail, setReceiveUpdatesEmail] = useState(false);
+  const [initialReceiveUpdatesPhone, setInitialReceiveUpdatesPhone] = useState(false);
+  const [initialReceiveUpdatesEmail, setInitialReceiveUpdatesEmail] = useState(false);
 
   const [isEditingLicense, setIsEditingLicense] = useState(false);
   const [licenseNo, setLicenseNo] = useState('');
@@ -239,6 +292,17 @@ export default function CustomerSettings() {
           setLicenseExpiration(licenseExpiration);
           setLicenseImage(licenseImage);
           setImagePreview(customer.profile_img_url || ''); // ✅ Set profile image preview
+          
+          // ✅ Load notification preferences from isRecUpdate
+          // 0 = no notifications, 1 = SMS only, 2 = Email only, 3 = Both SMS and email
+          const notificationPref = customer.isRecUpdate ?? 0;
+          const phoneChecked = notificationPref === 1 || notificationPref === 3;
+          const emailChecked = notificationPref === 2 || notificationPref === 3;
+          setReceiveUpdatesPhone(phoneChecked);
+          setReceiveUpdatesEmail(emailChecked);
+          setInitialReceiveUpdatesPhone(phoneChecked);
+          setInitialReceiveUpdatesEmail(emailChecked);
+          
           setProfile((prev) => ({
             ...prev,
             firstName: customer.first_name || '',
@@ -276,6 +340,9 @@ export default function CustomerSettings() {
       newPassword: '',
       confirmPassword: '',
     });
+    // ✅ Reset notification preferences to initial values
+    setReceiveUpdatesPhone(initialReceiveUpdatesPhone);
+    setReceiveUpdatesEmail(initialReceiveUpdatesEmail);
     setIsEditing(false);
   }
 
@@ -302,6 +369,9 @@ export default function CustomerSettings() {
 
   function handleCancelConfirm() {
     setDraft(profile);
+    // ✅ Reset notification preferences to initial values
+    setReceiveUpdatesPhone(initialReceiveUpdatesPhone);
+    setReceiveUpdatesEmail(initialReceiveUpdatesEmail);
     setIsEditing(false);
     setOpenInfoCancelModal(false);
   }
@@ -1470,7 +1540,7 @@ export default function CustomerSettings() {
           confirmColor: 'primary',
           changes: getChanges(),
           loading: saving,
-          showWarning: true,
+          showWarning: false, // ✅ Removed warning for notification preferences
         }}
       />
       <SaveCancelModal

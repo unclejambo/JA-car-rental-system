@@ -56,7 +56,7 @@ export default function AdminManageUser() {
         let endpoint = '';
         switch (tabType) {
           case 'CUSTOMER':
-            endpoint = `${API_BASE}/customers`;
+            endpoint = `${API_BASE}/api/customers`; // ✅ Fixed: Added /api prefix
             break;
           case 'STAFF':
             endpoint = `${API_BASE}/admins`;
@@ -65,7 +65,7 @@ export default function AdminManageUser() {
             endpoint = `${API_BASE}/drivers`;
             break;
           default:
-            endpoint = `${API_BASE}/customers`;
+            endpoint = `${API_BASE}/api/customers`; // ✅ Fixed: Added /api prefix
         }
 
         const response = await authFetch(endpoint, {

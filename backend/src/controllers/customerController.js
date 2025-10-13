@@ -273,11 +273,14 @@ export const getCurrentCustomer = async (req, res) => {
 // @access  Private (Customer only)
 export const updateNotificationSettings = async (req, res) => {
   try {
-    const customerId = req.user?.customer_id || req.user?.id;
+    const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
     
     if (!customerId) {
       return res.status(401).json({ error: "Unauthorized - No customer ID found" });
     }
+    
+    console.log('🔔 Updating notification settings for customer:', customerId);
+    console.log('📝 Request body:', req.body);
 
     const { isRecUpdate } = req.body;
 
@@ -301,6 +304,8 @@ export const updateNotificationSettings = async (req, res) => {
         isRecUpdate: true
       }
     });
+
+    console.log('✅ Notification settings updated successfully:', updatedCustomer);
 
     res.json({
       message: "Notification settings updated successfully",

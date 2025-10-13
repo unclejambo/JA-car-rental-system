@@ -1333,21 +1333,31 @@ export const confirmBooking = async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
 
-    // Get current booking
+    // Get current booking with payments to calculate total paid
     const booking = await prisma.booking.findUnique({
-      where: { booking_id: bookingId }
+      where: { booking_id: bookingId },
+      include: {
+        payments: {
+          select: { amount: true }
+        }
+      }
     });
 
     if (!booking) {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
+    // Calculate total amount paid
+    const totalPaid = booking.payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+
     // Log current booking state for debugging
     console.log('Confirming booking:', {
       bookingId,
       currentStatus: booking.booking_status,
       currentIsPay: booking.isPay,
-      isPay_type: typeof booking.isPay
+      isPay_type: typeof booking.isPay,
+      totalPaid,
+      totalAmount: booking.total_amount
     });
 
     // Normalize booking status comparison (case-insensitive)
@@ -1380,10 +1390,18 @@ export const confirmBooking = async (req, res) => {
       isPay: false  // Always set isPay to false
     };
     
-    // Case 1: isPay is TRUE and status is Pending -> Change to Confirmed and isPay to FALSE
+    // Determine booking status based on total paid amount
+    // Case 1: isPay is TRUE and status is Pending
     if (normalizedStatus === 'pending') {
-      updateData.booking_status = 'Confirmed';
-      console.log('Action: Pending -> Confirmed, isPay -> false');
+      // If totalPaid >= 1000, confirm the booking
+      // If totalPaid < 1000, keep it Pending
+      if (totalPaid >= 1000) {
+        updateData.booking_status = 'Confirmed';
+        console.log('Action: Pending -> Confirmed (totalPaid >= 1000), isPay -> false');
+      } else {
+        updateData.booking_status = 'Pending';
+        console.log('Action: Status remains Pending (totalPaid < 1000), isPay -> false');
+      }
     } 
     // Case 2: isPay is TRUE and status is Confirmed -> Just set isPay to FALSE
     else if (normalizedStatus === 'confirmed') {

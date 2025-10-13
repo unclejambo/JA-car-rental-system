@@ -834,30 +834,51 @@ function CustomerBookings() {
                       transition: 'all 0.3s ease',
                     }}
                   >
-                    {/* Pay Now Button - Fixed Upper Right */}
-                    <Button
-                      size="small"
-                      variant="contained"
-                      sx={{
-                        position: 'absolute',
-                        top: { xs: 8, sm: 12 },
-                        right: { xs: 8, sm: 12 },
-                        zIndex: 10,
-                        backgroundColor: '#c10007',
-                        color: 'white',
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                        padding: { xs: '4px 12px', sm: '6px 16px' },
-                        '&:hover': {
-                          backgroundColor: '#a50006',
-                        },
-                      }}
-                      onClick={() => {
-                        setSelectedBooking(booking);
-                        setShowPaymentDialog(true);
-                      }}
-                    >
-                      Pay Now
-                    </Button>
+                    {/* Pay Now / Pending Payment Button - Fixed Upper Right */}
+                    {booking.isPay ? (
+                      <Chip
+                        label="Pending Payment"
+                        size="small"
+                        sx={{
+                          position: 'absolute',
+                          top: { xs: 8, sm: 12 },
+                          right: { xs: 8, sm: 12 },
+                          zIndex: 10,
+                          backgroundColor: '#FFA500',
+                          color: 'white',
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                          fontWeight: 600,
+                          height: { xs: '24px', sm: '28px' },
+                          '& .MuiChip-label': {
+                            px: { xs: 1.5, sm: 2 },
+                          },
+                        }}
+                      />
+                    ) : (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        sx={{
+                          position: 'absolute',
+                          top: { xs: 8, sm: 12 },
+                          right: { xs: 8, sm: 12 },
+                          zIndex: 10,
+                          backgroundColor: '#c10007',
+                          color: 'white',
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                          padding: { xs: '4px 12px', sm: '6px 16px' },
+                          '&:hover': {
+                            backgroundColor: '#a50006',
+                          },
+                        }}
+                        onClick={() => {
+                          setSelectedBooking(booking);
+                          setShowPaymentDialog(true);
+                        }}
+                      >
+                        Pay Now
+                      </Button>
+                    )}
 
                     {/* Content - Full Width (No Image) */}
                     <Box

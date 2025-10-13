@@ -314,6 +314,78 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       return false;
     }
 
+    // Validate pickup and dropoff times (must be between 7:00 AM - 7:00 PM)
+    if (formData.pickupTime) {
+      const [pickupHour, pickupMinute] = formData.pickupTime.split(':').map(Number);
+      const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
+      const minTime = 7 * 60; // 7:00 AM
+      const maxTime = 19 * 60; // 7:00 PM
+
+      if (pickupTimeInMinutes < minTime || pickupTimeInMinutes > maxTime) {
+        setError('Pickup time must be between 7:00 AM and 7:00 PM (office hours)');
+        setMissingFields(['pickupTime']);
+        if (fieldRefs.pickupTime.current) {
+          fieldRefs.pickupTime.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return false;
+      }
+    }
+
+    if (formData.dropoffTime) {
+      const [dropoffHour, dropoffMinute] = formData.dropoffTime.split(':').map(Number);
+      const dropoffTimeInMinutes = dropoffHour * 60 + dropoffMinute;
+      const minTime = 7 * 60; // 7:00 AM
+      const maxTime = 19 * 60; // 7:00 PM
+
+      if (dropoffTimeInMinutes < minTime || dropoffTimeInMinutes > maxTime) {
+        setError('Drop-off time must be between 7:00 AM and 7:00 PM (office hours)');
+        setMissingFields(['dropoffTime']);
+        if (fieldRefs.dropoffTime.current) {
+          fieldRefs.dropoffTime.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return false;
+      }
+    }
+
+    // Validate dropoff time is after pickup time
+    if (formData.pickupTime && formData.dropoffTime) {
+      const [pickupHour, pickupMinute] = formData.pickupTime.split(':').map(Number);
+      const [dropoffHour, dropoffMinute] = formData.dropoffTime.split(':').map(Number);
+      const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
+      const dropoffTimeInMinutes = dropoffHour * 60 + dropoffMinute;
+
+      if (dropoffTimeInMinutes <= pickupTimeInMinutes) {
+        setError('Drop-off time must be after pickup time');
+        setMissingFields(['dropoffTime']);
+        if (fieldRefs.dropoffTime.current) {
+          fieldRefs.dropoffTime.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return false;
+      }
+    }
+
+    // Validate same-day booking: 3-hour minimum gap between booking time and pickup time
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const bookingDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    
+    if (bookingDate.getTime() === today.getTime() && formData.pickupTime) {
+      // Same day booking
+      const [pickupHour, pickupMinute] = formData.pickupTime.split(':').map(Number);
+      const pickupDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), pickupHour, pickupMinute);
+      const threeHoursFromNow = new Date(now.getTime() + (3 * 60 * 60 * 1000));
+
+      if (pickupDateTime < threeHoursFromNow) {
+        const minPickupTime = `${String(threeHoursFromNow.getHours()).padStart(2, '0')}:${String(threeHoursFromNow.getMinutes()).padStart(2, '0')}`;
+        setError(`Same-day booking requires at least 3 hours notice. Earliest pickup time: ${minPickupTime}`);
+        setMissingFields(['pickupTime']);
+        if (fieldRefs.pickupTime.current) {
+          fieldRefs.pickupTime.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return false;
+      }
+    }
+
     setError('');
     setMissingFields([]);
     return true;
@@ -364,24 +436,9 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
     if (!startDate) return { deadline: null, hours: null };
     
     const now = new Date();
-    const bookingStart = new Date(startDate);
-    const daysDifference = Math.ceil((bookingStart - now) / (1000 * 60 * 60 * 24));
-    
-    let deadline, hours;
-    
-    if (daysDifference === 0) {
-      // Same day booking: must pay within 1 hour
-      deadline = new Date(now.getTime() + (1 * 60 * 60 * 1000));
-      hours = 1;
-    } else if (daysDifference < 4) {
-      // Less than 4 days: must pay within 24 hours
-      deadline = new Date(now.getTime() + (24 * 60 * 60 * 1000));
-      hours = 24;
-    } else {
-      // 4 or more days: must pay within 3 days (72 hours)
-      deadline = new Date(now.getTime() + (72 * 60 * 60 * 1000));
-      hours = 72;
-    }
+    // All bookings must be paid within 3 days (72 hours) from booking time
+    const deadline = new Date(now.getTime() + (72 * 60 * 60 * 1000));
+    const hours = 72;
     
     return { deadline, hours };
   };
@@ -399,27 +456,11 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
   const formatPaymentDeadline = () => {
     if (!paymentDeadline || !paymentDeadlineHours) return '';
     
-    const now = new Date();
-    const startDate = new Date(formData.startDate);
-    const daysDifference = Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
-    
-    let urgencyLevel = 'info';
-    let message = '';
-    
-    if (daysDifference === 0) {
-      urgencyLevel = 'error';
-      message = `⚡ URGENT: Same-day booking requires payment within 1 hour. You can avail the service 3 hours after payment confirmation.`;
-    } else if (daysDifference < 4) {
-      urgencyLevel = 'warning';
-      message = `⏰ Payment required within 24 hours to confirm this booking.`;
-    } else {
-      urgencyLevel = 'info';
-      message = `💡 Payment required within 3 days to confirm this booking.`;
-    }
+    const message = `💡 Payment required within 3 days (72 hours) to confirm this booking. Unpaid bookings will be automatically cancelled after the deadline.`;
     
     return {
       message,
-      urgencyLevel,
+      urgencyLevel: 'warning',
       deadline: paymentDeadline.toLocaleString()
     };
   };

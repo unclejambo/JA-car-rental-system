@@ -36,7 +36,7 @@ model Customer {
   date_created      DateTime?      @db.Timestamptz(6)
   status            String?
   driver_license_no String?
-  isRecUpdate       String?
+  isRecUpdate       Int?           @default(0)
   profile_img_url   String?
   bookings          Booking[]
   driver_license    DriverLicense? @relation("CustomerDriverLicense", fields: [driver_license_no], references: [driver_license_no])

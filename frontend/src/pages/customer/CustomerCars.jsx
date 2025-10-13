@@ -448,7 +448,7 @@ function CustomerCars() {
                 <Typography
                   variant="body2"
                   color="text.secondary"
-                  sx={{ fontSize: { xs: '0.75rem', sm: '0.9rem' }, mt: 0.5 }}
+                  sx={{ fontSize: { xs: '0.75rem', sm: '1rem' }, mt: 0.5 }}
                 >
                   {filteredCars.length} car
                   {filteredCars.length !== 1 ? 's' : ''} available and ready for

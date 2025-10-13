@@ -31,6 +31,7 @@ export default function AdminTransactionPage() {
   // For TRANSACTIONS tab we only show entries that are completed OR cancelled.
   // Backend does not send an explicit status field; we infer status from the
   // presence of completionDate or cancellationDate (returned by /transactions).
+  // For PAYMENT tab, exclude rows where description is 'User Booked the Car'.
   const rows = React.useMemo(() => {
     if (!Array.isArray(storeRows)) return [];
     if (activeTab === 'TRANSACTIONS') {
@@ -38,7 +39,10 @@ export default function AdminTransactionPage() {
         return Boolean(r?.completionDate) || Boolean(r?.cancellationDate);
       });
     }
-    return storeRows; // PAYMENT and REFUND unchanged
+    if (activeTab === 'PAYMENT') {
+      return storeRows.filter((r) => r?.description !== 'User Booked the Car');
+    }
+    return storeRows; // REFUND unchanged
   }, [storeRows, activeTab]);
 
   // Fetch booking details by bookingId and open modal

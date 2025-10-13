@@ -1019,15 +1019,17 @@ export const extendMyBooking = async (req, res) => {
 
     const additionalCost = additionalDays * (booking.car.rent_price || 0);
     const newTotalAmount = (booking.total_amount || 0) + additionalCost;
+    const newBalance = (booking.balance || 0) + additionalCost;
 
-    // Set isExtend flag to true - waiting for admin confirmation
-    // Do NOT update end_date and total_amount yet
+    // Update booking: set isExtend flag, add additional cost to total_amount and balance
     const updatedBooking = await prisma.booking.update({
       where: { booking_id: bookingId },
       data: {
         isExtend: true,
         new_end_date: newEndDate, // Store requested new end date
-        // end_date and total_amount remain unchanged until admin confirms
+        total_amount: newTotalAmount, // Add additional cost to total amount
+        balance: newBalance, // Add additional cost to balance
+        payment_status: 'Unpaid', // Set to Unpaid since there's new balance
       },
       include: {
         car: { select: { make: true, model: true, year: true } },
@@ -1046,6 +1048,135 @@ export const extendMyBooking = async (req, res) => {
   } catch (error) {
     console.error("Error extending booking:", error);
     res.status(500).json({ error: "Failed to extend booking" });
+  }
+};
+
+// @desc    Confirm extension request (Admin/Staff)
+// @route   PUT /bookings/:id/confirm-extension
+// @access  Private (Admin/Staff)
+export const confirmExtensionRequest = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+
+    // Find the booking
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    if (!booking.isExtend) {
+      return res.status(400).json({ error: "No pending extension request for this booking" });
+    }
+
+    if (!booking.new_end_date) {
+      return res.status(400).json({ error: "No new end date found for extension" });
+    }
+
+    // Get Philippine timezone date
+    const now = new Date();
+    const phTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+
+    // Create extension record with old and new end dates
+    await prisma.extension.create({
+      data: {
+        booking_id: bookingId,
+        old_end_date: booking.end_date,
+        new_end_date: booking.new_end_date,
+      },
+    });
+
+    // Update booking: replace end_date with new_end_date, clear new_end_date, set isExtend to false
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: {
+        end_date: booking.new_end_date, // Replace end_date with new_end_date
+        new_end_date: null, // Clear new_end_date
+        isExtend: false, // Clear extension flag
+        payment_status: 'Unpaid', // Ensure payment status is Unpaid due to new balance
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Extension request confirmed successfully",
+      booking: updatedBooking,
+    });
+  } catch (error) {
+    console.error("Error confirming extension:", error);
+    res.status(500).json({ error: "Failed to confirm extension request" });
+  }
+};
+
+// @desc    Reject extension request (Admin/Staff)
+// @route   PUT /bookings/:id/reject-extension
+// @access  Private (Admin/Staff)
+export const rejectExtensionRequest = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+
+    // Find the booking
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+      include: {
+        car: {
+          select: {
+            rent_price: true,
+          },
+        },
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    if (!booking.isExtend) {
+      return res.status(400).json({ error: "No pending extension request for this booking" });
+    }
+
+    if (!booking.new_end_date) {
+      return res.status(400).json({ error: "No new end date found for extension" });
+    }
+
+    // Calculate the additional cost that was added
+    const originalEndDate = new Date(booking.end_date);
+    const newEndDate = new Date(booking.new_end_date);
+    const additionalDays = Math.ceil(
+      (newEndDate - originalEndDate) / (1000 * 60 * 60 * 24)
+    );
+    const additionalCost = additionalDays * (booking.car.rent_price || 0);
+
+    // Deduct the additional cost from total_amount and balance
+    const restoredTotalAmount = (booking.total_amount || 0) - additionalCost;
+    const restoredBalance = (booking.balance || 0) - additionalCost;
+
+    // Determine payment status based on restored balance
+    const paymentStatus = restoredBalance <= 0 ? 'Paid' : 'Unpaid';
+
+    // Update booking: clear new_end_date, set isExtend to false, restore total_amount and balance
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: {
+        new_end_date: null, // Clear new_end_date
+        isExtend: false, // Clear extension flag
+        total_amount: restoredTotalAmount, // Deduct additional cost
+        balance: restoredBalance, // Deduct additional cost
+        payment_status: paymentStatus, // Update payment status
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Extension request rejected successfully",
+      booking: updatedBooking,
+      deducted_amount: additionalCost,
+    });
+  } catch (error) {
+    console.error("Error rejecting extension:", error);
+    res.status(500).json({ error: "Failed to reject extension request" });
   }
 };
 
@@ -1232,14 +1363,14 @@ export const confirmBooking = async (req, res) => {
     }
 
     // Validate booking status first
-    if (normalizedStatus !== 'pending' && normalizedStatus !== 'confirmed') {
+    if (normalizedStatus !== 'pending' && normalizedStatus !== 'confirmed' && normalizedStatus !== 'in progress') {
       console.log('Invalid status for confirmation:', {
         normalizedStatus,
         isPay: booking.isPay
       });
       return res.status(400).json({ 
         error: 'Invalid booking state for confirmation',
-        message: `Cannot confirm booking with status "${booking.booking_status}". Expected status "Pending" or "Confirmed" with isPay TRUE.`,
+        message: `Cannot confirm booking with status "${booking.booking_status}". Expected status "Pending", "Confirmed", or "In Progress" with isPay TRUE.`,
         currentStatus: booking.booking_status,
         currentIsPay: booking.isPay
       });
@@ -1258,7 +1389,11 @@ export const confirmBooking = async (req, res) => {
     else if (normalizedStatus === 'confirmed') {
       console.log('Action: isPay -> false (status remains Confirmed)');
     }
-    
+    // Case 3: isPay is TRUE and status is In Progress -> Just set isPay to FALSE
+    else if (normalizedStatus === 'in progress') {
+      console.log('Action: isPay -> false (status remains In Progress)');
+    }
+
     // Check if balance is 0 or less and update payment_status to Paid
     if (booking.balance <= 0) {
       updateData.payment_status = 'Paid';

@@ -175,6 +175,34 @@ export const bookingAPI = {
       throw new Error(error.message || error.error || 'Failed to reject cancellation');
     }
     return await response.json();
+  },
+
+  // Confirm extension request
+  confirmExtensionRequest: async (bookingId, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/bookings/${bookingId}/confirm-extension`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to confirm extension' }));
+      throw new Error(error.message || error.error || 'Failed to confirm extension');
+    }
+    return await response.json();
+  },
+
+  // Reject extension request
+  rejectExtensionRequest: async (bookingId, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/bookings/${bookingId}/reject-extension`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to reject extension' }));
+      throw new Error(error.message || error.error || 'Failed to reject extension');
+    }
+    return await response.json();
   }
 };
 

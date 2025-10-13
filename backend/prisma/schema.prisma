@@ -131,12 +131,11 @@ model Booking {
 }
 
 model Extension {
-  extension_id   Int      @id @default(autoincrement())
-  booking_id     Int
-  extension_date DateTime @db.Timestamptz(6)
-  payment_status String?
-  status         String?
-  booking        Booking  @relation(fields: [booking_id], references: [booking_id])
+  extension_id Int       @id @default(autoincrement())
+  booking_id   Int
+  old_end_date DateTime  @db.Timestamptz(6)
+  new_end_date DateTime? @db.Timestamptz(6)
+  booking      Booking   @relation(fields: [booking_id], references: [booking_id])
 }
 
 model Payment {

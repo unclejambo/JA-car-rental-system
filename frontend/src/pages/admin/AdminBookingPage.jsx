@@ -39,7 +39,7 @@ export default function AdminBookingPage() {
 
     switch (activeTab) {
       case 'BOOKINGS':
-        // Show all confirmed and pending bookings
+        // Show all confirmed, pending, and in progress bookings
         return rows;
       case 'CANCELLATION':
         // Only show bookings where isCancel === 'TRUE'
@@ -97,14 +97,16 @@ export default function AdminBookingPage() {
           endDate: formatDateOnly(item.endDate),
           bookingDate: formatDateOnly(item.bookingDate),
         }));
-        // Show all bookings including pending and confirmed status
+        // Show all bookings including pending, confirmed, and in progress status
         formattedData = formattedData.filter((b) => {
           const raw = (b.booking_status || b.status || '')
             .toString()
             .toLowerCase()
             .trim();
-          // Include both confirmed and pending bookings
-          return raw === 'confirmed' || raw === 'pending';
+          // Include confirmed, pending, and in progress bookings (for extensions)
+          return (
+            raw === 'confirmed' || raw === 'pending' || raw === 'in progress'
+          );
         });
         setRows(formattedData);
         setError(null);
@@ -296,6 +298,7 @@ export default function AdminBookingPage() {
                 loading={loading}
                 activeTab={activeTab}
                 onViewDetails={openBookingDetailsModal}
+                onDataChange={fetchBookings}
               />
             </Box>
           </Box>

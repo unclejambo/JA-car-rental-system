@@ -152,6 +152,79 @@ const ManageBookingsTable = ({
     }
   };
 
+  // Handle confirm extension (for EXTENSION tab)
+  const handleConfirmExtension = async (row) => {
+    if (processing) return;
+
+    try {
+      setProcessing(true);
+      const bookingId = row.actualBookingId;
+
+      console.log('Confirming extension:', {
+        bookingId,
+        currentStatus: row.booking_status,
+        isExtend: row.isExtend,
+        newEndDate: row.new_end_date,
+      });
+
+      // Call the confirm extension API
+      const result = await bookingAPI.confirmExtensionRequest(
+        bookingId,
+        logout
+      );
+
+      console.log('Confirm extension result:', result);
+
+      showMessage('Extension request confirmed successfully!', 'success');
+
+      // Refresh data if callback provided
+      if (onDataChange && typeof onDataChange === 'function') {
+        onDataChange();
+      }
+    } catch (error) {
+      console.error('Error confirming extension:', error);
+      showMessage(error.message || 'Failed to confirm extension', 'error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Handle reject extension (for EXTENSION tab)
+  const handleRejectExtension = async (row) => {
+    if (processing) return;
+
+    try {
+      setProcessing(true);
+      const bookingId = row.actualBookingId;
+
+      console.log('Rejecting extension:', {
+        bookingId,
+        currentStatus: row.booking_status,
+        isExtend: row.isExtend,
+      });
+
+      // Call the reject extension API
+      const result = await bookingAPI.rejectExtensionRequest(bookingId, logout);
+
+      console.log('Reject extension result:', result);
+
+      showMessage('Extension request rejected successfully!', 'success');
+
+      // Refresh data if callback provided
+      if (onDataChange && typeof onDataChange === 'function') {
+        onDataChange();
+      }
+    } catch (error) {
+      console.error('Error rejecting extension:', error);
+      showMessage(
+        error.message || 'Failed to reject extension request',
+        'error'
+      );
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   // Handle cancel button click (X)
   const handleCancel = async (row) => {
     if (processing) return;
@@ -460,6 +533,40 @@ const ManageBookingsTable = ({
                 color="error"
                 aria-label="reject cancellation"
                 onClick={() => handleRejectCancellation(params.row)}
+                disabled={processing}
+                sx={{
+                  '&:hover': {
+                    backgroundColor: 'rgba(211, 47, 47, 0.08)',
+                  },
+                }}
+              >
+                <CancelIcon fontSize="small" />
+              </IconButton>
+            </>
+          )}
+
+          {/* EXTENSION TAB - Confirm and reject buttons */}
+          {activeTab === 'EXTENSION' && (
+            <>
+              <IconButton
+                size="small"
+                color="success"
+                aria-label="confirm extension"
+                onClick={() => handleConfirmExtension(params.row)}
+                disabled={processing}
+                sx={{
+                  '&:hover': {
+                    backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                  },
+                }}
+              >
+                <CheckCircleIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                size="small"
+                color="error"
+                aria-label="reject extension"
+                onClick={() => handleRejectExtension(params.row)}
                 disabled={processing}
                 sx={{
                   '&:hover': {

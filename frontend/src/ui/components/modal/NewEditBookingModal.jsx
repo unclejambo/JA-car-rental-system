@@ -20,13 +20,11 @@ import {
   Card,
   CardContent,
   Avatar,
-  Stepper,
-  Step,
-  StepLabel,
   IconButton,
-  Divider
+  Divider,
+  Chip
 } from '@mui/material';
-import { HiX, HiArrowLeft, HiArrowRight, HiCheck } from 'react-icons/hi';
+import { HiX, HiCheck } from 'react-icons/hi';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
 import { useAuth } from '../../../hooks/useAuth';
 
@@ -36,8 +34,7 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
   const { logout } = useAuth();
   const authenticatedFetch = React.useMemo(() => createAuthenticatedFetch(logout), [logout]);
   
-  const [activeStep, setActiveStep] = useState(1); // Start at step 1 (skip service type)
-  const [activeTab, setActiveTab] = useState(0); // 0 = delivery, 1 = pickup
+  const [serviceType, setServiceType] = useState('delivery'); // 'delivery' or 'pickup'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [drivers, setDrivers] = useState([]);
@@ -56,28 +53,64 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
     selectedDriver: '',
   });
 
-  const steps = ['Service Type', 'Booking Details', 'Confirmation'];
-
   // Initialize form with booking data
   useEffect(() => {
     if (booking && open) {
-      const isDelivery = booking.delivery_location && booking.delivery_location.trim() !== '';
+      console.log('📝 Initializing Edit Booking Modal with data:', booking);
+      console.log('📅 Raw pickup_time from DB:', booking.pickup_time);
+      console.log('📅 Raw dropoff_time from DB:', booking.dropoff_time);
+      
+      const isDelivery = booking.deliver_loc && booking.deliver_loc.trim() !== '';
+      
+      // Determine the purpose - check if it matches predefined values
+      const predefinedPurposes = ['Travel', 'Vehicle Replacement', 'Local Transportation', 'Specialize Needs', 'One-Way Rental', 'Others'];
+      const bookingPurpose = booking.purpose || '';
+      const isPredefined = predefinedPurposes.includes(bookingPurpose);
+      
+      // Extract time from database timestamps (they're stored as full DateTime in UTC)
+      // Use UTC methods to avoid timezone conversion issues
+      let pickupTimeFormatted = '';
+      let dropoffTimeFormatted = '';
+      
+      if (booking.pickup_time) {
+        const pickupDate = new Date(booking.pickup_time);
+        console.log('🕐 Parsed pickup Date object:', pickupDate);
+        console.log('🕐 Pickup UTC hours:', pickupDate.getUTCHours(), 'UTC minutes:', pickupDate.getUTCMinutes());
+        const hours = String(pickupDate.getUTCHours()).padStart(2, '0');
+        const minutes = String(pickupDate.getUTCMinutes()).padStart(2, '0');
+        pickupTimeFormatted = `${hours}:${minutes}`;
+        console.log('✅ Formatted pickup time (UTC):', pickupTimeFormatted);
+      }
+      
+      if (booking.dropoff_time) {
+        const dropoffDate = new Date(booking.dropoff_time);
+        console.log('🕐 Parsed dropoff Date object:', dropoffDate);
+        console.log('🕐 Dropoff UTC hours:', dropoffDate.getUTCHours(), 'UTC minutes:', dropoffDate.getUTCMinutes());
+        const hours = String(dropoffDate.getUTCHours()).padStart(2, '0');
+        const minutes = String(dropoffDate.getUTCMinutes()).padStart(2, '0');
+        dropoffTimeFormatted = `${hours}:${minutes}`;
+        console.log('✅ Formatted dropoff time (UTC):', dropoffTimeFormatted);
+      }
       
       setFormData({
-        purpose: booking.purpose || '',
-        customPurpose: booking.purpose === 'Others' ? (booking.purpose_details || '') : '',
+        purpose: isPredefined ? bookingPurpose : 'Others',
+        customPurpose: !isPredefined && bookingPurpose ? bookingPurpose : '',
         startDate: booking.start_date ? new Date(booking.start_date).toISOString().split('T')[0] : '',
         endDate: booking.end_date ? new Date(booking.end_date).toISOString().split('T')[0] : '',
-        pickupTime: booking.pickup_time || '',
-        dropoffTime: booking.dropoff_time || '',
-        deliveryLocation: booking.delivery_location || '',
-        dropoffLocation: booking.dropoff_location || '',
+        pickupTime: pickupTimeFormatted,
+        dropoffTime: dropoffTimeFormatted,
+        deliveryLocation: booking.deliver_loc || '',
+        dropoffLocation: booking.dropoff_loc || '',
         selectedDriver: booking.drivers_id ? booking.drivers_id.toString() : '',
       });
       
-      setActiveTab(isDelivery ? 0 : 1);
-      setIsSelfService(booking.is_self_drive !== false);
-      setActiveStep(1); // Start at booking details
+      console.log('📋 Final formData set:', {
+        pickupTime: pickupTimeFormatted,
+        dropoffTime: dropoffTimeFormatted
+      });
+      
+      setServiceType(isDelivery ? 'delivery' : 'pickup');
+      setIsSelfService(booking.isSelfDriver !== false);
       
       fetchDrivers();
     }
@@ -103,7 +136,7 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
   const validateForm = () => {
     const requiredFields = ['purpose', 'startDate', 'endDate', 'pickupTime', 'dropoffTime'];
     
-    if (activeTab === 0) { // Delivery
+    if (serviceType === 'delivery') {
       requiredFields.push('deliveryLocation', 'dropoffLocation');
     }
 
@@ -144,21 +177,69 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
       return false;
     }
 
+    // Validate pickup and dropoff times (must be between 7:00 AM - 7:00 PM)
+    if (formData.pickupTime) {
+      const [pickupHour, pickupMinute] = formData.pickupTime.split(':').map(Number);
+      const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
+      const minTime = 7 * 60; // 7:00 AM
+      const maxTime = 19 * 60; // 7:00 PM
+
+      if (pickupTimeInMinutes < minTime || pickupTimeInMinutes > maxTime) {
+        setError('Pickup time must be between 7:00 AM and 7:00 PM (office hours)');
+        setMissingFields(['pickupTime']);
+        return false;
+      }
+    }
+
+    if (formData.dropoffTime) {
+      const [dropoffHour, dropoffMinute] = formData.dropoffTime.split(':').map(Number);
+      const dropoffTimeInMinutes = dropoffHour * 60 + dropoffMinute;
+      const minTime = 7 * 60; // 7:00 AM
+      const maxTime = 19 * 60; // 7:00 PM
+
+      if (dropoffTimeInMinutes < minTime || dropoffTimeInMinutes > maxTime) {
+        setError('Drop-off time must be between 7:00 AM and 7:00 PM (office hours)');
+        setMissingFields(['dropoffTime']);
+        return false;
+      }
+    }
+
+    // Validate dropoff time is after pickup time
+    if (formData.pickupTime && formData.dropoffTime) {
+      const [pickupHour, pickupMinute] = formData.pickupTime.split(':').map(Number);
+      const [dropoffHour, dropoffMinute] = formData.dropoffTime.split(':').map(Number);
+      const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
+      const dropoffTimeInMinutes = dropoffHour * 60 + dropoffMinute;
+
+      if (dropoffTimeInMinutes <= pickupTimeInMinutes) {
+        setError('Drop-off time must be after pickup time');
+        setMissingFields(['dropoffTime']);
+        return false;
+      }
+    }
+
+    // Validate same-day booking: 3-hour minimum gap between booking time and pickup time
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const bookingDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    
+    if (bookingDate.getTime() === today.getTime() && formData.pickupTime) {
+      // Same day booking
+      const [pickupHour, pickupMinute] = formData.pickupTime.split(':').map(Number);
+      const pickupDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), pickupHour, pickupMinute);
+      const threeHoursFromNow = new Date(now.getTime() + (3 * 60 * 60 * 1000));
+
+      if (pickupDateTime < threeHoursFromNow) {
+        const minPickupTime = `${String(threeHoursFromNow.getHours()).padStart(2, '0')}:${String(threeHoursFromNow.getMinutes()).padStart(2, '0')}`;
+        setError(`Same-day booking requires at least 3 hours notice. Earliest pickup time: ${minPickupTime}`);
+        setMissingFields(['pickupTime']);
+        return false;
+      }
+    }
+
     setError('');
     setMissingFields([]);
     return true;
-  };
-
-  const handleNext = () => {
-    if (activeStep === 1 && validateForm()) {
-      setActiveStep(2);
-    }
-  };
-
-  const handleBack = () => {
-    if (activeStep > 0) {
-      setActiveStep(activeStep - 1);
-    }
   };
 
   const handleSubmit = async () => {
@@ -168,18 +249,25 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
     setError('');
 
     try {
+      console.log('📤 Submitting booking update...');
+      console.log('📤 Current formData:', formData);
+      
+      // Send times in HH:MM format as expected by backend
       const updateData = {
         purpose: formData.purpose === 'Others' ? formData.customPurpose : formData.purpose,
         start_date: formData.startDate,
         end_date: formData.endDate,
-        pickup_time: formData.pickupTime,
-        dropoff_time: formData.dropoffTime,
-        pickup_location: activeTab === 1 ? 'J&A Car Rental Office' : '',
-        dropoff_location: formData.dropoffLocation,
-        delivery_location: activeTab === 0 ? formData.deliveryLocation : '',
-        is_self_drive: isSelfService,
+        pickup_time: formData.pickupTime, // Already in HH:MM format
+        dropoff_time: formData.dropoffTime, // Already in HH:MM format
+        pickup_loc: serviceType === 'pickup' ? 'J&A Car Rental Office' : formData.deliveryLocation,
+        dropoff_loc: formData.dropoffLocation,
+        deliver_loc: serviceType === 'delivery' ? formData.deliveryLocation : '',
+        isSelfDriver: isSelfService,
         drivers_id: isSelfService ? null : parseInt(formData.selectedDriver),
       };
+      
+      console.log('📤 Update data being sent:', updateData);
+      console.log('📤 Times being sent - pickup:', updateData.pickup_time, 'dropoff:', updateData.dropoff_time);
 
       const response = await authenticatedFetch(`${API_BASE}/bookings/${booking.booking_id}/update`, {
         method: 'PUT',
@@ -193,6 +281,7 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
       }
 
       const result = await response.json();
+      console.log('✅ Booking updated successfully:', result);
       
       if (onBookingUpdated) {
         onBookingUpdated(result);
@@ -200,7 +289,7 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
       
       handleClose();
     } catch (error) {
-      console.error('Update booking error:', error);
+      console.error('❌ Update booking error:', error);
       setError(error.message || 'Failed to update booking. Please try again.');
     } finally {
       setLoading(false);
@@ -208,71 +297,106 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
   };
 
   const handleClose = () => {
-    setActiveStep(1);
     setError('');
     setMissingFields([]);
     onClose();
   };
 
-  const renderServiceTypeStep = () => (
-    <Box sx={{ display: 'flex', justifyContent: 'center', p: { xs: 2, sm: 3 } }}>
-      <Box sx={{ width: '100%', maxWidth: '600px' }}>
-        <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', textAlign: 'center' }}>
-          Service Type
-        </Typography>
-        
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <Card 
-              sx={{ 
-                cursor: 'pointer', 
-                border: activeTab === 0 ? '2px solid #c10007' : '1px solid #e0e0e0',
-                '&:hover': { borderColor: '#c10007' },
-                height: '100%'
-              }}
-              onClick={() => setActiveTab(0)}
-            >
-              <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  🚚 Delivery Service
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  We deliver the car to your location
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Card 
-              sx={{ 
-                cursor: 'pointer', 
-                border: activeTab === 1 ? '2px solid #c10007' : '1px solid #e0e0e0',
-                '&:hover': { borderColor: '#c10007' },
-                height: '100%'
-              }}
-              onClick={() => setActiveTab(1)}
-            >
-              <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  🏢 Office Pickup
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Pick up at our office location
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Box>
-    </Box>
-  );
+  return (
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="md" 
+      fullWidth
+      PaperProps={{ 
+        sx: { 
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column'
+        } 
+      }}
+    >
+      <DialogTitle sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        backgroundColor: '#c10007',
+        color: 'white',
+        py: 2,
+        flexShrink: 0
+      }}>
+        <Box component="span" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
+          Edit Booking #{booking?.booking_id}
+        </Box>
+        <IconButton onClick={handleClose} sx={{ color: 'white' }}>
+          <HiX />
+        </IconButton>
+      </DialogTitle>
 
-  const renderBookingDetailsStep = () => (
-    <Box sx={{ display: 'flex', justifyContent: 'center', p: { xs: 2, sm: 3 } }}>
-      <Box sx={{ width: '100%', maxWidth: '800px' }}>
-        <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', textAlign: 'center' }}>
-          Edit Booking Details
+      <DialogContent sx={{ p: 3, overflowY: 'auto', flexGrow: 1 }}>
+        {/* Current Booking Details Card - CENTERED */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+          <Card sx={{ maxWidth: '800px', width: '100%', backgroundColor: '#f5f5f5' }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#c10007', textAlign: 'center' }}>
+                Current Booking Details
+              </Typography>
+              
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Typography variant="body2" color="text.secondary">Vehicle:</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    {booking?.car_details?.make} {booking?.car_details?.model}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {booking?.car_details?.year} • {booking?.car_details?.license_plate}
+                  </Typography>
+                </Grid>
+                
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Typography variant="body2" color="text.secondary">Total Amount:</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#c10007' }}>
+                    ₱{booking?.total_amount?.toLocaleString()}
+                  </Typography>
+                </Grid>
+                
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Typography variant="body2" color="text.secondary">Booking Status:</Typography>
+                  <Chip 
+                    label={booking?.booking_status || 'Pending'} 
+                    size="small"
+                    sx={{ 
+                      mt: 0.5,
+                      fontWeight: 'bold',
+                      backgroundColor: booking?.booking_status === 'Confirmed' ? '#4caf50' : '#ff9800',
+                      color: 'white'
+                    }}
+                  />
+                </Grid>
+                
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Typography variant="body2" color="text.secondary">Driver Type:</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    {booking?.isSelfDriver ? 'Self-Drive' : 'With Driver'}
+                  </Typography>
+                </Grid>
+                
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                  <Typography variant="body2" color="text.secondary">Service Type:</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    {booking?.deliver_loc ? 'Delivery Service' : 'Office Pickup'}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Divider sx={{ my: 3 }} />
+
+        {/* Update Booking Information - CENTERED TITLE */}
+        <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', color: '#333', textAlign: 'center' }}>
+          Update Booking Information
         </Typography>
 
         {error && (
@@ -281,20 +405,83 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
           </Alert>
         )}
 
-        <Grid container spacing={3}>
+        <Grid container spacing={2}>
+          {/* Service Type Selection - CENTERED */}
+          <Grid size={12}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                Service Type *
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Grid container spacing={2} sx={{ maxWidth: '600px' }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Card 
+                    sx={{ 
+                      cursor: 'pointer', 
+                      border: serviceType === 'delivery' ? '3px solid #c10007' : '2px solid #e0e0e0',
+                      '&:hover': { borderColor: '#c10007' },
+                      height: '100%',
+                      transition: 'all 0.2s'
+                    }}
+                    onClick={() => setServiceType('delivery')}
+                  >
+                    <CardContent sx={{ textAlign: 'center', p: 2 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        🚚 Delivery Service
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        We deliver the car to your location
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Card 
+                    sx={{ 
+                      cursor: 'pointer', 
+                      border: serviceType === 'pickup' ? '3px solid #c10007' : '2px solid #e0e0e0',
+                      '&:hover': { borderColor: '#c10007' },
+                      height: '100%',
+                      transition: 'all 0.2s'
+                    }}
+                    onClick={() => setServiceType('pickup')}
+                  >
+                    <CardContent sx={{ textAlign: 'center', p: 2 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        🏢 Office Pickup
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Pick up at our office location
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Box>
+          </Grid>
+
           {/* Purpose */}
-          <Grid item xs={12}>
+          <Grid size={12}>
             <FormControl fullWidth required error={missingFields.includes('purpose')}>
-              <InputLabel>Purpose of Rental</InputLabel>
+              <InputLabel sx={{ fontSize: '1rem' }}>Purpose of Rental</InputLabel>
               <Select
                 value={formData.purpose}
                 label="Purpose of Rental"
                 onChange={(e) => setFormData({ ...formData, purpose: e.target.value, customPurpose: '' })}
+                sx={{
+                  '& .MuiInputBase-input': { fontSize: '1rem', py: 1.5 },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#c10007',
+                  },
+                }}
               >
-                <MenuItem value="Personal">Personal</MenuItem>
-                <MenuItem value="Business">Business</MenuItem>
-                <MenuItem value="Family Trip">Family Trip</MenuItem>
-                <MenuItem value="Wedding">Wedding</MenuItem>
+                <MenuItem value="Travel">Travel</MenuItem>
+                <MenuItem value="Vehicle Replacement">Vehicle Replacement</MenuItem>
+                <MenuItem value="Local Transportation">Local Transportation</MenuItem>
+                <MenuItem value="Specialize Needs">Specialize Needs</MenuItem>
+                <MenuItem value="One-Way Rental">One-Way Rental</MenuItem>
                 <MenuItem value="Others">Others</MenuItem>
               </Select>
             </FormControl>
@@ -302,7 +489,7 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
 
           {/* Custom Purpose */}
           {formData.purpose === 'Others' && (
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 label="Specify Purpose"
@@ -310,12 +497,22 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
                 onChange={(e) => setFormData({ ...formData, customPurpose: e.target.value })}
                 required
                 error={missingFields.includes('customPurpose')}
+                helperText="Please provide details about your rental purpose"
+                sx={{
+                  '& .MuiInputLabel-root': { fontSize: '1rem' },
+                  '& .MuiInputBase-input': { fontSize: '1rem', py: 1.5 },
+                  '& .MuiOutlinedInput-root': {
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#c10007',
+                    },
+                  },
+                }}
               />
             </Grid>
           )}
 
-          {/* Dates */}
-          <Grid item xs={12} md={6}>
+          {/* Dates - START SPLIT / END SPLIT */}
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               type="date"
@@ -326,10 +523,19 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
               inputProps={{ min: getMinimumDate() }}
               required
               error={missingFields.includes('startDate')}
+              sx={{
+                '& .MuiInputLabel-root': { fontSize: '1rem' },
+                '& .MuiInputBase-input': { fontSize: '1rem', py: 1.5 },
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#c10007',
+                  },
+                },
+              }}
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               type="date"
@@ -340,78 +546,136 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
               inputProps={{ min: formData.startDate || getMinimumDate() }}
               required
               error={missingFields.includes('endDate')}
+              sx={{
+                '& .MuiInputLabel-root': { fontSize: '1rem' },
+                '& .MuiInputBase-input': { fontSize: '1rem', py: 1.5 },
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#c10007',
+                  },
+                },
+              }}
             />
           </Grid>
 
-          {/* Times */}
-          <Grid item xs={12} md={6}>
+          {/* Times - START SPLIT / END SPLIT */}
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               type="time"
-              label="Pickup Time"
+              label="Pickup Time (7 AM - 7 PM)"
               value={formData.pickupTime}
               onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
               InputLabelProps={{ shrink: true }}
               required
               error={missingFields.includes('pickupTime')}
+              helperText="Office hours: 7:00 AM - 7:00 PM"
+              sx={{
+                '& .MuiInputLabel-root': { fontSize: '1rem' },
+                '& .MuiInputBase-input': { fontSize: '1rem', py: 1.5 },
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#c10007',
+                  },
+                },
+              }}
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               type="time"
-              label="Drop-off Time"
+              label="Drop-off Time (7 AM - 7 PM)"
               value={formData.dropoffTime}
               onChange={(e) => setFormData({ ...formData, dropoffTime: e.target.value })}
               InputLabelProps={{ shrink: true }}
               required
               error={missingFields.includes('dropoffTime')}
+              helperText="Office hours: 7:00 AM - 7:00 PM"
+              sx={{
+                '& .MuiInputLabel-root': { fontSize: '1rem' },
+                '& .MuiInputBase-input': { fontSize: '1rem', py: 1.5 },
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#c10007',
+                  },
+                },
+              }}
             />
           </Grid>
 
-          {/* Location Fields */}
-          {activeTab === 0 ? (
-            // Delivery Service Fields
+          {/* Location Fields - START SPLIT / END SPLIT */}
+          {serviceType === 'delivery' ? (
             <>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
-                  label="Delivery Address"
+                  label="Pickup Location (Delivery Address)"
                   value={formData.deliveryLocation}
                   onChange={(e) => setFormData({ ...formData, deliveryLocation: e.target.value })}
                   required
                   error={missingFields.includes('deliveryLocation')}
                   multiline
                   rows={2}
+                  placeholder="Enter the address where you want the car delivered"
+                  sx={{
+                    '& .MuiInputLabel-root': { fontSize: '1rem' },
+                    '& .MuiInputBase-input': { fontSize: '1rem', py: 1.5 },
+                    '& .MuiOutlinedInput-root': {
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#c10007',
+                      },
+                    },
+                  }}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
-                  label="Drop-off Address"
+                  label="Drop-off Location (Return Address)"
                   value={formData.dropoffLocation}
                   onChange={(e) => setFormData({ ...formData, dropoffLocation: e.target.value })}
                   required
                   error={missingFields.includes('dropoffLocation')}
                   multiline
                   rows={2}
+                  placeholder="Enter the address where you want to return the car"
+                  sx={{
+                    '& .MuiInputLabel-root': { fontSize: '1rem' },
+                    '& .MuiInputBase-input': { fontSize: '1rem', py: 1.5 },
+                    '& .MuiOutlinedInput-root': {
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#c10007',
+                      },
+                    },
+                  }}
                 />
               </Grid>
             </>
           ) : (
-            // Office Pickup Info
-            <Grid item xs={12}>
-              <Alert severity="info">
-                <Typography variant="body2">
-                  <strong>Pickup & Return:</strong> J&A Car Rental Office
-                </Typography>
-              </Alert>
-            </Grid>
+            <>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Alert severity="info">
+                  <Typography variant="body2">
+                    <strong>Pickup Location:</strong><br />
+                    J&A Car Rental Office
+                  </Typography>
+                </Alert>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Alert severity="info">
+                  <Typography variant="body2">
+                    <strong>Drop-off Location:</strong><br />
+                    J&A Car Rental Office
+                  </Typography>
+                </Alert>
+              </Grid>
+            </>
           )}
 
-          {/* Driver Selection */}
-          <Grid item xs={12}>
+          {/* Driver Selection - Self Drive Service */}
+          <Grid size={12}>
             <FormControlLabel
               control={
                 <Switch
@@ -420,7 +684,16 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
                   color="primary"
                 />
               }
-              label="Self-Drive Service"
+              label={
+                <Box>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    Self-Drive Service
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {isSelfService ? 'You will drive the vehicle yourself' : 'A driver will be assigned'}
+                  </Typography>
+                </Box>
+              }
             />
 
             {!isSelfService && (
@@ -431,204 +704,71 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
                   label="Select Driver"
                   onChange={(e) => setFormData({ ...formData, selectedDriver: e.target.value })}
                 >
-                  {drivers.map((driver) => (
-                    <MenuItem key={driver.drivers_id} value={driver.drivers_id.toString()}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar sx={{ width: 32, height: 32 }}>
-                          {driver.first_name?.[0]}{driver.last_name?.[0]}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body1">
-                            {driver.first_name} {driver.last_name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            License: {driver.license_number}
-                          </Typography>
+                  {drivers.length === 0 ? (
+                    <MenuItem disabled>No drivers available</MenuItem>
+                  ) : (
+                    drivers.map((driver) => (
+                      <MenuItem key={driver.drivers_id} value={driver.drivers_id.toString()}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                          <Avatar sx={{ width: 32, height: 32, bgcolor: '#c10007' }}>
+                            {driver.first_name?.[0]}{driver.last_name?.[0]}
+                          </Avatar>
+                          <Box sx={{ flexGrow: 1 }}>
+                            <Typography variant="body1">
+                              {driver.first_name} {driver.last_name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              License: {driver.license_number}
+                            </Typography>
+                          </Box>
                         </Box>
-                      </Box>
-                    </MenuItem>
-                  ))}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
             )}
           </Grid>
         </Grid>
-      </Box>
-    </Box>
-  );
-
-  const renderConfirmationStep = () => (
-    <Box sx={{ display: 'flex', justifyContent: 'center', p: { xs: 2, sm: 3 } }}>
-      <Box sx={{ width: '100%', maxWidth: '800px' }}>
-        <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', textAlign: 'center' }}>
-          Confirm Changes
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={8}>
-            <Card sx={{ p: { xs: 2, sm: 3 } }}>
-              <Typography variant="h6" sx={{ mb: 2, color: '#c10007' }}>
-                Updated Booking Details
-              </Typography>
-              
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="body2" color="text.secondary">Purpose:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {formData.purpose === 'Others' ? formData.customPurpose : formData.purpose}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={6}>
-                  <Typography variant="body2" color="text.secondary">Service:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {activeTab === 0 ? 'Delivery' : 'Office Pickup'}
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={6}>
-                  <Typography variant="body2" color="text.secondary">Start:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {new Date(formData.startDate).toLocaleDateString()} {formData.pickupTime}
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={6}>
-                  <Typography variant="body2" color="text.secondary">End:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {new Date(formData.endDate).toLocaleDateString()} {formData.dropoffTime}
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">Driver:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {isSelfService ? 'Self-Drive' : 
-                      drivers.find(d => d.drivers_id.toString() === formData.selectedDriver)?.first_name + ' ' +
-                      drivers.find(d => d.drivers_id.toString() === formData.selectedDriver)?.last_name || 'Selected Driver'
-                    }
-                  </Typography>
-                </Grid>
-              </Grid>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={4}>
-            <Card sx={{ p: { xs: 2, sm: 3 } }}>
-              <Typography variant="h6" sx={{ mb: 2, color: '#c10007' }}>
-                Vehicle
-              </Typography>
-            
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                {booking?.car_details?.make} {booking?.car_details?.model}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {booking?.car_details?.year} • {booking?.car_details?.license_plate}
-              </Typography>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Typography variant="body2" color="text.secondary">Total:</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#c10007' }}>
-                ₱{booking?.total_amount?.toLocaleString()}
-              </Typography>
-            </Card>
-          </Grid>
-        </Grid>
-      </Box>
-    </Box>
-  );
-
-  return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose} 
-      maxWidth="md" 
-      fullWidth
-      PaperProps={{ 
-        sx: { 
-          minHeight: { xs: 'auto', sm: '70vh' },
-          maxHeight: '90vh'
-        } 
-      }}
-    >
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        backgroundColor: '#c10007',
-        color: 'white',
-        py: 2
-      }}>
-        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-          Edit Booking #{booking?.booking_id}
-        </Typography>
-        <IconButton onClick={handleClose} sx={{ color: 'white' }}>
-          <HiX />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent sx={{ p: 0 }}>
-        {/* Stepper */}
-        <Box sx={{ p: { xs: 2, sm: 3 }, backgroundColor: '#f5f5f5' }}>
-          <Stepper activeStep={activeStep} alternativeLabel>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        </Box>
-
-        {/* Content */}
-        <Box sx={{ minHeight: { xs: 'auto', sm: '300px' } }}>
-          {activeStep === 0 && renderServiceTypeStep()}
-          {activeStep === 1 && renderBookingDetailsStep()}
-          {activeStep === 2 && renderConfirmationStep()}
-        </Box>
       </DialogContent>
 
-      <DialogActions sx={{ p: { xs: 2, sm: 3 }, backgroundColor: '#f5f5f5', gap: 1 }}>
+      <DialogActions sx={{ 
+        p: 3, 
+        backgroundColor: '#f5f5f5', 
+        gap: 2, 
+        flexShrink: 0,
+        flexDirection: { xs: 'column', sm: 'row' }
+      }}>
         <Button
-          onClick={handleBack}
-          disabled={activeStep === 0 || loading}
-          startIcon={<HiArrowLeft />}
-          sx={{ minWidth: '100px' }}
+          onClick={handleClose}
+          disabled={loading}
+          variant="outlined"
+          fullWidth
+          sx={{ 
+            borderColor: '#c10007',
+            color: '#c10007',
+            '&:hover': {
+              borderColor: '#a50006',
+              backgroundColor: 'rgba(193, 0, 7, 0.04)'
+            }
+          }}
         >
-          Back
+          Cancel
         </Button>
         
-        <Box sx={{ flexGrow: 1 }} />
-        
-        {activeStep < steps.length - 1 ? (
-          <Button
-            variant="contained"
-            onClick={handleNext}
-            disabled={loading}
-            endIcon={<HiArrowRight />}
-            sx={{ 
-              backgroundColor: '#c10007',
-              '&:hover': { backgroundColor: '#a50006' },
-              minWidth: '100px'
-            }}
-          >
-            Next
-          </Button>
-        ) : (
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : <HiCheck />}
-            sx={{ 
-              backgroundColor: '#c10007',
-              '&:hover': { backgroundColor: '#a50006' },
-              minWidth: '140px'
-            }}
-          >
-            {loading ? 'Updating...' : 'Update Booking'}
-          </Button>
-        )}
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          disabled={loading}
+          fullWidth
+          startIcon={loading ? <CircularProgress size={20} /> : <HiCheck />}
+          sx={{ 
+            backgroundColor: '#c10007',
+            '&:hover': { backgroundColor: '#a50006' }
+          }}
+        >
+          {loading ? 'Updating...' : 'Update Booking'}
+        </Button>
       </DialogActions>
     </Dialog>
   );

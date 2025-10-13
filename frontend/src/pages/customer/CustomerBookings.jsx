@@ -432,17 +432,45 @@ function CustomerBookings() {
                     booking.booking_status?.toLowerCase() !== 'cancelled'
                 )
                 .map((booking) => {
-                  // Determine the status message based on pending requests
+                  // Determine the status message and color based on pending requests
                   let statusMessage = '';
+                  let statusColor = '';
+
                   if (booking.isCancel) {
                     statusMessage = 'Pending Cancellation';
+                    statusColor = '#FFA500'; // Orange
                   } else if (booking.isExtend) {
                     statusMessage = 'Pending Extension';
+                    statusColor = '#FFA500'; // Orange
                   } else if (
                     booking.isPay &&
                     booking.payment_status?.toLowerCase() !== 'paid'
                   ) {
                     statusMessage = 'Pending Payment';
+                    statusColor = '#FFA500'; // Orange
+                  }
+
+                  // Determine booking status badge color
+                  let bookingStatusColor = '';
+                  const bookingStatus = booking.booking_status?.toLowerCase();
+
+                  switch (bookingStatus) {
+                    case 'pending':
+                      bookingStatusColor = '#FF9800'; // Orange
+                      break;
+                    case 'approved':
+                    case 'confirmed':
+                      bookingStatusColor = '#2196F3'; // Blue
+                      break;
+                    case 'in progress':
+                    case 'ongoing':
+                      bookingStatusColor = '#4CAF50'; // Green
+                      break;
+                    case 'completed':
+                      bookingStatusColor = '#8BC34A'; // Light Green
+                      break;
+                    default:
+                      bookingStatusColor = '#9E9E9E'; // Grey
                   }
 
                   return (
@@ -460,22 +488,44 @@ function CustomerBookings() {
                         transition: 'all 0.3s ease',
                       }}
                     >
-                      {/* Status Badge on top-right corner */}
-                      {statusMessage && (
+                      {/* Status Badges on top-right corner */}
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 10,
+                          right: 10,
+                          zIndex: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 0.5,
+                          alignItems: 'flex-end',
+                        }}
+                      >
+                        {/* Booking Status Badge */}
                         <Chip
-                          label={statusMessage}
+                          label={booking.booking_status}
                           size="small"
                           sx={{
-                            position: 'absolute',
-                            top: 10,
-                            right: 10,
-                            backgroundColor: '#c10007',
+                            backgroundColor: bookingStatusColor,
                             color: 'white',
                             fontWeight: 'bold',
-                            zIndex: 1,
+                            textTransform: 'capitalize',
                           }}
                         />
-                      )}
+
+                        {/* Pending Action Badge */}
+                        {statusMessage && (
+                          <Chip
+                            label={statusMessage}
+                            size="small"
+                            sx={{
+                              backgroundColor: statusColor,
+                              color: 'white',
+                              fontWeight: 'bold',
+                            }}
+                          />
+                        )}
+                      </Box>
 
                       {/* Car Image - Left Side / Top on Mobile */}
                       <CardMedia
@@ -639,7 +689,30 @@ function CustomerBookings() {
                               </Box>
                             </Box>
 
-                            {/* Location */}
+                            {/* Pickup Location */}
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                              }}
+                            >
+                              <HiLocationMarker
+                                size={16}
+                                style={{ color: '#4CAF50', flexShrink: 0 }}
+                              />
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                }}
+                              >
+                                <strong>Pickup:</strong>{' '}
+                                {booking.pickup_loc || 'JA Car Rental Office'}
+                              </Typography>
+                            </Box>
+
+                            {/* Drop-off Location */}
                             <Box
                               sx={{
                                 display: 'flex',
@@ -657,8 +730,8 @@ function CustomerBookings() {
                                   fontSize: { xs: '0.75rem', sm: '0.875rem' },
                                 }}
                               >
-                                {booking.pickup_loc ||
-                                  'JA Car Rental Office - 123 Main Street, Business District, City'}
+                                <strong>Drop-off:</strong>{' '}
+                                {booking.dropoff_loc || 'JA Car Rental Office'}
                               </Typography>
                             </Box>
                           </Box>
@@ -669,7 +742,7 @@ function CustomerBookings() {
                               display: 'flex',
                               alignItems: 'center',
                               gap: 0.5,
-                              mb: 2,
+                              mb: 1,
                             }}
                           >
                             <HiCurrencyDollar
@@ -841,17 +914,12 @@ function CustomerBookings() {
                         size="small"
                         sx={{
                           position: 'absolute',
-                          top: { xs: 8, sm: 12 },
-                          right: { xs: 8, sm: 12 },
+                          top: 10,
+                          right: 10,
                           zIndex: 10,
                           backgroundColor: '#FFA500',
                           color: 'white',
-                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                          fontWeight: 600,
-                          height: { xs: '24px', sm: '28px' },
-                          '& .MuiChip-label': {
-                            px: { xs: 1.5, sm: 2 },
-                          },
+                          fontWeight: 'bold',
                         }}
                       />
                     ) : (
@@ -1024,7 +1092,30 @@ function CustomerBookings() {
                               </Box>
                             </Box>
 
-                            {/* Location */}
+                            {/* Pickup Location */}
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                              }}
+                            >
+                              <HiLocationMarker
+                                size={16}
+                                style={{ color: '#4CAF50', flexShrink: 0 }}
+                              />
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                }}
+                              >
+                                <strong>Pickup:</strong>{' '}
+                                {booking.pickup_loc || 'JA Car Rental Office'}
+                              </Typography>
+                            </Box>
+
+                            {/* Drop-off Location */}
                             <Box
                               sx={{
                                 display: 'flex',
@@ -1042,8 +1133,8 @@ function CustomerBookings() {
                                   fontSize: { xs: '0.75rem', sm: '0.875rem' },
                                 }}
                               >
-                                {booking.pickup_loc ||
-                                  'JA Car Rental Office - 123 Main Street, Business District, City'}
+                                <strong>Drop-off:</strong>{' '}
+                                {booking.dropoff_loc || 'JA Car Rental Office'}
                               </Typography>
                             </Box>
                           </Box>

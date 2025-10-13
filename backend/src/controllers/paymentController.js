@@ -290,26 +290,19 @@ export const deletePaymentByBookingId = async (req, res) => {
     // Calculate new balance
     const newBalance = (booking.total_amount || 0) - totalPaidAfterDeletion;
     
-    // Determine new booking status based on remaining payments
-    const newBookingStatus = determineBookingStatus(
-      totalPaidAfterDeletion, 
-      booking.total_amount, 
-      booking.booking_status
-    );
-    
     // Delete the payment
     await prisma.payment.delete({
       where: { payment_id: latestPayment.payment_id },
     });
 
-    // Update booking with new balance and payment status
+    // When canceling/rejecting payment, booking should remain in Pending status with Unpaid payment_status
     // Note: isPay is already set to false by the updateIsPayStatus call from frontend
     await prisma.booking.update({
       where: { booking_id: bookingId },
       data: {
         balance: newBalance,
-        payment_status: newBalance <= 0 ? 'Paid' : 'Unpaid',
-        booking_status: newBookingStatus,
+        payment_status: 'Unpaid', // Always set to Unpaid when payment is cancelled/rejected
+        booking_status: 'Pending', // Keep booking in Pending status when payment is rejected
       },
     });
 
@@ -320,8 +313,8 @@ export const deletePaymentByBookingId = async (req, res) => {
       bookingId,
       deletedPaymentId: latestPayment.payment_id,
       newBalance,
-      newPaymentStatus: newBalance <= 0 ? 'Paid' : 'Unpaid',
-      newBookingStatus
+      newPaymentStatus: 'Unpaid',
+      newBookingStatus: 'Pending'
     });
 
     res.status(200).json({
@@ -330,8 +323,8 @@ export const deletePaymentByBookingId = async (req, res) => {
       booking_update: {
         booking_id: bookingId,
         new_balance: newBalance,
-        new_payment_status: newBalance <= 0 ? 'Paid' : 'Unpaid',
-        new_booking_status: newBookingStatus,
+        new_payment_status: 'Unpaid',
+        new_booking_status: 'Pending',
         total_paid: totalPaidAfterDeletion,
       },
     });
@@ -478,25 +471,15 @@ export const processBookingPayment = async (req, res) => {
       },
     });
 
-    // Update booking payment status and isPay flag
+    // Update booking isPay flag
     // isPay should be true whenever customer makes any payment
-    if (payment.balance === 0) {
-      await prisma.booking.update({
-        where: { booking_id: parseInt(booking_id) },
-        data: {
-          payment_status: "Paid",
-          isPay: true,
-        },
-      });
-    } else {
-      await prisma.booking.update({
-        where: { booking_id: parseInt(booking_id) },
-        data: { 
-          payment_status: "Unpaid",
-          isPay: true, // Set to true whenever customer makes payment
-        },
-      });
-    }
+    // Payment status remains "Unpaid" until admin confirms the payment
+    await prisma.booking.update({
+      where: { booking_id: parseInt(booking_id) },
+      data: { 
+        isPay: true, // Set to true whenever customer makes payment (requires admin confirmation)
+      },
+    });
 
     res.status(201).json({
       success: true,

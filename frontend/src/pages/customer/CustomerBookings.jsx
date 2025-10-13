@@ -38,6 +38,7 @@ import {
   HiTrash,
   HiPlus,
   HiRefresh,
+  HiBookOpen,
 } from 'react-icons/hi';
 import { useAuth } from '../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
@@ -321,8 +322,12 @@ function CustomerBookings() {
                 fontWeight: 'bold',
                 color: '#c10007',
                 fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
               }}
             >
+              <HiBookOpen size={24} style={{ color: '#c10007' }} />
               My Bookings
             </Typography>
             {/* Refresh Button - Fixed Upper Right */}

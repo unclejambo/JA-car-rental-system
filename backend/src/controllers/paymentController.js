@@ -471,21 +471,37 @@ export const processBookingPayment = async (req, res) => {
       },
     });
 
-    // Update booking isPay flag
-    // isPay should be true whenever customer makes any payment
-    // Payment status remains "Unpaid" until admin confirms the payment
+    // Calculate total amount paid so far (including this payment)
+    const totalPaid = parseInt(amount);
+    
+    // Determine if booking should be auto-confirmed
+    // If payment is >= 1000, automatically confirm the booking
+    // Otherwise, booking stays in Pending status and requires admin confirmation
+    let bookingStatus = booking.booking_status;
+    if (totalPaid >= 1000) {
+      bookingStatus = 'Confirmed';
+    }
+    else if (totalPaid < 1000) {
+      bookingStatus = 'Pending';
+    }
+
+    // Update booking isPay flag and booking status
     await prisma.booking.update({
       where: { booking_id: parseInt(booking_id) },
       data: { 
-        isPay: true, // Set to true whenever customer makes payment (requires admin confirmation)
+        isPay: true, // Set to true whenever customer makes payment
+        booking_status: bookingStatus, // Auto-confirm if payment >= 1000
       },
     });
 
     res.status(201).json({
       success: true,
-      message: "Payment completed successfully!",
+      message: totalPaid >= 1000 
+        ? "Payment completed successfully! Your booking has been confirmed." 
+        : "Payment submitted successfully! Waiting for admin confirmation.",
       payment: shapePayment(payment),
       remaining_balance: payment.balance,
+      booking_status: bookingStatus,
     });
   } catch (error) {
     console.error("Error processing payment:", error);

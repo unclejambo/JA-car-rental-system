@@ -255,7 +255,7 @@ const ManageBookingsTable = ({
       field: 'actualBookingId', // Changed from 'id' to show actual booking ID
       headerName: 'ID',
       flex: 1,
-      minWidth: 30,
+      minWidth: 50,
       editable: false,
       headerAlign: 'center',
       align: 'center',
@@ -277,16 +277,6 @@ const ManageBookingsTable = ({
       editable: false,
       resizable: true,
       headerAlign: 'center',
-    },
-    {
-      field: 'booking_date',
-      headerName: 'Booking Date',
-      flex: 1.5,
-      minWidth: 80,
-      editable: false,
-      resizable: true,
-      headerAlign: 'center',
-      align: 'center',
     },
     {
       field: 'start_date',
@@ -336,15 +326,8 @@ const ManageBookingsTable = ({
         minWidth: 80,
       },
       {
-        field: 'payment_status',
-        headerName: 'Payment Status',
-        flex: 1.2,
-        minWidth: 100,
-        resizable: true,
-      },
-      {
         field: 'booking_status',
-        headerName: 'Booking Status',
+        headerName: 'Status',
         flex: 1.2,
         minWidth: 100,
         resizable: true,

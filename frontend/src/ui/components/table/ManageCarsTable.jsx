@@ -245,7 +245,7 @@ const ManageCarsTable = ({
                 padding: '4px 4px',
               }}
             >
-              Extend
+              Edit
             </Button>
             <Button
               size="small"

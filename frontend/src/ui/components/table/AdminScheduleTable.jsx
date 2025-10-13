@@ -170,7 +170,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       field: 'customer_name',
       headerName: 'Customer Name',
       flex: 1.5,
-      minWidth: 120,
+      minWidth: 100,
       editable: false,
     },
     {
@@ -189,7 +189,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       field: 'pickup_time',
       headerName: 'Pickup Time',
       flex: 1,
-      minWidth: 90,
+      minWidth: 100,
       editable: false,
       renderCell: (params) => {
         const iso = params?.row?.pickup_time ?? params?.value;
@@ -200,7 +200,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       field: 'pickup_location',
       headerName: 'Pickup Location',
       flex: 1,
-      minWidth: 90,
+      minWidth: 100,
       editable: false,
       renderCell: (params) => (
         <span>
@@ -227,7 +227,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       field: 'dropoff_time',
       headerName: 'Drop Off Time',
       flex: 1,
-      minWidth: 90,
+      minWidth: 100,
       editable: false,
       renderCell: (params) => {
         const iso = params?.row?.dropoff_time ?? params?.value;
@@ -238,7 +238,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       field: 'dropoff_location',
       headerName: 'Drop Off Location',
       flex: 1,
-      minWidth: 90,
+      minWidth: 100,
       editable: false,
       renderCell: (params) => (
         <span>

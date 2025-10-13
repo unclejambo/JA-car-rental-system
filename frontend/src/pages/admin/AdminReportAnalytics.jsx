@@ -50,12 +50,6 @@ const DEFAULT_MONTHS = [
   'Dec',
 ];
 
-// Static data for fallback when API data is not available
-const staticTopCarLabels = ['Toyota Camry', 'Honda Civic', 'Nissan Altima', 'Ford Focus', 'Hyundai Elantra'];
-const staticTopCars = [45, 38, 32, 28, 25];
-const staticTopCustomerLabels = ['John Smith', 'Maria Garcia', 'Robert Johnson', 'Lisa Wong', 'David Brown'];
-const staticTopCustomers = [12, 10, 8, 7, 6];
-
 export default function AdminReportAnalytics() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -225,65 +219,35 @@ export default function AdminReportAnalytics() {
           console.log('Revenue API response:', result);
 
           // Process revenue data for expenses view
+          // TODO: Fetch real maintenance and refund data from backend
+          // Currently showing zeros until proper endpoints are implemented
           if (result.byMethod) {
-            const monthlyData = result.monthly || [];
             let labels, maintenance, refunds;
             
             if (period === 'monthly') {
-              // For monthly view, show daily data
-              const dailyMaintenance = {};
-              const dailyRefunds = {};
-              monthlyData.forEach(payment => {
-                const day = new Date(payment.paid_date).getDate();
-                dailyMaintenance[day] = (dailyMaintenance[day] || 0) + payment.amount * 0.3; // 30% for maintenance
-                dailyRefunds[day] = (dailyRefunds[day] || 0) + payment.amount * 0.1; // 10% for refunds
-              });
-              
               const daysInMonth = new Date(selectedYear, selectedMonthIndex + 1, 0).getDate();
               labels = Array.from({ length: daysInMonth }, (_, i) => `Day ${i + 1}`);
-              maintenance = Array.from({ length: daysInMonth }, (_, i) => dailyMaintenance[i + 1] || 0);
-              refunds = Array.from({ length: daysInMonth }, (_, i) => dailyRefunds[i + 1] || 0);
+              maintenance = Array(daysInMonth).fill(0);
+              refunds = Array(daysInMonth).fill(0);
             } else if (period === 'quarterly') {
-              // For quarterly view, show monthly data for the quarter
-              maintenance = Array(3).fill(0);
-              refunds = Array(3).fill(0);
               const quarterStartMonth = (selectedQuarter - 1) * 3;
-              
-              monthlyData.forEach(payment => {
-                const month = new Date(payment.paid_date).getMonth();
-                const quarterMonth = month - quarterStartMonth;
-                if (quarterMonth >= 0 && quarterMonth < 3) {
-                  maintenance[quarterMonth] += payment.amount * 0.3;
-                  refunds[quarterMonth] += payment.amount * 0.1;
-                }
-              });
-              
               labels = Array.from({ length: 3 }, (_, i) => 
                 new Date(2000, quarterStartMonth + i, 1).toLocaleString(undefined, { month: 'short' })
               );
+              maintenance = Array(3).fill(0);
+              refunds = Array(3).fill(0);
             } else {
-              // For yearly view, show all 12 months
+              labels = DEFAULT_MONTHS;
               maintenance = Array(12).fill(0);
               refunds = Array(12).fill(0);
-              
-              monthlyData.forEach(payment => {
-                const month = new Date(payment.paid_date).getMonth();
-                maintenance[month] += payment.amount * 0.3;
-                refunds[month] += payment.amount * 0.1;
-              });
-              
-              labels = DEFAULT_MONTHS;
             }
             
             setMaintenanceData(maintenance);
             setRefundsData(refunds);
             setChartLabels(labels);
-            setTotalMaintenance(maintenance.reduce((sum, val) => sum + val, 0));
-            setTotalRefunds(refunds.reduce((sum, val) => sum + val, 0));
-            setTotalIncome(
-              maintenance.reduce((sum, val) => sum + val, 0) +
-              refunds.reduce((sum, val) => sum + val, 0)
-            );
+            setTotalMaintenance(0);
+            setTotalRefunds(0);
+            setTotalIncome(0);
           } else {
             setError('Failed to fetch expenses data');
           }
@@ -519,11 +483,11 @@ export default function AdminReportAnalytics() {
     console.log('Bar chart data:', { labels, data, topCategory, hasApiData });
 
     return {
-      labels: hasApiData ? labels : (isCars ? staticTopCarLabels : staticTopCustomerLabels),
+      labels: labels,
       datasets: [
         {
           label: isCars ? 'CARS' : 'CUSTOMERS',
-          data: hasApiData ? data : (isCars ? staticTopCars : staticTopCustomers),
+          data: data,
           backgroundColor: '#1976d2',
           borderRadius: 6,
         },

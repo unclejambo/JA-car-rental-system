@@ -10,55 +10,95 @@ import {
   Stack,
 } from '@mui/material';
 
-export default function ExtendMaintenanceModal({
+export default function EditMaintenanceModal({
   show,
   onClose,
   maintenance,
   onSave,
 }) {
-  const [endDate, setEndDate] = useState('');
+  const [formData, setFormData] = useState({
+    end_date: '',
+    description: '',
+    maintenance_cost: '',
+    maintenance_shop_name: '',
+  });
 
   useEffect(() => {
     if (maintenance) {
       const originalDate = new Date(maintenance.maintenance_end_date);
       const formattedDate = originalDate.toISOString().split('T')[0];
-      setEndDate(formattedDate);
+      setFormData({
+        end_date: formattedDate,
+        description: maintenance.description || '',
+        maintenance_cost: maintenance.maintenance_cost || '',
+        maintenance_shop_name: maintenance.maintenance_shop_name || '',
+      });
     }
   }, [maintenance]);
+
+  const handleChange = (field) => (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: e.target.value,
+    }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!maintenance) return;
-    onSave(maintenance.maintenance_id, { end_date: endDate });
+    onSave(maintenance.maintenance_id, formData);
   };
 
   return (
     <Dialog
       open={!!show}
       onClose={onClose}
-      maxWidth="xs"
+      maxWidth="sm"
       fullWidth
       disableAutoFocus
       disableEnforceFocus
       disableScrollLock
     >
-      <DialogTitle>Extend Maintenance</DialogTitle>
+      <DialogTitle>Edit Maintenance</DialogTitle>
       <DialogContent dividers>
         <Stack
           spacing={2}
           component="form"
-          id="extendMaintenanceForm"
+          id="editMaintenanceForm"
           onSubmit={handleSubmit}
         >
           <TextField
             label="End Date"
             type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            value={formData.end_date}
+            onChange={handleChange('end_date')}
             size="small"
             inputProps={{
               min: maintenance?.maintenance_start_date?.slice(0, 10),
             }}
+            required
+          />
+          <TextField
+            label="Description"
+            value={formData.description}
+            onChange={handleChange('description')}
+            size="small"
+            multiline
+            rows={3}
+          />
+          <TextField
+            label="Maintenance Cost"
+            type="number"
+            value={formData.maintenance_cost}
+            onChange={handleChange('maintenance_cost')}
+            size="small"
+            inputProps={{ min: 0 }}
+          />
+          <TextField
+            label="Maintenance Shop Name"
+            value={formData.maintenance_shop_name}
+            onChange={handleChange('maintenance_shop_name')}
+            size="small"
           />
         </Stack>
       </DialogContent>
@@ -73,7 +113,7 @@ export default function ExtendMaintenanceModal({
         >
           <Button
             type="submit"
-            form="extendMaintenanceForm"
+            form="editMaintenanceForm"
             variant="contained"
             color="success"
           >

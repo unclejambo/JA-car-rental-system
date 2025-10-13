@@ -1,5 +1,6 @@
 import prisma from "../config/prisma.js";
 import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -107,6 +108,9 @@ export const createCustomer = async (req, res) => {
       });
     }
 
+    // Hash the password before storing
+    const hashedPassword = await bcrypt.hash(password, 12);
+
     const newCustomer = await prisma.customer.create({
       data: {
         first_name,
@@ -115,7 +119,7 @@ export const createCustomer = async (req, res) => {
         contact_no,
         email,
         username,
-        password,
+        password: hashedPassword,
         fb_link,
         date_created,
         status,
@@ -168,15 +172,42 @@ export const updateCustomer = async (req, res) => {
       "email",
       "username",
       "password",
+      "currentPassword",
       "fb_link",
       "date_created",
       "status",
       "driver_license_no",
+      "profile_img_url",
     ];
     const data = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) data[key] = req.body[key];
     }
+
+    // Handle password change with proper hashing
+    if (data.password && data.password.trim() !== '') {
+      // If currentPassword is provided, verify it first
+      if (data.currentPassword) {
+        const isCurrentPasswordValid = await bcrypt.compare(
+          data.currentPassword,
+          existing.password
+        );
+        if (!isCurrentPasswordValid) {
+          return res.status(400).json({ 
+            error: "Current password is incorrect" 
+          });
+        }
+      }
+      
+      // Hash the new password
+      data.password = await bcrypt.hash(data.password, 12);
+    } else {
+      // If no password provided or empty string, don't update it
+      delete data.password;
+    }
+    
+    // Remove currentPassword from data (it's not a database field)
+    delete data.currentPassword;
 
     const updatedCustomer = await prisma.customer.update({
       where: { customer_id: customerId },
@@ -191,5 +222,92 @@ export const updateCustomer = async (req, res) => {
   } catch (error) {
     console.error("Error updating customer:", error);
     res.status(500).json({ error: "Failed to update customer" });
+  }
+};
+
+// @desc    Get current logged-in customer's profile
+// @route   GET /api/customers/me
+// @access  Private (Customer only)
+export const getCurrentCustomer = async (req, res) => {
+  try {
+    // req.user is set by authMiddleware
+    const customerId = req.user?.customer_id || req.user?.id;
+    
+    if (!customerId) {
+      return res.status(401).json({ error: "Unauthorized - No customer ID found" });
+    }
+
+    const customer = await prisma.customer.findUnique({
+      where: { customer_id: parseInt(customerId) },
+      select: {
+        customer_id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        username: true,
+        contact_no: true,
+        address: true,
+        fb_link: true,
+        status: true,
+        isRecUpdate: true,
+        profile_img_url: true,
+        driver_license_no: true,
+        date_created: true
+        // Exclude password for security
+      }
+    });
+
+    if (!customer) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+
+    res.json(customer);
+  } catch (error) {
+    console.error("Error fetching current customer:", error);
+    res.status(500).json({ error: "Failed to fetch customer profile" });
+  }
+};
+
+// @desc    Update current customer's notification settings
+// @route   PUT /api/customers/me/notification-settings
+// @access  Private (Customer only)
+export const updateNotificationSettings = async (req, res) => {
+  try {
+    const customerId = req.user?.customer_id || req.user?.id;
+    
+    if (!customerId) {
+      return res.status(401).json({ error: "Unauthorized - No customer ID found" });
+    }
+
+    const { isRecUpdate } = req.body;
+
+    // Validate isRecUpdate value (should be 0, 1, 2, or 3)
+    const validValues = [0, 1, 2, 3];
+    const parsedValue = parseInt(isRecUpdate);
+    
+    if (!validValues.includes(parsedValue)) {
+      return res.status(400).json({ 
+        error: "Invalid notification setting. Must be 0 (none), 1 (SMS), 2 (Email), or 3 (Both)" 
+      });
+    }
+
+    const updatedCustomer = await prisma.customer.update({
+      where: { customer_id: parseInt(customerId) },
+      data: { isRecUpdate: parsedValue },
+      select: {
+        customer_id: true,
+        first_name: true,
+        last_name: true,
+        isRecUpdate: true
+      }
+    });
+
+    res.json({
+      message: "Notification settings updated successfully",
+      customer: updatedCustomer
+    });
+  } catch (error) {
+    console.error("Error updating notification settings:", error);
+    res.status(500).json({ error: "Failed to update notification settings" });
   }
 };

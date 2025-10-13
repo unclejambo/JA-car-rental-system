@@ -358,6 +358,19 @@ export const createBooking = async (req, res) => {
       },
     });
 
+    // Update car status to 'Rented' immediately to prevent double booking
+    // This happens regardless of payment status
+    try {
+      await prisma.car.update({
+        where: { car_id: parseInt(car_id) },
+        data: { car_status: 'Rented' }
+      });
+      console.log(`Car ${car_id} status updated to 'Rented'`);
+    } catch (carUpdateError) {
+      console.error("Error updating car status:", carUpdateError);
+      // Don't fail the booking creation if car status update fails
+    }
+
     // Create an initial payment record for the booking
     // This represents the amount due that customer needs to pay
     try {
@@ -492,7 +505,29 @@ export const updateBooking = async (req, res) => {
 export const deleteBooking = async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
+    
+    // Get the booking to find the car_id before deleting
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+      select: { car_id: true }
+    });
+    
+    // Delete the booking
     await prisma.booking.delete({ where: { booking_id: bookingId } });
+    
+    // Update car status back to 'Available' after booking is deleted
+    if (booking?.car_id) {
+      try {
+        await prisma.car.update({
+          where: { car_id: booking.car_id },
+          data: { car_status: 'Available' }
+        });
+        console.log(`Car ${booking.car_id} status updated to 'Available' after booking deletion`);
+      } catch (carUpdateError) {
+        console.error("Error updating car status after deletion:", carUpdateError);
+      }
+    }
+    
     res.status(204).send();
   } catch (error) {
     console.error("Error deleting booking:", error);
@@ -631,7 +666,11 @@ export const cancelMyBooking = async (req, res) => {
       return res.status(400).json({ error: "Booking is already cancelled" });
     }
 
-    if (booking.booking_status === "ongoing") {
+    if (booking.isCancel) {
+      return res.status(400).json({ error: "Cancellation request already pending admin approval" });
+    }
+
+    if (booking.booking_status === "ongoing" || booking.booking_status === "in progress") {
       return res
         .status(400)
         .json({ error: "Cannot cancel an ongoing booking" });
@@ -643,17 +682,114 @@ export const cancelMyBooking = async (req, res) => {
         .json({ error: "Cannot cancel a completed booking" });
     }
 
-    // Update booking status to cancelled
+    // Set isCancel flag to true - waiting for admin confirmation
+    // Do NOT change booking_status to cancelled yet
     const updatedBooking = await prisma.booking.update({
       where: { booking_id: bookingId },
       data: {
-        booking_status: "cancelled",
+        isCancel: true,
+        // booking_status remains unchanged until admin confirms
+      },
+      include: {
+        car: { select: { make: true, model: true, year: true } },
+        customer: { select: { first_name: true, last_name: true } },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Cancellation request for ${updatedBooking.car.make} ${updatedBooking.car.model} has been submitted. Waiting for admin confirmation.`,
+      booking: updatedBooking,
+      pending_approval: true,
+    });
+  } catch (error) {
+    console.error("Error cancelling booking:", error);
+    res.status(500).json({ error: "Failed to cancel booking" });
+  }
+};
+
+// @desc    Cancel booking by Admin/Staff
+// @route   PUT /bookings/:id/admin-cancel
+// @access  Private (Admin/Staff only)
+export const adminCancelBooking = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const adminId = req.user?.sub || req.user?.admin_id || req.user?.id;
+
+    console.log('Admin cancelling booking:', {
+      bookingId,
+      adminId,
+      userRole: req.user?.role
+    });
+
+    // Find the booking with all necessary details
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+      include: {
+        car: { select: { car_id: true, make: true, model: true, year: true } },
+        customer: { select: { customer_id: true, first_name: true, last_name: true } }
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    // Check if booking can be cancelled
+    if (booking.booking_status === "Cancelled") {
+      return res.status(400).json({ error: "Booking is already cancelled" });
+    }
+
+    if (booking.booking_status === "In Progress") {
+      return res.status(400).json({ 
+        error: "Cannot cancel an in-progress booking. Please return the vehicle first." 
+      });
+    }
+
+    if (booking.booking_status === "Completed") {
+      return res.status(400).json({ error: "Cannot cancel a completed booking" });
+    }
+
+    // Update booking status to Cancelled
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: {
+        booking_status: "Cancelled",
         isCancel: true,
       },
       include: {
         car: { select: { make: true, model: true, year: true } },
+        customer: { select: { first_name: true, last_name: true } }
       },
     });
+
+    // Update car status back to 'Available' when booking is cancelled
+    try {
+      await prisma.car.update({
+        where: { car_id: booking.car.car_id },
+        data: { car_status: 'Available' }
+      });
+      console.log(`Car ${booking.car.car_id} status updated to 'Available' after cancellation`);
+    } catch (carUpdateError) {
+      console.error("Error updating car status after cancellation:", carUpdateError);
+    }
+
+    // Create a transaction record for the cancellation
+    try {
+      await prisma.transaction.create({
+        data: {
+          booking_id: bookingId,
+          customer_id: booking.customer.customer_id,
+          car_id: booking.car.car_id,
+          completion_date: null,
+          cancellation_date: new Date(),
+        },
+      });
+      console.log(`Transaction record created for cancelled booking ${bookingId}`);
+    } catch (transactionError) {
+      console.error('Error creating transaction record:', transactionError);
+      // Don't fail the cancellation if transaction record creation fails
+    }
 
     res.json({
       success: true,
@@ -662,7 +798,153 @@ export const cancelMyBooking = async (req, res) => {
     });
   } catch (error) {
     console.error("Error cancelling booking:", error);
-    res.status(500).json({ error: "Failed to cancel booking" });
+    res.status(500).json({ 
+      error: "Failed to cancel booking",
+      details: error.message 
+    });
+  }
+};
+
+// @desc    Confirm cancellation request (from CANCELLATION tab)
+// @route   PUT /bookings/:id/confirm-cancellation
+// @access  Private (Admin/Staff only)
+export const confirmCancellationRequest = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const adminId = req.user?.sub || req.user?.admin_id || req.user?.id;
+
+    console.log('Confirming cancellation request:', {
+      bookingId,
+      adminId,
+      userRole: req.user?.role
+    });
+
+    // Find the booking with all necessary details
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+      include: {
+        car: { select: { car_id: true, make: true, model: true, year: true } },
+        customer: { select: { customer_id: true, first_name: true, last_name: true } }
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    // Check if booking has cancellation request
+    if (!booking.isCancel) {
+      return res.status(400).json({ error: "No cancellation request found for this booking" });
+    }
+
+    // Check if booking is already cancelled
+    if (booking.booking_status === "Cancelled") {
+      return res.status(400).json({ error: "Booking is already cancelled" });
+    }
+
+    // Update booking status to Cancelled
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: {
+        booking_status: "Cancelled",
+        isCancel: true,
+      },
+      include: {
+        car: { select: { make: true, model: true, year: true } },
+        customer: { select: { first_name: true, last_name: true } }
+      },
+    });
+
+    // Create a transaction record for the cancellation with PH timezone
+    try {
+      // Get current time in PH timezone (UTC+8)
+      const now = new Date();
+      const phDate = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+      
+      await prisma.transaction.create({
+        data: {
+          booking_id: bookingId,
+          customer_id: booking.customer.customer_id,
+          car_id: booking.car.car_id,
+          completion_date: null,
+          cancellation_date: phDate,
+        },
+      });
+      console.log(`Transaction record created for cancelled booking ${bookingId} with PH timezone`);
+    } catch (transactionError) {
+      console.error('Error creating transaction record:', transactionError);
+      // Don't fail the cancellation if transaction record creation fails
+    }
+
+    res.json({
+      success: true,
+      message: `Cancellation confirmed for ${updatedBooking.car.make} ${updatedBooking.car.model}`,
+      booking: updatedBooking,
+    });
+  } catch (error) {
+    console.error("Error confirming cancellation:", error);
+    res.status(500).json({ 
+      error: "Failed to confirm cancellation",
+      details: error.message 
+    });
+  }
+};
+
+// @desc    Reject cancellation request (set isCancel to false)
+// @route   PUT /bookings/:id/reject-cancellation
+// @access  Private (Admin/Staff only)
+export const rejectCancellationRequest = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const adminId = req.user?.sub || req.user?.admin_id || req.user?.id;
+
+    console.log('Rejecting cancellation request:', {
+      bookingId,
+      adminId,
+      userRole: req.user?.role
+    });
+
+    // Find the booking
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+      include: {
+        car: { select: { make: true, model: true, year: true } },
+        customer: { select: { first_name: true, last_name: true } }
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    // Check if booking has cancellation request
+    if (!booking.isCancel) {
+      return res.status(400).json({ error: "No cancellation request found for this booking" });
+    }
+
+    // Set isCancel to false to reject the request
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: {
+        isCancel: false,
+      },
+      include: {
+        car: { select: { make: true, model: true, year: true } },
+        customer: { select: { first_name: true, last_name: true } }
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Cancellation request rejected for ${updatedBooking.car.make} ${updatedBooking.car.model}`,
+      booking: updatedBooking,
+    });
+  } catch (error) {
+    console.error("Error rejecting cancellation:", error);
+    res.status(500).json({ 
+      error: "Failed to reject cancellation",
+      details: error.message 
+    });
   }
 };
 
@@ -710,12 +992,16 @@ export const extendMyBooking = async (req, res) => {
         .json({ error: "You can only extend your own bookings" });
     }
 
-    // Check if booking can be extended (must be ongoing)
-    if (booking.booking_status !== "ongoing") {
+    // Check if booking can be extended (must be ongoing or in progress)
+    if (booking.booking_status !== "ongoing" && booking.booking_status?.toLowerCase() !== "in progress") {
       return res.status(400).json({
-        error: "Only ongoing bookings can be extended",
+        error: "Only ongoing/in progress bookings can be extended",
         current_status: booking.booking_status,
       });
+    }
+
+    if (booking.isExtend) {
+      return res.status(400).json({ error: "Extension request already pending admin approval" });
     }
 
     // Calculate additional cost
@@ -733,31 +1019,164 @@ export const extendMyBooking = async (req, res) => {
 
     const additionalCost = additionalDays * (booking.car.rent_price || 0);
     const newTotalAmount = (booking.total_amount || 0) + additionalCost;
+    const newBalance = (booking.balance || 0) + additionalCost;
 
-    // Update booking with extension
+    // Update booking: set isExtend flag, add additional cost to total_amount and balance
     const updatedBooking = await prisma.booking.update({
       where: { booking_id: bookingId },
       data: {
-        new_end_date: new Date(new_end_date),
-        total_amount: newTotalAmount,
-        // Create extension record instead of string field
-        // extensions field is handled through Extension model relation
+        isExtend: true,
+        new_end_date: newEndDate, // Store requested new end date
+        total_amount: newTotalAmount, // Add additional cost to total amount
+        balance: newBalance, // Add additional cost to balance
+        payment_status: 'Unpaid', // Set to Unpaid since there's new balance
       },
       include: {
         car: { select: { make: true, model: true, year: true } },
+        customer: { select: { first_name: true, last_name: true } },
       },
     });
 
     res.json({
       success: true,
-      message: `Booking extended by ${additionalDays} days`,
+      message: `Extension request for ${additionalDays} days has been submitted. Waiting for admin confirmation.`,
       booking: updatedBooking,
       additional_cost: additionalCost,
       new_total: newTotalAmount,
+      pending_approval: true,
     });
   } catch (error) {
     console.error("Error extending booking:", error);
     res.status(500).json({ error: "Failed to extend booking" });
+  }
+};
+
+// @desc    Confirm extension request (Admin/Staff)
+// @route   PUT /bookings/:id/confirm-extension
+// @access  Private (Admin/Staff)
+export const confirmExtensionRequest = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+
+    // Find the booking
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    if (!booking.isExtend) {
+      return res.status(400).json({ error: "No pending extension request for this booking" });
+    }
+
+    if (!booking.new_end_date) {
+      return res.status(400).json({ error: "No new end date found for extension" });
+    }
+
+    // Get Philippine timezone date
+    const now = new Date();
+    const phTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+
+    // Create extension record with old and new end dates
+    await prisma.extension.create({
+      data: {
+        booking_id: bookingId,
+        old_end_date: booking.end_date,
+        new_end_date: booking.new_end_date,
+      },
+    });
+
+    // Update booking: replace end_date with new_end_date, clear new_end_date, set isExtend to false
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: {
+        end_date: booking.new_end_date, // Replace end_date with new_end_date
+        new_end_date: null, // Clear new_end_date
+        isExtend: false, // Clear extension flag
+        payment_status: 'Unpaid', // Ensure payment status is Unpaid due to new balance
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Extension request confirmed successfully",
+      booking: updatedBooking,
+    });
+  } catch (error) {
+    console.error("Error confirming extension:", error);
+    res.status(500).json({ error: "Failed to confirm extension request" });
+  }
+};
+
+// @desc    Reject extension request (Admin/Staff)
+// @route   PUT /bookings/:id/reject-extension
+// @access  Private (Admin/Staff)
+export const rejectExtensionRequest = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+
+    // Find the booking
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+      include: {
+        car: {
+          select: {
+            rent_price: true,
+          },
+        },
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
+
+    if (!booking.isExtend) {
+      return res.status(400).json({ error: "No pending extension request for this booking" });
+    }
+
+    if (!booking.new_end_date) {
+      return res.status(400).json({ error: "No new end date found for extension" });
+    }
+
+    // Calculate the additional cost that was added
+    const originalEndDate = new Date(booking.end_date);
+    const newEndDate = new Date(booking.new_end_date);
+    const additionalDays = Math.ceil(
+      (newEndDate - originalEndDate) / (1000 * 60 * 60 * 24)
+    );
+    const additionalCost = additionalDays * (booking.car.rent_price || 0);
+
+    // Deduct the additional cost from total_amount and balance
+    const restoredTotalAmount = (booking.total_amount || 0) - additionalCost;
+    const restoredBalance = (booking.balance || 0) - additionalCost;
+
+    // Determine payment status based on restored balance
+    const paymentStatus = restoredBalance <= 0 ? 'Paid' : 'Unpaid';
+
+    // Update booking: clear new_end_date, set isExtend to false, restore total_amount and balance
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: {
+        new_end_date: null, // Clear new_end_date
+        isExtend: false, // Clear extension flag
+        total_amount: restoredTotalAmount, // Deduct additional cost
+        balance: restoredBalance, // Deduct additional cost
+        payment_status: paymentStatus, // Update payment status
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Extension request rejected successfully",
+      booking: updatedBooking,
+      deducted_amount: additionalCost,
+    });
+  } catch (error) {
+    console.error("Error rejecting extension:", error);
+    res.status(500).json({ error: "Failed to reject extension request" });
   }
 };
 
@@ -914,21 +1333,31 @@ export const confirmBooking = async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
 
-    // Get current booking
+    // Get current booking with payments to calculate total paid
     const booking = await prisma.booking.findUnique({
-      where: { booking_id: bookingId }
+      where: { booking_id: bookingId },
+      include: {
+        payments: {
+          select: { amount: true }
+        }
+      }
     });
 
     if (!booking) {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
+    // Calculate total amount paid
+    const totalPaid = booking.payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+
     // Log current booking state for debugging
     console.log('Confirming booking:', {
       bookingId,
       currentStatus: booking.booking_status,
       currentIsPay: booking.isPay,
-      isPay_type: typeof booking.isPay
+      isPay_type: typeof booking.isPay,
+      totalPaid,
+      totalAmount: booking.total_amount
     });
 
     // Normalize booking status comparison (case-insensitive)
@@ -943,37 +1372,50 @@ export const confirmBooking = async (req, res) => {
       });
     }
 
-    let updateData = {
-      isPay: false  // Always set isPay to false
-    };
-    
-    // Case 1: isPay is TRUE and status is Pending -> Change to Confirmed and isPay to FALSE
-    if (normalizedStatus === 'pending') {
-      updateData.booking_status = 'Confirmed';
-      console.log('Action: Pending -> Confirmed, isPay -> false');
-    } 
-    // Case 2: isPay is TRUE and status is Confirmed -> Just set isPay to FALSE
-    else if (normalizedStatus === 'confirmed') {
-      console.log('Action: isPay -> false (status remains Confirmed)');
-    }
-    
-    // Check if balance is 0 or less and update payment_status to Paid
-    if (booking.balance <= 0) {
-      updateData.payment_status = 'Paid';
-      console.log('Balance is 0 or less - Setting payment_status to Paid');
-    } 
-    // Invalid state
-    else {
-      console.log('Invalid state for confirmation:', {
+    // Validate booking status first
+    if (normalizedStatus !== 'pending' && normalizedStatus !== 'confirmed' && normalizedStatus !== 'in progress') {
+      console.log('Invalid status for confirmation:', {
         normalizedStatus,
         isPay: booking.isPay
       });
       return res.status(400).json({ 
         error: 'Invalid booking state for confirmation',
-        message: `Cannot confirm booking with status "${booking.booking_status}". Expected status "Pending" or "Confirmed" with isPay TRUE.`,
+        message: `Cannot confirm booking with status "${booking.booking_status}". Expected status "Pending", "Confirmed", or "In Progress" with isPay TRUE.`,
         currentStatus: booking.booking_status,
         currentIsPay: booking.isPay
       });
+    }
+
+    let updateData = {
+      isPay: false  // Always set isPay to false
+    };
+    
+    // Determine booking status based on total paid amount
+    // Case 1: isPay is TRUE and status is Pending
+    if (normalizedStatus === 'pending') {
+      // If totalPaid >= 1000, confirm the booking
+      // If totalPaid < 1000, keep it Pending
+      if (totalPaid >= 1000) {
+        updateData.booking_status = 'Confirmed';
+        console.log('Action: Pending -> Confirmed (totalPaid >= 1000), isPay -> false');
+      } else {
+        updateData.booking_status = 'Pending';
+        console.log('Action: Status remains Pending (totalPaid < 1000), isPay -> false');
+      }
+    } 
+    // Case 2: isPay is TRUE and status is Confirmed -> Just set isPay to FALSE
+    else if (normalizedStatus === 'confirmed') {
+      console.log('Action: isPay -> false (status remains Confirmed)');
+    }
+    // Case 3: isPay is TRUE and status is In Progress -> Just set isPay to FALSE
+    else if (normalizedStatus === 'in progress') {
+      console.log('Action: isPay -> false (status remains In Progress)');
+    }
+
+    // Check if balance is 0 or less and update payment_status to Paid
+    if (booking.balance <= 0) {
+      updateData.payment_status = 'Paid';
+      console.log('Balance is 0 or less - Setting payment_status to Paid');
     }
 
     const updatedBooking = await prisma.booking.update({

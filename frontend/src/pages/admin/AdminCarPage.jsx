@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import AddCarModal from '../../ui/components/modal/AddCarModal.jsx';
 import EditCarModal from '../../ui/components/modal/EditCarModal.jsx';
 import MaintenanceModal from '../../ui/components/modal/MaintenanceModal.jsx';
-import ExtendMaintenanceModal from '../../ui/components/modal/ExtendMaintenanceModal.jsx';
+import ExtendMaintenanceModal from '../../ui/components/modal/EditMaintenanceModal.jsx';
 import { HiTruck, HiWrenchScrewdriver } from 'react-icons/hi2';
 import { Box, Typography, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -279,13 +279,18 @@ export default function AdminCarPage() {
       if (response.ok) {
         setShowExtendMaintenanceModal(false);
         setSelectedMaintenance(null);
-        // Update list locally (only end date changed)
-        const newEnd = data.end_date;
+        // Update list with all edited fields
         setMaintenanceData((prev) =>
           prev.map((m) =>
             m.maintenance_id === maintenanceId
               ? normalizeMaintenanceRecord(
-                  { ...m, maintenance_end_date: newEnd },
+                  {
+                    ...m,
+                    maintenance_end_date: data.end_date,
+                    description: data.description,
+                    maintenance_cost: data.maintenance_cost,
+                    maintenance_shop_name: data.maintenance_shop_name,
+                  },
                   m.model
                 )
               : m

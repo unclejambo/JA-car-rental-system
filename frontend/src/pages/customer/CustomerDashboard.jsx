@@ -116,11 +116,13 @@ function CustomerDashboard() {
       });
 
       // Get unpaid settlements (bookings with unpaid or pending payment status)
+      // Exclude cancelled bookings
       const unpaidSettlements = bookings.filter(booking =>
-        booking.payment_status?.toLowerCase() === 'unpaid' ||
+        (booking.payment_status?.toLowerCase() === 'unpaid' ||
         booking.payment_status?.toLowerCase() === 'pending' ||
         !booking.payment_status || 
-        booking.payment_status?.toLowerCase() === 'not_paid'
+        booking.payment_status?.toLowerCase() === 'not_paid') &&
+        booking.booking_status?.toLowerCase() !== 'cancelled' // Exclude cancelled bookings
       );
 
       // Get favorite car (most booked car) with enhanced car details

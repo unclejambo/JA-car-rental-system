@@ -64,18 +64,34 @@ export const createMaintenanceRecord = async (req, res) => {
 export const updateMaintenanceRecord = async (req, res) => {
   try {
     const maintenanceId = parseInt(req.params.id);
-    const { end_date } = req.body;
+    const { end_date, description, maintenance_cost, maintenance_shop_name } = req.body;
 
-    const end = end_date ? new Date(end_date) : null;
-    if (!end || isNaN(end.getTime())) {
-      return res.status(400).json({ error: 'Invalid end date' });
+    // Build update data object with only provided fields
+    const updateData = {};
+
+    if (end_date) {
+      const end = new Date(end_date);
+      if (isNaN(end.getTime())) {
+        return res.status(400).json({ error: 'Invalid end date' });
+      }
+      updateData.maintenance_end_date = end;
+    }
+
+    if (description !== undefined) {
+      updateData.description = description;
+    }
+
+    if (maintenance_cost !== undefined && maintenance_cost !== '') {
+      updateData.maintenance_cost = parseInt(maintenance_cost);
+    }
+
+    if (maintenance_shop_name !== undefined) {
+      updateData.maintenance_shop_name = maintenance_shop_name;
     }
 
     const updatedMaintenanceRecord = await prisma.maintenance.update({
       where: { maintenance_id: maintenanceId },
-      data: {
-        maintenance_end_date: end,
-      },
+      data: updateData,
     });
 
     res.json(updatedMaintenanceRecord);

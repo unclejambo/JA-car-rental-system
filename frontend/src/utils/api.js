@@ -133,15 +133,86 @@ export const bookingAPI = {
       throw new Error(error.message || error.error || 'Failed to update isPay status');
     }
     return await response.json();
+  },
+
+  // Admin cancel booking
+  adminCancelBooking: async (bookingId, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/bookings/${bookingId}/admin-cancel`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to cancel booking' }));
+      throw new Error(error.message || error.error || 'Failed to cancel booking');
+    }
+    return await response.json();
+  },
+
+  // Confirm cancellation request
+  confirmCancellationRequest: async (bookingId, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/bookings/${bookingId}/confirm-cancellation`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to confirm cancellation' }));
+      throw new Error(error.message || error.error || 'Failed to confirm cancellation');
+    }
+    return await response.json();
+  },
+
+  // Reject cancellation request
+  rejectCancellationRequest: async (bookingId, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/bookings/${bookingId}/reject-cancellation`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to reject cancellation' }));
+      throw new Error(error.message || error.error || 'Failed to reject cancellation');
+    }
+    return await response.json();
+  },
+
+  // Confirm extension request
+  confirmExtensionRequest: async (bookingId, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/bookings/${bookingId}/confirm-extension`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to confirm extension' }));
+      throw new Error(error.message || error.error || 'Failed to confirm extension');
+    }
+    return await response.json();
+  },
+
+  // Reject extension request
+  rejectExtensionRequest: async (bookingId, logout) => {
+    const fetch = createAuthenticatedFetch(logout);
+    const response = await fetch(`${getApiBase()}/bookings/${bookingId}/reject-extension`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to reject extension' }));
+      throw new Error(error.message || error.error || 'Failed to reject extension');
+    }
+    return await response.json();
   }
 };
 
 // Payment API functions
 export const paymentAPI = {
   // Delete payment by booking ID
-  deletePaymentByBookingId: async (bookingId, logout) => {
+  deletePaymentByBookingId: async (bookingId, logout, keepStatus = false) => {
     const fetch = createAuthenticatedFetch(logout);
-    const response = await fetch(`${getApiBase()}/payments/booking/${bookingId}`, {
+    const queryParam = keepStatus ? '?keepStatus=true' : '';
+    const response = await fetch(`${getApiBase()}/payments/booking/${bookingId}${queryParam}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     });

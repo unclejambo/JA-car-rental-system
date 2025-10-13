@@ -3,8 +3,7 @@ import { Box, Select, MenuItem, useMediaQuery, Skeleton } from '@mui/material';
 
 // use Vite env var, fallback to localhost; remove trailing slash if present
 const API_BASE = (
-  import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL
-).replace(/\/$/, '');
+  import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL )
 
 const ManageUserTable = ({ activeTab, rows, loading }) => {
   const isSmallScreen = useMediaQuery('(max-width:600px)');

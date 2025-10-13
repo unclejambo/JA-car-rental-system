@@ -122,21 +122,29 @@ function CustomerBookingHistory() {
           }))
         : [];
       setBookings(mappedBookings);
+
       // Map backend payment data to table row shape
+      // Filter out descriptions containing 'User Booked the Car'
       const mappedPayments = Array.isArray(dataPayments)
-        ? dataPayments.map((p) => ({
-            transactionId: p.payment_id,
-            paidDate: p.paid_date
-              ? typeof p.paid_date === 'string'
-                ? p.paid_date.split('T')[0]
-                : new Date(p.paid_date).toISOString().split('T')[0]
-              : '',
-            description: p.description || '',
-            totalAmount: p.amount ?? '',
-            paymentMethod: p.payment_method || '',
-            referenceNo: p.reference_no || '',
-            status: p.balance === 0 ? 'Paid' : 'Unpaid',
-          }))
+        ? dataPayments
+            .filter((p) => {
+              const description = p.description || '';
+              return !description.toLowerCase().includes('user booked the car');
+            })
+            .map((p) => {
+              const rawDate =
+                p.paid_date || p.payment_date || p.created_at || '';
+              const dateOnly = rawDate ? rawDate.split('T')[0] : '';
+              return {
+                transactionId: p.payment_id,
+                paidDate: dateOnly,
+                description: p.description || '',
+                totalAmount: p.amount ?? '',
+                paymentMethod: p.payment_method || '',
+                referenceNo: p.reference_no || '',
+                status: p.balance === 0 ? 'Paid' : 'Unpaid',
+              };
+            })
         : [];
       setPayments(mappedPayments);
     } catch (err) {

@@ -1,5 +1,5 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box } from '@mui/material';
+import { Box, Chip } from '@mui/material';
 
 const ScheduleTable = ({ rows, loading }) => {
   const formatDate = (iso) => {
@@ -47,6 +47,7 @@ const ScheduleTable = ({ rows, loading }) => {
             r.car_model ??
             r.car?.model ??
             `${r.car?.make ?? ''} ${r.car?.model ?? ''}`.trim(),
+          booking_status: r.booking_status ?? 'N/A',
         };
       })
     : [];
@@ -105,6 +106,33 @@ const ScheduleTable = ({ rows, loading }) => {
       headerName: 'Car Model',
       flex: 1,
       minWidth: 100,
+    },
+    {
+      field: 'booking_status',
+      headerName: 'Status',
+      flex: 0.75,
+      minWidth: 120,
+      renderCell: (params) => {
+        const status = params?.row?.booking_status || 'N/A';
+        const getStatusColor = () => {
+          const lowerStatus = status.toLowerCase();
+          if (lowerStatus === 'cancelled') return 'error';
+          if (lowerStatus === 'confirmed') return 'success';
+          if (lowerStatus === 'pending') return 'warning';
+          if (lowerStatus === 'in progress' || lowerStatus === 'ongoing') return 'info';
+          if (lowerStatus === 'completed') return 'default';
+          return 'default';
+        };
+        
+        return (
+          <Chip 
+            label={status} 
+            color={getStatusColor()} 
+            size="small" 
+            sx={{ fontWeight: 500 }}
+          />
+        );
+      },
     },
   ];
 

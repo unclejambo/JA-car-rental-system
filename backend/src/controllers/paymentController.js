@@ -290,26 +290,19 @@ export const deletePaymentByBookingId = async (req, res) => {
     // Calculate new balance
     const newBalance = (booking.total_amount || 0) - totalPaidAfterDeletion;
     
-    // Determine new booking status based on remaining payments
-    const newBookingStatus = determineBookingStatus(
-      totalPaidAfterDeletion, 
-      booking.total_amount, 
-      booking.booking_status
-    );
-    
     // Delete the payment
     await prisma.payment.delete({
       where: { payment_id: latestPayment.payment_id },
     });
 
-    // Update booking with new balance and payment status
+    // When canceling/rejecting payment, booking should remain in Pending status with Unpaid payment_status
     // Note: isPay is already set to false by the updateIsPayStatus call from frontend
     await prisma.booking.update({
       where: { booking_id: bookingId },
       data: {
         balance: newBalance,
-        payment_status: newBalance <= 0 ? 'Paid' : 'Unpaid',
-        booking_status: newBookingStatus,
+        payment_status: 'Unpaid', // Always set to Unpaid when payment is cancelled/rejected
+        booking_status: 'Pending', // Keep booking in Pending status when payment is rejected
       },
     });
 
@@ -320,8 +313,8 @@ export const deletePaymentByBookingId = async (req, res) => {
       bookingId,
       deletedPaymentId: latestPayment.payment_id,
       newBalance,
-      newPaymentStatus: newBalance <= 0 ? 'Paid' : 'Unpaid',
-      newBookingStatus
+      newPaymentStatus: 'Unpaid',
+      newBookingStatus: 'Pending'
     });
 
     res.status(200).json({
@@ -330,8 +323,8 @@ export const deletePaymentByBookingId = async (req, res) => {
       booking_update: {
         booking_id: bookingId,
         new_balance: newBalance,
-        new_payment_status: newBalance <= 0 ? 'Paid' : 'Unpaid',
-        new_booking_status: newBookingStatus,
+        new_payment_status: 'Unpaid',
+        new_booking_status: 'Pending',
         total_paid: totalPaidAfterDeletion,
       },
     });
@@ -464,7 +457,7 @@ export const processBookingPayment = async (req, res) => {
         gcash_no,
         reference_no,
         amount: parseInt(amount),
-        paid_date: new Date(),
+        paid_date: new Date(), // Set today's date as paid date
         balance: Math.max(0, (booking.total_amount || 0) - parseInt(amount)),
       },
       include: {
@@ -478,34 +471,37 @@ export const processBookingPayment = async (req, res) => {
       },
     });
 
-    // Update booking payment status and isPay flag
-    // isPay should be true whenever customer makes any payment
-    if (payment.balance === 0) {
-      await prisma.booking.update({
-        where: { booking_id: parseInt(booking_id) },
-        data: {
-          payment_status: "Paid",
-          isPay: true,
-        },
-      });
-    } else {
-      await prisma.booking.update({
-        where: { booking_id: parseInt(booking_id) },
-        data: { 
-          payment_status: "Unpaid",
-          isPay: true, // Set to true whenever customer makes payment
-        },
-      });
+    // Calculate total amount paid so far (including this payment)
+    const totalPaid = parseInt(amount);
+    
+    // Determine if booking should be auto-confirmed
+    // If payment is >= 1000, automatically confirm the booking
+    // Otherwise, booking stays in Pending status and requires admin confirmation
+    let bookingStatus = booking.booking_status;
+    if (totalPaid >= 1000) {
+      bookingStatus = 'Confirmed';
     }
+    else if (totalPaid < 1000) {
+      bookingStatus = 'Pending';
+    }
+
+    // Update booking isPay flag and booking status
+    await prisma.booking.update({
+      where: { booking_id: parseInt(booking_id) },
+      data: { 
+        isPay: true, // Set to true whenever customer makes payment
+        booking_status: bookingStatus, // Auto-confirm if payment >= 1000
+      },
+    });
 
     res.status(201).json({
       success: true,
-      message:
-        payment.balance === 0
-          ? "Payment completed successfully!"
-          : `Partial payment received. Remaining balance: ₱${payment.balance.toLocaleString()}`,
+      message: totalPaid >= 1000 
+        ? "Payment completed successfully! Your booking has been confirmed." 
+        : "Payment submitted successfully! Waiting for admin confirmation.",
       payment: shapePayment(payment),
       remaining_balance: payment.balance,
+      booking_status: bookingStatus,
     });
   } catch (error) {
     console.error("Error processing payment:", error);

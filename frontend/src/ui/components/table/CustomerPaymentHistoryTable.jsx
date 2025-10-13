@@ -35,18 +35,6 @@ const CustomerPaymentHistoryTable = ({ payments }) => {
       flex: 1.2,
       minWidth: 150,
     },
-    {
-      field: 'status',
-      headerName: 'Status',
-      flex: 1,
-      minWidth: 120,
-      renderCell: (p) =>
-        p.value === 'Paid' ? (
-          <Chip label="Paid" color="success" size="small" />
-        ) : (
-          <Chip label="Unpaid" color="error" size="small" />
-        ),
-    },
   ];
 
   return (

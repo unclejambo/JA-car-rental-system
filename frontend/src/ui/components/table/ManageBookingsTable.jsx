@@ -55,6 +55,7 @@ const ManageBookingsTable = ({
         bookingId,
         currentStatus: row.booking_status,
         currentIsPay: row.isPay,
+        activeTab,
       });
 
       // Call the confirm booking API
@@ -76,6 +77,154 @@ const ManageBookingsTable = ({
     }
   };
 
+  // Handle confirm cancellation (for CANCELLATION tab)
+  const handleConfirmCancellation = async (row) => {
+    if (processing) return;
+
+    try {
+      setProcessing(true);
+      const bookingId = row.actualBookingId;
+
+      console.log('Confirming cancellation:', {
+        bookingId,
+        currentStatus: row.booking_status,
+        isCancel: row.isCancel,
+      });
+
+      // Call the confirm cancellation API
+      const result = await bookingAPI.confirmCancellationRequest(
+        bookingId,
+        logout
+      );
+
+      console.log('Confirm cancellation result:', result);
+
+      showMessage('Cancellation confirmed successfully!', 'success');
+
+      // Refresh data if callback provided
+      if (onDataChange && typeof onDataChange === 'function') {
+        onDataChange();
+      }
+    } catch (error) {
+      console.error('Error confirming cancellation:', error);
+      showMessage(error.message || 'Failed to confirm cancellation', 'error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Handle reject cancellation (for CANCELLATION tab)
+  const handleRejectCancellation = async (row) => {
+    if (processing) return;
+
+    try {
+      setProcessing(true);
+      const bookingId = row.actualBookingId;
+
+      console.log('Rejecting cancellation:', {
+        bookingId,
+        currentStatus: row.booking_status,
+        isCancel: row.isCancel,
+      });
+
+      // Call the reject cancellation API
+      const result = await bookingAPI.rejectCancellationRequest(
+        bookingId,
+        logout
+      );
+
+      console.log('Reject cancellation result:', result);
+
+      showMessage('Cancellation request rejected successfully!', 'success');
+
+      // Refresh data if callback provided
+      if (onDataChange && typeof onDataChange === 'function') {
+        onDataChange();
+      }
+    } catch (error) {
+      console.error('Error rejecting cancellation:', error);
+      showMessage(
+        error.message || 'Failed to reject cancellation request',
+        'error'
+      );
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Handle confirm extension (for EXTENSION tab)
+  const handleConfirmExtension = async (row) => {
+    if (processing) return;
+
+    try {
+      setProcessing(true);
+      const bookingId = row.actualBookingId;
+
+      console.log('Confirming extension:', {
+        bookingId,
+        currentStatus: row.booking_status,
+        isExtend: row.isExtend,
+        newEndDate: row.new_end_date,
+      });
+
+      // Call the confirm extension API
+      const result = await bookingAPI.confirmExtensionRequest(
+        bookingId,
+        logout
+      );
+
+      console.log('Confirm extension result:', result);
+
+      showMessage('Extension request confirmed successfully!', 'success');
+
+      // Refresh data if callback provided
+      if (onDataChange && typeof onDataChange === 'function') {
+        onDataChange();
+      }
+    } catch (error) {
+      console.error('Error confirming extension:', error);
+      showMessage(error.message || 'Failed to confirm extension', 'error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Handle reject extension (for EXTENSION tab)
+  const handleRejectExtension = async (row) => {
+    if (processing) return;
+
+    try {
+      setProcessing(true);
+      const bookingId = row.actualBookingId;
+
+      console.log('Rejecting extension:', {
+        bookingId,
+        currentStatus: row.booking_status,
+        isExtend: row.isExtend,
+      });
+
+      // Call the reject extension API
+      const result = await bookingAPI.rejectExtensionRequest(bookingId, logout);
+
+      console.log('Reject extension result:', result);
+
+      showMessage('Extension request rejected successfully!', 'success');
+
+      // Refresh data if callback provided
+      if (onDataChange && typeof onDataChange === 'function') {
+        onDataChange();
+      }
+    } catch (error) {
+      console.error('Error rejecting extension:', error);
+      showMessage(
+        error.message || 'Failed to reject extension request',
+        'error'
+      );
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   // Handle cancel button click (X)
   const handleCancel = async (row) => {
     if (processing) return;
@@ -90,9 +239,11 @@ const ManageBookingsTable = ({
         currentIsPay: row.isPay,
       });
 
-      // Update isPay to false and delete payment
+      // Update isPay to false first
       await bookingAPI.updateIsPay(bookingId, false, logout);
-      await paymentAPI.deletePaymentByBookingId(bookingId, logout);
+
+      // Delete payment with keepStatus=true to maintain current booking status
+      await paymentAPI.deletePaymentByBookingId(bookingId, logout, true);
 
       showMessage('Payment cancelled successfully!', 'success');
 
@@ -177,7 +328,7 @@ const ManageBookingsTable = ({
       field: 'actualBookingId', // Changed from 'id' to show actual booking ID
       headerName: 'ID',
       flex: 1,
-      minWidth: 30,
+      minWidth: 50,
       editable: false,
       headerAlign: 'center',
       align: 'center',
@@ -199,16 +350,6 @@ const ManageBookingsTable = ({
       editable: false,
       resizable: true,
       headerAlign: 'center',
-    },
-    {
-      field: 'booking_date',
-      headerName: 'Booking Date',
-      flex: 1.5,
-      minWidth: 80,
-      editable: false,
-      resizable: true,
-      headerAlign: 'center',
-      align: 'center',
     },
     {
       field: 'start_date',
@@ -258,15 +399,8 @@ const ManageBookingsTable = ({
         minWidth: 80,
       },
       {
-        field: 'payment_status',
-        headerName: 'Payment Status',
-        flex: 1.2,
-        minWidth: 100,
-        resizable: true,
-      },
-      {
         field: 'booking_status',
-        headerName: 'Booking Status',
+        headerName: 'Status',
         flex: 1.2,
         minWidth: 100,
         resizable: true,
@@ -316,7 +450,7 @@ const ManageBookingsTable = ({
     headerAlign: 'center',
     align: 'center',
     renderCell: (params) => {
-      // Check if isPay is true (for showing check/cancel buttons)
+      // Check if isPay is true (for showing check/cancel buttons in BOOKINGS tab)
       const shouldShowPaymentButtons =
         params.row.isPay === true ||
         params.row.isPay === 'true' ||
@@ -324,28 +458,67 @@ const ManageBookingsTable = ({
 
       return (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+          {/* BOOKINGS TAB - View details and payment buttons */}
           {activeTab === 'BOOKINGS' && (
-            <IconButton
-              size="small"
-              color="primary"
-              aria-label="view details"
-              onClick={() => handleViewDetails(params.row)}
-              sx={{
-                '&:hover': {
-                  backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                },
-              }}
-            >
-              <MoreHorizIcon fontSize="small" />
-            </IconButton>
+            <>
+              <IconButton
+                size="small"
+                color="primary"
+                aria-label="view details"
+                onClick={() => handleViewDetails(params.row)}
+                sx={{
+                  '&:hover': {
+                    backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                  },
+                }}
+              >
+                <MoreHorizIcon fontSize="small" />
+              </IconButton>
+
+              {/* Show payment buttons only when isPay is true */}
+              {shouldShowPaymentButtons && (
+                <>
+                  <IconButton
+                    size="small"
+                    color="success"
+                    aria-label="confirm"
+                    onClick={() => handleConfirm(params.row)}
+                    disabled={processing}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                      },
+                    }}
+                  >
+                    <CheckCircleIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    aria-label="cancel"
+                    onClick={() => handleCancel(params.row)}
+                    disabled={processing}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'rgba(211, 47, 47, 0.08)',
+                      },
+                    }}
+                  >
+                    <CancelIcon fontSize="small" />
+                  </IconButton>
+                </>
+              )}
+            </>
           )}
-          {shouldShowPaymentButtons && (
+
+          {/* CANCELLATION TAB - Confirm and reject buttons */}
+          {activeTab === 'CANCELLATION' && (
             <>
               <IconButton
                 size="small"
                 color="success"
-                aria-label="confirm"
-                onClick={() => handleConfirm(params.row)}
+                aria-label="confirm cancellation"
+                onClick={() => handleConfirmCancellation(params.row)}
                 disabled={processing}
                 sx={{
                   '&:hover': {
@@ -358,8 +531,42 @@ const ManageBookingsTable = ({
               <IconButton
                 size="small"
                 color="error"
-                aria-label="cancel"
-                onClick={() => handleCancel(params.row)}
+                aria-label="reject cancellation"
+                onClick={() => handleRejectCancellation(params.row)}
+                disabled={processing}
+                sx={{
+                  '&:hover': {
+                    backgroundColor: 'rgba(211, 47, 47, 0.08)',
+                  },
+                }}
+              >
+                <CancelIcon fontSize="small" />
+              </IconButton>
+            </>
+          )}
+
+          {/* EXTENSION TAB - Confirm and reject buttons */}
+          {activeTab === 'EXTENSION' && (
+            <>
+              <IconButton
+                size="small"
+                color="success"
+                aria-label="confirm extension"
+                onClick={() => handleConfirmExtension(params.row)}
+                disabled={processing}
+                sx={{
+                  '&:hover': {
+                    backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                  },
+                }}
+              >
+                <CheckCircleIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                size="small"
+                color="error"
+                aria-label="reject extension"
+                onClick={() => handleRejectExtension(params.row)}
                 disabled={processing}
                 sx={{
                   '&:hover': {

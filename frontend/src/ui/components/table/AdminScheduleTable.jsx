@@ -1,12 +1,105 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, Button } from '@mui/material';
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Snackbar,
+  Alert,
+} from '@mui/material';
 import PublicIcon from '@mui/icons-material/Public';
+import IconButton from '@mui/material/IconButton';
+import CancelIcon from '@mui/icons-material/Cancel';
+import { useState } from 'react';
 import { useScheduleStore } from '../../../store/useScheduleStore';
+import { bookingAPI } from '../../../utils/api';
+import { useNavigate } from 'react-router-dom';
 
 const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
+  const navigate = useNavigate();
   const updateReservationStatus = useScheduleStore(
     (state) => state.updateReservationStatus
   );
+
+  // State for cancel confirmation dialog
+  const [cancelDialog, setCancelDialog] = useState({
+    open: false,
+    booking: null,
+  });
+
+  // State for snackbar notifications
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  // Logout function for API calls
+  const logout = () => {
+    localStorage.removeItem('authToken');
+    navigate('/login');
+  };
+
+  // Show snackbar message
+  const showMessage = (message, severity = 'success') => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
+  // Close snackbar
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  // Open cancel confirmation dialog
+  const handleOpenCancelDialog = (booking) => {
+    setCancelDialog({
+      open: true,
+      booking,
+    });
+  };
+
+  // Close cancel confirmation dialog
+  const handleCloseCancelDialog = () => {
+    setCancelDialog({
+      open: false,
+      booking: null,
+    });
+  };
+
+  // Confirm cancellation
+  const handleConfirmCancel = async () => {
+    if (!cancelDialog.booking) return;
+
+    try {
+      const bookingId =
+        cancelDialog.booking.reservationId ?? cancelDialog.booking.booking_id;
+
+      console.log('Cancelling booking:', bookingId);
+
+      // Call the admin cancel booking API
+      const result = await bookingAPI.adminCancelBooking(bookingId, logout);
+
+      console.log('Cancel result:', result);
+
+      showMessage('Booking cancelled successfully!', 'success');
+
+      // Close the dialog
+      handleCloseCancelDialog();
+
+      // Refresh the schedule data
+      updateReservationStatus(bookingId, 'Cancelled');
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      showMessage(error.message || 'Failed to cancel booking', 'error');
+    }
+  };
 
   const formatDate = (iso) => {
     if (!iso) return '';
@@ -77,7 +170,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       field: 'customer_name',
       headerName: 'Customer Name',
       flex: 1.5,
-      minWidth: 120,
+      minWidth: 100,
       editable: false,
     },
     {
@@ -96,7 +189,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       field: 'pickup_time',
       headerName: 'Pickup Time',
       flex: 1,
-      minWidth: 90,
+      minWidth: 100,
       editable: false,
       renderCell: (params) => {
         const iso = params?.row?.pickup_time ?? params?.value;
@@ -107,7 +200,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       field: 'pickup_location',
       headerName: 'Pickup Location',
       flex: 1,
-      minWidth: 90,
+      minWidth: 100,
       editable: false,
       renderCell: (params) => (
         <span>
@@ -134,7 +227,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       field: 'dropoff_time',
       headerName: 'Drop Off Time',
       flex: 1,
-      minWidth: 90,
+      minWidth: 100,
       editable: false,
       renderCell: (params) => {
         const iso = params?.row?.dropoff_time ?? params?.value;
@@ -145,7 +238,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       field: 'dropoff_location',
       headerName: 'Drop Off Location',
       flex: 1,
-      minWidth: 90,
+      minWidth: 100,
       editable: false,
       renderCell: (params) => (
         <span>
@@ -203,28 +296,43 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       };
 
       // Show release button if today is start date and status is 'Confirmed'
-      if (today === startDate && params.row.status === 'Confirmed') {
+      if ('2025-10-10' === startDate && params.row.status === 'Confirmed') {
         return (
-          <Button
-            variant="contained"
-            color="success"
-            size="small"
-            onClick={() =>
-              onOpenRelease
-                ? onOpenRelease(params.row)
-                : handleAction('Ongoing')
-            }
-            sx={{
-              textTransform: 'none',
-              fontWeight: 'normal',
-              backgroundColor: '#2e7d32',
-              '&:hover': {
-                backgroundColor: '#1b5e20',
-              },
-            }}
-          >
-            Release
-          </Button>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Button
+              variant="contained"
+              color="success"
+              size="small"
+              onClick={() =>
+                onOpenRelease
+                  ? onOpenRelease(params.row)
+                  : handleAction('Ongoing')
+              }
+              sx={{
+                textTransform: 'none',
+                fontWeight: 'normal',
+                backgroundColor: '#2e7d32',
+                '&:hover': {
+                  backgroundColor: '#1b5e20',
+                },
+              }}
+            >
+              Release
+            </Button>
+            <IconButton
+              size="medium"
+              color="error"
+              aria-label="cancel"
+              onClick={() => handleOpenCancelDialog(params.row)}
+              sx={{
+                '&:hover': {
+                  backgroundColor: 'rgba(211, 47, 47, 0.08)',
+                },
+              }}
+            >
+              <CancelIcon fontSize="small" />
+            </IconButton>
+          </Box>
         );
       }
 
@@ -387,6 +495,61 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
           },
         }}
       />
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog
+        open={cancelDialog.open}
+        onClose={handleCloseCancelDialog}
+        aria-labelledby="cancel-dialog-title"
+        aria-describedby="cancel-dialog-description"
+      >
+        <DialogTitle id="cancel-dialog-title">
+          Confirm Booking Cancellation
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="cancel-dialog-description">
+            Are you sure you want to cancel this booking for{' '}
+            <strong>{cancelDialog.booking?.customer_name}</strong>?
+            <br />
+            <br />
+            This action will:
+            <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+              <li>Set the booking status to "Cancelled"</li>
+              <li>Create a transaction record with cancellation details</li>
+            </ul>
+            This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseCancelDialog} color="primary">
+            No, Keep Booking
+          </Button>
+          <Button
+            onClick={handleConfirmCancel}
+            color="error"
+            variant="contained"
+            autoFocus
+          >
+            Yes, Cancel Booking
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

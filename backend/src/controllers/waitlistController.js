@@ -61,7 +61,8 @@ export const joinWaitlist = async (req, res) => {
       is_self_drive,
       selected_driver_id,
       special_requests,
-      total_cost
+      total_cost,
+      notification_preference // Optional: can be '1' (SMS), '2' (Email), '3' (Both)
     } = req.body;
 
     // Check if customer is already on waitlist for this car
@@ -85,7 +86,44 @@ export const joinWaitlist = async (req, res) => {
 
     const nextPosition = (lastPosition?.position || 0) + 1;
 
-    // Create waitlist entry
+    // If no booking details provided (simple waitlist join), create basic entry
+    if (!requested_start_date || !requested_end_date) {
+      const waitlistEntry = await prisma.waitlist.create({
+        data: {
+          customer_id: parseInt(customerId),
+          car_id: carId,
+          position: nextPosition,
+          status: 'waiting',
+          payment_status: 'Unpaid'
+        },
+        include: {
+          customer: {
+            select: {
+              first_name: true,
+              last_name: true,
+              email: true,
+              contact_no: true,
+              isRecUpdate: true
+            }
+          },
+          car: {
+            select: {
+              make: true,
+              model: true,
+              year: true
+            }
+          }
+        }
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: `You have been added to the waitlist. You are position #${nextPosition}. You will be notified when this car becomes available.`,
+        waitlist_entry: waitlistEntry
+      });
+    }
+
+    // Create full waitlist entry with booking details
     const waitlistEntry = await prisma.waitlist.create({
       data: {
         customer_id: parseInt(customerId),
@@ -104,14 +142,16 @@ export const joinWaitlist = async (req, res) => {
         total_cost,
         position: nextPosition,
         status: 'waiting',
-        payment_status: 'Unpaid' // Capitalized for consistency
+        payment_status: 'Unpaid'
       },
       include: {
         customer: {
           select: {
             first_name: true,
             last_name: true,
-            email: true
+            email: true,
+            contact_no: true,
+            isRecUpdate: true
           }
         },
         car: {

@@ -1,5 +1,6 @@
 import prisma from "../config/prisma.js";
 import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -107,6 +108,9 @@ export const createCustomer = async (req, res) => {
       });
     }
 
+    // Hash the password before storing
+    const hashedPassword = await bcrypt.hash(password, 12);
+
     const newCustomer = await prisma.customer.create({
       data: {
         first_name,
@@ -115,7 +119,7 @@ export const createCustomer = async (req, res) => {
         contact_no,
         email,
         username,
-        password,
+        password: hashedPassword,
         fb_link,
         date_created,
         status,
@@ -168,15 +172,42 @@ export const updateCustomer = async (req, res) => {
       "email",
       "username",
       "password",
+      "currentPassword",
       "fb_link",
       "date_created",
       "status",
       "driver_license_no",
+      "profile_img_url",
     ];
     const data = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) data[key] = req.body[key];
     }
+
+    // Handle password change with proper hashing
+    if (data.password && data.password.trim() !== '') {
+      // If currentPassword is provided, verify it first
+      if (data.currentPassword) {
+        const isCurrentPasswordValid = await bcrypt.compare(
+          data.currentPassword,
+          existing.password
+        );
+        if (!isCurrentPasswordValid) {
+          return res.status(400).json({ 
+            error: "Current password is incorrect" 
+          });
+        }
+      }
+      
+      // Hash the new password
+      data.password = await bcrypt.hash(data.password, 12);
+    } else {
+      // If no password provided or empty string, don't update it
+      delete data.password;
+    }
+    
+    // Remove currentPassword from data (it's not a database field)
+    delete data.currentPassword;
 
     const updatedCustomer = await prisma.customer.update({
       where: { customer_id: customerId },

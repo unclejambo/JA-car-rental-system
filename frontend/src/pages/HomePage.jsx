@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Box,
   Container,
@@ -20,11 +20,35 @@ import {
 import Header from '../ui/components/Header';
 import LoginButton from '../ui/components/LoginButton';
 import carImage from '/carImage.png';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 export default function HomePage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const navigate = useNavigate();
+  const { isAuthenticated, userRole } = useAuth();
+
+  // Redirect authenticated users to their respective dashboard
+  useEffect(() => {
+    if (isAuthenticated && userRole) {
+      switch (userRole) {
+        case 'admin':
+        case 'staff':
+          navigate('/admin-dashboard', { replace: true });
+          break;
+        case 'customer':
+          navigate('/customer-dashboard', { replace: true });
+          break;
+        case 'driver':
+          navigate('/driver-dashboard', { replace: true });
+          break;
+        default:
+          // If role is unknown, stay on home page
+          break;
+      }
+    }
+  }, [isAuthenticated, userRole, navigate]);
 
   const features = [
     {

@@ -49,6 +49,11 @@ export default function BookingDetailsModal({
   const [loadingRelease, setLoadingRelease] = useState(false);
   const [loadingReturn, setLoadingReturn] = useState(false);
 
+  // Get user type from localStorage to determine permissions
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+  const userType = userInfo.user_type || '';
+  const isAdminOrStaff = userType === 'admin' || userType === 'staff';
+
   // Auth hook for authenticated requests
   const { logout } = useAuth();
 
@@ -367,40 +372,42 @@ export default function BookingDetailsModal({
 
       <DialogContent sx={{ pt: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* Main Tabs */}
-          <Tabs
-            value={activeTab}
-            onChange={(e, newValue) => setActiveTab(newValue)}
-            variant="fullWidth"
-            sx={{
-              borderBottom: 1,
-              borderColor: 'divider',
-              '& .MuiTab-root': {
-                textTransform: 'none',
-                fontWeight: 'bold',
-                fontSize: '0.95rem',
-                minHeight: '48px',
-              },
-              '& .Mui-selected': { color: 'primary.main' },
-              '& .MuiTabs-indicator': { backgroundColor: 'primary.main', height: 3 },
-            }}
-          >
-            <Tab label="📋 Booking Details" />
-            <Tab 
-              label="🚗 Release Details" 
-              disabled={booking.booking_status !== 'In Progress' && booking.booking_status !== 'Completed'}
-            />
-            <Tab 
-              label="🔙 Return Details" 
-              disabled={booking.booking_status !== 'Completed'}
-            />
-          </Tabs>
+          {/* Main Tabs - Only show tabs for admin/staff */}
+          {isAdminOrStaff && (
+            <Tabs
+              value={activeTab}
+              onChange={(e, newValue) => setActiveTab(newValue)}
+              variant="fullWidth"
+              sx={{
+                borderBottom: 1,
+                borderColor: 'divider',
+                '& .MuiTab-root': {
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '0.95rem',
+                  minHeight: '48px',
+                },
+                '& .Mui-selected': { color: 'primary.main' },
+                '& .MuiTabs-indicator': { backgroundColor: 'primary.main', height: 3 },
+              }}
+            >
+              <Tab label="📋 Booking Details" />
+              <Tab 
+                label="🚗 Release Details" 
+                disabled={booking.booking_status !== 'In Progress' && booking.booking_status !== 'Completed'}
+              />
+              <Tab 
+                label="🔙 Return Details" 
+                disabled={booking.booking_status !== 'Completed'}
+              />
+            </Tabs>
+          )}
 
-          {/* Tab Panel 0: Booking Details */}
-          {activeTab === 0 && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
-              {/* Payment Section - Hide for cancelled bookings */}
-              {booking.balance > 0 && !booking.isCancel && booking.booking_status !== 'Cancelled' && (
+          {/* Tab Panel 0: Booking Details (or direct content for customers/drivers) */}
+          {(activeTab === 0 || !isAdminOrStaff) && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: isAdminOrStaff ? 2 : 0 }}>
+              {/* Payment Section - Only show for admin/staff, hide for cancelled bookings */}
+              {isAdminOrStaff && booking.balance > 0 && !booking.isCancel && booking.booking_status !== 'Cancelled' && (
             <Box>
               <Box
                 sx={{
@@ -969,8 +976,8 @@ export default function BookingDetailsModal({
         </Box>
       )}
 
-      {/* Tab Panel 1: Release Details */}
-      {activeTab === 1 && (
+      {/* Tab Panel 1: Release Details - Only for admin/staff */}
+      {isAdminOrStaff && activeTab === 1 && (
         <Box sx={{ mt: 2 }}>
           {loadingRelease ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -1222,8 +1229,8 @@ export default function BookingDetailsModal({
         </Box>
       )}
 
-      {/* Tab Panel 2: Return Details */}
-      {activeTab === 2 && (
+      {/* Tab Panel 2: Return Details - Only for admin/staff */}
+      {isAdminOrStaff && activeTab === 2 && (
         <Box sx={{ mt: 2 }}>
           {loadingReturn ? (
                       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>

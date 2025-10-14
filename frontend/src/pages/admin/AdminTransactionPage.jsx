@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import DownloadIcon from '@mui/icons-material/Download';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
 import { HiDocumentCurrencyDollar } from 'react-icons/hi2';
@@ -12,6 +13,7 @@ import Loading from '../../ui/components/Loading';
 import { useTransactionStore } from '../../store/transactions';
 import AddPaymentModal from '../../ui/components/modal/AddPaymentModal';
 import AddRefundModal from '../../ui/components/modal/AddRefundModal';
+import { generateTransactionPDF } from '../../utils/pdfExport';
 
 export default function AdminTransactionPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -112,6 +114,11 @@ export default function AdminTransactionPage() {
   const [showAddRefundModal, setShowAddRefundModal] = useState(false);
   const openAddRefundModal = () => setShowAddRefundModal(true);
   const closeAddRefundModal = () => setShowAddRefundModal(false);
+
+  // Handle PDF download
+  const handleDownloadPDF = () => {
+    generateTransactionPDF(activeTab, rows);
+  };
 
   // Initial & on-tab-change data loader
   useEffect(() => {
@@ -247,7 +254,14 @@ export default function AdminTransactionPage() {
               boxSizing: 'border-box',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 1,
+              mb: 1
+            }}>
               <Typography
                 variant="h4"
                 component="h1"
@@ -255,8 +269,12 @@ export default function AdminTransactionPage() {
                 sx={{
                   fontSize: '1.8rem',
                   color: '#000',
+                  mb: 0,
                   '@media (max-width: 1024px)': {
                     fontSize: '1.5rem',
+                  },
+                  '@media (max-width: 600px)': {
+                    fontSize: '1.2rem',
                   },
                 }}
               >
@@ -265,7 +283,63 @@ export default function AdminTransactionPage() {
                 />
                 {activeTab}
               </Typography>
-              {activeTab === 'PAYMENT' && (
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 1,
+                flexWrap: 'wrap',
+                '@media (max-width: 600px)': {
+                  gap: 0.5,
+                  width: '100%',
+                  justifyContent: 'flex-end',
+                }
+              }}>
+                {/* Download PDF Button */}
+                <Button
+                  variant="outlined"
+                  startIcon={
+                    <DownloadIcon
+                      sx={{ width: '18px', height: '18px', mt: '-2px' }}
+                    />
+                  }
+                  onClick={handleDownloadPDF}
+                  disabled={!rows || rows.length === 0}
+                  sx={{
+                    color: '#fff',
+                    p: 1,
+                    pb: 0.5,
+                    height: 36,
+                    border: 'none',
+                    backgroundColor: '#1976d2',
+                    whiteSpace: 'nowrap',
+                    minWidth: 'auto',
+                    '&:hover': {
+                      backgroundColor: '#1565c0',
+                      color: '#fff',
+                      fontWeight: 600,
+                      boxShadow: 'none',
+                    },
+                    '&:disabled': {
+                      backgroundColor: '#ccc',
+                      color: '#666',
+                    },
+                    '@media (max-width: 600px)': {
+                      height: 32,
+                      fontSize: '0.7rem',
+                      px: 0.75,
+                      py: 0.5,
+                      '& .MuiButton-startIcon': {
+                        marginRight: '2px',
+                      },
+                      '& .MuiSvgIcon-root': {
+                        width: '14px',
+                        height: '14px',
+                      },
+                    },
+                  }}
+                >
+                  Download PDF
+                </Button>
+                {activeTab === 'PAYMENT' && (
                 <Button
                   variant="outlined"
                   startIcon={
@@ -281,6 +355,8 @@ export default function AdminTransactionPage() {
                     height: 36,
                     border: 'none',
                     backgroundColor: '#c10007',
+                    whiteSpace: 'nowrap',
+                    minWidth: 'auto',
                     '&:hover': {
                       backgroundColor: '#a00006',
                       color: '#fff',
@@ -289,7 +365,17 @@ export default function AdminTransactionPage() {
                       boxShadow: 'none',
                     },
                     '@media (max-width: 600px)': {
-                      height: 28,
+                      height: 32,
+                      fontSize: '0.7rem',
+                      px: 0.75,
+                      py: 0.5,
+                      '& .MuiButton-startIcon': {
+                        marginRight: '2px',
+                      },
+                      '& .MuiSvgIcon-root': {
+                        width: '14px',
+                        height: '14px',
+                      },
                     },
                   }}
                 >
@@ -312,6 +398,8 @@ export default function AdminTransactionPage() {
                     height: 36,
                     border: 'none',
                     backgroundColor: '#c10007',
+                    whiteSpace: 'nowrap',
+                    minWidth: 'auto',
                     '&:hover': {
                       backgroundColor: '#a00006',
                       color: '#fff',
@@ -320,13 +408,24 @@ export default function AdminTransactionPage() {
                       boxShadow: 'none',
                     },
                     '@media (max-width: 600px)': {
-                      height: 28,
+                      height: 32,
+                      fontSize: '0.7rem',
+                      px: 0.75,
+                      py: 0.5,
+                      '& .MuiButton-startIcon': {
+                        marginRight: '2px',
+                      },
+                      '& .MuiSvgIcon-root': {
+                        width: '14px',
+                        height: '14px',
+                      },
                     },
                   }}
                 >
                   Add New {activeTab}
                 </Button>
               )}
+              </Box>
             </Box>
             <Box
               sx={{

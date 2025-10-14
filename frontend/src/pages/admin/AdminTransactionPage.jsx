@@ -6,6 +6,7 @@ import Header from '../../ui/components/Header';
 import { HiDocumentCurrencyDollar } from 'react-icons/hi2';
 import TransactionLogsHeader from '../../ui/components/header/TransactionLogsHeader';
 import TransactionLogsTable from '../../ui/components/table/TranscationLogsTable';
+import SearchBar from '../../ui/components/SearchBar';
 import BookingDetailsModal from '../../ui/components/modal/BookingDetailsModal';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 import Loading from '../../ui/components/Loading';
@@ -23,6 +24,7 @@ export default function AdminTransactionPage() {
   const loaded = useTransactionStore((s) => s.loaded);
   const storeLoading = useTransactionStore((s) => s.loading);
   const [activeTab, setActiveTab] = useState('TRANSACTIONS');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   // Original rows from store
@@ -44,6 +46,63 @@ export default function AdminTransactionPage() {
     }
     return storeRows; // REFUND unchanged
   }, [storeRows, activeTab]);
+
+  // Filter rows based on search query
+  const getFilteredRows = () => {
+    if (!rows || rows.length === 0) return [];
+
+    if (!searchQuery) return rows;
+
+    const query = searchQuery.toLowerCase().trim();
+
+    return rows.filter((row) => {
+      // Search by customer name
+      if (row.customerName?.toLowerCase().includes(query)) return true;
+
+      // Search by car model
+      if (row.carModel?.toLowerCase().includes(query)) return true;
+
+      // Search by booking date
+      if (row.bookingDate?.toLowerCase().includes(query)) return true;
+
+      // Search by completion date (TRANSACTIONS tab)
+      if (row.completionDate?.toLowerCase().includes(query)) return true;
+
+      // Search by cancellation date (TRANSACTIONS tab)
+      if (row.cancellationDate?.toLowerCase().includes(query)) return true;
+
+      // Search by payment method (PAYMENT tab)
+      if (row.paymentMethod?.toLowerCase().includes(query)) return true;
+
+      // Search by reference number (PAYMENT & REFUND tabs)
+      if (row.referenceNo?.toLowerCase().includes(query)) return true;
+
+      // Search by GCash number (PAYMENT & REFUND tabs)
+      if (row.gCashNo?.toLowerCase().includes(query)) return true;
+
+      // Search by total amount (PAYMENT tab)
+      if (row.totalAmount?.toString().toLowerCase().includes(query))
+        return true;
+
+      // Search by paid date (PAYMENT tab)
+      if (row.paidDate?.toLowerCase().includes(query)) return true;
+
+      // Search by description (PAYMENT & REFUND tabs)
+      if (row.description?.toLowerCase().includes(query)) return true;
+
+      // Search by refund method (REFUND tab)
+      if (row.refundMethod?.toLowerCase().includes(query)) return true;
+
+      // Search by refund amount (REFUND tab)
+      if (row.refundAmount?.toString().toLowerCase().includes(query))
+        return true;
+
+      // Search by refund date (REFUND tab)
+      if (row.refundDate?.toLowerCase().includes(query)) return true;
+
+      return false;
+    });
+  };
 
   // Fetch booking details by bookingId and open modal
   const openBookingDetails = async (bookingId) => {
@@ -328,6 +387,30 @@ export default function AdminTransactionPage() {
                 </Button>
               )}
             </Box>
+
+            {/* Search Bar */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                mb: 2,
+                mt: 1,
+              }}
+            >
+              <SearchBar
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Search ${activeTab.toLowerCase()}...`}
+                variant="outlined"
+                size="small"
+                sx={{
+                  width: { xs: '100%', sm: 350 },
+                  maxWidth: 350,
+                }}
+              />
+            </Box>
+
             <Box
               sx={{
                 flex: 1,
@@ -338,7 +421,7 @@ export default function AdminTransactionPage() {
             >
               <TransactionLogsTable
                 activeTab={activeTab}
-                rows={rows}
+                rows={getFilteredRows()}
                 loading={loading || storeLoading[activeTab]}
                 onViewBooking={(row) => openBookingDetails(row.bookingId)}
               />

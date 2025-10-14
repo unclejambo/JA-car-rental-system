@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../ui/components/Header';
 import carImage from '/carImage.png';
 import {
@@ -16,7 +16,27 @@ function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, userRole } = useAuth();
+
+  // Redirect authenticated users to their respective dashboard
+  useEffect(() => {
+    if (isAuthenticated && userRole) {
+      switch (userRole) {
+        case 'admin':
+        case 'staff':
+          navigate('/admindashboard', { replace: true });
+          break;
+        case 'customer':
+          navigate('/customer-dashboard', { replace: true });
+          break;
+        case 'driver':
+          navigate('/driver-schedule', { replace: true });
+          break;
+        default:
+          break;
+      }
+    }
+  }, [isAuthenticated, userRole, navigate]);
 
   const API_BASE = getApiBase();
 

@@ -61,10 +61,10 @@ export default function CustomerSettings() {
         to: '(new password)',
       });
     }
-    
+
     // ✅ Don't include notification preferences in confirmation modal
     // They are saved separately and should not require confirmation
-    
+
     return changes;
   }
 
@@ -129,15 +129,20 @@ export default function CustomerSettings() {
       .then(async (updated) => {
         // ✅ Save notification settings separately using the dedicated endpoint
         // Only save if notification preferences have changed
-        const notifChanged = 
-          receiveUpdatesPhone !== initialReceiveUpdatesPhone || 
+        const notifChanged =
+          receiveUpdatesPhone !== initialReceiveUpdatesPhone ||
           receiveUpdatesEmail !== initialReceiveUpdatesEmail;
-          
+
         if (notifChanged) {
           try {
             console.log('🔔 Saving notification settings...');
-            console.log('📱 SMS:', receiveUpdatesPhone, '📧 Email:', receiveUpdatesEmail);
-            
+            console.log(
+              '📱 SMS:',
+              receiveUpdatesPhone,
+              '📧 Email:',
+              receiveUpdatesEmail
+            );
+
             const notificationResponse = await authenticatedFetch(
               `${API_BASE}/api/customers/me/notification-settings`,
               {
@@ -149,11 +154,14 @@ export default function CustomerSettings() {
 
             if (!notificationResponse.ok) {
               const errorData = await notificationResponse.json();
-              console.error('Failed to update notification settings:', errorData);
+              console.error(
+                'Failed to update notification settings:',
+                errorData
+              );
             } else {
               const result = await notificationResponse.json();
               console.log('✅ Notification settings saved:', result);
-              
+
               // Update initial values to reflect saved state
               setInitialReceiveUpdatesPhone(receiveUpdatesPhone);
               setInitialReceiveUpdatesEmail(receiveUpdatesEmail);
@@ -179,6 +187,17 @@ export default function CustomerSettings() {
             updated.profile_img_url || profile.profileImageUrl || '',
         });
         setProfileImage(null); // Clear the file after upload
+
+        // ✅ Update sessionStorage cache and trigger header refresh
+        if (updated.profile_img_url) {
+          sessionStorage.setItem('profileImageUrl', updated.profile_img_url);
+          // Dispatch custom event to notify Header component
+          window.dispatchEvent(
+            new CustomEvent('profileImageUpdated', {
+              detail: { imageUrl: updated.profile_img_url },
+            })
+          );
+        }
 
         // Reset password state
         setPasswordData({
@@ -242,8 +261,10 @@ export default function CustomerSettings() {
 
   const [receiveUpdatesPhone, setReceiveUpdatesPhone] = useState(false);
   const [receiveUpdatesEmail, setReceiveUpdatesEmail] = useState(false);
-  const [initialReceiveUpdatesPhone, setInitialReceiveUpdatesPhone] = useState(false);
-  const [initialReceiveUpdatesEmail, setInitialReceiveUpdatesEmail] = useState(false);
+  const [initialReceiveUpdatesPhone, setInitialReceiveUpdatesPhone] =
+    useState(false);
+  const [initialReceiveUpdatesEmail, setInitialReceiveUpdatesEmail] =
+    useState(false);
 
   const [isEditingLicense, setIsEditingLicense] = useState(false);
   const [licenseNo, setLicenseNo] = useState('');
@@ -292,7 +313,7 @@ export default function CustomerSettings() {
           setLicenseExpiration(licenseExpiration);
           setLicenseImage(licenseImage);
           setImagePreview(customer.profile_img_url || ''); // ✅ Set profile image preview
-          
+
           // ✅ Load notification preferences from isRecUpdate
           // 0 = no notifications, 1 = SMS only, 2 = Email only, 3 = Both SMS and email
           const notificationPref = customer.isRecUpdate ?? 0;
@@ -302,7 +323,7 @@ export default function CustomerSettings() {
           setReceiveUpdatesEmail(emailChecked);
           setInitialReceiveUpdatesPhone(phoneChecked);
           setInitialReceiveUpdatesEmail(emailChecked);
-          
+
           setProfile((prev) => ({
             ...prev,
             firstName: customer.first_name || '',

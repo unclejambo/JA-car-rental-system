@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import CustomerSideBar from '../../ui/components/CustomerSideBar';
 import Header from '../../ui/components/Header';
+import SearchBar from '../../ui/components/SearchBar';
 import EditBookingModal from '../../ui/components/modal/NewEditBookingModal';
 import PaymentModal from '../../ui/components/modal/PaymentModal';
 import '../../styles/customercss/customerdashboard.css';
@@ -78,6 +79,10 @@ function CustomerBookings() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [extendDate, setExtendDate] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Search states
+  const [bookingSearchQuery, setBookingSearchQuery] = useState('');
+  const [paymentSearchQuery, setPaymentSearchQuery] = useState('');
 
   const { logout } = useAuth();
   const API_BASE = getApiBase();
@@ -278,6 +283,35 @@ function CustomerBookings() {
     return formatDateForInput(endDate);
   };
 
+  // Filter bookings based on search query
+  const filteredBookings = bookings.filter((booking) => {
+    if (!bookingSearchQuery) return true;
+    const query = bookingSearchQuery.toLowerCase();
+    return (
+      booking.booking_id?.toString().includes(query) ||
+      booking.car_details?.display_name?.toLowerCase().includes(query) ||
+      booking.car_details?.license_plate?.toLowerCase().includes(query) ||
+      booking.booking_status?.toLowerCase().includes(query) ||
+      booking.pickup_location?.toLowerCase().includes(query) ||
+      booking.dropoff_location?.toLowerCase().includes(query)
+    );
+  });
+
+  // Filter payments based on search query
+  const filteredPayments = payments.filter((payment) => {
+    if (!paymentSearchQuery) return true;
+    const query = paymentSearchQuery.toLowerCase();
+    return (
+      payment.payment_id?.toString().includes(query) ||
+      payment.car_details?.display_name?.toLowerCase().includes(query) ||
+      payment.car_details?.license_plate?.toLowerCase().includes(query) ||
+      payment.start_date?.toLowerCase().includes(query) ||
+      payment.end_date?.toLowerCase().includes(query) ||
+      payment.pickup_date?.toLowerCase().includes(query) ||
+      payment.dropoff_date?.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <>
       <Header onMenuClick={() => setMobileOpen(true)} isMenuOpen={mobileOpen} />
@@ -363,7 +397,13 @@ function CustomerBookings() {
 
         {/* Tabs */}
         <Box
-          sx={{ borderBottom: 1, borderColor: 'divider', px: { xs: 1, sm: 0 } }}
+          sx={{
+            borderBottom: 1,
+            borderColor: 'divider',
+            mb: 3,
+            display: 'flex',
+            justifyContent: 'flex-start',
+          }}
         >
           <Tabs
             value={activeTab}
@@ -389,6 +429,55 @@ function CustomerBookings() {
           </Tabs>
         </Box>
 
+        {/* Search Bar - Aligned to the right like Refresh button */}
+        <Box
+          sx={{
+            mb: 3,
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <Box sx={{ width: { xs: '100%', sm: 300, md: 350 } }}>
+            {activeTab === 0 ? (
+              <SearchBar
+                value={bookingSearchQuery}
+                onChange={(e) => setBookingSearchQuery(e.target.value)}
+                placeholder="Search bookings..."
+                fullWidth
+              />
+            ) : (
+              <SearchBar
+                value={paymentSearchQuery}
+                onChange={(e) => setPaymentSearchQuery(e.target.value)}
+                placeholder="Search settlements..."
+                fullWidth
+              />
+            )}
+          </Box>
+        </Box>
+
+        {/* Result count below search bar - aligned to the right */}
+        {activeTab === 0 && bookingSearchQuery && (
+          <Box
+            sx={{
+              mb: 2,
+              px: { xs: 1, sm: 0 },
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}
+          ></Box>
+        )}
+        {activeTab === 1 && paymentSearchQuery && (
+          <Box
+            sx={{
+              mb: 2,
+              px: { xs: 1, sm: 0 },
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}
+          ></Box>
+        )}
+
         {/* Error Alert */}
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
@@ -396,9 +485,9 @@ function CustomerBookings() {
           </Alert>
         )}
 
-        {/* Loading */}
+        {/* Loading Indicator */}
         {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
             <CircularProgress sx={{ color: '#c10007' }} />
           </Box>
         )}
@@ -406,15 +495,19 @@ function CustomerBookings() {
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
           {/* MY BOOKINGS TAB - HORIZONTAL LAYOUT */}
-          {bookings.filter(
+          {filteredBookings.filter(
             (b) => b.booking_status?.toLowerCase() !== 'cancelled'
           ).length === 0 && !loading ? (
             <Card sx={{ p: 4, textAlign: 'center', mx: { xs: 1, sm: 0 } }}>
               <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-                No bookings found
+                {bookingSearchQuery
+                  ? 'No matching bookings found'
+                  : 'No bookings found'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                You haven't made any car rental bookings yet.
+                {bookingSearchQuery
+                  ? `No bookings found matching "${bookingSearchQuery}". Try a different search term.`
+                  : "You haven't made any car rental bookings yet."}
               </Typography>
             </Card>
           ) : (
@@ -426,7 +519,7 @@ function CustomerBookings() {
                 px: { xs: 0.5, sm: 0 },
               }}
             >
-              {bookings
+              {filteredBookings
                 .filter(
                   (booking) =>
                     booking.booking_status?.toLowerCase() !== 'cancelled'
@@ -865,15 +958,19 @@ function CustomerBookings() {
 
         <TabPanel value={activeTab} index={1}>
           {/* SETTLEMENT TAB - HORIZONTAL LAYOUT WITHOUT IMAGE */}
-          {payments.filter(
+          {filteredPayments.filter(
             (b) => b.booking_status?.toLowerCase() !== 'cancelled'
           ).length === 0 && !loading ? (
             <Card sx={{ p: 4, textAlign: 'center', mx: { xs: 1, sm: 0 } }}>
               <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-                No unpaid bookings
+                {paymentSearchQuery
+                  ? 'No matching payments found'
+                  : 'No unpaid bookings'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                You have no outstanding payments at this time.
+                {paymentSearchQuery
+                  ? `No payments found matching "${paymentSearchQuery}". Try a different search term.`
+                  : 'You have no outstanding payments at this time.'}
               </Typography>
             </Card>
           ) : (
@@ -885,7 +982,7 @@ function CustomerBookings() {
                 px: { xs: 0.5, sm: 0 },
               }}
             >
-              {payments
+              {filteredPayments
                 .filter(
                   (booking) =>
                     booking.booking_status?.toLowerCase() !== 'cancelled'

@@ -113,6 +113,29 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
     hasLoadedProfile,
   ]);
 
+  // Listen for profile image update events
+  useEffect(() => {
+    const handleProfileImageUpdate = (event) => {
+      const { imageUrl } = event.detail;
+      if (imageUrl) {
+        setProfileImageUrl(imageUrl);
+        // Update cache
+        const cacheKey = `${userRole}_${user?.id || user?.customer_id || user?.admin_id || user?.drivers_id}`;
+        sessionStorage.setItem('profileImageUrl', imageUrl);
+        sessionStorage.setItem('profileImageCacheKey', cacheKey);
+      }
+    };
+
+    window.addEventListener('profileImageUpdated', handleProfileImageUpdate);
+
+    return () => {
+      window.removeEventListener(
+        'profileImageUpdated',
+        handleProfileImageUpdate
+      );
+    };
+  }, [userRole, user]);
+
   return (
     <header className="app-header">
       <div className="header-content">

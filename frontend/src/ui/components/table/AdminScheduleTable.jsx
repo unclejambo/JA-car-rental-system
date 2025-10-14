@@ -18,7 +18,7 @@ import { useScheduleStore } from '../../../store/useScheduleStore';
 import { bookingAPI } from '../../../utils/api';
 import { useNavigate } from 'react-router-dom';
 
-const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
+const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn, onOpenGPS }) => {
   const navigate = useNavigate();
   const updateReservationStatus = useScheduleStore(
     (state) => state.updateReservationStatus
@@ -149,6 +149,9 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
           id: resolvedId,
           // id used by other logic
           reservationId: resolvedId,
+          booking_id: resolvedId,
+          // car_id - ensure this is available
+          car_id: r.car_id ?? r.carId ?? r.cars_id,
           // status field used in render logic
           status: r.status ?? r.booking_status,
           // date fields expected by render logic
@@ -160,6 +163,8 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
           // keep pickup/dropoff times if present
           pickup_time: r.pickup_time ?? r.start_time,
           dropoff_time: r.dropoff_time ?? r.end_time,
+          // keep car object if it exists
+          car: r.car,
         };
       })
     : [];
@@ -373,7 +378,12 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
               variant="contained"
               color="success"
               onClick={() => {
-                /* TODO: Implement GPS tracking */
+                console.log('🌍 Globe icon clicked!');
+                console.log('  Row data:', params.row);
+                console.log('  Car ID:', params.row.car_id || params.row.carId || 'NOT FOUND');
+                if (onOpenGPS) {
+                  onOpenGPS(params.row);
+                }
               }}
               size="small"
               sx={{

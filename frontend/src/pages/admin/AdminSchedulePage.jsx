@@ -7,6 +7,7 @@ import AdminScheduleTable from '../../ui/components/table/AdminScheduleTable';
 import Loading from '../../ui/components/Loading';
 import ReleaseModal from '../../ui/components/modal/ReleaseModal.jsx';
 import ReturnModal from '../../ui/components/modal/ReturnModal.jsx';
+import GPSTrackingModal from '../../ui/components/modal/GPSTrackingModal.jsx';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 
 export default function AdminSchedulePage() {
@@ -17,6 +18,7 @@ export default function AdminSchedulePage() {
 
   const [showReleaseModal, setShowReleaseModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
+  const [showGPSModal, setShowGPSModal] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);
 
   const handleReleaseClick = (reservation) => {
@@ -27,6 +29,11 @@ export default function AdminSchedulePage() {
   const handleReturnClick = (reservation) => {
     setSelectedReservation(reservation);
     setShowReturnModal(true);
+  };
+
+  const handleGPSClick = (reservation) => {
+    setSelectedReservation(reservation);
+    setShowGPSModal(true);
   };
 
   // <div className="flex justify-between items-center mb-4">
@@ -131,6 +138,13 @@ export default function AdminSchedulePage() {
           bookingId={selectedReservation?.booking_id}
         />
       )}
+      {showGPSModal && (
+        <GPSTrackingModal
+          open={showGPSModal}
+          onClose={() => setShowGPSModal(false)}
+          booking={selectedReservation}
+        />
+      )}
       <Box
         component="main"
         sx={{
@@ -208,6 +222,7 @@ export default function AdminSchedulePage() {
                 loading={loading}
                 onOpenRelease={handleReleaseClick}
                 onOpenReturn={handleReturnClick}
+                onOpenGPS={handleGPSClick}
               />
             </Box>
           </Box>

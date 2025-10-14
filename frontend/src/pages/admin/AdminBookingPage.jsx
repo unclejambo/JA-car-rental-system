@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
@@ -35,56 +35,55 @@ export default function AdminBookingPage() {
     setSelectedBooking(null);
   };
 
-  // Filter rows based on search query and active tab
-  const filteredRows = useMemo(() => {
+  const getFilteredRows = () => {
     if (!rows || rows.length === 0) return [];
 
-    const query = searchQuery.toLowerCase().trim();
+    let filteredData = rows;
 
-    // Apply search filter first
-    const searchFilteredRows = query
-      ? rows.filter((row) => {
-          // Search by booking ID
-          if (row.actualBookingId?.toString().toLowerCase().includes(query))
-            return true;
+    // Apply search filter if search query exists
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase().trim();
+      filteredData = rows.filter((row) => {
+        // Search by booking ID
+        if (row.actualBookingId?.toString().toLowerCase().includes(query))
+          return true;
 
-          // Search by customer name
-          if (row.customer_name?.toLowerCase().includes(query)) return true;
+        // Search by customer name
+        if (row.customer_name?.toLowerCase().includes(query)) return true;
 
-          // Search by car model
-          if (row.car_model?.toLowerCase().includes(query)) return true;
+        // Search by car model
+        if (row.car_model?.toLowerCase().includes(query)) return true;
 
-          // Search by start date
-          if (row.start_date?.toLowerCase().includes(query)) return true;
+        // Search by start date
+        if (row.start_date?.toLowerCase().includes(query)) return true;
 
-          // Search by end date
-          if (row.end_date?.toLowerCase().includes(query)) return true;
+        // Search by end date
+        if (row.end_date?.toLowerCase().includes(query)) return true;
 
-          // Search by status
-          if (row.booking_status?.toLowerCase().includes(query)) return true;
+        // Search by status
+        if (row.booking_status?.toLowerCase().includes(query)) return true;
 
-          // Search by purpose (for CANCELLATION tab)
-          if (row.purpose?.toLowerCase().includes(query)) return true;
+        // Search by purpose (for CANCELLATION tab)
+        if (row.purpose?.toLowerCase().includes(query)) return true;
 
-          // Search by new end date (for EXTENSION tab)
-          if (row.new_end_date?.toLowerCase().includes(query)) return true;
+        // Search by new end date (for EXTENSION tab)
+        if (row.new_end_date?.toLowerCase().includes(query)) return true;
 
-          // Search by balance
-          if (row.balance?.toString().toLowerCase().includes(query))
-            return true;
+        // Search by balance
+        if (row.balance?.toString().toLowerCase().includes(query)) return true;
 
-          return false;
-        })
-      : rows;
+        return false;
+      });
+    }
 
-    // Then apply tab-specific filtering
+    // Apply tab-specific filtering
     switch (activeTab) {
       case 'BOOKINGS':
         // Show all confirmed, pending, and in progress bookings
-        return searchFilteredRows;
+        return filteredData;
       case 'CANCELLATION':
         // Only show bookings where isCancel === 'TRUE'
-        return searchFilteredRows.filter(
+        return filteredData.filter(
           (row) =>
             row.isCancel === true ||
             row.isCancel === 'true' ||
@@ -92,20 +91,15 @@ export default function AdminBookingPage() {
         );
       case 'EXTENSION':
         // Only show bookings where isExtend === 'TRUE'
-        return searchFilteredRows.filter(
+        return filteredData.filter(
           (row) =>
             row.isExtend === true ||
             row.isExtend === 'true' ||
             row.isExtend === 'TRUE'
         );
       default:
-        return searchFilteredRows;
+        return filteredData;
     }
-  }, [rows, searchQuery, activeTab]);
-
-  // Filter rows based on active tab
-  const getFilteredRows = () => {
-    return filteredRows;
   };
 
   const fetchBookings = () => {

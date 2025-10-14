@@ -4,6 +4,7 @@ import { Box, Typography } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 import { HiCalendarDays, HiMagnifyingGlass } from 'react-icons/hi2';
 import AdminScheduleTable from '../../ui/components/table/AdminScheduleTable';
+import SearchBar from '../../ui/components/SearchBar';
 import Loading from '../../ui/components/Loading';
 import ReleaseModal from '../../ui/components/modal/ReleaseModal.jsx';
 import ReturnModal from '../../ui/components/modal/ReturnModal.jsx';
@@ -14,6 +15,7 @@ export default function AdminSchedulePage() {
   const [schedule, setSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [showReleaseModal, setShowReleaseModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -41,6 +43,45 @@ export default function AdminSchedulePage() {
   //           <HiMagnifyingGlass className="absolute left-3 top-3 text-gray-400" />
   //         </div>
   //       </div>
+
+  const getFilteredSchedule = () => {
+    if (!schedule || schedule.length === 0) return [];
+
+    if (!searchQuery) return schedule;
+
+    const query = searchQuery.toLowerCase().trim();
+
+    return schedule.filter((row) => {
+      // Search by customer name
+      if (row.customer_name?.toLowerCase().includes(query)) return true;
+
+      // Search by start date
+      if (row.start_date?.toLowerCase().includes(query)) return true;
+
+      // Search by end date
+      if (row.end_date?.toLowerCase().includes(query)) return true;
+
+      // Search by pickup location
+      if (row.pickup_location?.toLowerCase().includes(query)) return true;
+
+      // Search by dropoff location
+      if (row.dropoff_location?.toLowerCase().includes(query)) return true;
+
+      // Search by pickup time
+      if (row.pickup_time?.toLowerCase().includes(query)) return true;
+
+      // Search by dropoff time
+      if (row.dropoff_time?.toLowerCase().includes(query)) return true;
+
+      // Search by status
+      if (row.status?.toLowerCase().includes(query)) return true;
+
+      // Search by booking_id
+      if (row.booking_id?.toString().includes(query)) return true;
+
+      return false;
+    });
+  };
 
   const fetchScheduleData = async () => {
     setLoading(true);
@@ -195,6 +236,30 @@ export default function AdminSchedulePage() {
                 SCHEDULE
               </Typography>
             </Box>
+
+            {/* Search Bar */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                mb: 2,
+                mt: 1,
+              }}
+            >
+              <SearchBar
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search schedule..."
+                variant="outlined"
+                size="small"
+                sx={{
+                  width: { xs: '100%', sm: 350 },
+                  maxWidth: 350,
+                }}
+              />
+            </Box>
+
             <Box
               sx={{
                 flex: 1,
@@ -204,7 +269,7 @@ export default function AdminSchedulePage() {
               }}
             >
               <AdminScheduleTable
-                rows={schedule || []}
+                rows={getFilteredSchedule()}
                 loading={loading}
                 onOpenRelease={handleReleaseClick}
                 onOpenReturn={handleReturnClick}

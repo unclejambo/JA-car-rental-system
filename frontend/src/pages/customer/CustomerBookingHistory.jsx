@@ -20,6 +20,7 @@ import Loading from '../../ui/components/Loading';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 import CustomerBookingHistoryTable from '../../ui/components/table/CustomerBookingHistoryTable';
 import CustomerPaymentHistoryTable from '../../ui/components/table/CustomerPaymentHistoryTable';
+import BookingDetailsModal from '../../ui/components/modal/BookingDetailsModal';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -69,6 +70,10 @@ function CustomerBookingHistory() {
   // Search states
   const [bookingSearchQuery, setBookingSearchQuery] = useState('');
   const [paymentSearchQuery, setPaymentSearchQuery] = useState('');
+
+  // Modal states
+  const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   const [activeTab, setActiveTab] = useState(
     parseInt(localStorage.getItem('customerSettingsTab') || '0', 10)
@@ -201,15 +206,46 @@ function CustomerBookingHistory() {
     fetchData();
   }, []);
 
+  // Handler to view booking details
+  const handleViewBooking = async (bookingRow) => {
+    try {
+      // Fetch full booking details using booking_id
+      const authFetch = createAuthenticatedFetch(() => {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+      });
+
+      const response = await authFetch(
+        `${API_BASE}/bookings/my-bookings/list`,
+        {
+          headers: { Accept: 'application/json' },
+        }
+      );
+
+      if (response.ok) {
+        const allBookings = await response.json();
+        const fullBooking = allBookings.find(
+          (b) => b.booking_id === bookingRow.booking_id
+        );
+
+        if (fullBooking) {
+          setSelectedBooking(fullBooking);
+          setShowBookingDetailsModal(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching booking details:', error);
+    }
+  };
+
   // Filter bookings based on search query
   const filteredBookings = bookings
     ? bookings.filter((booking) => {
         if (!bookingSearchQuery) return true;
         const query = bookingSearchQuery.toLowerCase();
         return (
-          booking.booking_id?.toString().includes(query) ||
+          booking.booking_date?.toLowerCase().includes(query) ||
           booking.car_model?.toLowerCase().includes(query) ||
-          booking.status?.toLowerCase().includes(query) ||
           booking.completion_date?.toLowerCase().includes(query) ||
           booking.cancellation_date?.toLowerCase().includes(query)
         );
@@ -436,6 +472,7 @@ function CustomerBookingHistory() {
                 <CustomerBookingHistoryTable
                   bookings={filteredBookings}
                   loading={loading}
+                  onViewBooking={handleViewBooking}
                 />
               ) : bookingSearchQuery ? (
                 <EmptyState
@@ -475,6 +512,17 @@ function CustomerBookingHistory() {
           </CardContent>
         </Card>
       </Box>
+
+      {/* Booking Details Modal */}
+      <BookingDetailsModal
+        open={showBookingDetailsModal}
+        onClose={() => {
+          setShowBookingDetailsModal(false);
+          setSelectedBooking(null);
+        }}
+        booking={selectedBooking}
+        onPaymentSuccess={fetchData}
+      />
     </Box>
   );
 }

@@ -14,15 +14,10 @@ const PHILIPPINE_OFFSET_MINUTES = 480;
 export function toPhilippineTime(date) {
   const utcDate = typeof date === 'string' ? new Date(date) : date;
   
-  // Create a new date object to avoid mutating the original
-  const phTime = new Date(utcDate.getTime());
-  
-  // Get the current offset difference
-  const currentOffset = phTime.getTimezoneOffset();
-  const offsetDifference = PHILIPPINE_OFFSET_MINUTES + currentOffset;
-  
-  // Apply the offset
-  phTime.setMinutes(phTime.getMinutes() + offsetDifference);
+  // Simply add 8 hours to the UTC time to get Philippine time
+  // The Date object stores time in UTC internally
+  // We just need to add the offset for display purposes
+  const phTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000));
   
   return phTime;
 }
@@ -70,18 +65,34 @@ export function formatPhilippineDate(date, options = {}) {
 
 /**
  * Format time to Philippine locale string (12-hour format)
- * @param {Date|string} date - Date to format
+ * @param {Date|string} date - Date to format (UTC)
  * @returns {string} - Formatted time string (e.g., "2:30 PM")
  */
 export function formatPhilippineTime(date) {
-  const phDate = toPhilippineTime(date);
+  // Parse the UTC date
+  const utcDate = typeof date === 'string' ? new Date(date) : date;
   
-  return phDate.toLocaleTimeString('en-PH', {
-    timeZone: 'Asia/Manila',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
+  // Get UTC hours and minutes
+  const utcHours = utcDate.getUTCHours();
+  const utcMinutes = utcDate.getUTCMinutes();
+  
+  // Convert to Philippine time (UTC+8)
+  let phHours = utcHours + 8;
+  let phMinutes = utcMinutes;
+  
+  // Handle day overflow (e.g., 23:00 UTC + 8 = 31:00 → 7:00 next day)
+  if (phHours >= 24) {
+    phHours -= 24;
+  }
+  
+  // Format to 12-hour format
+  const ampm = phHours >= 12 ? 'PM' : 'AM';
+  let displayHours = phHours % 12;
+  displayHours = displayHours || 12; // Convert 0 to 12 for midnight
+  
+  const displayMinutes = String(phMinutes).padStart(2, '0');
+  
+  return `${displayHours}:${displayMinutes} ${ampm}`;
 }
 
 /**

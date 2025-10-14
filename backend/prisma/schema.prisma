@@ -36,7 +36,7 @@ model Customer {
   date_created      DateTime?      @db.Timestamptz(6)
   status            String?
   driver_license_no String?
-  isRecUpdate       Int?           @default(0)
+  isRecUpdate       Int?           @db.SmallInt
   profile_img_url   String?
   bookings          Booking[]
   driver_license    DriverLicense? @relation("CustomerDriverLicense", fields: [driver_license_no], references: [driver_license_no])
@@ -139,20 +139,27 @@ model Extension {
 }
 
 model Payment {
-  payment_id     Int       @id @default(autoincrement())
-  booking_id     Int?
-  customer_id    Int
-  description    String?
-  payment_method String?
-  gcash_no       String?
-  reference_no   String?
-  amount         Int
-  paid_date      DateTime? @db.Timestamptz(6)
-  balance        Int?
-  waitlist_id    Int?
-  booking        Booking?  @relation(fields: [booking_id], references: [booking_id], onDelete: Restrict)
-  customer       Customer  @relation(fields: [customer_id], references: [customer_id])
-  Waitlist       Waitlist? @relation(fields: [waitlist_id], references: [waitlist_id])
+  payment_id           Int       @id @default(autoincrement())
+  booking_id           Int?
+  customer_id          Int
+  description          String?
+  payment_method       String?
+  gcash_no             String?
+  reference_no         String?
+  amount               Int
+  paid_date            DateTime? @db.Timestamptz(6)
+  balance              Int?
+  waitlist_id          Int?
+  payment_proof_url    String?
+  verification_status  String?   @default("pending")
+  verified_by_admin_id Int?
+  verification_date    DateTime? @db.Timestamptz(6)
+  verification_notes   String?
+  booking              Booking?  @relation(fields: [booking_id], references: [booking_id], onDelete: Restrict)
+  customer             Customer  @relation(fields: [customer_id], references: [customer_id])
+  Waitlist             Waitlist? @relation(fields: [waitlist_id], references: [waitlist_id])
+
+  @@index([verification_status], map: "idx_payment_verification_status")
 }
 
 model Refund {

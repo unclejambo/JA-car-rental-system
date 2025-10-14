@@ -1,4 +1,4 @@
-import prisma from '../config/prisma.js';
+import prisma from "../config/prisma.js";
 
 // Shape transaction records for frontend DataGrid
 function shapeTransaction(t) {
@@ -8,11 +8,19 @@ function shapeTransaction(t) {
     bookingId: rest.booking_id,
     customerId: rest.customer_id,
     carId: rest.car_id,
-    customerName: [customer?.first_name, customer?.last_name].filter(Boolean).join(' '),
-    carModel: [car?.make, car?.model].filter(Boolean).join(' '),
-    bookingDate: booking?.booking_date ? booking.booking_date.toISOString().split('T')[0] : null,
-    completionDate: rest.completion_date ? rest.completion_date.toISOString().split('T')[0] : null,
-    cancellationDate: rest.cancellation_date ? rest.cancellation_date.toISOString().split('T')[0] : null,
+    customerName: [customer?.first_name, customer?.last_name]
+      .filter(Boolean)
+      .join(" "),
+    carModel: [car?.make, car?.model].filter(Boolean).join(" "),
+    bookingDate: booking?.booking_date
+      ? booking.booking_date.toISOString().split("T")[0]
+      : null,
+    completionDate: rest.completion_date
+      ? rest.completion_date.toISOString().split("T")[0]
+      : null,
+    cancellationDate: rest.cancellation_date
+      ? rest.cancellation_date.toISOString().split("T")[0]
+      : null,
   };
 }
 
@@ -24,22 +32,58 @@ export const getTransactions = async (req, res) => {
         customer: { select: { first_name: true, last_name: true } },
         car: { select: { make: true, model: true } },
       },
-      orderBy: { transaction_id: 'desc' },
+      orderBy: { transaction_id: "desc" },
     });
 
     res.json(transactions.map(shapeTransaction));
   } catch (error) {
-    console.error('Error fetching transactions:', error);
-    res.status(500).json({ error: 'Failed to fetch transactions' });
+    console.error("Error fetching transactions:", error);
+    res.status(500).json({ error: "Failed to fetch transactions" });
+  }
+};
+
+// Get customer's own transactions
+export const getMyTransactions = async (req, res) => {
+  try {
+    const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
+
+    if (!customerId) {
+      return res
+        .status(401)
+        .json({ error: "Customer authentication required" });
+    }
+
+    const transactions = await prisma.transaction.findMany({
+      where: { customer_id: parseInt(customerId) },
+      include: {
+        booking: { select: { booking_date: true } },
+        customer: { select: { first_name: true, last_name: true } },
+        car: { select: { make: true, model: true } },
+      },
+      orderBy: { transaction_id: "desc" },
+    });
+
+    res.json(transactions.map(shapeTransaction));
+  } catch (error) {
+    console.error("Error fetching customer transactions:", error);
+    res.status(500).json({ error: "Failed to fetch transactions" });
   }
 };
 
 export const createTransaction = async (req, res) => {
   try {
-    const { booking_id, customer_id, car_id, completion_date, cancellation_date } = req.body;
+    const {
+      booking_id,
+      customer_id,
+      car_id,
+      completion_date,
+      cancellation_date,
+    } = req.body;
 
     if (!booking_id || !customer_id || !car_id) {
-      return res.status(400).json({ error: 'booking_id, customer_id and car_id are required' });
+      return res
+        .status(400)
+        .json({ error: "booking_id, customer_id and car_id are required" });
     }
 
     const created = await prisma.transaction.create({
@@ -48,7 +92,9 @@ export const createTransaction = async (req, res) => {
         customer_id: Number(customer_id),
         car_id: Number(car_id),
         completion_date: completion_date ? new Date(completion_date) : null,
-        cancellation_date: cancellation_date ? new Date(cancellation_date) : null,
+        cancellation_date: cancellation_date
+          ? new Date(cancellation_date)
+          : null,
       },
       include: {
         booking: { select: { booking_date: true } },
@@ -59,7 +105,7 @@ export const createTransaction = async (req, res) => {
 
     res.status(201).json(shapeTransaction(created));
   } catch (error) {
-    console.error('Error creating transaction:', error);
-    res.status(500).json({ error: 'Failed to create transaction' });
+    console.error("Error creating transaction:", error);
+    res.status(500).json({ error: "Failed to create transaction" });
   }
 };

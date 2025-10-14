@@ -5,6 +5,7 @@ import Header from '../../ui/components/Header';
 import AddIcon from '@mui/icons-material/Add';
 import ManageUserHeader from '../../ui/components/header/ManageUserHeader';
 import ManageUserTable from '../../ui/components/table/ManageUserTable';
+import SearchBar from '../../ui/components/SearchBar';
 import Loading from '../../ui/components/Loading';
 import AddStaffModal from '../../ui/components/modal/AddStaffModal';
 import AddDriverModal from '../../ui/components/modal/AddDriverModal';
@@ -19,6 +20,7 @@ export default function AdminManageUser() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('CUSTOMER');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showAddDriverModal, setShowAddDriverModal] = useState(false);
@@ -56,7 +58,7 @@ export default function AdminManageUser() {
         let endpoint = '';
         switch (tabType) {
           case 'CUSTOMER':
-            endpoint = `${API_BASE}/customers`;
+            endpoint = `${API_BASE}/api/customers`; // ✅ Fixed: Added /api prefix
             break;
           case 'STAFF':
             endpoint = `${API_BASE}/admins`;
@@ -65,7 +67,7 @@ export default function AdminManageUser() {
             endpoint = `${API_BASE}/drivers`;
             break;
           default:
-            endpoint = `${API_BASE}/customers`;
+            endpoint = `${API_BASE}/api/customers`; // ✅ Fixed: Added /api prefix
         }
 
         const response = await authFetch(endpoint, {
@@ -130,6 +132,46 @@ export default function AdminManageUser() {
     },
     [authFetch, API_BASE, activeTab, userRole]
   );
+
+  // Filter rows based on search query
+  const getFilteredRows = () => {
+    if (!rows || rows.length === 0) return [];
+
+    if (!searchQuery) return rows;
+
+    const query = searchQuery.toLowerCase().trim();
+
+    return rows.filter((row) => {
+      // Search by first name
+      if (row.first_name?.toLowerCase().includes(query)) return true;
+
+      // Search by last name
+      if (row.last_name?.toLowerCase().includes(query)) return true;
+
+      // Search by email
+      if (row.email?.toLowerCase().includes(query)) return true;
+
+      // Search by username
+      if (row.username?.toLowerCase().includes(query)) return true;
+
+      // Search by contact number
+      if (row.contact_number?.toLowerCase().includes(query)) return true;
+
+      // Search by address
+      if (row.address?.toLowerCase().includes(query)) return true;
+
+      // Search by status
+      if (row.status?.toLowerCase().includes(query)) return true;
+
+      // Search by driver license number (for CUSTOMER and DRIVER tabs)
+      if (row.driver_license_no?.toLowerCase().includes(query)) return true;
+
+      // Search by fb_link (for CUSTOMER tab)
+      if (row.fb_link?.toLowerCase().includes(query)) return true;
+
+      return false;
+    });
+  };
 
   // Force staff users to stay on CUSTOMER tab
   useEffect(() => {
@@ -294,6 +336,30 @@ export default function AdminManageUser() {
                 </Button>
               )}
             </Box>
+
+            {/* Search Bar */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                mb: 2,
+                mt: 1,
+              }}
+            >
+              <SearchBar
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Search ${activeTab.toLowerCase()}...`}
+                variant="outlined"
+                size="small"
+                sx={{
+                  width: { xs: '100%', sm: 350 },
+                  maxWidth: 350,
+                }}
+              />
+            </Box>
+
             <Box
               sx={{
                 flex: 1,
@@ -303,7 +369,7 @@ export default function AdminManageUser() {
               }}
             >
               <ManageUserTable
-                rows={rows}
+                rows={getFilteredRows()}
                 loading={loading}
                 activeTab={activeTab}
               />

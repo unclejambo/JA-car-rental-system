@@ -43,6 +43,7 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Header from '../ui/components/Header';
 import carImage from '/carImage.png';
+import { useAuth } from '../hooks/useAuth.js';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_LOCAL;
 
@@ -56,9 +57,30 @@ const STEPS = {
 
 function ForgotPasswordPage() {
   const navigate = useNavigate();
+  const { isAuthenticated, userRole } = useAuth();
   const [currentStep, setCurrentStep] = useState(STEPS.IDENTIFY);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Redirect authenticated users to their respective dashboard
+  useEffect(() => {
+    if (isAuthenticated && userRole) {
+      switch (userRole) {
+        case 'admin':
+        case 'staff':
+          navigate('/admindashboard', { replace: true });
+          break;
+        case 'customer':
+          navigate('/customer-dashboard', { replace: true });
+          break;
+        case 'driver':
+          navigate('/driver-schedule', { replace: true });
+          break;
+        default:
+          break;
+      }
+    }
+  }, [isAuthenticated, userRole, navigate]);
   const [success, setSuccess] = useState('');
 
   // Step 1: Account identification

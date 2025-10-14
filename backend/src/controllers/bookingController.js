@@ -1224,7 +1224,7 @@ export const updateMyBooking = async (req, res) => {
     }
 
     // Check if booking can be updated (must be pending)
-    if (booking.booking_status !== "pending") {
+    if (booking.booking_status !== "Pending") {
       return res.status(400).json({
         error: "Only pending bookings can be updated",
         current_status: booking.booking_status,
@@ -1238,11 +1238,31 @@ export const updateMyBooking = async (req, res) => {
         purpose,
         start_date: start_date ? new Date(start_date) : undefined,
         end_date: end_date ? new Date(end_date) : undefined,
-        pickup_time: pickup_time
-          ? new Date(`1970-01-01T${pickup_time}:00`)
+        // ✅ FIX: Store times with Philippine timezone context using ISO string
+        pickup_time: pickup_time && start_date
+          ? (() => {
+              const [hours, minutes] = pickup_time.split(':').map(Number);
+              // Get just the date part (YYYY-MM-DD) from start_date
+              const dateStr = start_date.split('T')[0]; // Handles both "2025-10-17" and "2025-10-17T00:00:00"
+              // Create ISO string with Philippine timezone offset (+08:00)
+              // This explicitly states: "This time is in Philippine timezone"
+              const isoString = `${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000+08:00`;
+              const result = new Date(isoString);
+              console.log('🕐 Storing pickup_time:', pickup_time, 'PH on date:', dateStr, '→', result.toISOString(), '(UTC)');
+              return result;
+            })()
           : undefined,
-        dropoff_time: dropoff_time
-          ? new Date(`1970-01-01T${dropoff_time}:00`)
+        dropoff_time: dropoff_time && end_date
+          ? (() => {
+              const [hours, minutes] = dropoff_time.split(':').map(Number);
+              // Get just the date part (YYYY-MM-DD) from end_date
+              const dateStr = end_date.split('T')[0]; // Handles both "2025-10-20" and "2025-10-20T00:00:00"
+              // Create ISO string with Philippine timezone offset (+08:00)
+              const isoString = `${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000+08:00`;
+              const result = new Date(isoString);
+              console.log('🕐 Storing dropoff_time:', dropoff_time, 'PH on date:', dateStr, '→', result.toISOString(), '(UTC)');
+              return result;
+            })()
           : undefined,
         pickup_loc,
         dropoff_loc,

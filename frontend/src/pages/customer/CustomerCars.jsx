@@ -47,7 +47,8 @@ function CustomerCars() {
   const [waitlistEntries, setWaitlistEntries] = useState([]);
   const [showWaitlistInfo, setShowWaitlistInfo] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
-  const [customerNotificationSetting, setCustomerNotificationSetting] = useState(0);
+  const [customerNotificationSetting, setCustomerNotificationSetting] =
+    useState(0);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
 
@@ -177,15 +178,17 @@ function CustomerCars() {
   // Handle booking button click - now handles both regular booking and waitlist
   const handleBookNow = async (car) => {
     const isRented = car.car_status?.toLowerCase().includes('rent');
-    
+
     if (isRented) {
       // This is a waitlist request
       await fetchCustomerSettings();
       setSelectedCar(car);
-      
+
       // Check if notifications are disabled (0)
       if (customerNotificationSetting === 0 || !customerNotificationSetting) {
-        setSnackbarMessage('Please enable notification settings in your account settings to join the waitlist.');
+        setSnackbarMessage(
+          'Please enable notification settings in your account settings to join the waitlist.'
+        );
         setSnackbarOpen(true);
         // Optionally, you can redirect to settings page after a delay
         setTimeout(() => {
@@ -206,17 +209,22 @@ function CustomerCars() {
   // Join waitlist function
   const joinWaitlist = async (car) => {
     try {
-      const response = await authenticatedFetch(`${API_BASE}/api/cars/${car.car_id}/waitlist`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          notification_preference: customerNotificationSetting
-        })
-      });
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/cars/${car.car_id}/waitlist`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            notification_preference: customerNotificationSetting,
+          }),
+        }
+      );
 
       if (response.ok) {
         const result = await response.json();
-        setSnackbarMessage(`Successfully joined waitlist! You'll be notified when this car becomes available.`);
+        setSnackbarMessage(
+          `Successfully joined waitlist! You'll be notified when this car becomes available.`
+        );
         setSnackbarOpen(true);
         fetchWaitlistEntries(); // Refresh waitlist entries
       } else {
@@ -234,16 +242,19 @@ function CustomerCars() {
   // Handle notification settings saved
   const handleNotificationSettingsSaved = async (newSetting) => {
     try {
-      const response = await authenticatedFetch(`${API_BASE}/api/customers/me/notification-settings`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isRecUpdate: newSetting })
-      });
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/customers/me/notification-settings`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isRecUpdate: newSetting }),
+        }
+      );
 
       if (response.ok) {
         setCustomerNotificationSetting(newSetting);
         setShowNotificationModal(false);
-        
+
         // Now join the waitlist
         if (selectedCar) {
           await joinWaitlist(selectedCar);
@@ -898,8 +909,10 @@ function CustomerCars() {
                   >
                     {filteredCars.map((car) => {
                       const statusInfo = getStatusInfo(car.car_status);
-                      const isUnderMaintenance = car.car_status?.toLowerCase().includes('maint');
-                  return (
+                      const isUnderMaintenance = car.car_status
+                        ?.toLowerCase()
+                        .includes('maint');
+                      return (
                         <Grid
                           item
                           xs={12}
@@ -917,18 +930,24 @@ function CustomerCars() {
                               flexDirection: 'column',
                               transition: 'transform 0.2s, box-shadow 0.2s',
                               '&:hover': {
-                                transform: isUnderMaintenance ? 'none' : 'translateY(-4px)',
+                                transform: isUnderMaintenance
+                                  ? 'none'
+                                  : 'translateY(-4px)',
                                 boxShadow: isUnderMaintenance ? 0 : 4,
                               },
-                              cursor: isUnderMaintenance ? 'not-allowed' : 'pointer',
-                              opacity: isUnderMaintenance ? 0.7 : 1
+                              cursor: isUnderMaintenance
+                                ? 'not-allowed'
+                                : 'pointer',
+                              opacity: isUnderMaintenance ? 0.7 : 1,
                             }}
-                            onClick={() => !isUnderMaintenance && handleBookNow(car)}
+                            onClick={() =>
+                              !isUnderMaintenance && handleBookNow(car)
+                            }
                           >
                             <CardMedia
                               component="img"
                               height="160"
-                              image="/carImage.png"
+                              image={car.car_img_url}
                               alt={`${car.make} ${car.model}`}
                               sx={{
                                 objectFit: 'cover',

@@ -200,7 +200,7 @@ export default function AddRefundModal({ show, onClose }) {
         const base =
           import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL || '';
         const [cRes, bRes] = await Promise.all([
-          fetch(`${base}/customers`),
+          fetch(`${base}/api/customers`), // ✅ Fixed: Added /api prefix
           fetch(`${base}/bookings`),
         ]);
         const [cData, bData] = await Promise.all([cRes.json(), bRes.json()]);

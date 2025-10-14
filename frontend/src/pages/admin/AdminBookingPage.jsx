@@ -5,6 +5,7 @@ import Header from '../../ui/components/Header';
 import Loading from '../../ui/components/Loading';
 import ManageBookingsTable from '../../ui/components/table/ManageBookingsTable';
 import ManageBookingsHeader from '../../ui/components/header/ManageBookingsHeader';
+import SearchBar from '../../ui/components/SearchBar';
 import { HiBookOpen, HiCurrencyDollar } from 'react-icons/hi2';
 import ManageFeesModal from '../../ui/components/modal/ManageFeesModal';
 import BookingDetailsModal from '../../ui/components/modal/BookingDetailsModal';
@@ -19,6 +20,7 @@ export default function AdminBookingPage() {
   const [showManageFeesModal, setShowManageFeesModal] = useState(false);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const openManageFeesModal = () => setShowManageFeesModal(true);
   const closeManageFeesModal = () => setShowManageFeesModal(false);
@@ -33,17 +35,55 @@ export default function AdminBookingPage() {
     setSelectedBooking(null);
   };
 
-  // Filter rows based on active tab
   const getFilteredRows = () => {
     if (!rows || rows.length === 0) return [];
 
+    let filteredData = rows;
+
+    // Apply search filter if search query exists
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase().trim();
+      filteredData = rows.filter((row) => {
+        // Search by booking ID
+        if (row.actualBookingId?.toString().toLowerCase().includes(query))
+          return true;
+
+        // Search by customer name
+        if (row.customer_name?.toLowerCase().includes(query)) return true;
+
+        // Search by car model
+        if (row.car_model?.toLowerCase().includes(query)) return true;
+
+        // Search by start date
+        if (row.start_date?.toLowerCase().includes(query)) return true;
+
+        // Search by end date
+        if (row.end_date?.toLowerCase().includes(query)) return true;
+
+        // Search by status
+        if (row.booking_status?.toLowerCase().includes(query)) return true;
+
+        // Search by purpose (for CANCELLATION tab)
+        if (row.purpose?.toLowerCase().includes(query)) return true;
+
+        // Search by new end date (for EXTENSION tab)
+        if (row.new_end_date?.toLowerCase().includes(query)) return true;
+
+        // Search by balance
+        if (row.balance?.toString().toLowerCase().includes(query)) return true;
+
+        return false;
+      });
+    }
+
+    // Apply tab-specific filtering
     switch (activeTab) {
       case 'BOOKINGS':
         // Show all confirmed, pending, and in progress bookings
-        return rows;
+        return filteredData;
       case 'CANCELLATION':
         // Only show bookings where isCancel === 'TRUE'
-        return rows.filter(
+        return filteredData.filter(
           (row) =>
             row.isCancel === true ||
             row.isCancel === 'true' ||
@@ -51,14 +91,14 @@ export default function AdminBookingPage() {
         );
       case 'EXTENSION':
         // Only show bookings where isExtend === 'TRUE'
-        return rows.filter(
+        return filteredData.filter(
           (row) =>
             row.isExtend === true ||
             row.isExtend === 'true' ||
             row.isExtend === 'TRUE'
         );
       default:
-        return rows;
+        return filteredData;
     }
   };
 
@@ -285,6 +325,30 @@ export default function AdminBookingPage() {
                 </Button>
               )}
             </Box>
+
+            {/* Search Bar */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                mb: 2,
+                mt: 1,
+              }}
+            >
+              <SearchBar
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Search ${activeTab.toLowerCase()}...`}
+                variant="outlined"
+                size="small"
+                sx={{
+                  width: { xs: '100%', sm: 350 },
+                  maxWidth: 350,
+                }}
+              />
+            </Box>
+
             <Box
               sx={{
                 flex: 1,

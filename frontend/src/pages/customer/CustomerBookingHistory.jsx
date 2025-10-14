@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import CustomerSideBar from '../../ui/components/CustomerSideBar';
 import Header from '../../ui/components/Header';
+import SearchBar from '../../ui/components/SearchBar';
 import '../../styles/customercss/customerdashboard.css';
 import {
   Box,
@@ -19,6 +20,7 @@ import Loading from '../../ui/components/Loading';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 import CustomerBookingHistoryTable from '../../ui/components/table/CustomerBookingHistoryTable';
 import CustomerPaymentHistoryTable from '../../ui/components/table/CustomerPaymentHistoryTable';
+import BookingDetailsModal from '../../ui/components/modal/BookingDetailsModal';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -65,6 +67,14 @@ function CustomerBookingHistory() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Search states
+  const [bookingSearchQuery, setBookingSearchQuery] = useState('');
+  const [paymentSearchQuery, setPaymentSearchQuery] = useState('');
+
+  // Modal states
+  const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+
   const [activeTab, setActiveTab] = useState(
     parseInt(localStorage.getItem('customerSettingsTab') || '0', 10)
   );
@@ -95,32 +105,67 @@ function CustomerBookingHistory() {
       const resPayments = await authFetch(`${API_BASE}/payments/my-payments`, {
         headers: { Accept: 'application/json' },
       });
+      const resTransactions = await authFetch(
+        `${API_BASE}/transactions/my-transactions`,
+        {
+          headers: { Accept: 'application/json' },
+        }
+      );
 
-      if (resBookings.status === 401 || resPayments.status === 401) {
+      if (
+        resBookings.status === 401 ||
+        resPayments.status === 401 ||
+        resTransactions.status === 401
+      ) {
         localStorage.removeItem('authToken');
         window.location.href = '/login';
         return;
       }
 
-      if (!resBookings.ok || !resPayments.ok) {
-        throw new Error('Failed to fetch booking or payment history');
+      if (!resBookings.ok || !resPayments.ok || !resTransactions.ok) {
+        throw new Error(
+          'Failed to fetch booking, payment, or transaction history'
+        );
       }
 
       const dataBookings = await resBookings.json();
       const dataPayments = await resPayments.json();
+      const dataTransactions = await resTransactions.json();
 
-      // Map backend booking data to table row shape
+      // Create a map of transactions by booking_id for easy lookup
+      const transactionMap = {};
+      if (Array.isArray(dataTransactions)) {
+        dataTransactions.forEach((t) => {
+          if (!transactionMap[t.bookingId]) {
+            transactionMap[t.bookingId] = t;
+          }
+        });
+      }
+
+      console.log('Transaction map:', transactionMap);
+
+      // Map backend booking data to table row shape and merge with transaction data
       const mappedBookings = Array.isArray(dataBookings)
-        ? dataBookings.map((b) => ({
-            booking_id: b.booking_id,
-            booking_date: b.booking_date,
-            car_model: b.car_details?.display_name || '',
-            start_date: b.start_date,
-            end_date: b.end_date,
-            amount: b.total_amount ?? '',
-            status: b.has_outstanding_balance ? 'Unpaid' : 'Paid',
-          }))
+        ? dataBookings.map((b) => {
+            const transaction = transactionMap[b.booking_id];
+            console.log(`Booking ${b.booking_id}:`, {
+              transaction: transaction,
+              completion_date: transaction?.completionDate,
+              cancellation_date: transaction?.cancellationDate,
+            });
+            return {
+              booking_id: b.booking_id,
+              booking_date: b.booking_date,
+              car_model: b.car_details?.display_name || '',
+              completion_date: transaction?.completionDate || null,
+              cancellation_date: transaction?.cancellationDate || null,
+              amount: b.total_amount ?? '',
+              status: b.has_outstanding_balance ? 'Unpaid' : 'Paid',
+            };
+          })
         : [];
+
+      console.log('Mapped bookings:', mappedBookings);
       setBookings(mappedBookings);
 
       // Map backend payment data to table row shape
@@ -160,6 +205,67 @@ function CustomerBookingHistory() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Handler to view booking details
+  const handleViewBooking = async (bookingRow) => {
+    try {
+      // Fetch full booking details using booking_id
+      const authFetch = createAuthenticatedFetch(() => {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+      });
+
+      const response = await authFetch(
+        `${API_BASE}/bookings/my-bookings/list`,
+        {
+          headers: { Accept: 'application/json' },
+        }
+      );
+
+      if (response.ok) {
+        const allBookings = await response.json();
+        const fullBooking = allBookings.find(
+          (b) => b.booking_id === bookingRow.booking_id
+        );
+
+        if (fullBooking) {
+          setSelectedBooking(fullBooking);
+          setShowBookingDetailsModal(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching booking details:', error);
+    }
+  };
+
+  // Filter bookings based on search query
+  const filteredBookings = bookings
+    ? bookings.filter((booking) => {
+        if (!bookingSearchQuery) return true;
+        const query = bookingSearchQuery.toLowerCase();
+        return (
+          booking.booking_date?.toLowerCase().includes(query) ||
+          booking.car_model?.toLowerCase().includes(query) ||
+          booking.completion_date?.toLowerCase().includes(query) ||
+          booking.cancellation_date?.toLowerCase().includes(query)
+        );
+      })
+    : [];
+
+  // Filter payments based on search query
+  const filteredPayments = payments
+    ? payments.filter((payment) => {
+        if (!paymentSearchQuery) return true;
+        const query = paymentSearchQuery.toLowerCase();
+        return (
+          payment.transactionId?.toString().includes(query) ||
+          payment.description?.toLowerCase().includes(query) ||
+          payment.paymentMethod?.toLowerCase().includes(query) ||
+          payment.referenceNo?.toLowerCase().includes(query) ||
+          payment.status?.toLowerCase().includes(query)
+        );
+      })
+    : [];
 
   if (loading && (bookings === null || payments === null)) {
     return (
@@ -307,6 +413,45 @@ function CustomerBookingHistory() {
               </Tabs>
             </Box>
 
+            {/* Search Bar - Aligned to the right like Refresh button */}
+            <Box
+              sx={{
+                mb: 3,
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <Box sx={{ width: { xs: '100%', sm: 300, md: 350 } }}>
+                {activeTab === 0 ? (
+                  <SearchBar
+                    value={bookingSearchQuery}
+                    onChange={(e) => setBookingSearchQuery(e.target.value)}
+                    placeholder="Search bookings..."
+                    fullWidth
+                  />
+                ) : (
+                  <SearchBar
+                    value={paymentSearchQuery}
+                    onChange={(e) => setPaymentSearchQuery(e.target.value)}
+                    placeholder="Search payments..."
+                    fullWidth
+                  />
+                )}
+              </Box>
+            </Box>
+
+            {/* Result count below search bar - aligned to the right */}
+            {activeTab === 0 && bookingSearchQuery && (
+              <Box
+                sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}
+              ></Box>
+            )}
+            {activeTab === 1 && paymentSearchQuery && (
+              <Box
+                sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}
+              ></Box>
+            )}
+
             {/* Error Alert */}
             {error && (
               <Alert severity="error" sx={{ mb: 3 }}>
@@ -314,45 +459,70 @@ function CustomerBookingHistory() {
               </Alert>
             )}
 
+            {/* Loading Indicator */}
+            {loading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <CircularProgress sx={{ color: '#c10007' }} />
+              </Box>
+            )}
+
             {/* Tab Panels */}
             <TabPanel value={activeTab} index={0}>
-              {bookings && bookings.length > 0 ? (
+              {filteredBookings && filteredBookings.length > 0 ? (
                 <CustomerBookingHistoryTable
-                  bookings={bookings}
+                  bookings={filteredBookings}
                   loading={loading}
+                  onViewBooking={handleViewBooking}
+                />
+              ) : bookingSearchQuery ? (
+                <EmptyState
+                  icon={HiOutlineClipboardDocumentCheck}
+                  title="No Matching Bookings"
+                  message={`No bookings found matching "${bookingSearchQuery}". Try a different search term.`}
                 />
               ) : (
                 <EmptyState
                   icon={HiOutlineClipboardDocumentCheck}
                   title="No Bookings Found"
-                  message="You haven’t made any bookings yet."
+                  message="You haven't made any bookings yet."
                 />
               )}
             </TabPanel>
 
             <TabPanel value={activeTab} index={1}>
-              {payments && payments.length > 0 ? (
+              {filteredPayments && filteredPayments.length > 0 ? (
                 <CustomerPaymentHistoryTable
-                  payments={payments}
+                  payments={filteredPayments}
                   loading={loading}
+                />
+              ) : paymentSearchQuery ? (
+                <EmptyState
+                  icon={HiCreditCard}
+                  title="No Matching Payments"
+                  message={`No payments found matching "${paymentSearchQuery}". Try a different search term.`}
                 />
               ) : (
                 <EmptyState
                   icon={HiCreditCard}
                   title="No Payments Found"
-                  message="You haven’t made any payments yet."
+                  message="You haven't made any payments yet."
                 />
               )}
             </TabPanel>
-
-            {loading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress sx={{ color: '#c10007' }} />
-              </Box>
-            )}
           </CardContent>
         </Card>
       </Box>
+
+      {/* Booking Details Modal */}
+      <BookingDetailsModal
+        open={showBookingDetailsModal}
+        onClose={() => {
+          setShowBookingDetailsModal(false);
+          setSelectedBooking(null);
+        }}
+        booking={selectedBooking}
+        onPaymentSuccess={fetchData}
+      />
     </Box>
   );
 }

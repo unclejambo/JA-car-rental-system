@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FaUpload } from 'react-icons/fa';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/register.css';
 import SuccessModal from '../ui/components/modal/SuccessModal.jsx';
 import RegisterTermsAndConditionsModal from '../ui/modals/RegisterTermsAndConditionsModal.jsx';
+import { useAuth } from '../hooks/useAuth.js';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
@@ -20,6 +21,27 @@ const ALLOWED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
 const RegisterPage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const { isAuthenticated, userRole } = useAuth();
+
+  // Redirect authenticated users to their respective dashboard
+  useEffect(() => {
+    if (isAuthenticated && userRole) {
+      switch (userRole) {
+        case 'admin':
+        case 'staff':
+          navigate('/admindashboard', { replace: true });
+          break;
+        case 'customer':
+          navigate('/customer-dashboard', { replace: true });
+          break;
+        case 'driver':
+          navigate('/driver-schedule', { replace: true });
+          break;
+        default:
+          break;
+      }
+    }
+  }, [isAuthenticated, userRole, navigate]);
 
   const [formData, setFormData] = useState({
     email: '',

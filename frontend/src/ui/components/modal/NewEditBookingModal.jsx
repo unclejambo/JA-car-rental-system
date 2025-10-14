@@ -67,29 +67,52 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
       const bookingPurpose = booking.purpose || '';
       const isPredefined = predefinedPurposes.includes(bookingPurpose);
       
-      // Extract time from database timestamps (they're stored as full DateTime in UTC)
-      // Use UTC methods to avoid timezone conversion issues
+      // Extract time from database timestamps
+      // Times are stored as UTC but represent Philippine time (UTC+8)
+      // When we retrieve them, we need to convert back to Philippine time
       let pickupTimeFormatted = '';
       let dropoffTimeFormatted = '';
       
       if (booking.pickup_time) {
         const pickupDate = new Date(booking.pickup_time);
-        console.log('🕐 Parsed pickup Date object:', pickupDate);
-        console.log('🕐 Pickup UTC hours:', pickupDate.getUTCHours(), 'UTC minutes:', pickupDate.getUTCMinutes());
-        const hours = String(pickupDate.getUTCHours()).padStart(2, '0');
-        const minutes = String(pickupDate.getUTCMinutes()).padStart(2, '0');
-        pickupTimeFormatted = `${hours}:${minutes}`;
-        console.log('✅ Formatted pickup time (UTC):', pickupTimeFormatted);
+        console.log('🕐 Raw pickup_time from DB (UTC):', pickupDate.toISOString());
+        
+        // Convert UTC to Philippine time by adding 8 hours
+        const utcHours = pickupDate.getUTCHours();
+        const utcMinutes = pickupDate.getUTCMinutes();
+        
+        // Add 8 hours for Philippine timezone
+        let phHours = utcHours + 8;
+        let phMinutes = utcMinutes;
+        
+        // Handle day overflow (if adding 8 hours goes past midnight)
+        if (phHours >= 24) {
+          phHours -= 24;
+        }
+        
+        pickupTimeFormatted = `${String(phHours).padStart(2, '0')}:${String(phMinutes).padStart(2, '0')}`;
+        console.log('✅ Converted to Philippine time:', pickupTimeFormatted);
       }
       
       if (booking.dropoff_time) {
         const dropoffDate = new Date(booking.dropoff_time);
-        console.log('🕐 Parsed dropoff Date object:', dropoffDate);
-        console.log('🕐 Dropoff UTC hours:', dropoffDate.getUTCHours(), 'UTC minutes:', dropoffDate.getUTCMinutes());
-        const hours = String(dropoffDate.getUTCHours()).padStart(2, '0');
-        const minutes = String(dropoffDate.getUTCMinutes()).padStart(2, '0');
-        dropoffTimeFormatted = `${hours}:${minutes}`;
-        console.log('✅ Formatted dropoff time (UTC):', dropoffTimeFormatted);
+        console.log('🕐 Raw dropoff_time from DB (UTC):', dropoffDate.toISOString());
+        
+        // Convert UTC to Philippine time by adding 8 hours
+        const utcHours = dropoffDate.getUTCHours();
+        const utcMinutes = dropoffDate.getUTCMinutes();
+        
+        // Add 8 hours for Philippine timezone
+        let phHours = utcHours + 8;
+        let phMinutes = utcMinutes;
+        
+        // Handle day overflow (if adding 8 hours goes past midnight)
+        if (phHours >= 24) {
+          phHours -= 24;
+        }
+        
+        dropoffTimeFormatted = `${String(phHours).padStart(2, '0')}:${String(phMinutes).padStart(2, '0')}`;
+        console.log('✅ Converted to Philippine time:', dropoffTimeFormatted);
       }
       
       setFormData({
@@ -299,8 +322,19 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
   const handleClose = () => {
     setError('');
     setMissingFields([]);
+    
+    // Ensure body scroll is restored when modal closes
+    document.body.style.overflow = 'unset';
+    
     onClose();
   };
+
+  // Clean up body scroll on unmount
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   return (
     <Dialog 
@@ -315,6 +349,9 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
           flexDirection: 'column'
         } 
       }}
+      // Ensure proper scroll behavior
+      scroll="paper"
+      disableScrollLock={false}
     >
       <DialogTitle sx={{ 
         display: 'flex', 
@@ -570,6 +607,11 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
               required
               error={missingFields.includes('pickupTime')}
               helperText="Office hours: 7:00 AM - 7:00 PM"
+              inputProps={{
+                min: "07:00",
+                max: "19:00",
+                step: 300 // 5 minute intervals
+              }}
               sx={{
                 '& .MuiInputLabel-root': { fontSize: '1rem' },
                 '& .MuiInputBase-input': { fontSize: '1rem', py: 1.5 },
@@ -593,6 +635,11 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
               required
               error={missingFields.includes('dropoffTime')}
               helperText="Office hours: 7:00 AM - 7:00 PM"
+              inputProps={{
+                min: "07:00",
+                max: "19:00",
+                step: 300 // 5 minute intervals
+              }}
               sx={{
                 '& .MuiInputLabel-root': { fontSize: '1rem' },
                 '& .MuiInputBase-input': { fontSize: '1rem', py: 1.5 },

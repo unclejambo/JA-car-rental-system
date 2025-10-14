@@ -82,3 +82,82 @@ export const updateDriverLicense = async (req, res) => {
     res.status(500).json({ error: "Failed to update driver license" });
   }
 };
+
+// @desc    Delete driver license image
+// @route   DELETE /driver-license/:id/image
+// @access  Authenticated
+export const deleteLicenseImage = async (req, res) => {
+  try {
+    const driverLicenseNo = req.params.id;
+    
+    console.log("🗑️ License image delete request for:", driverLicenseNo);
+
+    // Find current record
+    const existing = await prisma.driverLicense.findUnique({
+      where: { driver_license_no: driverLicenseNo },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ 
+        success: false,
+        error: "License not found" 
+      });
+    }
+
+    if (!existing.dl_img_url) {
+      return res.status(404).json({ 
+        success: false,
+        error: "No license image to delete" 
+      });
+    }
+
+    // Extract the path from the URL
+    let imagePath = existing.dl_img_url;
+    if (imagePath.includes('/licenses/')) {
+      imagePath = imagePath.split('/licenses/')[1];
+      // Remove any query parameters (from signed URLs)
+      imagePath = imagePath.split('?')[0];
+      imagePath = decodeURIComponent(imagePath);
+    }
+
+    console.log("Deleting from Supabase:", imagePath);
+
+    // Delete the file from Supabase
+    const { error: deleteError } = await supabase.storage
+      .from('licenses')
+      .remove([imagePath]);
+
+    if (deleteError) {
+      console.error('❌ Supabase delete error:', deleteError);
+      return res.status(500).json({ 
+        success: false,
+        error: "Failed to delete image from storage" 
+      });
+    }
+
+    console.log("✅ Image deleted from Supabase, updating database...");
+
+    // Update database to set dl_img_url to null
+    const updated = await prisma.driverLicense.update({
+      where: { driver_license_no: driverLicenseNo },
+      data: { dl_img_url: null },
+    });
+
+    console.log("✅ Database updated, image URL set to null");
+
+    res.json({
+      success: true,
+      message: "License image deleted successfully",
+      license: {
+        ...updated,
+        dl_img_url: null,
+      }
+    });
+  } catch (error) {
+    console.error("❌ Error deleting license image:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to delete license image" 
+    });
+  }
+};

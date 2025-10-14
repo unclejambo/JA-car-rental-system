@@ -72,7 +72,18 @@ function CustomerSchedule() {
       if (!res.ok) throw new Error(`Failed to fetch schedules: ${res.status}`);
 
       const data = await res.json();
-      setSchedule(Array.isArray(data) ? data : []);
+      // Filter out completed and cancelled schedules
+      const filteredSchedule = Array.isArray(data)
+        ? data.filter((schedule) => {
+            const status = (schedule.status || schedule.booking_status || '')
+              .toString()
+              .toLowerCase()
+              .trim();
+            // Only show schedules that are NOT completed or cancelled
+            return status !== 'completed' && status !== 'cancelled';
+          })
+        : [];
+      setSchedule(filteredSchedule);
     } catch (err) {
       console.error('Error fetching schedules:', err);
       setError('Failed to load schedule');
@@ -194,21 +205,22 @@ function CustomerSchedule() {
               </Alert>
             )}
 
+            {/* Loading Indicator */}
+            {loading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <CircularProgress sx={{ color: '#c10007' }} />
+              </Box>
+            )}
+
             {/* Schedule Table or Empty State */}
             {!schedule || schedule.length === 0 ? (
               <EmptyState
                 icon={HiCalendarDays}
                 title="No Schedule Found"
-                message="You don’t have any schedules yet."
+                message="You don't have any schedules yet."
               />
             ) : (
-              <CustomerScheduleTable rows={schedule} loading={loading} />
-            )}
-
-            {loading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress sx={{ color: '#c10007' }} />
-              </Box>
+              <CustomerScheduleTable rows={schedule} loading={false} />
             )}
           </CardContent>
         </Card>

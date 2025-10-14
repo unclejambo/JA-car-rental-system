@@ -10,10 +10,13 @@ export const autoCancelExpiredBookings = async () => {
     
     const now = new Date();
     
+    // Calculate payment deadline: 72 hours (3 days) from booking_date
+    const paymentDeadline = new Date(now.getTime() - (72 * 60 * 60 * 1000));
+    
     // Find all bookings that:
     // 1. Are still in "Pending" status (not yet confirmed/paid)
     // 2. Have not been paid (isPay = false or null)
-    // 3. Have a payment_deadline that has passed
+    // 3. Booking was created more than 72 hours ago
     // 4. Are not already cancelled
     const expiredBookings = await prisma.booking.findMany({
       where: {
@@ -22,13 +25,10 @@ export const autoCancelExpiredBookings = async () => {
           { isPay: false },
           { isPay: null }
         ],
-        payment_deadline: {
-          lt: now // Less than current time = expired
+        booking_date: {
+          lt: paymentDeadline // Booking date is older than 72 hours
         },
         isCancel: false, // Not already in cancellation process
-        booking_date: {
-          gte: new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)) // Within last 30 days
-        }
       },
       include: {
         car: {

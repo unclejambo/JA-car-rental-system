@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import axios from 'axios';
 import { getApiBase } from '../utils/api.js';
 
-const getCustomersUrl = () => `${getApiBase()}/customers`;
+const getCustomersUrl = () => `${getApiBase()}/api/customers`; // ✅ Fixed: Added /api prefix
 
 export const useCustomerStore = create((set, get) => ({
   customers: [],

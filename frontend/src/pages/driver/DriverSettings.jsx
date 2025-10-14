@@ -544,6 +544,52 @@ export default function DriverSettings() {
     setOpenLicenseCancelModal(false);
   };
 
+  const handleRemoveLicenseImage = async () => {
+    if (!licenseNumber) {
+      setError('License number not found');
+      return;
+    }
+
+    // Confirm deletion
+    if (!window.confirm('Are you sure you want to remove the license image? This action cannot be undone.')) {
+      return;
+    }
+
+    setLicenseImageUploading(true);
+    try {
+      console.log('🗑️ Deleting license image...');
+
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/driver-license/${licenseNumber}/image`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        console.log('✅ License image deleted successfully');
+        
+        // Update local state to default image
+        setLicenseImage('https://cdn-icons-png.flaticon.com/512/3135/3135715.png');
+        setPreviewLicenseImage(null);
+        setDraftLicenseImage(null);
+        
+        setSuccessMessage('License image removed successfully');
+        setShowSuccess(true);
+        setError(null);
+      } else {
+        throw new Error(result.error || 'Failed to delete license image');
+      }
+    } catch (error) {
+      console.error('❌ Error deleting license image:', error);
+      setError(error.message || 'Failed to delete license image');
+    } finally {
+      setLicenseImageUploading(false);
+    }
+  };
+
   // Profile image validation
   const validateImageFile = (file) => {
     const maxSize = 5 * 1024 * 1024; // 5MB
@@ -1477,6 +1523,38 @@ export default function DriverSettings() {
                                 Remove
                               </Button>
                             )}
+
+                            {licenseImageUploading && (
+                              <CircularProgress size={20} sx={{ mt: 1 }} />
+                            )}
+                          </Box>
+                        )}
+                        {!isEditingLicense && 
+                          licenseImage && 
+                          licenseImage !== 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' && (
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: 1,
+                              mt: 1,
+                            }}
+                          >
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              color="error"
+                              onClick={handleRemoveLicenseImage}
+                              disabled={licenseImageUploading}
+                              sx={{
+                                fontSize: '0.75rem',
+                                px: 1.5,
+                                minWidth: 'auto',
+                              }}
+                            >
+                              Remove Image
+                            </Button>
 
                             {licenseImageUploading && (
                               <CircularProgress size={20} sx={{ mt: 1 }} />

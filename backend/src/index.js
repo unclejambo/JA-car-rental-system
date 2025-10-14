@@ -58,7 +58,7 @@ app.get("/", (req, res) => {
 // API Routes
 app.use("/cars", carRoutes);
 app.use("/drivers", driverRoutes);
-app.use("/customers", customerRoutes);
+app.use("/api/customers", customerRoutes); // ✅ Fixed: Added /api prefix to match frontend calls
 app.use("/bookings", bookingRoutes);
 app.use("/schedules", scheduleRoutes);
 app.use("/api/auth", authRoutes);

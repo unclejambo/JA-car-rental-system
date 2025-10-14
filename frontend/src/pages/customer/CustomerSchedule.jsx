@@ -72,7 +72,18 @@ function CustomerSchedule() {
       if (!res.ok) throw new Error(`Failed to fetch schedules: ${res.status}`);
 
       const data = await res.json();
-      setSchedule(Array.isArray(data) ? data : []);
+      // Filter out completed and cancelled schedules
+      const filteredSchedule = Array.isArray(data)
+        ? data.filter((schedule) => {
+            const status = (schedule.status || schedule.booking_status || '')
+              .toString()
+              .toLowerCase()
+              .trim();
+            // Only show schedules that are NOT completed or cancelled
+            return status !== 'completed' && status !== 'cancelled';
+          })
+        : [];
+      setSchedule(filteredSchedule);
     } catch (err) {
       console.error('Error fetching schedules:', err);
       setError('Failed to load schedule');

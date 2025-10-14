@@ -1,0 +1,37 @@
+/* SearchBar Component Styles */
+
+.search-bar {
+  transition: all 0.2s ease-in-out;
+}
+
+.search-bar input {
+  padding: 8px 0;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .search-bar {
+    width: 100%;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .search-bar .MuiOutlinedInput-root {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* Animation for clear button */
+.search-bar .MuiIconButton-root {
+  transition: transform 0.2s ease-in-out;
+}
+
+.search-bar .MuiIconButton-root:hover {
+  transform: scale(1.1);
+}
+
+/* Focus state enhancement */
+.search-bar .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+}

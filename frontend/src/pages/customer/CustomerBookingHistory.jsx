@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import CustomerSideBar from '../../ui/components/CustomerSideBar';
 import Header from '../../ui/components/Header';
+import SearchBar from '../../ui/components/SearchBar';
 import '../../styles/customercss/customerdashboard.css';
 import {
   Box,
@@ -64,6 +65,10 @@ function CustomerBookingHistory() {
   const [payments, setPayments] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Search states
+  const [bookingSearchQuery, setBookingSearchQuery] = useState('');
+  const [paymentSearchQuery, setPaymentSearchQuery] = useState('');
 
   const [activeTab, setActiveTab] = useState(
     parseInt(localStorage.getItem('customerSettingsTab') || '0', 10)
@@ -160,6 +165,36 @@ function CustomerBookingHistory() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Filter bookings based on search query
+  const filteredBookings = bookings
+    ? bookings.filter((booking) => {
+        if (!bookingSearchQuery) return true;
+        const query = bookingSearchQuery.toLowerCase();
+        return (
+          booking.booking_id?.toString().includes(query) ||
+          booking.car_model?.toLowerCase().includes(query) ||
+          booking.status?.toLowerCase().includes(query) ||
+          booking.start_date?.toLowerCase().includes(query) ||
+          booking.end_date?.toLowerCase().includes(query)
+        );
+      })
+    : [];
+
+  // Filter payments based on search query
+  const filteredPayments = payments
+    ? payments.filter((payment) => {
+        if (!paymentSearchQuery) return true;
+        const query = paymentSearchQuery.toLowerCase();
+        return (
+          payment.transactionId?.toString().includes(query) ||
+          payment.description?.toLowerCase().includes(query) ||
+          payment.paymentMethod?.toLowerCase().includes(query) ||
+          payment.referenceNo?.toLowerCase().includes(query) ||
+          payment.status?.toLowerCase().includes(query)
+        );
+      })
+    : [];
 
   if (loading && (bookings === null || payments === null)) {
     return (
@@ -307,6 +342,45 @@ function CustomerBookingHistory() {
               </Tabs>
             </Box>
 
+            {/* Search Bar - Aligned to the right like Refresh button */}
+            <Box
+              sx={{
+                mb: 3,
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <Box sx={{ width: { xs: '100%', sm: 300, md: 350 } }}>
+                {activeTab === 0 ? (
+                  <SearchBar
+                    value={bookingSearchQuery}
+                    onChange={(e) => setBookingSearchQuery(e.target.value)}
+                    placeholder="Search bookings..."
+                    fullWidth
+                  />
+                ) : (
+                  <SearchBar
+                    value={paymentSearchQuery}
+                    onChange={(e) => setPaymentSearchQuery(e.target.value)}
+                    placeholder="Search payments..."
+                    fullWidth
+                  />
+                )}
+              </Box>
+            </Box>
+
+            {/* Result count below search bar - aligned to the right */}
+            {activeTab === 0 && bookingSearchQuery && (
+              <Box
+                sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}
+              ></Box>
+            )}
+            {activeTab === 1 && paymentSearchQuery && (
+              <Box
+                sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}
+              ></Box>
+            )}
+
             {/* Error Alert */}
             {error && (
               <Alert severity="error" sx={{ mb: 3 }}>
@@ -314,42 +388,55 @@ function CustomerBookingHistory() {
               </Alert>
             )}
 
+            {/* Loading Indicator */}
+            {loading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <CircularProgress sx={{ color: '#c10007' }} />
+              </Box>
+            )}
+
             {/* Tab Panels */}
             <TabPanel value={activeTab} index={0}>
-              {bookings && bookings.length > 0 ? (
+              {filteredBookings && filteredBookings.length > 0 ? (
                 <CustomerBookingHistoryTable
-                  bookings={bookings}
+                  bookings={filteredBookings}
                   loading={loading}
+                />
+              ) : bookingSearchQuery ? (
+                <EmptyState
+                  icon={HiOutlineClipboardDocumentCheck}
+                  title="No Matching Bookings"
+                  message={`No bookings found matching "${bookingSearchQuery}". Try a different search term.`}
                 />
               ) : (
                 <EmptyState
                   icon={HiOutlineClipboardDocumentCheck}
                   title="No Bookings Found"
-                  message="You haven’t made any bookings yet."
+                  message="You haven't made any bookings yet."
                 />
               )}
             </TabPanel>
 
             <TabPanel value={activeTab} index={1}>
-              {payments && payments.length > 0 ? (
+              {filteredPayments && filteredPayments.length > 0 ? (
                 <CustomerPaymentHistoryTable
-                  payments={payments}
+                  payments={filteredPayments}
                   loading={loading}
+                />
+              ) : paymentSearchQuery ? (
+                <EmptyState
+                  icon={HiCreditCard}
+                  title="No Matching Payments"
+                  message={`No payments found matching "${paymentSearchQuery}". Try a different search term.`}
                 />
               ) : (
                 <EmptyState
                   icon={HiCreditCard}
                   title="No Payments Found"
-                  message="You haven’t made any payments yet."
+                  message="You haven't made any payments yet."
                 />
               )}
             </TabPanel>
-
-            {loading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress sx={{ color: '#c10007' }} />
-              </Box>
-            )}
           </CardContent>
         </Card>
       </Box>

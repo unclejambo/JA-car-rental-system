@@ -194,21 +194,22 @@ function CustomerSchedule() {
               </Alert>
             )}
 
+            {/* Loading Indicator */}
+            {loading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <CircularProgress sx={{ color: '#c10007' }} />
+              </Box>
+            )}
+
             {/* Schedule Table or Empty State */}
             {!schedule || schedule.length === 0 ? (
               <EmptyState
                 icon={HiCalendarDays}
                 title="No Schedule Found"
-                message="You don’t have any schedules yet."
+                message="You don't have any schedules yet."
               />
             ) : (
-              <CustomerScheduleTable rows={schedule} loading={loading} />
-            )}
-
-            {loading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress sx={{ color: '#c10007' }} />
-              </Box>
+              <CustomerScheduleTable rows={schedule} loading={false} />
             )}
           </CardContent>
         </Card>

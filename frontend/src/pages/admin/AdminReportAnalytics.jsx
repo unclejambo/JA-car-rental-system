@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Box, Typography, Select, MenuItem, Chip, Stack } from '@mui/material';
+import { Box, Typography, Select, MenuItem, Chip, Stack, Button } from '@mui/material';
+import DownloadIcon from '@mui/icons-material/Download';
 import Header from '../../ui/components/Header';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import { HiChartBar } from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
+import { generateAnalyticsPDF } from '../../utils/pdfExport';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -387,6 +389,24 @@ export default function AdminReportAnalytics() {
       maximumFractionDigits: 2,
     })}`;
 
+  // Handle PDF download
+  const handleDownloadPDF = () => {
+    generateAnalyticsPDF({
+      primaryView,
+      period,
+      selectedYear,
+      selectedQuarter,
+      selectedMonthIndex,
+      chartData,
+      chartLabels,
+      totalIncome,
+      totalMaintenance,
+      totalRefunds,
+      maintenanceData,
+      refundsData,
+    });
+  };
+
   // Line dataset builder
   const lineData = useMemo(() => {
     // Use the chart labels that have been set based on the period
@@ -587,7 +607,14 @@ export default function AdminReportAnalytics() {
               boxSizing: 'border-box',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 1,
+              mb: 1
+            }}>
               <Typography
                 variant="h4"
                 component="h1"
@@ -595,8 +622,12 @@ export default function AdminReportAnalytics() {
                 sx={{
                   fontSize: '1.8rem',
                   color: '#000',
+                  mb: 0,
                   '@media (max-width: 1024px)': {
                     fontSize: '1.5rem',
+                  },
+                  '@media (max-width: 600px)': {
+                    fontSize: '1.2rem',
                   },
                 }}
               >
@@ -606,6 +637,55 @@ export default function AdminReportAnalytics() {
                 REPORT & ANALYTICS
               </Typography>
               
+              {/* Download PDF Button */}
+              <Button
+                variant="outlined"
+                startIcon={
+                  <DownloadIcon
+                    sx={{ width: '18px', height: '18px', mt: '-2px' }}
+                  />
+                }
+                onClick={handleDownloadPDF}
+                disabled={!chartData || chartData.length === 0}
+                sx={{
+                  color: '#fff',
+                  p: 1,
+                  pb: 0.5,
+                  height: 36,
+                  border: 'none',
+                  backgroundColor: '#1976d2',
+                  whiteSpace: 'nowrap',
+                  minWidth: 'auto',
+                  '&:hover': {
+                    backgroundColor: '#1565c0',
+                    color: '#fff',
+                    fontWeight: 600,
+                    boxShadow: 'none',
+                  },
+                  '&:disabled': {
+                    backgroundColor: '#ccc',
+                    color: '#666',
+                  },
+                  '@media (max-width: 600px)': {
+                    height: 32,
+                    fontSize: '0.75rem',
+                    px: 1,
+                    py: 0.5,
+                    '& .MuiButton-startIcon': {
+                      marginRight: '4px',
+                    },
+                    '& .MuiSvgIcon-root': {
+                      width: '16px',
+                      height: '16px',
+                    },
+                  },
+                }}
+              >
+                Download PDF
+              </Button>
+            </Box>
+                
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
               {/* Period Controls Section */}
               <Box sx={{ 
                 display: 'flex', 

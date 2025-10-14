@@ -52,6 +52,7 @@ const RegisterPage = () => {
     lastName: '',
     address: '',
     contactNumber: '',
+    fb_link: '',
     licenseNumber: '',
     licenseExpiry: '',
     restrictions: '',
@@ -125,6 +126,7 @@ const RegisterPage = () => {
         lastName,
         address,
         contactNumber,
+        fb_link,
         licenseNumber,
         licenseExpiry,
         restrictions,
@@ -133,10 +135,20 @@ const RegisterPage = () => {
       } = formData;
 
       // Basic validation
-      if (!email?.trim() || !username?.trim() || !password || !confirmPassword ||
-          !firstName?.trim() || !lastName?.trim() || !address?.trim() ||
-          !contactNumber?.trim() || !licenseNumber?.trim() || !licenseExpiry?.trim() ||
-          !licenseFile || !agreeTerms) {
+      if (
+        !email?.trim() ||
+        !username?.trim() ||
+        !password ||
+        !confirmPassword ||
+        !firstName?.trim() ||
+        !lastName?.trim() ||
+        !address?.trim() ||
+        !contactNumber?.trim() ||
+        !licenseNumber?.trim() ||
+        !licenseExpiry?.trim() ||
+        !licenseFile ||
+        !agreeTerms
+      ) {
         throw new Error('All required fields must be provided');
       }
 
@@ -147,8 +159,10 @@ const RegisterPage = () => {
       setLoading(true);
 
       // 1) Upload license image first
-      const BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL).replace(/\/+$/, '');
-      
+      const BASE = (
+        import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL
+      ).replace(/\/+$/, '');
+
       const uploadUrl = new URL('/api/storage/licenses', BASE).toString();
       const uploadFd = new FormData();
       uploadFd.append('file', licenseFile);
@@ -156,7 +170,7 @@ const RegisterPage = () => {
       uploadFd.append('username', username.trim());
 
       console.log('Uploading file to:', uploadUrl);
-      
+
       const uploadRes = await fetch(uploadUrl, {
         method: 'POST',
         body: uploadFd,
@@ -164,13 +178,19 @@ const RegisterPage = () => {
 
       const uploadJson = await uploadRes.json();
       console.log('Upload response:', uploadJson);
-      
+
       if (!uploadRes.ok) {
-        throw new Error(uploadJson?.message || uploadJson?.error || 'File upload failed');
+        throw new Error(
+          uploadJson?.message || uploadJson?.error || 'File upload failed'
+        );
       }
 
       // Extract the URL from response
-      const dl_img_url = uploadJson.filePath || uploadJson.path || uploadJson.url || uploadJson.publicUrl;
+      const dl_img_url =
+        uploadJson.filePath ||
+        uploadJson.path ||
+        uploadJson.url ||
+        uploadJson.publicUrl;
       console.log('Extracted dl_img_url:', dl_img_url);
 
       if (!dl_img_url) {
@@ -187,6 +207,7 @@ const RegisterPage = () => {
         lastName: lastName.trim(),
         address: address.trim(),
         contactNumber: contactNumber.trim(),
+        fb_link: fb_link?.trim() || '',
         licenseNumber: licenseNumber.trim(),
         licenseExpiry: licenseExpiry.trim(),
         restrictions: restrictions?.trim() || '',
@@ -205,14 +226,15 @@ const RegisterPage = () => {
 
       const regJson = await regRes.json();
       console.log('Registration response:', regJson);
-      
+
       if (!regRes.ok) {
-        throw new Error(regJson?.message || regJson?.error || 'Registration failed');
+        throw new Error(
+          regJson?.message || regJson?.error || 'Registration failed'
+        );
       }
 
       setSuccessMessage(regJson?.message || 'Registration successful');
       setShowSuccess(true);
-      
     } catch (err) {
       console.error('Registration error:', err);
       setServerError(err.message || 'Registration failed');
@@ -227,7 +249,7 @@ const RegisterPage = () => {
 
   const handleAgreeTerms = () => {
     setShowTerms(false);
-    setFormData(prev => ({ ...prev, agreeTerms: true }));
+    setFormData((prev) => ({ ...prev, agreeTerms: true }));
     // Remove focus from any previously focused element
     if (document.activeElement) {
       document.activeElement.blur();
@@ -406,7 +428,10 @@ const RegisterPage = () => {
 
             {/* Name */}
             <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: '600', mb: 1 }}>
+              <Typography
+                variant="body2"
+                sx={{ fontSize: '0.875rem', fontWeight: '600', mb: 1 }}
+              >
                 NAME
               </Typography>
               <Box className="two-col flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
@@ -531,6 +556,39 @@ const RegisterPage = () => {
               />
             </Box>
 
+            {/* Facebook Link */}
+            <Box sx={{ mb: 2 }}>
+              <TextField
+                id="fb_link"
+                name="fb_link"
+                label="FACEBOOK LINK (OPTIONAL)"
+                value={formData.fb_link}
+                onChange={onChange}
+                type="text"
+                placeholder="Enter your Facebook profile link"
+                fullWidth
+                variant="outlined"
+                size="medium"
+                error={!!errors.fb_link}
+                helperText={errors.fb_link}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                    '& fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.5)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                  },
+                }}
+              />
+            </Box>
+
             {/* Driver's License Number */}
             <Box sx={{ mb: 2 }}>
               <TextField
@@ -634,7 +692,10 @@ const RegisterPage = () => {
 
             {/* License Image Upload */}
             <Box sx={{ mb: 3 }}>
-              <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: '600', mb: 1 }}>
+              <Typography
+                variant="body2"
+                sx={{ fontSize: '0.875rem', fontWeight: '600', mb: 1 }}
+              >
                 LICENSE IMAGE
               </Typography>
               <Box>
@@ -660,33 +721,53 @@ const RegisterPage = () => {
                       backgroundColor: 'rgba(209, 213, 219, 0.8)',
                       borderColor: 'rgba(156, 163, 175, 0.8)',
                     },
-                  }}>
-
+                  }}
+                >
                   {formData.licenseFile ? 'Change file' : 'Upload License ID'}
 
                   {formData.licenseFile && (
-                  <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'rgba(75, 85, 99, 1)', flex: 1 }}>
-                      {formData.licenseFile.name}
-                    </Typography>
-                    <Button
-                      type="button"
-                      onClick={removeFile}
-                      variant="text"
-                      color="error"
-                      size="small"
-                      sx={{ fontSize: '0.875rem', textDecoration: 'underline', minWidth: 'auto' }}
+                    <Box
+                      sx={{
+                        mt: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                      }}
                     >
-                      Remove
-                    </Button>
-                  </Box>
-                )}
-
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontSize: '0.875rem',
+                          color: 'rgba(75, 85, 99, 1)',
+                          flex: 1,
+                        }}
+                      >
+                        {formData.licenseFile.name}
+                      </Typography>
+                      <Button
+                        type="button"
+                        onClick={removeFile}
+                        variant="text"
+                        color="error"
+                        size="small"
+                        sx={{
+                          fontSize: '0.875rem',
+                          textDecoration: 'underline',
+                          minWidth: 'auto',
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </Box>
+                  )}
                 </Button>
-            
               </Box>
               {errors.licenseFile && (
-                <Typography variant="body2" color="error" sx={{ fontSize: '0.75rem', mt: 1 }}>
+                <Typography
+                  variant="body2"
+                  color="error"
+                  sx={{ fontSize: '0.75rem', mt: 1 }}
+                >
                   {errors.licenseFile}
                 </Typography>
               )}
@@ -731,15 +812,17 @@ const RegisterPage = () => {
 
             {/* Server error */}
             {serverError && (
-              <Box sx={{ 
-                fontSize: '0.875rem', 
-                color: '#DC2626', 
-                backgroundColor: '#FEF2F2', 
-                p: 1.5, 
-                borderRadius: 1, 
-                border: '1px solid #FECACA',
-                mb: 2
-              }}>
+              <Box
+                sx={{
+                  fontSize: '0.875rem',
+                  color: '#DC2626',
+                  backgroundColor: '#FEF2F2',
+                  p: 1.5,
+                  borderRadius: 1,
+                  border: '1px solid #FECACA',
+                  mb: 2,
+                }}
+              >
                 {serverError}
               </Box>
             )}

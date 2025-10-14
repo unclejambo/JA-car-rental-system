@@ -35,13 +35,13 @@ export default function HomePage() {
       switch (userRole) {
         case 'admin':
         case 'staff':
-          navigate('/admin-dashboard', { replace: true });
+          navigate('/admindashboard', { replace: true });
           break;
         case 'customer':
           navigate('/customer-dashboard', { replace: true });
           break;
         case 'driver':
-          navigate('/driver-dashboard', { replace: true });
+          navigate('/driver-schedule', { replace: true });
           break;
         default:
           // If role is unknown, stay on home page

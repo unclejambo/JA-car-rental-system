@@ -15,6 +15,9 @@ import {
   Alert,
   CircularProgress,
   Collapse,
+  Tabs,
+  Tab,
+  Grid,
 } from '@mui/material';
 import { HiX, HiCreditCard } from 'react-icons/hi';
 import { getApiBase, createAuthenticatedFetch } from '../../../utils/api';
@@ -40,6 +43,11 @@ export default function BookingDetailsModal({
   const [success, setSuccess] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [driverName, setDriverName] = useState('');
+  const [activeTab, setActiveTab] = useState(0);
+  const [releaseData, setReleaseData] = useState(null);
+  const [returnData, setReturnData] = useState(null);
+  const [loadingRelease, setLoadingRelease] = useState(false);
+  const [loadingReturn, setLoadingReturn] = useState(false);
 
   // Auth hook for authenticated requests
   const { logout } = useAuth();
@@ -64,6 +72,64 @@ export default function BookingDetailsModal({
       fetchDriverName();
     } else {
       setDriverName('');
+    }
+  }, [open, booking, logout]);
+
+  // Fetch release data when booking status is "In Progress" or "Completed"
+  useEffect(() => {
+    if (open && booking && (booking.booking_status === 'In Progress' || booking.booking_status === 'Completed')) {
+      const fetchReleaseData = async () => {
+        setLoadingRelease(true);
+        try {
+          const authenticatedFetch = createAuthenticatedFetch(logout);
+          const response = await authenticatedFetch(
+            `${getApiBase()}/returns/${booking.booking_id}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            // Extract release data from the booking object
+            if (data.booking && data.booking.releases && data.booking.releases.length > 0) {
+              setReleaseData(data.booking.releases[0]);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch release data:', error);
+        } finally {
+          setLoadingRelease(false);
+        }
+      };
+      fetchReleaseData();
+    } else {
+      setReleaseData(null);
+    }
+  }, [open, booking, logout]);
+
+  // Fetch return data when booking status is "Completed"
+  useEffect(() => {
+    if (open && booking && booking.booking_status === 'Completed') {
+      const fetchReturnData = async () => {
+        setLoadingReturn(true);
+        try {
+          const authenticatedFetch = createAuthenticatedFetch(logout);
+          const response = await authenticatedFetch(
+            `${getApiBase()}/returns/${booking.booking_id}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            // Extract return data from the booking object
+            if (data.booking && data.booking.Return && data.booking.Return.length > 0) {
+              setReturnData(data.booking.Return[0]);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch return data:', error);
+        } finally {
+          setLoadingReturn(false);
+        }
+      };
+      fetchReturnData();
+    } else {
+      setReturnData(null);
     }
   }, [open, booking, logout]);
 
@@ -300,10 +366,41 @@ export default function BookingDetailsModal({
       <Divider />
 
       <DialogContent sx={{ pt: 2 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* Main Tabs */}
+          <Tabs
+            value={activeTab}
+            onChange={(e, newValue) => setActiveTab(newValue)}
+            variant="fullWidth"
+            sx={{
+              borderBottom: 1,
+              borderColor: 'divider',
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                fontWeight: 'bold',
+                fontSize: '0.95rem',
+                minHeight: '48px',
+              },
+              '& .Mui-selected': { color: 'primary.main' },
+              '& .MuiTabs-indicator': { backgroundColor: 'primary.main', height: 3 },
+            }}
+          >
+            <Tab label="📋 Booking Details" />
+            <Tab 
+              label="🚗 Release Details" 
+              disabled={booking.booking_status !== 'In Progress' && booking.booking_status !== 'Completed'}
+            />
+            <Tab 
+              label="🔙 Return Details" 
+              disabled={booking.booking_status !== 'Completed'}
+            />
+          </Tabs>
 
-          {/* Payment Section - Hide for cancelled bookings */}
-          {booking.balance > 0 && !booking.isCancel && booking.booking_status !== 'Cancelled' && (
+          {/* Tab Panel 0: Booking Details */}
+          {activeTab === 0 && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
+              {/* Payment Section - Hide for cancelled bookings */}
+              {booking.balance > 0 && !booking.isCancel && booking.booking_status !== 'Cancelled' && (
             <Box>
               <Box
                 sx={{
@@ -863,15 +960,418 @@ export default function BookingDetailsModal({
             </Box>
           </Box>
 
-
-
+          {/* Success Alert */}
           {success && (
             <Alert severity="success" sx={{ mt: 2 }}>
               {success}
             </Alert>
           )}
         </Box>
-      </DialogContent>
+      )}
+
+      {/* Tab Panel 1: Release Details */}
+      {activeTab === 1 && (
+        <Box sx={{ mt: 2 }}>
+          {loadingRelease ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : releaseData ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Release Information */}
+              <Box>
+                          <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+                            📋 Release Information
+                          </Typography>
+                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                            <Box>
+                              <Typography variant="body2" color="text.secondary">
+                                Gas Level:
+                              </Typography>
+                              <Chip 
+                                label={releaseData.gas_level || 'N/A'} 
+                                color={
+                                  releaseData.gas_level === 'High' ? 'success' : 
+                                  releaseData.gas_level === 'Mid' ? 'warning' : 'error'
+                                }
+                                size="small"
+                                variant="outlined"
+                              />
+                            </Box>
+                            <Box>
+                              <Typography variant="body2" color="text.secondary">
+                                Equipment Status:
+                              </Typography>
+                              <Chip 
+                                label={releaseData.equipment || 'N/A'} 
+                                color={releaseData.equipment === 'complete' ? 'success' : 'warning'}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </Box>
+                            {releaseData.equip_others && (
+                              <Box sx={{ gridColumn: 'span 2' }}>
+                                <Typography variant="body2" color="text.secondary">
+                                  Equipment Notes:
+                                </Typography>
+                                <Typography variant="body1" fontWeight="medium">
+                                  {releaseData.equip_others}
+                                </Typography>
+                              </Box>
+                            )}
+                            <Box>
+                              <Typography variant="body2" color="text.secondary">
+                                License Presented:
+                              </Typography>
+                              <Chip 
+                                label={releaseData.license_presented ? 'Yes' : 'No'} 
+                                color={releaseData.license_presented ? 'success' : 'error'}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </Box>
+                          </Box>
+                        </Box>
+
+                        <Divider />
+
+                        {/* Valid ID Images */}
+                        {(releaseData.valid_id_img1 || releaseData.valid_id_img2) && (
+                          <>
+                            <Box>
+                              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+                                🪪 Valid ID Images
+                              </Typography>
+                              <Grid container spacing={2}>
+                                {releaseData.valid_id_img1 && (
+                                  <Grid item xs={12} sm={6}>
+                                    <Box>
+                                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                        Valid ID - Front
+                                      </Typography>
+                                      <Box
+                                        component="img"
+                                        src={releaseData.valid_id_img1}
+                                        alt="Valid ID Front"
+                                        sx={{
+                                          width: '100%',
+                                          height: 'auto',
+                                          maxHeight: '200px',
+                                          objectFit: 'contain',
+                                          borderRadius: 1,
+                                          border: '1px solid',
+                                          borderColor: 'divider',
+                                          cursor: 'pointer',
+                                          '&:hover': { opacity: 0.8 }
+                                        }}
+                                        onClick={() => window.open(releaseData.valid_id_img1, '_blank')}
+                                      />
+                                    </Box>
+                                  </Grid>
+                                )}
+                                {releaseData.valid_id_img2 && (
+                                  <Grid item xs={12} sm={6}>
+                                    <Box>
+                                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                        Valid ID - Back
+                                      </Typography>
+                                      <Box
+                                        component="img"
+                                        src={releaseData.valid_id_img2}
+                                        alt="Valid ID Back"
+                                        sx={{
+                                          width: '100%',
+                                          height: 'auto',
+                                          maxHeight: '200px',
+                                          objectFit: 'contain',
+                                          borderRadius: 1,
+                                          border: '1px solid',
+                                          borderColor: 'divider',
+                                          cursor: 'pointer',
+                                          '&:hover': { opacity: 0.8 }
+                                        }}
+                                        onClick={() => window.open(releaseData.valid_id_img2, '_blank')}
+                                      />
+                                    </Box>
+                                  </Grid>
+                                )}
+                              </Grid>
+                            </Box>
+                            <Divider />
+                          </>
+                        )}
+
+                        {/* Car Condition Images */}
+                        <Box>
+                          <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+                            📸 Car Condition Images
+                          </Typography>
+                          <Grid container spacing={2}>
+                            {releaseData.front_img && (
+                              <Grid item xs={12} sm={6}>
+                                <Box>
+                                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    Front View
+                                  </Typography>
+                                  <Box
+                                    component="img"
+                                    src={releaseData.front_img}
+                                    alt="Car Front"
+                                    sx={{
+                                      width: '100%',
+                                      height: 'auto',
+                                      maxHeight: '200px',
+                                      objectFit: 'contain',
+                                      borderRadius: 1,
+                                      border: '1px solid',
+                                      borderColor: 'divider',
+                                      cursor: 'pointer',
+                                      '&:hover': { opacity: 0.8 }
+                                    }}
+                                    onClick={() => window.open(releaseData.front_img, '_blank')}
+                                  />
+                                </Box>
+                              </Grid>
+                            )}
+                            {releaseData.back_img && (
+                              <Grid item xs={12} sm={6}>
+                                <Box>
+                                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    Back View
+                                  </Typography>
+                                  <Box
+                                    component="img"
+                                    src={releaseData.back_img}
+                                    alt="Car Back"
+                                    sx={{
+                                      width: '100%',
+                                      height: 'auto',
+                                      maxHeight: '200px',
+                                      objectFit: 'contain',
+                                      borderRadius: 1,
+                                      border: '1px solid',
+                                      borderColor: 'divider',
+                                      cursor: 'pointer',
+                                      '&:hover': { opacity: 0.8 }
+                                    }}
+                                    onClick={() => window.open(releaseData.back_img, '_blank')}
+                                  />
+                                </Box>
+                              </Grid>
+                            )}
+                            {releaseData.left_img && (
+                              <Grid item xs={12} sm={6}>
+                                <Box>
+                                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    Left View
+                                  </Typography>
+                                  <Box
+                                    component="img"
+                                    src={releaseData.left_img}
+                                    alt="Car Left"
+                                    sx={{
+                                      width: '100%',
+                                      height: 'auto',
+                                      maxHeight: '200px',
+                                      objectFit: 'contain',
+                                      borderRadius: 1,
+                                      border: '1px solid',
+                                      borderColor: 'divider',
+                                      cursor: 'pointer',
+                                      '&:hover': { opacity: 0.8 }
+                                    }}
+                                    onClick={() => window.open(releaseData.left_img, '_blank')}
+                                  />
+                                </Box>
+                              </Grid>
+                            )}
+                            {releaseData.right_img && (
+                              <Grid item xs={12} sm={6}>
+                                <Box>
+                                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    Right View
+                                  </Typography>
+                                  <Box
+                                    component="img"
+                                    src={releaseData.right_img}
+                                    alt="Car Right"
+                                    sx={{
+                                      width: '100%',
+                                      height: 'auto',
+                                      maxHeight: '200px',
+                                      objectFit: 'contain',
+                                      borderRadius: 1,
+                                      border: '1px solid',
+                                      borderColor: 'divider',
+                                      cursor: 'pointer',
+                                      '&:hover': { opacity: 0.8 }
+                                    }}
+                                    onClick={() => window.open(releaseData.right_img, '_blank')}
+                                  />
+                                </Box>
+                              </Grid>
+                            )}
+                          </Grid>
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Alert severity="info">
+                        No release data available for this booking.
+                      </Alert>
+                    )}
+        </Box>
+      )}
+
+      {/* Tab Panel 2: Return Details */}
+      {activeTab === 2 && (
+        <Box sx={{ mt: 2 }}>
+          {loadingReturn ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : returnData ? (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {/* Return Information */}
+                        <Box>
+                          <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+                            📋 Return Information
+                          </Typography>
+                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                            <Box>
+                              <Typography variant="body2" color="text.secondary">
+                                Gas Level:
+                              </Typography>
+                              <Chip 
+                                label={returnData.gas_level || 'N/A'} 
+                                color={
+                                  returnData.gas_level === 'High' ? 'success' : 
+                                  returnData.gas_level === 'Mid' ? 'warning' : 'error'
+                                }
+                                size="small"
+                                variant="outlined"
+                              />
+                            </Box>
+                            <Box>
+                              <Typography variant="body2" color="text.secondary">
+                                Odometer Reading:
+                              </Typography>
+                              <Typography variant="body1" fontWeight="medium">
+                                {returnData.odometer ? `${returnData.odometer.toString()} km` : 'N/A'}
+                              </Typography>
+                            </Box>
+                            <Box>
+                              <Typography variant="body2" color="text.secondary">
+                                Damage Status:
+                              </Typography>
+                              <Chip 
+                                label={returnData.damage_check || 'N/A'} 
+                                color={
+                                  returnData.damage_check === 'No Damage' ? 'success' : 
+                                  returnData.damage_check === 'minor' ? 'warning' : 'error'
+                                }
+                                size="small"
+                                variant="outlined"
+                              />
+                            </Box>
+                            <Box>
+                              <Typography variant="body2" color="text.secondary">
+                                Equipment Status:
+                              </Typography>
+                              <Chip 
+                                label={returnData.equipment === 'complete' ? 'Complete' : 'Incomplete'} 
+                                color={returnData.equipment === 'complete' ? 'success' : 'warning'}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </Box>
+                            {returnData.equip_others && (
+                              <Box sx={{ gridColumn: 'span 2' }}>
+                                <Typography variant="body2" color="text.secondary">
+                                  Equipment Notes:
+                                </Typography>
+                                <Typography variant="body1" fontWeight="medium">
+                                  {returnData.equip_others}
+                                </Typography>
+                              </Box>
+                            )}
+                            <Box>
+                              <Typography variant="body2" color="text.secondary">
+                                Cleanliness:
+                              </Typography>
+                              <Chip 
+                                label={returnData.isClean ? 'Clean' : 'Not Clean'} 
+                                color={returnData.isClean ? 'success' : 'warning'}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </Box>
+                            <Box>
+                              <Typography variant="body2" color="text.secondary">
+                                Has Stains:
+                              </Typography>
+                              <Chip 
+                                label={returnData.hasStain ? 'Yes' : 'No'} 
+                                color={returnData.hasStain ? 'error' : 'success'}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </Box>
+                            <Box sx={{ gridColumn: 'span 2' }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Total Fees:
+                              </Typography>
+                              <Typography variant="h6" fontWeight="bold" color="error.main">
+                                {formatCurrency(returnData.total_fee)}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Box>
+
+                        {/* Damage Image */}
+                        {returnData.damage_img && (
+                          <>
+                            <Divider />
+                            <Box>
+                              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+                                📸 Damage Image
+                              </Typography>
+                              <Box
+                                component="img"
+                                src={returnData.damage_img}
+                                alt="Damage"
+                                sx={{
+                                  width: '100%',
+                                  height: 'auto',
+                                  maxHeight: '300px',
+                                  objectFit: 'contain',
+                                  borderRadius: 1,
+                                  border: '1px solid',
+                                  borderColor: 'divider',
+                                  cursor: 'pointer',
+                                  '&:hover': { opacity: 0.8 }
+                                }}
+                                onClick={() => window.open(returnData.damage_img, '_blank')}
+                              />
+                            </Box>
+                          </>
+                        )}
+                      </Box>
+                    ) : (
+                      <Alert severity="info">
+                        No return data available for this booking. The car has not been returned yet.
+                      </Alert>
+                    )}
+          </Box>
+        )}
+
+        {/* Success Alert - Show in all tabs */}
+        {success && (
+          <Alert severity="success" sx={{ mt: 2 }}>
+            {success}
+          </Alert>
+        )}
+      </Box>
+    </DialogContent>
 
       <DialogActions sx={{ p: 2, pt: 0 }}>
         <Button onClick={onClose} variant="outlined">

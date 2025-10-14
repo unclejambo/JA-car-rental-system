@@ -53,6 +53,7 @@ export const getReturnData = async (req, res) => {
       where: { booking_id: parseInt(bookingId) },
       include: {
         releases: true,
+        Return: true, // Include Return table data
         customer: {
           select: {
             first_name: true,
@@ -118,6 +119,27 @@ export const getReturnData = async (req, res) => {
         right_img: booking.releases[0].right_img,
         left_img: booking.releases[0].left_img
       });
+    }
+
+    // Generate signed URLs for return damage images
+    if (booking.Return && booking.Return.length > 0) {
+      const returnsWithSignedUrls = await Promise.all(
+        booking.Return.map(async (returnData) => {
+          const damage_img = await getSignedReleaseImageUrl(returnData.damage_img);
+          
+          return {
+            ...returnData,
+            // Convert BigInt fields to strings for JSON serialization
+            return_id: returnData.return_id ? returnData.return_id.toString() : null,
+            odometer: returnData.odometer ? returnData.odometer.toString() : null,
+            damage_img
+          };
+        })
+      );
+
+      booking.Return = returnsWithSignedUrls;
+      
+      console.log('Return data with signed URLs:', booking.Return[0]);
     }
 
     // Get fees from ManageFees

@@ -438,6 +438,7 @@ const RegisterPage = () => {
                 <TextField
                   id="firstName"
                   name="firstName"
+                  label="FIRST NAME"
                   value={formData.firstName}
                   onChange={onChange}
                   type="text"
@@ -458,11 +459,16 @@ const RegisterPage = () => {
                         borderColor: 'rgba(156, 163, 175, 0.8)',
                       },
                     },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                    },
                   }}
                 />
                 <TextField
                   id="lastName"
                   name="lastName"
+                  label="LAST NAME"
                   value={formData.lastName}
                   onChange={onChange}
                   type="text"
@@ -482,6 +488,10 @@ const RegisterPage = () => {
                       '&:hover fieldset': {
                         borderColor: 'rgba(156, 163, 175, 0.8)',
                       },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
                     },
                   }}
                 />
@@ -774,7 +784,25 @@ const RegisterPage = () => {
             </Box>
 
             {/* Terms and Conditions */}
-            <Box className="flex items-start space-x-2" sx={{ mb: 2 }}>
+            <Box
+              sx={{
+                mb: 3,
+                p: 2.5,
+                backgroundColor: 'rgba(229, 231, 235, 0.3)',
+                borderRadius: 2,
+                border: '2px solid',
+                borderColor: formData.agreeTerms
+                  ? '#2563eb'
+                  : 'rgba(156, 163, 175, 0.3)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  borderColor: formData.agreeTerms
+                    ? '#1d4ed8'
+                    : 'rgba(156, 163, 175, 0.5)',
+                  backgroundColor: 'rgba(229, 231, 235, 0.4)',
+                },
+              }}
+            >
               <FormControlLabel
                 control={
                   <Checkbox
@@ -787,27 +815,81 @@ const RegisterPage = () => {
                       '&.Mui-checked': {
                         color: '#2563eb',
                       },
+                      '& .MuiSvgIcon-root': {
+                        fontSize: 28,
+                      },
                     }}
                   />
                 }
                 label={
-                  <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-                    I agree to the{' '}
-                    <button
-                      type="button"
-                      onClick={handleShowTerms}
-                      className="text-blue-600 underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={showTerms} // Disable when modal is open
-                      tabIndex={showTerms ? -1 : 0} // Remove from tab order when modal is open
+                  <Box sx={{ ml: 0.5 }}>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        fontSize: '0.95rem',
+                        fontWeight: 500,
+                        color: '#374151',
+                        mb: 0.5,
+                      }}
                     >
-                      Terms and Conditions
-                    </button>
-                  </Typography>
+                      I agree to the{' '}
+                      <button
+                        type="button"
+                        onClick={handleShowTerms}
+                        style={{
+                          color: '#2563eb',
+                          textDecoration: 'underline',
+                          fontWeight: 600,
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: 0,
+                          transition: 'color 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => (e.target.style.color = '#1d4ed8')}
+                        onMouseLeave={(e) => (e.target.style.color = '#2563eb')}
+                        disabled={showTerms}
+                        tabIndex={showTerms ? -1 : 0}
+                      >
+                        Terms and Conditions
+                      </button>
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontSize: '0.75rem',
+                        color: '#6b7280',
+                        display: 'block',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      📋 Please read and accept our terms to create your
+                      account. This includes rental policies, payment terms, and
+                      usage guidelines.
+                    </Typography>
+                  </Box>
                 }
+                sx={{
+                  alignItems: 'flex-start',
+                  m: 0,
+                  width: '100%',
+                }}
               />
             </Box>
             {errors.agreeTerms && (
-              <p className="text-xs text-red-600 mt-1">{errors.agreeTerms}</p>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#DC2626',
+                  fontSize: '0.75rem',
+                  mt: -2,
+                  mb: 2,
+                  display: 'block',
+                  ml: 1,
+                }}
+              >
+                ⚠️ {errors.agreeTerms}
+              </Typography>
             )}
 
             {/* Server error */}

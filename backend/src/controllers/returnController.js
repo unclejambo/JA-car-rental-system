@@ -151,7 +151,8 @@ export const submitReturn = async (req, res) => {
       hasStain,
       totalFees,
       paymentData,
-      damageImageUrl // Add this to receive the uploaded image URL
+      damageImageUrl, // Add this to receive the uploaded image URL
+      overdueHours
     } = req.body;
 
     console.log('📝 Submitting return for booking:', bookingId);
@@ -163,12 +164,13 @@ export const submitReturn = async (req, res) => {
       equip_others,
       isClean,
       hasStain,
-      damageImageUrl
+      damageImageUrl,
+      overdueHours
     });
 
     // Start transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Get booking with release data
+      // Get booking with release data and car info
       const booking = await tx.booking.findUnique({
         where: { booking_id: parseInt(bookingId) },
         include: {
@@ -177,6 +179,11 @@ export const submitReturn = async (req, res) => {
             select: {
               first_name: true,
               last_name: true
+            }
+          },
+          car: {
+            select: {
+              rent_price: true
             }
           }
         }
@@ -260,6 +267,28 @@ export const submitReturn = async (req, res) => {
           cleaningFee += feesObject.stain_removal_fee || 0;
         }
         calculatedFees += cleaningFee;
+      }
+
+      // Overdue fee calculation
+      if (overdueHours && overdueHours > 0) {
+        const hoursToCharge = Math.min(overdueHours, 2); // Max 2 hours
+        const overdueBaseFee = feesObject.overdue_fee || 0;
+        
+        if (overdueHours <= 2) {
+          // For 1-2 hours: charge overdue_fee per hour
+          calculatedFees += hoursToCharge * overdueBaseFee;
+        } else {
+          // For more than 2 hours: charge the rent_price of the car
+          calculatedFees += booking.car.rent_price || 0;
+        }
+        
+        console.log('Overdue fee calculation (submit):', {
+          overdueHours,
+          hoursToCharge,
+          overdueBaseFee,
+          carRentPrice: booking.car.rent_price,
+          overdueFeesAdded: overdueHours <= 2 ? (hoursToCharge * overdueBaseFee) : booking.car.rent_price
+        });
       }
 
       // Create return record
@@ -467,7 +496,8 @@ export const calculateReturnFees = async (req, res) => {
       equipmentStatus,
       equip_others,
       isClean,
-      hasStain
+      hasStain,
+      overdueHours
     } = req.body;
 
     // Debug: Log the received values
@@ -479,14 +509,20 @@ export const calculateReturnFees = async (req, res) => {
       isClean: isClean,
       isCleanType: typeof isClean,
       hasStain: hasStain,
-      hasStainType: typeof hasStain
+      hasStainType: typeof hasStain,
+      overdueHours: overdueHours
     });
 
-    // Get booking with release data
+    // Get booking with release data and car info
     const booking = await prisma.booking.findUnique({
       where: { booking_id: parseInt(bookingId) },
       include: {
-        releases: true
+        releases: true,
+        car: {
+          select: {
+            rent_price: true
+          }
+        }
       }
     });
 
@@ -511,6 +547,7 @@ export const calculateReturnFees = async (req, res) => {
       equipmentLossFee: 0,
       damageFee: 0,
       cleaningFee: 0,
+      overdueFee: 0,
       total: 0
     };
 
@@ -588,11 +625,34 @@ export const calculateReturnFees = async (req, res) => {
       }
     }
 
+    // Overdue fee calculation
+    if (overdueHours && overdueHours > 0) {
+      const hoursToCharge = Math.min(overdueHours, 2); // Max 2 hours
+      const overdueBaseFee = feesObject.overdue_fee || 0;
+      
+      if (overdueHours <= 2) {
+        // For 1-2 hours: charge overdue_fee per hour
+        calculatedFees.overdueFee = hoursToCharge * overdueBaseFee;
+      } else {
+        // For more than 2 hours: charge the rent_price of the car
+        calculatedFees.overdueFee = booking.car.rent_price || 0;
+      }
+      
+      console.log('Overdue fee calculation:', {
+        overdueHours,
+        hoursToCharge,
+        overdueBaseFee,
+        carRentPrice: booking.car.rent_price,
+        calculatedOverdueFee: calculatedFees.overdueFee
+      });
+    }
+
     // Calculate total
     calculatedFees.total = calculatedFees.gasLevelFee + 
                           calculatedFees.equipmentLossFee + 
                           calculatedFees.damageFee + 
-                          calculatedFees.cleaningFee;
+                          calculatedFees.cleaningFee +
+                          calculatedFees.overdueFee;
 
     // Debug: Log final calculated fees
     console.log('Final calculated fees:', calculatedFees);

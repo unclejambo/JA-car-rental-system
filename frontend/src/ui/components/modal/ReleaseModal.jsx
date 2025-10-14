@@ -50,6 +50,9 @@ export default function ReleaseModal({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Get car name from reservation
+  const carName = reservation?.car_model || 'Vehicle';
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -269,7 +272,7 @@ export default function ReleaseModal({
       maxWidth="xs"
       disableScrollLock
     >
-      <DialogTitle>Release</DialogTitle>
+      <DialogTitle>Releasing of {carName}</DialogTitle>
       <DialogContent dividers>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>

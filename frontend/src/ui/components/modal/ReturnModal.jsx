@@ -52,6 +52,8 @@ export default function ReturnModal({ show, onClose, bookingId }) {
 
   const [releaseData, setReleaseData] = useState(null);
   const [bookingData, setBookingData] = useState(null); // Store full booking data for customer info
+  const [overdueHours, setOverdueHours] = useState(0);
+  const [showOverdueFeeCancel, setShowOverdueFeeCancel] = useState(false);
 
   // Debug: Log when releaseData changes
   useEffect(() => {
@@ -62,6 +64,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     equipmentLossFee: 0,
     damageFee: 0,
     cleaningFee: 0,
+    overdueFee: 0,
     total: 0,
   });
 
@@ -106,6 +109,34 @@ export default function ReturnModal({ show, onClose, bookingId }) {
 
             // Store booking data for customer info
             setBookingData(response.booking);
+
+            // Calculate overdue hours (PH timezone)
+            const phTimeZone = 'Asia/Manila';
+            const now = new Date().toLocaleString('en-US', {
+              timeZone: phTimeZone,
+            });
+            const currentTimePH = new Date(now);
+
+            const dropoffTime = new Date(
+              response.booking.dropoff_time || response.booking.end_date
+            );
+
+            // Calculate the difference in milliseconds
+            const timeDiff = currentTimePH - dropoffTime;
+            const hoursDiff = Math.ceil(timeDiff / (1000 * 60 * 60));
+
+            console.log('Overdue calculation:', {
+              currentTimePH: currentTimePH.toISOString(),
+              dropoffTime: dropoffTime.toISOString(),
+              timeDiff,
+              hoursDiff,
+            });
+
+            if (hoursDiff > 0) {
+              setOverdueHours(hoursDiff);
+            } else {
+              setOverdueHours(0);
+            }
           }
         } catch (err) {
           setError('Failed to load return data');
@@ -123,7 +154,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     // Debounce the API call to prevent excessive requests
     const timeoutId = setTimeout(() => {
       const calculateFeesAsync = async () => {
-        if (bookingId && releaseData) {
+        if (bookingId && releaseData && bookingData) {
           try {
             const response = await returnAPI.calculateFees(bookingId, {
               gasLevel: formData.gasLevel,
@@ -132,6 +163,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
               equip_others: formData.equip_others,
               isClean: formData.isClean,
               hasStain: formData.hasStain,
+              overdueHours: showOverdueFeeCancel ? 0 : overdueHours,
             });
             setCalculatedFees(response.fees);
           } catch (err) {
@@ -153,6 +185,9 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     formData.isClean,
     formData.hasStain,
     releaseData,
+    bookingData,
+    overdueHours,
+    showOverdueFeeCancel,
   ]);
 
   // Handler functions
@@ -180,7 +215,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     if (name === 'damageStatus') {
       const shouldShowUpload = value === 'major' || value === 'minor';
       setShowDamageUpload(shouldShowUpload);
-      
+
       // Clear damage image when switching to "No Damages"
       if (value === 'noDamage') {
         setDamageImageFile(null);
@@ -203,7 +238,11 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     e.preventDefault();
 
     // Validate damage image is selected for major/minor damages
-    if ((formData.damageStatus === 'major' || formData.damageStatus === 'minor') && !damageImageFile) {
+    if (
+      (formData.damageStatus === 'major' ||
+        formData.damageStatus === 'minor') &&
+      !damageImageFile
+    ) {
       setError('Please upload a damage image before submitting');
       return;
     }
@@ -225,10 +264,16 @@ export default function ReturnModal({ show, onClose, bookingId }) {
       if (damageImageFile) {
         const formDataUpload = new FormData();
         formDataUpload.append('damageImage', damageImageFile);
-        formDataUpload.append('damageType', formData.damageStatus === 'minorDamage' ? 'minor' : 'major');
+        formDataUpload.append(
+          'damageType',
+          formData.damageStatus === 'minorDamage' ? 'minor' : 'major'
+        );
 
         console.log('📸 Uploading damage image for booking:', bookingId);
-        const uploadResponse = await returnAPI.uploadDamageImage(bookingId, formDataUpload);
+        const uploadResponse = await returnAPI.uploadDamageImage(
+          bookingId,
+          formDataUpload
+        );
         uploadedImageUrl = uploadResponse.imagePath;
         console.log('✅ Damage image uploaded:', uploadedImageUrl);
       }
@@ -238,6 +283,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
         totalFees: total,
         paymentData: directPayment ? paymentData : null,
         damageImageUrl: uploadedImageUrl || null,
+        overdueHours: showOverdueFeeCancel ? 0 : overdueHours,
       };
 
       console.log('📝 Submitting return with data:', submitData);
@@ -269,12 +315,23 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     { label: 'Damage Fee', amount: calculatedFees.damageFee },
     { label: 'Cleaning Fee', amount: calculatedFees.cleaningFee },
     { label: 'Stain Removal Fee', amount: calculatedFees.stainRemovalFee },
+    {
+      label: 'Overdue Fee',
+      amount: calculatedFees.overdueFee,
+      showCancel: true,
+      hours: overdueHours,
+    },
   ].filter((fee) => fee.amount > 0);
 
   const total = calculatedFees.total;
 
   const currency = (v) =>
     `₱ ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  // Get car name for title
+  const carName = bookingData?.car
+    ? `${bookingData.car.make} ${bookingData.car.model}`
+    : 'Vehicle';
 
   return (
     <>
@@ -285,7 +342,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
         maxWidth={isMobile ? 'sm' : 'md'}
         disableScrollLock
       >
-        <DialogTitle>Return</DialogTitle>
+        <DialogTitle>Returning of {carName}</DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>
           {error && (
             <Alert severity="error" sx={{ m: 2 }}>
@@ -500,7 +557,8 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                           variant="caption"
                           sx={{ display: 'block', mb: 1 }}
                         >
-                          Upload damage image: {damageImageFile && '✅ Selected'}
+                          Upload damage image:{' '}
+                          {damageImageFile && '✅ Selected'}
                         </Typography>
                         <input
                           type="file"
@@ -516,7 +574,11 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                         {damageImageFile && (
                           <Typography
                             variant="caption"
-                            sx={{ display: 'block', mt: 0.5, color: 'success.main' }}
+                            sx={{
+                              display: 'block',
+                              mt: 0.5,
+                              color: 'success.main',
+                            }}
                           >
                             Image selected: {damageImageFile.name}
                           </Typography>
@@ -535,7 +597,8 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                         variant="caption"
                         sx={{ display: 'block', color: 'text.secondary' }}
                       >
-                        Missing/Damaged equipment (Before): {releaseData.equip_others}
+                        Missing/Damaged equipment (Before):{' '}
+                        {releaseData.equip_others}
                       </Typography>
                     )}
                     <RadioGroup
@@ -683,16 +746,68 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                           }}
                         >
                           {f.label}
+                          {f.showCancel && f.hours > 0 && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                display: 'block',
+                                color: 'text.secondary',
+                                fontSize: '0.7rem',
+                              }}
+                            >
+                              ({f.hours} hour{f.hours > 1 ? 's' : ''} overdue)
+                            </Typography>
+                          )}
                         </Typography>
-                        <Typography
-                          variant="body2"
+                        <Box
                           sx={{
-                            flexShrink: 0,
-                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
                           }}
                         >
-                          {currency(f.amount)}
-                        </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              flexShrink: 0,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {currency(f.amount)}
+                          </Typography>
+                          {f.showCancel &&
+                            f.amount > 0 &&
+                            !showOverdueFeeCancel && (
+                              <Button
+                                size="small"
+                                variant="text"
+                                color="error"
+                                onClick={() => setShowOverdueFeeCancel(true)}
+                                sx={{
+                                  minWidth: 'auto',
+                                  padding: '2px 4px',
+                                  fontSize: '0.7rem',
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            )}
+                          {f.showCancel && showOverdueFeeCancel && (
+                            <Button
+                              size="small"
+                              variant="text"
+                              color="success"
+                              onClick={() => setShowOverdueFeeCancel(false)}
+                              sx={{
+                                minWidth: 'auto',
+                                padding: '2px 4px',
+                                fontSize: '0.7rem',
+                              }}
+                            >
+                              Restore
+                            </Button>
+                          )}
+                        </Box>
                       </Box>
                     ))}
                     <Divider />
@@ -851,7 +966,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
               <>
                 <TextField
                   name="gcash_no"
-                  label={"GCash Number"}
+                  label={'GCash Number'}
                   value={paymentData.gcash_no}
                   onChange={(e) =>
                     setPaymentData((prev) => ({

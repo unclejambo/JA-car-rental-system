@@ -296,7 +296,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       };
 
       // Show release button if today is start date and status is 'Confirmed'
-      if ('2025-10-10' === startDate && params.row.status === 'Confirmed') {
+      if ('2025-10-13' === startDate && params.row.status === 'Confirmed') {
         return (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Button
@@ -337,7 +337,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn }) => {
       }
 
       // Show return button if today is end date and status is 'Ongoing'
-      if ('2025-10-09' === endDate && params.row.status === 'In Progress') {
+      if ('2025-10-14' === endDate && params.row.status === 'In Progress') {
         return (
           <Button
             variant="contained"

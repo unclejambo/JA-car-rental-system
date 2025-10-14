@@ -100,32 +100,67 @@ function CustomerBookingHistory() {
       const resPayments = await authFetch(`${API_BASE}/payments/my-payments`, {
         headers: { Accept: 'application/json' },
       });
+      const resTransactions = await authFetch(
+        `${API_BASE}/transactions/my-transactions`,
+        {
+          headers: { Accept: 'application/json' },
+        }
+      );
 
-      if (resBookings.status === 401 || resPayments.status === 401) {
+      if (
+        resBookings.status === 401 ||
+        resPayments.status === 401 ||
+        resTransactions.status === 401
+      ) {
         localStorage.removeItem('authToken');
         window.location.href = '/login';
         return;
       }
 
-      if (!resBookings.ok || !resPayments.ok) {
-        throw new Error('Failed to fetch booking or payment history');
+      if (!resBookings.ok || !resPayments.ok || !resTransactions.ok) {
+        throw new Error(
+          'Failed to fetch booking, payment, or transaction history'
+        );
       }
 
       const dataBookings = await resBookings.json();
       const dataPayments = await resPayments.json();
+      const dataTransactions = await resTransactions.json();
 
-      // Map backend booking data to table row shape
+      // Create a map of transactions by booking_id for easy lookup
+      const transactionMap = {};
+      if (Array.isArray(dataTransactions)) {
+        dataTransactions.forEach((t) => {
+          if (!transactionMap[t.bookingId]) {
+            transactionMap[t.bookingId] = t;
+          }
+        });
+      }
+
+      console.log('Transaction map:', transactionMap);
+
+      // Map backend booking data to table row shape and merge with transaction data
       const mappedBookings = Array.isArray(dataBookings)
-        ? dataBookings.map((b) => ({
-            booking_id: b.booking_id,
-            booking_date: b.booking_date,
-            car_model: b.car_details?.display_name || '',
-            start_date: b.start_date,
-            end_date: b.end_date,
-            amount: b.total_amount ?? '',
-            status: b.has_outstanding_balance ? 'Unpaid' : 'Paid',
-          }))
+        ? dataBookings.map((b) => {
+            const transaction = transactionMap[b.booking_id];
+            console.log(`Booking ${b.booking_id}:`, {
+              transaction: transaction,
+              completion_date: transaction?.completionDate,
+              cancellation_date: transaction?.cancellationDate,
+            });
+            return {
+              booking_id: b.booking_id,
+              booking_date: b.booking_date,
+              car_model: b.car_details?.display_name || '',
+              completion_date: transaction?.completionDate || null,
+              cancellation_date: transaction?.cancellationDate || null,
+              amount: b.total_amount ?? '',
+              status: b.has_outstanding_balance ? 'Unpaid' : 'Paid',
+            };
+          })
         : [];
+
+      console.log('Mapped bookings:', mappedBookings);
       setBookings(mappedBookings);
 
       // Map backend payment data to table row shape
@@ -175,8 +210,8 @@ function CustomerBookingHistory() {
           booking.booking_id?.toString().includes(query) ||
           booking.car_model?.toLowerCase().includes(query) ||
           booking.status?.toLowerCase().includes(query) ||
-          booking.start_date?.toLowerCase().includes(query) ||
-          booking.end_date?.toLowerCase().includes(query)
+          booking.completion_date?.toLowerCase().includes(query) ||
+          booking.cancellation_date?.toLowerCase().includes(query)
         );
       })
     : [];

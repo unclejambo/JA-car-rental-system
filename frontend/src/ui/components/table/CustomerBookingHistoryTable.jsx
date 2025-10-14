@@ -24,14 +24,14 @@ const CustomerBookingHistoryTable = ({ bookings }) => {
       headerName: 'Completion Date',
       flex: 1.5,
       minWidth: 120,
-      renderCell: (p) => p.value ? formatDate(p.value) : '-',
+      renderCell: (p) => (p.value ? formatDate(p.value) : '-'),
     },
     {
       field: 'cancellation_date',
       headerName: 'Cancellation Date',
       flex: 1.5,
       minWidth: 120,
-      renderCell: (p) => p.value ? formatDate(p.value) : '-',
+      renderCell: (p) => (p.value ? formatDate(p.value) : '-'),
     },
     {
       field: 'amount',

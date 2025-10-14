@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/register.css';
 import SuccessModal from '../ui/components/modal/SuccessModal.jsx';
 import RegisterTermsAndConditionsModal from '../ui/modals/RegisterTermsAndConditionsModal.jsx';
+import PhoneVerificationModal from '../components/PhoneVerificationModal.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -65,6 +66,10 @@ const RegisterPage = () => {
   const [showTerms, setShowTerms] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  
+  // Phone verification states
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
+  const [pendingRegistrationData, setPendingRegistrationData] = useState(null);
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -178,8 +183,26 @@ const RegisterPage = () => {
         throw new Error('File upload succeeded but no URL returned');
       }
 
-      // 2) Send registration data as JSON
-      const payload = {
+      // 2) Send OTP to phone number for verification
+      const otpUrl = new URL('/api/phone-verification/send-otp', BASE).toString();
+      const otpRes = await fetch(otpUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: contactNumber.trim(),
+          purpose: 'registration',
+        }),
+      });
+
+      const otpJson = await otpRes.json();
+      console.log('OTP response:', otpJson);
+
+      if (!otpRes.ok) {
+        throw new Error(otpJson?.message || 'Failed to send verification code');
+      }
+
+      // Store pending registration data
+      setPendingRegistrationData({
         email: email.trim(),
         username: username.trim(),
         password,
@@ -192,15 +215,33 @@ const RegisterPage = () => {
         restrictions: restrictions?.trim() || '',
         dl_img_url: dl_img_url,
         agreeTerms: true,
-      };
+      });
 
-      console.log('Sending registration payload:', payload);
+      // Show phone verification modal
+      setLoading(false);
+      setShowPhoneVerification(true);
 
+    } catch (err) {
+      console.error('Registration error:', err);
+      setServerError(err.message || 'Registration failed');
+      setLoading(false);
+    }
+  };
+
+  // Handle successful phone verification
+  const handlePhoneVerificationSuccess = async (verificationData) => {
+    try {
+      setLoading(true);
+      setShowPhoneVerification(false);
+
+      const BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL).replace(/\/+$/, '');
+      
+      // Complete registration with verified phone
       const regUrl = new URL('/api/auth/register', BASE).toString();
       const regRes = await fetch(regUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(pendingRegistrationData),
       });
 
       const regJson = await regRes.json();
@@ -210,15 +251,24 @@ const RegisterPage = () => {
         throw new Error(regJson?.message || regJson?.error || 'Registration failed');
       }
 
-      setSuccessMessage(regJson?.message || 'Registration successful');
+      setSuccessMessage(regJson?.message || 'Registration successful! Your phone number has been verified.');
       setShowSuccess(true);
+      setPendingRegistrationData(null);
       
     } catch (err) {
-      console.error('Registration error:', err);
+      console.error('Registration completion error:', err);
       setServerError(err.message || 'Registration failed');
+      setPendingRegistrationData(null);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle phone verification error
+  const handlePhoneVerificationError = (error) => {
+    console.error('Phone verification error:', error);
+    setServerError('Phone verification failed. Please try again.');
+    setPendingRegistrationData(null);
   };
 
   const handleShowTerms = () => {
@@ -805,6 +855,19 @@ const RegisterPage = () => {
         open={showTerms}
         onClose={() => setShowTerms(false)}
         onAgree={handleAgreeTerms}
+      />
+
+      <PhoneVerificationModal
+        open={showPhoneVerification}
+        onClose={() => {
+          setShowPhoneVerification(false);
+          setPendingRegistrationData(null);
+          setLoading(false);
+        }}
+        phoneNumber={formData.contactNumber}
+        purpose="registration"
+        onVerificationSuccess={handlePhoneVerificationSuccess}
+        onVerificationError={handlePhoneVerificationError}
       />
 
       <SuccessModal

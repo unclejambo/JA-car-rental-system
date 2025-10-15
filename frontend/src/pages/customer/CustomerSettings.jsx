@@ -29,6 +29,7 @@ import { updateLicense } from '../../store/license';
 import ConfirmationModal from '../../ui/components/modal/ConfirmationModal';
 import { FormControlLabel, Checkbox } from '@mui/material';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
+import PhoneVerificationModal from '../../components/PhoneVerificationModal';
 
 export default function CustomerSettings() {
   // ✅ Added Snackbar state
@@ -45,6 +46,11 @@ export default function CustomerSettings() {
   const [profileImage, setProfileImage] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [imageUploading, setImageUploading] = useState(false);
+
+  // Phone verification state
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
+  const [pendingPhoneNumber, setPendingPhoneNumber] = useState('');
+  const [pendingProfileChanges, setPendingProfileChanges] = useState(null);
 
   function getChanges() {
     const changes = [];
@@ -96,10 +102,25 @@ export default function CustomerSettings() {
       }
     });
 
+    // Check if phone number has changed
+    const phoneNumberChanged = draft.contactNumber !== profile.contactNumber;
+
     // Include password fields only if user is changing password
     if (passwordData.newPassword && passwordData.newPassword.trim() !== '') {
       changedFields.password = passwordData.newPassword;
       changedFields.currentPassword = passwordData.currentPassword;
+    }
+
+    // If phone number changed, require verification first
+    if (phoneNumberChanged) {
+      setSaving(false);
+      setShowConfirmModal(false);
+      setPendingPhoneNumber(draft.contactNumber);
+      setPendingProfileChanges({ changedFields, customerId });
+      
+      // Send OTP to new phone number
+      sendPhoneOTP(draft.contactNumber);
+      return;
     }
 
     // ✅ Calculate isRecUpdate value based on notification preferences
@@ -218,6 +239,153 @@ export default function CustomerSettings() {
         setSaving(false);
       });
   }
+
+  // Phone verification functions
+  const sendPhoneOTP = async (phoneNumber) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/phone-verification/send-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber: phoneNumber,
+          purpose: 'phone_change',
+          userId: JSON.parse(localStorage.getItem('userInfo'))?.id,
+          userType: 'customer',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setShowPhoneVerification(true);
+      } else {
+        console.error('Failed to send OTP:', data.message);
+        alert('Failed to send verification code. Please try again.');
+        setSaving(false);
+      }
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      alert('Failed to send verification code. Please try again.');
+      setSaving(false);
+    }
+  };
+
+  const handlePhoneVerificationSuccess = async (data) => {
+    console.log('Phone verified successfully:', data);
+    setShowPhoneVerification(false);
+
+    // Now proceed with the profile update
+    if (pendingProfileChanges) {
+      setSaving(true);
+      const { changedFields, customerId } = pendingProfileChanges;
+
+      // Calculate isRecUpdate value based on notification preferences
+      let isRecUpdateValue = 0;
+      if (receiveUpdatesPhone && receiveUpdatesEmail) {
+        isRecUpdateValue = 3; // Both
+      } else if (receiveUpdatesPhone) {
+        isRecUpdateValue = 1; // SMS only
+      } else if (receiveUpdatesEmail) {
+        isRecUpdateValue = 2; // Email only
+      }
+
+      // Upload profile image if changed, then update customer with all changes
+      const updatePromise = profileImage
+        ? uploadProfileImage().then((imageUrl) => {
+            if (imageUrl) {
+              changedFields.profile_img_url = imageUrl;
+            }
+            return useCustomerStore
+              .getState()
+              .updateCustomer(customerId, changedFields);
+          })
+        : useCustomerStore.getState().updateCustomer(customerId, changedFields);
+
+      updatePromise
+        .then(async (updated) => {
+          // Save notification settings if changed
+          const notifChanged =
+            receiveUpdatesPhone !== initialReceiveUpdatesPhone ||
+            receiveUpdatesEmail !== initialReceiveUpdatesEmail;
+
+          if (notifChanged) {
+            try {
+              const notificationResponse = await authenticatedFetch(
+                `${API_BASE}/api/customers/me/notification-settings`,
+                {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ isRecUpdate: isRecUpdateValue }),
+                }
+              );
+
+              if (notificationResponse.ok) {
+                setInitialReceiveUpdatesPhone(receiveUpdatesPhone);
+                setInitialReceiveUpdatesEmail(receiveUpdatesEmail);
+              }
+            } catch (notifError) {
+              console.error('Error updating notification settings:', notifError);
+            }
+          }
+
+          // Update profile state
+          setProfile({
+            firstName: updated.first_name || profile.firstName || '',
+            lastName: updated.last_name || profile.lastName || '',
+            address: updated.address || profile.address || '',
+            email: updated.email || profile.email || '',
+            contactNumber: updated.contact_no || profile.contactNumber || '',
+            birthdate: updated.birthdate || profile.birthdate || '',
+            username: updated.username || profile.username || '',
+            password:
+              typeof updated.password === 'string' && updated.password !== ''
+                ? updated.password
+                : draft.password || profile.password || '',
+            profileImageUrl:
+              updated.profile_img_url || profile.profileImageUrl || '',
+          });
+          setProfileImage(null);
+
+          // Update sessionStorage cache
+          if (updated.profile_img_url) {
+            sessionStorage.setItem('profileImageUrl', updated.profile_img_url);
+            window.dispatchEvent(
+              new CustomEvent('profileImageUpdated', {
+                detail: { imageUrl: updated.profile_img_url },
+              })
+            );
+          }
+
+          // Reset states
+          setPasswordData({
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: '',
+          });
+          setPendingProfileChanges(null);
+          setPendingPhoneNumber('');
+          setIsEditing(false);
+          setSuccessMessage('Profile and phone number updated successfully!');
+          setShowSuccess(true);
+        })
+        .catch((err) => {
+          console.error('Failed to update customer:', err);
+          alert('Failed to update profile. Please try again.');
+        })
+        .finally(() => {
+          setSaving(false);
+        });
+    }
+  };
+
+  const handlePhoneVerificationError = (error) => {
+    console.error('Phone verification failed:', error);
+    setPendingProfileChanges(null);
+    setPendingPhoneNumber('');
+    setShowPhoneVerification(false);
+  };
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, _setLoading] = useState(true);
@@ -1687,6 +1855,18 @@ export default function CustomerSettings() {
           {successMessage}
         </Alert>
       </Snackbar>
+
+      {/* Phone Verification Modal */}
+      <PhoneVerificationModal
+        open={showPhoneVerification}
+        onClose={() => setShowPhoneVerification(false)}
+        phoneNumber={pendingPhoneNumber}
+        purpose="phone_change"
+        userId={JSON.parse(localStorage.getItem('userInfo'))?.id}
+        userType="customer"
+        onVerificationSuccess={handlePhoneVerificationSuccess}
+        onVerificationError={handlePhoneVerificationError}
+      />
     </>
   );
 }

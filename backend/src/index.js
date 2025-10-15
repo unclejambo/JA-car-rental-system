@@ -28,6 +28,7 @@ import releasePaymentRoutes from "./routes/releasePaymentRoute.js";
 import returnRoutes from "./routes/returnRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import autoCancelRoutes from "./routes/autoCancelRoutes.js";
+import phoneVerificationRoutes from "./routes/phoneVerificationRoutes.js";
 import { autoCancelExpiredBookings } from "./utils/autoCancel.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -82,6 +83,7 @@ app.use("/release-payments", releasePaymentRoutes);
 app.use("/returns", returnRoutes);
 app.use("/admins", adminRoutes);
 app.use("/api", autoCancelRoutes);
+app.use("/api/phone-verification", phoneVerificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

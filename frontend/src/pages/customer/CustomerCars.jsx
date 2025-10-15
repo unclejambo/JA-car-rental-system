@@ -937,12 +937,15 @@ function CustomerCars() {
                               justifyContent: 'space-between',
                               borderRadius: 3,
                               boxShadow: '0 3px 10px rgba(0,0,0,0.08)',
-                              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                              transition:
+                                'transform 0.2s ease, box-shadow 0.2s ease',
                               '&:hover': {
                                 transform: isUnderMaintenance
                                   ? 'none'
                                   : 'translateY(-4px)',
-                                boxShadow: isUnderMaintenance ? '0 3px 10px rgba(0,0,0,0.08)' : '0 6px 20px rgba(0,0,0,0.12)',
+                                boxShadow: isUnderMaintenance
+                                  ? '0 3px 10px rgba(0,0,0,0.08)'
+                                  : '0 6px 20px rgba(0,0,0,0.12)',
                               },
                               cursor: isUnderMaintenance
                                 ? 'not-allowed'
@@ -969,7 +972,15 @@ function CustomerCars() {
                               }}
                             />
 
-                            <CardContent sx={{ flexGrow: 1, p: 2, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <CardContent
+                              sx={{
+                                flexGrow: 1,
+                                p: 2,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                              }}
+                            >
                               <Box>
                                 {/* Car Title */}
                                 <Typography

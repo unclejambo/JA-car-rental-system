@@ -144,6 +144,7 @@ const RegisterPage = () => {
         !lastName?.trim() ||
         !address?.trim() ||
         !contactNumber?.trim() ||
+        !fb_link?.trim() ||
         !licenseNumber?.trim() ||
         !licenseExpiry?.trim() ||
         !licenseFile ||
@@ -207,7 +208,7 @@ const RegisterPage = () => {
         lastName: lastName.trim(),
         address: address.trim(),
         contactNumber: contactNumber.trim(),
-        fb_link: fb_link?.trim() || '',
+        fb_link: fb_link.trim(),
         licenseNumber: licenseNumber.trim(),
         licenseExpiry: licenseExpiry.trim(),
         restrictions: restrictions?.trim() || '',
@@ -276,8 +277,17 @@ const RegisterPage = () => {
             noValidate
             encType="multipart/form-data"
           >
-            {/* Back to Login (MUI) */}
-            <Box sx={{ mb: 1 }}>
+            {/* Back to Login (MUI) - Sticky */}
+            <Box
+              sx={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+                backgroundColor: 'white',
+                py: 1,
+                mb: 1,
+              }}
+            >
               <Button
                 variant="text"
                 color="primary"
@@ -285,6 +295,11 @@ const RegisterPage = () => {
                 startIcon={<ArrowBackIcon />}
                 onClick={() => navigate('/login')}
                 aria-label="Back to login"
+                sx={{
+                  '&:hover': {
+                    backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                  },
+                }}
               >
                 Back to Login
               </Button>
@@ -571,7 +586,7 @@ const RegisterPage = () => {
               <TextField
                 id="fb_link"
                 name="fb_link"
-                label="FACEBOOK LINK (OPTIONAL)"
+                label="FACEBOOK LINK"
                 value={formData.fb_link}
                 onChange={onChange}
                 type="text"
@@ -579,6 +594,7 @@ const RegisterPage = () => {
                 fullWidth
                 variant="outlined"
                 size="medium"
+                required
                 error={!!errors.fb_link}
                 helperText={errors.fb_link}
                 sx={{
@@ -787,7 +803,7 @@ const RegisterPage = () => {
             <Box
               sx={{
                 mb: 3,
-                p: 2.5,
+                p: 1,
                 backgroundColor: 'rgba(229, 231, 235, 0.3)',
                 borderRadius: 2,
                 border: '2px solid',

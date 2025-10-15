@@ -118,7 +118,7 @@ const RegisterTermsAndConditionsModal = ({ open, onClose, onAgree }) => {
               <li>
                 <Typography variant="body2">
                   <strong>
-                    Payment of the reservation fee of ₱1000 Refundable
+                    Payment of the reservation fee of ₱1000 Non - Refundable
                   </strong>
                 </Typography>
               </li>
@@ -171,13 +171,6 @@ const RegisterTermsAndConditionsModal = ({ open, onClose, onAgree }) => {
                 </Typography>
               </li>
             </ul>
-            <Typography
-              variant="body2"
-              sx={{ mt: 2, mb: 2, fontStyle: 'italic', textAlign: 'justify' }}
-            >
-              Minimum cancellation fee is 1,000 pesos for any rule, and in any
-              case, if the calculated cancellation fee is below 1,000 PHP.
-            </Typography>
           </div>
 
           {/* Vehicle Identification Section */}
@@ -297,35 +290,98 @@ const RegisterTermsAndConditionsModal = ({ open, onClose, onAgree }) => {
               variant="h6"
               sx={{ fontWeight: 'bold', mb: 2, color: '#1976d2' }}
             >
-              Rental Fees
+              Rental Fees and Charges
             </Typography>
             <Typography
               variant="body2"
               sx={{ lineHeight: 1.6, mb: 2, textAlign: 'justify' }}
             >
-              Renter will pay to owner rental fees for use of the Rental Vehicle
-              as follows:
+              The renter acknowledges and agrees to pay all applicable fees and
+              charges associated with the vehicle rental. These fees are
+              implemented to maintain the quality, safety, and reliability of
+              the Company’s services and to ensure fair use of all vehicles and
+              resources. All fees must be settled in accordance with the terms
+              set forth in this agreement.
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ lineHeight: 1.6, mb: 2, textAlign: 'justify' }}
+            >
+              Below are the applicable fees and their descriptions:
             </Typography>
             <ul className="list-disc ml-6 space-y-1">
               <li>
                 <Typography variant="body2">
-                  <strong>Fee per day -</strong> Rate of the Car per day.
+                  <strong>Reservation Fee -</strong> A non-refundable fee
+                  collected to confirm and secure the vehicle booking. This fee
+                  ensures that the selected vehicle is reserved exclusively for
+                  the renter’s chosen date and time.
                 </Typography>
               </li>
               <li>
                 <Typography variant="body2">
-                  <strong>Fuel - </strong> No fuel included. Return with the
-                  same level or more.
+                  <strong>Cleaning Fee - </strong> Charged to cover the cost of
+                  cleaning the vehicle after use. Additional cleaning fees may
+                  apply if the vehicle is returned in an excessively dirty or
+                  unsanitary condition beyond normal use.
                 </Typography>
               </li>
               <li>
                 <Typography variant="body2">
-                  <strong>Car Wash - </strong> Clean inside and out.
+                  <strong>Driver Fee (for bookings with a driver) - </strong>{' '}
+                  Applies to rentals that include a company-provided driver.
+                  This fee covers the driver’s service, time, and basic
+                  transportation costs throughout the rental period.
                 </Typography>
               </li>
               <li>
                 <Typography variant="body2">
-                  <strong>Security Deposit - </strong> Serves as deposit for
+                  <strong>Overdue Fee - </strong> A penalty charged if the
+                  renter fails to return the vehicle at the agreed-upon date and
+                  time. The overdue fee is calculated based on the number of
+                  hours or days delayed and may include additional charges if
+                  the delay affects subsequent bookings.
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Damage Fee - </strong> Applied if the vehicle sustains
+                  any damage during the rental period that is not covered by
+                  insurance or the renter’s security deposit. The amount will
+                  depend on the severity and estimated repair cost.
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Equipment Loss Fee - </strong> Charged for the loss,
+                  theft, or non-return of any vehicle accessories or equipment
+                  (e.g., tools, GPS devices, dashcams, or spare tires) provided
+                  at the start of the rental.
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Gas Level Fee - </strong> Assessed if the vehicle is
+                  returned with less fuel than it had at the time of pickup. The
+                  renter will be charged based on the difference in fuel level
+                  and the current fuel rate per liter.
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Stain Removal Fee - </strong> Applied when the vehicle
+                  interior (seats, carpet, upholstery, etc.) has stains, spills,
+                  or odors that require professional cleaning or detailing
+                  services.
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Security Deposit Fee - </strong> A refundable amount
+                  collected before the rental begins to cover potential
+                  penalties, damages, or violations. The deposit will be
+                  refunded in full once the vehicle is returned in good
+                  condition and all rental terms are met.
                 </Typography>
               </li>
             </ul>

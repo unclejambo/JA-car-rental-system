@@ -125,8 +125,48 @@ export const createPayment = async (req, res) => {
         (sum, payment) => sum + (payment.amount || 0),
         0
       ) || 0;
+    
+    const paymentAmount = Number(amount);
+    const totalAmount = booking.total_amount || 0;
+    const remainingBalance = totalAmount - currentTotalPaid;
+    
+    // Special handling for security deposit fee
+    const isSecurityDeposit = description && description.toLowerCase().includes('security deposit');
+    
+    // Validation logic
+    if (!isSecurityDeposit) {
+      // For regular payments, validate against remaining balance
+      if (paymentAmount > remainingBalance) {
+        return res.status(400).json({
+          error: "Payment amount exceeds remaining balance",
+          details: {
+            bookingTotal: totalAmount,
+            amountPaid: currentTotalPaid,
+            remainingBalance: remainingBalance,
+            attemptedPayment: paymentAmount
+          }
+        });
+      }
+    } else {
+      // For security deposit when balance is 0, we'll add to total_amount
+      if (remainingBalance <= 0) {
+        // Update the booking total_amount to include the security deposit
+        await prisma.booking.update({
+          where: { booking_id: Number(booking_id) },
+          data: {
+            total_amount: totalAmount + paymentAmount
+          }
+        });
+        // Refresh booking data
+        const updatedBooking = await prisma.booking.findUnique({
+          where: { booking_id: Number(booking_id) },
+        });
+        booking.total_amount = updatedBooking.total_amount;
+      }
+    }
+    
     const runningBalance =
-      (booking.total_amount || 0) - (currentTotalPaid + Number(amount));
+      (booking.total_amount || 0) - (currentTotalPaid + paymentAmount);
 
     const created = await prisma.payment.create({
       data: {
@@ -148,15 +188,15 @@ export const createPayment = async (req, res) => {
 
     // Update the booking balance after payment creation
     const newTotalPaid = currentTotalPaid + Number(amount);
-    const remainingBalance = (booking.total_amount || 0) - newTotalPaid;
+    const finalBalance = (booking.total_amount || 0) - newTotalPaid;
 
     // Determine appropriate booking status
     const newBookingStatus = determineBookingStatus(newTotalPaid, booking.total_amount, booking.booking_status);
     
     // Prepare booking update data
     const bookingUpdateData = { 
-      balance: remainingBalance,
-      payment_status: remainingBalance <= 0 ? 'Paid' : 'Unpaid'
+      balance: finalBalance,
+      payment_status: finalBalance <= 0 ? 'Paid' : 'Unpaid'
     };
     
     // Update booking status based on payment state or explicit flag

@@ -11,6 +11,7 @@ import {
   Stack,
   Box,
 } from '@mui/material';
+import { createAuthenticatedFetch } from '../../../utils/api';
 
 // Schema: bookingId required, customer must resolve, extra rules for GCash
 const refundSchema = z
@@ -108,7 +109,16 @@ export default function AddRefundModal({ show, onClose }) {
       setFormData((fd) => ({ ...fd, bookingId: '' }));
       return;
     }
-    const list = bookings.filter((b) => b.customer_id === custId);
+    // Filter bookings by customer_id AND payment_status = 'Paid'
+    const list = bookings.filter(
+      (b) => b.customer_id === custId && b.payment_status === 'Paid'
+    );
+    console.log(
+      '[AddRefundModal] Filtered bookings for customer:',
+      custId,
+      'Paid bookings:',
+      list
+    );
     setBookingOptions(list);
     setFormData((fd) =>
       list.some((b) => b.booking_id === Number(fd.bookingId))
@@ -161,6 +171,10 @@ export default function AddRefundModal({ show, onClose }) {
     if (!validate(formData)) return;
     try {
       setSubmitting(true);
+      const authFetch = createAuthenticatedFetch(() => {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+      });
       const base =
         import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL || '';
       const payload = {
@@ -173,13 +187,32 @@ export default function AddRefundModal({ show, onClose }) {
         refund_date: new Date().toISOString(),
         description: formData.description || null,
       };
-      const res = await fetch(`${base}/refunds`, {
+      const res = await authFetch(`${base}/refunds`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        // Check if there are validation details
+        if (err.details) {
+          const {
+            totalPaid,
+            totalRefunded,
+            availableForRefund,
+            attemptedRefund,
+            currentPaymentStatus,
+          } = err.details;
+          let detailedMessage = err.error || 'Refund validation failed';
+
+          if (currentPaymentStatus) {
+            detailedMessage = `${detailedMessage}\n\nCurrent Payment Status: ${currentPaymentStatus}`;
+          } else if (totalPaid !== undefined) {
+            detailedMessage = `${detailedMessage}\n\nTotal Paid: ₱${totalPaid?.toFixed(2)}\nTotal Refunded: ₱${totalRefunded?.toFixed(2)}\nAvailable for Refund: ₱${availableForRefund?.toFixed(2)}\nAttempted Refund: ₱${attemptedRefund?.toFixed(2)}`;
+          }
+
+          throw new Error(detailedMessage);
+        }
         throw new Error(err.error || 'Failed to create refund');
       }
       onClose?.();
@@ -197,11 +230,15 @@ export default function AddRefundModal({ show, onClose }) {
     const load = async () => {
       try {
         setLoadingData(true);
+        const authFetch = createAuthenticatedFetch(() => {
+          localStorage.removeItem('authToken');
+          window.location.href = '/login';
+        });
         const base =
           import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL || '';
         const [cRes, bRes] = await Promise.all([
-          fetch(`${base}/api/customers`), // ✅ Fixed: Added /api prefix
-          fetch(`${base}/bookings`),
+          authFetch(`${base}/api/customers`),
+          authFetch(`${base}/bookings`),
         ]);
         const [cData, bData] = await Promise.all([cRes.json(), bRes.json()]);
         if (!cancel) {
@@ -239,6 +276,7 @@ export default function AddRefundModal({ show, onClose }) {
         <form id="addRefundForm" onSubmit={handleSubmit}>
           <Stack spacing={2}>
             <TextField
+              select
               label="Customer Name"
               name="customerName"
               value={formData.customerName}
@@ -247,11 +285,29 @@ export default function AddRefundModal({ show, onClose }) {
               disabled={loadingData}
               error={!!errors.customerName}
               helperText={
-                errors.customerName || 'Type exact full name (First Last)'
+                errors.customerName || 'Select a customer from the list'
               }
               fullWidth
-              placeholder={loadingData ? 'Loading...' : 'e.g., Juan Dela Cruz'}
-            />
+            >
+              {customers.length === 0 && loadingData && (
+                <MenuItem value="" disabled>
+                  Loading customers...
+                </MenuItem>
+              )}
+              {customers.length === 0 && !loadingData && (
+                <MenuItem value="" disabled>
+                  No customers found
+                </MenuItem>
+              )}
+              {customers.map((customer) => (
+                <MenuItem
+                  key={customer.customer_id}
+                  value={`${customer.first_name} ${customer.last_name}`}
+                >
+                  {customer.first_name} {customer.last_name}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               select
               label="Booking"
@@ -270,13 +326,13 @@ export default function AddRefundModal({ show, onClose }) {
               fullWidth
             >
               {bookingOptions.map((b) => {
-                const date = new Date(b.booking_date);
-                const dStr = isNaN(date.getTime())
+                const d = new Date(b.booking_date);
+                const dateStr = isNaN(d.getTime())
                   ? b.booking_date
-                  : date.toISOString().split('T')[0];
+                  : d.toISOString().split('T')[0];
                 return (
                   <MenuItem key={b.booking_id} value={b.booking_id}>
-                    {dStr} (ID #{b.booking_id})
+                    (ID #{b.booking_id}) - {dateStr} - {b.booking_status}
                   </MenuItem>
                 );
               })}

@@ -416,7 +416,7 @@ function CustomerBookingHistory() {
             {/* Search Bar - Aligned to the right like Refresh button */}
             <Box
               sx={{
-                mb: 3,
+                mb: 0.5,
                 display: 'flex',
                 justifyContent: 'flex-end',
               }}

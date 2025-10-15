@@ -15,6 +15,7 @@ import AdminReportAnalytics from './pages/admin/AdminReportAnalytics';
 import AdminSettings from './pages/admin/AdminSettings';
 import RegisterPage from './pages/RegisterPage.jsx';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
+import ViewCarsPage from './pages/ViewCarsPage.jsx';
 import CustomerDashboard from './pages/customer/CustomerDashboard.jsx';
 import ProtectedRoute from './ui/components/modal/ProtectedRoute.jsx';
 import CustomerProfile from './pages/customer/CustomerProfile.jsx';
@@ -33,167 +34,168 @@ createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
-        <Routes>
-          {/* Redirect root to home */}
-          <Route path="/" element={<Navigate to="/home" replace />} />
-          
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/home" element={<HomePage />} />
+          <Routes>
+            {/* Redirect root to home */}
+            <Route path="/" element={<Navigate to="/home" replace />} />
 
-          {/* Protected Admin Routes */}
-          <Route
-            path="/admindashboard"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/manage-booking"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminBookingPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/manage-car"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminCarPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/manage-user"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminManageUser />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/schedule"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminSchedulePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/transaction-logs"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminTransactionPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/report-analytics"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminReportAnalytics />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminSettings />
-              </ProtectedRoute>
-            }
-          />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/view-cars" element={<ViewCarsPage />} />
 
-          <Route
-            path="/customer-dashboard"
-            element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerDashboard />
-              </ProtectedRoute>
-            }
-          />
+            {/* Protected Admin Routes */}
+            <Route
+              path="/admindashboard"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manage-booking"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminBookingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manage-car"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminCarPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manage-user"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminManageUser />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/schedule"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminSchedulePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/transaction-logs"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminTransactionPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/report-analytics"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminReportAnalytics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminSettings />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/customer-profile"
-            element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerProfile />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/customer-dashboard"
+              element={
+                <ProtectedRoute requiredRole="customer">
+                  <CustomerDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/customer-bookings"
-            element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerBookings />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/customer-profile"
+              element={
+                <ProtectedRoute requiredRole="customer">
+                  <CustomerProfile />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/customer-history"
-            element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerBookingHistory />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/customer-bookings"
+              element={
+                <ProtectedRoute requiredRole="customer">
+                  <CustomerBookings />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/customer-cars"
-            element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerCars />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/customer-history"
+              element={
+                <ProtectedRoute requiredRole="customer">
+                  <CustomerBookingHistory />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/customer-schedule"
-            element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerSchedule />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/customer-cars"
+              element={
+                <ProtectedRoute requiredRole="customer">
+                  <CustomerCars />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/customer-account"
-            element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerSettings />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/customer-schedule"
+              element={
+                <ProtectedRoute requiredRole="customer">
+                  <CustomerSchedule />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/driver-schedule"
-            element={
-              <ProtectedRoute requiredRole="driver">
-                <DriverSchedule />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/customer-account"
+              element={
+                <ProtectedRoute requiredRole="customer">
+                  <CustomerSettings />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/driver-settings"
-            element={
-              <ProtectedRoute requiredRole="driver">
-                <DriverSettings />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/driver-schedule"
+              element={
+                <ProtectedRoute requiredRole="driver">
+                  <DriverSchedule />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* 404 Not Found Route */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+            <Route
+              path="/driver-settings"
+              element={
+                <ProtectedRoute requiredRole="driver">
+                  <DriverSettings />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 404 Not Found Route */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
     </ErrorBoundary>
   </StrictMode>
 );

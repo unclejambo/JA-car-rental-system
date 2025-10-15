@@ -903,8 +903,10 @@ function CustomerCars() {
                   <Grid
                     container
                     spacing={3}
+                    justifyContent="center"
+                    alignItems="stretch"
                     sx={{
-                      justifyContent: { xs: 'flex-start', sm: 'flex-start' },
+                      px: { xs: 1, sm: 2, md: 3 },
                     }}
                   >
                     {filteredCars.map((car) => {
@@ -918,27 +920,38 @@ function CustomerCars() {
                           xs={12}
                           sm={6}
                           md={4}
-                          lg={3}
                           key={car.car_id}
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                          }}
                         >
                           <Card
                             sx={{
-                              maxWidth: { xs: '100%', sm: 320 },
                               width: '100%',
-                              mx: { xs: 0, sm: 'auto' },
+                              maxWidth: 380,
+                              minWidth: 300,
+                              height: '100%',
                               display: 'flex',
                               flexDirection: 'column',
-                              transition: 'transform 0.2s, box-shadow 0.2s',
+                              justifyContent: 'space-between',
+                              borderRadius: 3,
+                              boxShadow: '0 3px 10px rgba(0,0,0,0.08)',
+                              transition:
+                                'transform 0.2s ease, box-shadow 0.2s ease',
                               '&:hover': {
                                 transform: isUnderMaintenance
                                   ? 'none'
                                   : 'translateY(-4px)',
-                                boxShadow: isUnderMaintenance ? 0 : 4,
+                                boxShadow: isUnderMaintenance
+                                  ? '0 3px 10px rgba(0,0,0,0.08)'
+                                  : '0 6px 20px rgba(0,0,0,0.12)',
                               },
                               cursor: isUnderMaintenance
                                 ? 'not-allowed'
                                 : 'pointer',
                               opacity: isUnderMaintenance ? 0.7 : 1,
+                              backgroundColor: '#fff',
                             }}
                             onClick={() =>
                               !isUnderMaintenance && handleBookNow(car)
@@ -946,58 +959,71 @@ function CustomerCars() {
                           >
                             <CardMedia
                               component="img"
-                              height="160"
                               image={car.car_img_url}
                               alt={`${car.make} ${car.model}`}
                               sx={{
-                                objectFit: 'cover',
-                                backgroundColor: '#f5f5f5',
+                                width: '100%',
+                                height: 200,
+                                objectFit: 'contain',
+                                backgroundColor: '#f9f9f9',
+                                p: 2,
+                                borderTopLeftRadius: 12,
+                                borderTopRightRadius: 12,
                               }}
                             />
 
-                            <CardContent sx={{ flexGrow: 1, p: 2 }}>
-                              {/* Car Title */}
-                              <Typography
-                                variant="h6"
-                                sx={{
-                                  fontWeight: 'bold',
-                                  mb: 1,
-                                  fontSize: '1.1rem',
-                                }}
-                              >
-                                {car.make} {car.model}
-                              </Typography>
+                            <CardContent
+                              sx={{
+                                flexGrow: 1,
+                                p: 2,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                              }}
+                            >
+                              <Box>
+                                {/* Car Title */}
+                                <Typography
+                                  variant="h6"
+                                  sx={{
+                                    fontWeight: 700,
+                                    mb: 0.5,
+                                    color: '#333',
+                                  }}
+                                >
+                                  {car.make} {car.model}
+                                </Typography>
 
-                              {/* Car Details */}
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{ mb: 1 }}
-                              >
-                                {car.year} • {car.no_of_seat} seats
-                              </Typography>
+                                {/* Car Details */}
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{ mb: 1 }}
+                                >
+                                  {car.year} • {car.no_of_seat} seats
+                                </Typography>
 
-                              {/* Plate Number */}
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{ mb: 2 }}
-                              >
-                                Plate: {car.license_plate}
-                              </Typography>
+                                {/* Plate Number */}
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{ mb: 1 }}
+                                >
+                                  Plate: {car.license_plate}
+                                </Typography>
 
-                              {/* Status Badge */}
-                              <Chip
-                                label={statusInfo.label}
-                                size="small"
-                                sx={{
-                                  backgroundColor: statusInfo.color,
-                                  color: statusInfo.textColor || 'white',
-                                  fontWeight: 'bold',
-                                  mb: 2,
-                                  fontSize: '0.75rem',
-                                }}
-                              />
+                                {/* Status Badge */}
+                                <Chip
+                                  label={statusInfo.label}
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: statusInfo.color,
+                                    color: statusInfo.textColor || 'white',
+                                    fontWeight: 600,
+                                    mb: 2,
+                                  }}
+                                />
+                              </Box>
 
                               {/* Price */}
                               <Typography
@@ -1006,7 +1032,7 @@ function CustomerCars() {
                                   fontWeight: 'bold',
                                   color: '#c10007',
                                   fontSize: '1.2rem',
-                                  mb: 2,
+                                  mb: 1,
                                 }}
                               >
                                 ₱{car.rent_price?.toLocaleString() || '0'}/day
@@ -1029,9 +1055,11 @@ function CustomerCars() {
                                     .includes('rent')
                                     ? '#ff9800'
                                     : '#c10007',
-                                  color: 'white',
-                                  fontWeight: 'bold',
+                                  color: '#fff',
+                                  fontWeight: 600,
                                   py: 1,
+                                  borderRadius: 2,
+                                  textTransform: 'none',
                                   '&:hover': {
                                     backgroundColor: car.car_status
                                       ?.toLowerCase()

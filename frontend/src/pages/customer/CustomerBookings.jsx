@@ -103,7 +103,11 @@ function CustomerBookings() {
 
       if (response.ok) {
         const data = await response.json();
-        setBookings(data || []);
+        // Filter out cancelled bookings
+        const activeBookings = (data || []).filter(
+          (booking) => booking.booking_status?.toLowerCase() !== 'cancelled'
+        );
+        setBookings(activeBookings);
       } else {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to load bookings');
@@ -127,9 +131,11 @@ function CustomerBookings() {
       if (response.ok) {
         const data = await response.json();
         console.log('Bookings response for settlement:', data);
-        // Filter only unpaid bookings
+        // Filter only unpaid bookings that are not cancelled
         const unpaidBookings = (data || []).filter(
-          (booking) => booking.payment_status?.toLowerCase() === 'unpaid'
+          (booking) =>
+            booking.payment_status?.toLowerCase() === 'unpaid' &&
+            booking.booking_status?.toLowerCase() !== 'cancelled'
         );
         setPayments(unpaidBookings);
       } else {
@@ -432,7 +438,7 @@ function CustomerBookings() {
         {/* Search Bar - Aligned to the right like Refresh button */}
         <Box
           sx={{
-            mb: 3,
+            mb: 0.5,
             display: 'flex',
             justifyContent: 'flex-end',
           }}
@@ -470,7 +476,7 @@ function CustomerBookings() {
         {activeTab === 1 && paymentSearchQuery && (
           <Box
             sx={{
-              mb: 2,
+              mb: 1,
               px: { xs: 1, sm: 0 },
               display: 'flex',
               justifyContent: 'flex-end',

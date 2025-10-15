@@ -163,7 +163,7 @@ export default function HomePage() {
               </Typography>
               <Button
                 component={Link}
-                to="/login"
+                to="/view-cars"
                 variant="contained"
                 size="large"
                 endIcon={<ArrowForward />}

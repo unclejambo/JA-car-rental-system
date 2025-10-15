@@ -166,9 +166,17 @@ export default function ReleaseModal({
       const imageTypes = ['id1', 'id2', 'front', 'back', 'right', 'left'];
       const uploadPromises = [];
 
+      console.log('Starting image uploads for release_id:', releaseId);
+
       for (const imageType of imageTypes) {
         const imageData = formData.images[imageType];
         if (imageData.file) {
+          console.log(`Preparing to upload ${imageType} image:`, {
+            fileName: imageData.file.name,
+            fileSize: imageData.file.size,
+            fileType: imageData.file.type,
+          });
+
           const formDataUpload = new FormData();
           formDataUpload.append('image', imageData.file);
           formDataUpload.append('image_type', imageType);
@@ -192,6 +200,10 @@ export default function ReleaseModal({
 
           formDataUpload.append('customer_first_name', customerFirstName);
 
+          console.log(
+            `Uploading ${imageType} to: ${API_BASE}/releases/${releaseId}/images`
+          );
+
           const uploadPromise = authFetch(
             `${API_BASE}/releases/${releaseId}/images`,
             {
@@ -205,12 +217,21 @@ export default function ReleaseModal({
       }
 
       // Wait for all image uploads to complete
+      console.log(
+        `Waiting for ${uploadPromises.length} image uploads to complete...`
+      );
       const uploadResults = await Promise.all(uploadPromises);
+      console.log('All image uploads completed:', uploadResults.length);
 
       // Check if any uploads failed
       for (const result of uploadResults) {
         if (!result.ok) {
-          console.warn('Some images failed to upload');
+          const errorText = await result.text();
+          console.error('Image upload failed:', errorText);
+          throw new Error(`Failed to upload some images: ${errorText}`);
+        } else {
+          const uploadResult = await result.json();
+          console.log('Image uploaded successfully:', uploadResult);
         }
       }
 

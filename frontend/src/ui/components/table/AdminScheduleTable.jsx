@@ -18,7 +18,13 @@ import { useScheduleStore } from '../../../store/useScheduleStore';
 import { bookingAPI } from '../../../utils/api';
 import { useNavigate } from 'react-router-dom';
 
-const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn, onOpenGPS }) => {
+const AdminScheduleTable = ({
+  rows,
+  loading,
+  onOpenRelease,
+  onOpenReturn,
+  onOpenGPS,
+}) => {
   const navigate = useNavigate();
   const updateReservationStatus = useScheduleStore(
     (state) => state.updateReservationStatus
@@ -301,7 +307,7 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn, onOpen
       };
 
       // Show release button if today is start date and status is 'Confirmed'
-      if ('2025-10-13' === startDate && params.row.status === 'Confirmed') {
+      if (today === startDate && params.row.status === 'Confirmed') {
         return (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Button
@@ -380,7 +386,10 @@ const AdminScheduleTable = ({ rows, loading, onOpenRelease, onOpenReturn, onOpen
               onClick={() => {
                 console.log('🌍 Globe icon clicked!');
                 console.log('  Row data:', params.row);
-                console.log('  Car ID:', params.row.car_id || params.row.carId || 'NOT FOUND');
+                console.log(
+                  '  Car ID:',
+                  params.row.car_id || params.row.carId || 'NOT FOUND'
+                );
                 if (onOpenGPS) {
                   onOpenGPS(params.row);
                 }

@@ -229,6 +229,9 @@ export const submitReturn = async (req, res) => {
 
       let calculatedFees = 0;
 
+      // Track which fees are being charged for fees_breakdown
+      const feesList = [];
+
       // Gas level fee calculation
       const gasLevelMap = { 'High': 3, 'Mid': 2, 'Low': 1 };
       const releaseGasLevel = gasLevelMap[release.gas_level] || 0;
@@ -237,6 +240,7 @@ export const submitReturn = async (req, res) => {
       if (releaseGasLevel > returnGasLevel) {
         const gasLevelDiff = releaseGasLevel - returnGasLevel;
         calculatedFees += gasLevelDiff * (feesObject.gas_level_fee || 0);
+        feesList.push('Gas');
       }
 
       // Equipment loss fee calculation
@@ -255,6 +259,7 @@ export const submitReturn = async (req, res) => {
         });
         
         calculatedFees += lostItemCount * (feesObject.equipment_loss_fee || 0);
+        feesList.push('Equipment');
       } 
       // If release already had issues, compare release equip_others with return equip_others
       else if (release.equipment !== 'complete' && equipmentStatus === 'no' && equip_others && release.equip_others) {
@@ -273,13 +278,18 @@ export const submitReturn = async (req, res) => {
         });
         
         calculatedFees += lostItemCount * (feesObject.equipment_loss_fee || 0);
+        if (lostItemCount > 0) {
+          feesList.push('Equipment');
+        }
       }
 
       // Damage fee calculation
       if (damageStatus === 'minor') {
         calculatedFees += feesObject.damage_fee || 0;
+        feesList.push('Damage');
       } else if (damageStatus === 'major') {
         calculatedFees += (feesObject.damage_fee || 0) * 3;
+        feesList.push('Damage');
       }
 
       // Cleaning fee calculation
@@ -287,6 +297,9 @@ export const submitReturn = async (req, res) => {
         let cleaningFee = feesObject.cleaning_fee || 0;
         if (hasStain) {
           cleaningFee += feesObject.stain_removal_fee || 0;
+          feesList.push('Cleaning', 'Stain');
+        } else {
+          feesList.push('Cleaning');
         }
         calculatedFees += cleaningFee;
       }
@@ -303,6 +316,7 @@ export const submitReturn = async (req, res) => {
           // For more than 2 hours: charge the rent_price of the car
           calculatedFees += booking.car.rent_price || 0;
         }
+        feesList.push('Overdue');
         
         console.log('Overdue fee calculation (submit):', {
           overdueHours,
@@ -312,6 +326,11 @@ export const submitReturn = async (req, res) => {
           overdueFeesAdded: overdueHours <= 2 ? (hoursToCharge * overdueBaseFee) : booking.car.rent_price
         });
       }
+
+      // Create fees_breakdown string (comma-separated)
+      const feesBreakdown = feesList.join(', ') || null;
+
+      console.log('📋 Fees breakdown:', feesBreakdown);
 
       // Create return record
       const returnRecord = await tx.return.create({
@@ -325,17 +344,36 @@ export const submitReturn = async (req, res) => {
           odometer: BigInt(parseInt(odometer)),
           total_fee: calculatedFees,
           isClean: isClean === true || isClean === 'true',
-          hasStain: hasStain === true || hasStain === 'true'
+          hasStain: hasStain === true || hasStain === 'true',
+          fees_breakdown: feesBreakdown
         }
       });
 
       console.log('✅ Return record created:', returnRecord);
 
-      // Update car mileage
+      // Update car mileage and set status to maintenance
       await tx.car.update({
         where: { car_id: booking.car_id },
-        data: { mileage: parseInt(odometer) }
+        data: { 
+          mileage: parseInt(odometer),
+          car_status: 'Maintenance'
+        }
       });
+
+      // Create maintenance record with return date as start date
+      const returnDate = new Date();
+      await tx.maintenance.create({
+        data: {
+          car_id: booking.car_id,
+          maintenance_start_date: returnDate,
+          description: 'Post-rental inspection and maintenance',
+          maintenance_cost: null,
+          maintenance_end_date: null,
+          maintenance_shop_name: null
+        }
+      });
+
+      console.log('✅ Car set to Maintenance status and maintenance record created');
 
       // Update booking
       const newBalance = paymentData ? 0 : ((booking.balance || 0) + calculatedFees);
@@ -569,6 +607,7 @@ export const calculateReturnFees = async (req, res) => {
       equipmentLossFee: 0,
       damageFee: 0,
       cleaningFee: 0,
+      stainRemovalFee: 0,
       overdueFee: 0,
       total: 0
     };
@@ -643,7 +682,7 @@ export const calculateReturnFees = async (req, res) => {
     if (isNotClean) {
       calculatedFees.cleaningFee = feesObject.cleaning_fee || 0;
       if (hasStainValue) {
-        calculatedFees.cleaningFee += feesObject.stain_removal_fee || 0;
+        calculatedFees.stainRemovalFee = feesObject.stain_removal_fee || 0;
       }
     }
 
@@ -674,6 +713,7 @@ export const calculateReturnFees = async (req, res) => {
                           calculatedFees.equipmentLossFee + 
                           calculatedFees.damageFee + 
                           calculatedFees.cleaningFee +
+                          calculatedFees.stainRemovalFee +
                           calculatedFees.overdueFee;
 
     // Debug: Log final calculated fees

@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Button, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Button,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
@@ -353,7 +361,13 @@ export default function AdminTransactionPage() {
                   alignItems: 'center',
                 }}
               >
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flex: 1,
+                    width: '100%',
+                  }}
+                >
                   <Typography
                     variant="h4"
                     component="h1"
@@ -433,13 +447,18 @@ export default function AdminTransactionPage() {
                     >
                       <MenuItem onClick={handleDownloadPDF}>
                         <ListItemIcon>
-                          <PictureAsPdfIcon fontSize="small" sx={{ color: '#d32f2f' }} />
+                          <PictureAsPdfIcon
+                            fontSize="small"
+                            sx={{ color: '#d32f2f' }}
+                          />
                         </ListItemIcon>
                         <ListItemText>PDF</ListItemText>
                       </MenuItem>
                       <MenuItem onClick={handleDownloadCSV}>
                         <ListItemIcon>
-                          <FaFileCsv style={{ fontSize: '18px', color: '#2e7d32' }} />
+                          <FaFileCsv
+                            style={{ fontSize: '18px', color: '#2e7d32' }}
+                          />
                         </ListItemIcon>
                         <ListItemText>CSV</ListItemText>
                       </MenuItem>
@@ -457,15 +476,19 @@ export default function AdminTransactionPage() {
                       variant="outlined"
                       startIcon={
                         <AddIcon
-                          sx={{ width: '18px', height: '18px', mt: '-2px' }}
+                          sx={{
+                            width: { xs: '16px', sm: '18px' },
+                            height: { xs: '16px', sm: '18px' },
+                            mt: '-3px',
+                          }}
                         />
                       }
                       onClick={openAddPaymentModal}
                       sx={{
                         color: '#fff',
                         p: 1,
-                        pb: 0.5,
-                        height: 36,
+                        height: 30,
+                        fontSize: { xs: '.775rem', sm: '.875rem', md: '1rem' },
                         border: 'none',
                         backgroundColor: '#c10007',
                         whiteSpace: 'nowrap',
@@ -476,19 +499,6 @@ export default function AdminTransactionPage() {
                           fontWeight: 600,
                           borderColor: '#4a4a4a',
                           boxShadow: 'none',
-                        },
-                        '@media (max-width: 600px)': {
-                          height: 32,
-                          fontSize: '0.7rem',
-                          px: 0.75,
-                          py: 0.5,
-                          '& .MuiButton-startIcon': {
-                            marginRight: '2px',
-                          },
-                          '& .MuiSvgIcon-root': {
-                            width: '14px',
-                            height: '14px',
-                          },
                         },
                       }}
                     >

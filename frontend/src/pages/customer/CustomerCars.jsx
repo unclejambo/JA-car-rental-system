@@ -162,42 +162,44 @@ function CustomerCars() {
     setPriceRange(newValue);
   };
 
-  // Fetch customer notification settings
-  const fetchCustomerSettings = async () => {
-    try {
-      const response = await authenticatedFetch(`${API_BASE}/api/customers/me`);
-      if (response.ok) {
-        const customerData = await response.json();
-        setCustomerNotificationSetting(customerData.isRecUpdate || 0);
-      }
-    } catch (error) {
-      console.error('Error fetching customer settings:', error);
-    }
-  };
-
   // Handle booking button click - now handles both regular booking and waitlist
   const handleBookNow = async (car) => {
     const isRented = car.car_status?.toLowerCase().includes('rent');
 
     if (isRented) {
-      // This is a waitlist request
-      await fetchCustomerSettings();
-      setSelectedCar(car);
+      // This is a waitlist request - fetch customer settings first
+      try {
+        const response = await authenticatedFetch(`${API_BASE}/api/customers/me`);
+        if (response.ok) {
+          const customerData = await response.json();
+          const notificationSetting = customerData.isRecUpdate || 0;
+          setCustomerNotificationSetting(notificationSetting);
+          setSelectedCar(car);
 
-      // Check if notifications are disabled (0)
-      if (customerNotificationSetting === 0 || !customerNotificationSetting) {
-        setSnackbarMessage(
-          'Please enable notification settings in your account settings to join the waitlist.'
-        );
+          // Check if notifications are disabled (0)
+          if (notificationSetting === 0) {
+            setSnackbarMessage(
+              'Please enable notification settings in your account settings to join the waitlist.'
+            );
+            setSnackbarOpen(true);
+            // Redirect to settings page after a delay only when isRecUpdate is 0
+            setTimeout(() => {
+              window.location.href = '/customer-account';
+            }, 3000);
+          } else {
+            // Notifications are enabled (1=SMS, 2=Email, 3=Both), join waitlist directly
+            await joinWaitlist(car);
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Failed to fetch customer settings:', response.status, errorData);
+          setSnackbarMessage(errorData.error || 'Failed to load notification settings. Please try again.');
+          setSnackbarOpen(true);
+        }
+      } catch (error) {
+        console.error('Error fetching customer settings:', error);
+        setSnackbarMessage('Error loading settings. Please try again.');
         setSnackbarOpen(true);
-        // Optionally, you can redirect to settings page after a delay
-        setTimeout(() => {
-          // Navigate to account settings (you'll need to implement this route)
-          window.location.href = '/customer-account'; // Adjust route as needed
-        }, 3000);
-      } else {
-        // Notifications are enabled, join waitlist directly
-        await joinWaitlist(car);
       }
     } else {
       // Regular booking flow
@@ -221,9 +223,9 @@ function CustomerCars() {
       );
 
       if (response.ok) {
-        const result = await response.json();
+        await response.json(); // Consume response
         setSnackbarMessage(
-          `Successfully joined waitlist! You'll be notified when this car becomes available.`
+          `You'll be notified when the ${car.make} ${car.model} becomes available!`
         );
         setSnackbarOpen(true);
         fetchWaitlistEntries(); // Refresh waitlist entries
@@ -847,17 +849,11 @@ function CustomerCars() {
                         }}
                       >
                         <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                          {entry.car.make} {entry.car.model} ({entry.car.year})
+                          {entry.Car.make} {entry.Car.model} ({entry.Car.year})
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          Position #{entry.position} • Requested:{' '}
-                          {new Date(
-                            entry.requested_start_date
-                          ).toLocaleDateString()}{' '}
-                          -{' '}
-                          {new Date(
-                            entry.requested_end_date
-                          ).toLocaleDateString()}
+                          Status: {entry.Car.car_status} • Joined:{' '}
+                          {new Date(entry.created_at).toLocaleDateString()}
                         </Typography>
                       </Box>
                     ))}

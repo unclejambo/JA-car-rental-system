@@ -17,6 +17,21 @@ function shapeRefund(r) {
 	};
 }
 
+// @desc    Get all refunds (for analytics - returns raw data)
+// @route   GET /refunds/analytics
+// @access  Private/Admin
+export const getAllRefundsForAnalytics = async (req, res) => {
+	try {
+		const refunds = await prisma.refund.findMany({
+			orderBy: { refund_date: 'desc' },
+		});
+		res.json(refunds); // Return raw data without shaping
+	} catch (error) {
+		console.error('Error fetching refunds for analytics:', error);
+		res.status(500).json({ error: 'Failed to fetch refunds' });
+	}
+};
+
 export const getRefunds = async (req, res) => {
 	try {
 		const refunds = await prisma.refund.findMany({

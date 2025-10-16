@@ -105,7 +105,9 @@ function CustomerBookings() {
         const data = await response.json();
         // Filter out cancelled bookings
         const activeBookings = (data || []).filter(
-          (booking) => booking.booking_status?.toLowerCase() !== 'cancelled'
+          (booking) =>
+            booking.booking_status?.toLowerCase() !== 'completed' &&
+            booking.booking_status?.toLowerCase() !== 'cancelled'
         );
         setBookings(activeBookings);
       } else {
@@ -438,12 +440,13 @@ function CustomerBookings() {
         {/* Search Bar - Aligned to the right like Refresh button */}
         <Box
           sx={{
-            mb: 0.5,
+            mt: -1,
+            mb: -1,
             display: 'flex',
             justifyContent: 'flex-end',
           }}
         >
-          <Box sx={{ width: { xs: '100%', sm: 300, md: 350 } }}>
+          <Box sx={{ width: '100%' }}>
             {activeTab === 0 ? (
               <SearchBar
                 value={bookingSearchQuery}
@@ -502,7 +505,9 @@ function CustomerBookings() {
         <TabPanel value={activeTab} index={0}>
           {/* MY BOOKINGS TAB - HORIZONTAL LAYOUT */}
           {filteredBookings.filter(
-            (b) => b.booking_status?.toLowerCase() !== 'cancelled'
+            (b) =>
+              b.booking_status?.toLowerCase() !== 'completed' &&
+              b.booking_status?.toLowerCase() !== 'cancelled'
           ).length === 0 && !loading ? (
             <Card sx={{ p: 4, textAlign: 'center', mx: { xs: 1, sm: 0 } }}>
               <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
@@ -528,6 +533,7 @@ function CustomerBookings() {
               {filteredBookings
                 .filter(
                   (booking) =>
+                    booking.booking_status?.toLowerCase() !== 'completed' &&
                     booking.booking_status?.toLowerCase() !== 'cancelled'
                 )
                 .map((booking) => {
@@ -564,9 +570,6 @@ function CustomerBookings() {
                     case 'in progress':
                     case 'ongoing':
                       bookingStatusColor = '#4CAF50'; // Green
-                      break;
-                    case 'completed':
-                      bookingStatusColor = '#8BC34A'; // Light Green
                       break;
                     default:
                       bookingStatusColor = '#9E9E9E'; // Grey
@@ -965,7 +968,9 @@ function CustomerBookings() {
         <TabPanel value={activeTab} index={1}>
           {/* SETTLEMENT TAB - HORIZONTAL LAYOUT WITHOUT IMAGE */}
           {filteredPayments.filter(
-            (b) => b.booking_status?.toLowerCase() !== 'cancelled'
+            (b) =>
+              b.booking_status?.toLowerCase() !== 'completed' &&
+              b.booking_status?.toLowerCase() !== 'cancelled'
           ).length === 0 && !loading ? (
             <Card sx={{ p: 4, textAlign: 'center', mx: { xs: 1, sm: 0 } }}>
               <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
@@ -991,6 +996,7 @@ function CustomerBookings() {
               {filteredPayments
                 .filter(
                   (booking) =>
+                    booking.booking_status?.toLowerCase() !== 'completed' &&
                     booking.booking_status?.toLowerCase() !== 'cancelled'
                 )
                 .map((booking) => (

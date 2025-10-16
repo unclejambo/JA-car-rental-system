@@ -254,110 +254,125 @@ export default function AdminManageUser() {
               boxSizing: 'border-box',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography
-                variant="h4"
-                component="h1"
-                gutterBottom
-                sx={{
-                  fontSize: '1.8rem',
-                  color: '#000',
-                  '@media (max-width: 1024px)': {
-                    fontSize: '1.5rem',
-                  },
-                }}
-              >
-                <HiOutlineUserGroup
-                  style={{ verticalAlign: '-3px', marginRight: '5px' }}
-                />
-                {activeTab}
-              </Typography>
-              {/* Hide Add buttons for staff users */}
-              {userRole !== 'staff' && activeTab === 'STAFF' && (
-                <Button
-                  variant="outlined"
-                  startIcon={
-                    <AddIcon
-                      sx={{ width: '18px', height: '18px', mt: '-2px' }}
-                    />
-                  }
-                  onClick={openAddStaffModal}
-                  sx={{
-                    color: '#fff',
-                    p: 1,
-                    pb: 0.5,
-                    height: 36,
-                    border: 'none',
-                    backgroundColor: '#c10007',
-                    '&:hover': {
-                      backgroundColor: '#a00006',
-                      color: '#fff',
-                      fontWeight: 600,
-                      borderColor: '#4a4a4a',
-                      boxShadow: 'none',
-                    },
-                    '@media (max-width: 600px)': {
-                      height: 28,
-                    },
-                  }}
-                >
-                  Add New {activeTab}
-                </Button>
-              )}
-              {userRole !== 'staff' && activeTab === 'DRIVER' && (
-                <Button
-                  variant="outlined"
-                  startIcon={
-                    <AddIcon
-                      sx={{ width: '18px', height: '18px', mt: '-2px' }}
-                    />
-                  }
-                  onClick={openAddDriverModal}
-                  sx={{
-                    color: '#fff',
-                    p: 1,
-                    pb: 0.5,
-                    height: 36,
-                    border: 'none',
-                    backgroundColor: '#c10007',
-                    '&:hover': {
-                      backgroundColor: '#a00006',
-                      color: '#fff',
-                      fontWeight: 600,
-                      borderColor: '#4a4a4a',
-                      boxShadow: 'none',
-                    },
-                    '@media (max-width: 600px)': {
-                      height: 28,
-                    },
-                  }}
-                >
-                  Add New {activeTab}
-                </Button>
-              )}
-            </Box>
-
-            {/* Search Bar */}
             <Box
               sx={{
                 display: 'flex',
-                justifyContent: 'flex-end',
-                alignItems: 'center',
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between',
                 mb: 2,
-                mt: 1,
+                gap: { xs: 1, sm: 1 },
+                pr: { xs: 1.3, sm: 0 },
               }}
             >
-              <SearchBar
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`Search ${activeTab.toLowerCase()}...`}
-                variant="outlined"
-                size="small"
+              <Box
                 sx={{
-                  width: { xs: '100%', sm: 350 },
-                  maxWidth: 350,
+                  display: 'flex',
+                  gap: 1,
+                  justifyContent: { xs: 'space-between', sm: 'flex-start' },
                 }}
-              />
+              >
+                <Typography
+                  variant="h4"
+                  component="h1"
+                  gutterBottom
+                  sx={{
+                    fontSize: '1.8rem',
+                    color: '#000',
+                    '@media (max-width: 1024px)': {
+                      fontSize: '1.5rem',
+                    },
+                  }}
+                >
+                  <HiOutlineUserGroup
+                    style={{ verticalAlign: '-3px', marginRight: '5px' }}
+                  />
+                  {activeTab}
+                </Typography>
+
+                {/* Hide Add buttons for staff users */}
+                {userRole !== 'staff' && activeTab === 'STAFF' && (
+                  <Button
+                    variant="outlined"
+                    startIcon={
+                      <AddIcon
+                        sx={{ width: '18px', height: '18px', mt: '-3px' }}
+                      />
+                    }
+                    onClick={openAddStaffModal}
+                    sx={{
+                      color: '#fff',
+                      p: 1,
+                      pb: 0.5,
+                      height: 28,
+                      border: 'none',
+                      backgroundColor: '#c10007',
+                      '&:hover': {
+                        backgroundColor: '#a00006',
+                        color: '#fff',
+                        fontWeight: 600,
+                        borderColor: '#4a4a4a',
+                        boxShadow: 'none',
+                      },
+                      '@media (max-width: 600px)': {
+                        height: 28,
+                      },
+                    }}
+                  >
+                    Add New {activeTab}
+                  </Button>
+                )}
+                {userRole !== 'staff' && activeTab === 'DRIVER' && (
+                  <Button
+                    variant="outlined"
+                    startIcon={
+                      <AddIcon
+                        sx={{ width: '18px', height: '18px', mt: '-3px' }}
+                      />
+                    }
+                    onClick={openAddDriverModal}
+                    sx={{
+                      color: '#fff',
+                      p: 1,
+                      pb: 0.5,
+                      height: 28,
+                      border: 'none',
+                      backgroundColor: '#c10007',
+                      '&:hover': {
+                        backgroundColor: '#a00006',
+                        color: '#fff',
+                        fontWeight: 600,
+                        borderColor: '#4a4a4a',
+                        boxShadow: 'none',
+                      },
+                      '@media (max-width: 600px)': {
+                        height: 28,
+                      },
+                    }}
+                  >
+                    Add New {activeTab}
+                  </Button>
+                )}
+              </Box>
+              {/* Search Bar */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                }}
+              >
+                <SearchBar
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={`Search ${activeTab.toLowerCase()}...`}
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    width: { xs: '100%', sm: 350 },
+                    maxWidth: 350,
+                  }}
+                />
+              </Box>
             </Box>
 
             <Box

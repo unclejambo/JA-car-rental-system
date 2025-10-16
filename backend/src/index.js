@@ -21,6 +21,7 @@ import customerProfileRoutes from "./routes/customerProfileRoutes.js";
 import driverLicenseRoutes from "./routes/driverLicenseRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import maintenanceRoutes from "./routes/maintenanceRoutes.js";
+import { getAllMaintenanceRecords } from "./controllers/maintenanceController.js";
 import waitlistRoutes from "./routes/waitlistRoutes.js";
 import manageFeesRoutes from "./routes/manageFeesRoutes.js";
 import releaseRoutes from "./routes/releaseRoute.js";
@@ -76,6 +77,12 @@ app.use("/api/customer-profile", customerProfileRoutes);
 app.use("/api/driver-license", driverLicenseRoutes);
 app.use("/api/customer-license", driverLicenseRoutes);
 app.use("/analytics", analyticsRoutes);
+app.use("/maintenance", (req, res, next) => {
+  if (req.method === 'GET' && req.path === '/') {
+    return getAllMaintenanceRecords(req, res);
+  }
+  next();
+});
 app.use("/cars/:carId/maintenance", maintenanceRoutes);
 app.use("/manage-fees", manageFeesRoutes);
 app.use("/releases", releaseRoutes);

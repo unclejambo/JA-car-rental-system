@@ -1,5 +1,20 @@
 import prisma from '../config/prisma.js';
 
+// @desc    Get all maintenance records (for analytics)
+// @route   GET /maintenance
+// @access  Private/Admin
+export const getAllMaintenanceRecords = async (req, res) => {
+  try {
+    const maintenanceRecords = await prisma.maintenance.findMany({
+      orderBy: { maintenance_start_date: 'desc' },
+    });
+    res.json(maintenanceRecords);
+  } catch (error) {
+    console.error('Error fetching all maintenance records:', error);
+    res.status(500).json({ error: 'Failed to fetch maintenance records' });
+  }
+};
+
 // @desc    Get all maintenance records for a car
 // @route   GET /cars/:carId/maintenance
 // @access  Private/Admin

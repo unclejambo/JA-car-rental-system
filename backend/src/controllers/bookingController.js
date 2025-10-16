@@ -1088,11 +1088,30 @@ export const confirmExtensionRequest = async (req, res) => {
       },
     });
 
+    // Calculate new dropoff_time by preserving the time from old dropoff but using the new date
+    let newDropoffTime = null;
+    if (booking.dropoff_time) {
+      const oldDropoff = new Date(booking.dropoff_time);
+      const newEndDate = new Date(booking.new_end_date);
+      
+      // Create new dropoff time: new end date + old dropoff time
+      newDropoffTime = new Date(
+        newEndDate.getFullYear(),
+        newEndDate.getMonth(),
+        newEndDate.getDate(),
+        oldDropoff.getHours(),
+        oldDropoff.getMinutes(),
+        oldDropoff.getSeconds(),
+        oldDropoff.getMilliseconds()
+      );
+    }
+
     // Update booking: replace end_date with new_end_date, clear new_end_date, set isExtend to false
     const updatedBooking = await prisma.booking.update({
       where: { booking_id: bookingId },
       data: {
         end_date: booking.new_end_date, // Replace end_date with new_end_date
+        dropoff_time: newDropoffTime, // Update dropoff_time to match new end date
         new_end_date: null, // Clear new_end_date
         isExtend: false, // Clear extension flag
         payment_status: 'Unpaid', // Ensure payment status is Unpaid due to new balance

@@ -19,7 +19,12 @@ const refundSchema = z
     customerName: z.string().min(1, 'Customer name is required'),
     customerId: z.number().positive().optional(),
     bookingId: z.coerce.number().int().gt(0, 'Select a booking'),
-    description: z.string().min(1, 'Description is required'),
+    description: z.enum(
+      ['50% Refund', '75% Refund', '100% Refund', 'Security Deposit'],
+      {
+        errorMap: () => ({ message: 'Select a refund type' }),
+      }
+    ),
     refundMethod: z.enum(['Cash', 'GCash']),
     refundAmount: z.coerce
       .number()
@@ -76,10 +81,30 @@ export default function AddRefundModal({ show, onClose }) {
   const [customers, setCustomers] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [bookingOptions, setBookingOptions] = useState([]);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [securityDepositFee, setSecurityDepositFee] = useState(0);
   const [loadingData, setLoadingData] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [errors, setErrors] = useState({});
+
+  // Calculate refund amount based on description and selected booking
+  const calculateRefundAmount = (description, booking) => {
+    if (!description || !booking || !booking.total_amount) return 0;
+
+    switch (description) {
+      case '50% Refund':
+        return Math.round((booking.total_amount - 1000) * 0.5);
+      case '75% Refund':
+        return Math.round((booking.total_amount - 1000) * 0.75);
+      case '100% Refund':
+        return Math.round((booking.total_amount - 1000) * 1.0);
+      case 'Security Deposit':
+        return securityDepositFee;
+      default:
+        return 0;
+    }
+  };
 
   const validate = (data) => {
     const res = refundSchema.safeParse(data);
@@ -130,40 +155,35 @@ export default function AddRefundModal({ show, onClose }) {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     let next = { ...formData, [name]: value };
+
     if (name === 'customerName') {
       const match = findCustomerByName(value);
       next.customerId = match ? match.customer_id : undefined;
       updateBookingOptions(next.customerId);
     }
-    setFormData(next);
-    validate(next);
-  };
 
-  // Only allow digits while typing; keep empty string while editing
-  const handleAmountChange = (e) => {
-    const digits = e.target.value.replace(/\D/g, '');
-    const next = { ...formData, refundAmount: digits };
-    setFormData(next);
-    validate(next);
-  };
+    if (name === 'bookingId') {
+      // Find the selected booking
+      const booking = bookingOptions.find(
+        (b) => b.booking_id === Number(value)
+      );
+      setSelectedBooking(booking || null);
 
-  // Block non-numeric keys (prevents e, E, +, -, .)
-  const blockNonNumericKeys = (e) => {
-    const allowed = [
-      'Backspace',
-      'Delete',
-      'Tab',
-      'Escape',
-      'Enter',
-      'ArrowLeft',
-      'ArrowRight',
-      'Home',
-      'End',
-    ];
-    if (e.ctrlKey || e.metaKey) return; // allow copy/paste/select all
-    if (!/^\d$/.test(e.key) && !allowed.includes(e.key)) {
-      e.preventDefault();
+      // Recalculate amount if description is already selected
+      if (next.description && booking) {
+        next.refundAmount = calculateRefundAmount(next.description, booking);
+      }
     }
+
+    if (name === 'description') {
+      // Recalculate amount when description changes
+      if (selectedBooking) {
+        next.refundAmount = calculateRefundAmount(value, selectedBooking);
+      }
+    }
+
+    setFormData(next);
+    validate(next);
   };
 
   const handleSubmit = async (e) => {
@@ -236,21 +256,27 @@ export default function AddRefundModal({ show, onClose }) {
         });
         const base =
           import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL || '';
-        const [cRes, bRes] = await Promise.all([
+        const [cRes, bRes, fRes] = await Promise.all([
           authFetch(`${base}/api/customers`),
           authFetch(`${base}/bookings`),
+          authFetch(`${base}/manage-fees`),
         ]);
-        const [cData, bData] = await Promise.all([cRes.json(), bRes.json()]);
+        const [cData, bData, fData] = await Promise.all([
+          cRes.json(),
+          bRes.json(),
+          fRes.json(),
+        ]);
         if (!cancel) {
           setCustomers(Array.isArray(cData) ? cData : []);
           setBookings(Array.isArray(bData) ? bData : []);
+          setSecurityDepositFee(fData?.security_deposit_fee || 0);
           if (formData.customerName) {
             const match = findCustomerByName(formData.customerName);
             updateBookingOptions(match?.customer_id);
           }
         }
       } catch (err) {
-        console.error('Failed to fetch customers/bookings', err);
+        console.error('Failed to fetch customers/bookings/fees', err);
       } finally {
         if (!cancel) setLoadingData(false);
       }
@@ -339,16 +365,21 @@ export default function AddRefundModal({ show, onClose }) {
             </TextField>
 
             <TextField
-              label="Description"
+              select
+              label="Refund Type"
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              placeholder="Description"
               required
               error={!!errors.description}
               helperText={errors.description}
               fullWidth
-            />
+            >
+              <MenuItem value="50% Refund">50% Refund</MenuItem>
+              <MenuItem value="75% Refund">75% Refund</MenuItem>
+              <MenuItem value="100% Refund">100% Refund</MenuItem>
+              <MenuItem value="Security Deposit">Security Deposit</MenuItem>
+            </TextField>
 
             <TextField
               select
@@ -368,17 +399,24 @@ export default function AddRefundModal({ show, onClose }) {
             <TextField
               label="Amount"
               name="refundAmount"
-              type="text" // use text to avoid browser number quirks
-              inputMode="numeric"
-              value={formData.refundAmount}
-              onChange={handleAmountChange}
-              onKeyDown={blockNonNumericKeys}
-              placeholder="Amount"
+              type="text"
+              value={
+                formData.refundAmount
+                  ? `₱${formData.refundAmount.toLocaleString()}`
+                  : '₱0'
+              }
+              placeholder="Amount will be calculated automatically"
               required
+              disabled
               error={!!errors.refundAmount}
-              helperText={errors.refundAmount}
+              helperText={
+                errors.refundAmount ||
+                'Amount is automatically calculated based on refund type'
+              }
               fullWidth
-              inputProps={{ pattern: '[0-9]*' }}
+              InputProps={{
+                readOnly: true,
+              }}
             />
 
             {formData.refundMethod === 'GCash' && (
@@ -390,13 +428,11 @@ export default function AddRefundModal({ show, onClose }) {
                   inputMode="numeric"
                   value={formData.gCashNumber}
                   onChange={handleInputChange}
-                  onKeyDown={blockNonNumericKeys}
                   placeholder="e.g., 09XXXXXXXXX"
                   fullWidth
                   required
                   error={!!errors.gCashNumber}
                   helperText={errors.gCashNumber}
-                  inputProps={{ pattern: '[0-9]*' }}
                 />
 
                 <TextField

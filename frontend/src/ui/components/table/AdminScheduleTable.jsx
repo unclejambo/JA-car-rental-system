@@ -307,7 +307,7 @@ const AdminScheduleTable = ({
       };
 
       // Show release button if today is start date and status is 'Confirmed'
-      if (today === startDate && params.row.status === 'Confirmed') {
+      if ('2025-10-15' === startDate && params.row.status === 'Confirmed') {
         return (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Button

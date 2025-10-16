@@ -357,18 +357,6 @@ export const updateCar = async (req, res) => {
       select: { car_status: true }
     });
 
-    // Get current status before update to detect changes
-    const currentCar = await prisma.car.findUnique({
-      where: { car_id: carId },
-      select: { car_status: true }
-    });
-
-    // Get current status before update to detect changes
-    const currentCar = await prisma.car.findUnique({
-      where: { car_id: carId },
-      select: { car_status: true }
-    });
-
     const updatedCar = await prisma.car.update({
       where: { car_id: carId },
       data: updateData,

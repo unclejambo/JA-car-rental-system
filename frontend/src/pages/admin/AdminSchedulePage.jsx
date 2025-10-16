@@ -237,11 +237,8 @@ export default function AdminSchedulePage() {
                 component="h1"
                 gutterBottom
                 sx={{
-                  fontSize: '1.8rem',
+                  fontSize: { xs: '1.33rem', sm: '1.5rem', md: '1.8rem' },
                   color: '#000',
-                  '@media (max-width: 1024px)': {
-                    fontSize: '1.5rem',
-                  },
                 }}
               >
                 <HiCalendarDays
@@ -249,29 +246,28 @@ export default function AdminSchedulePage() {
                 />
                 SCHEDULE
               </Typography>
-            </Box>
 
-            {/* Search Bar */}
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                alignItems: 'center',
-                mb: 2,
-                mt: 1,
-              }}
-            >
-              <SearchBar
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search schedule..."
-                variant="outlined"
-                size="small"
+              {/* Search Bar */}
+              <Box
                 sx={{
-                  width: { xs: '100%', sm: 350 },
-                  maxWidth: 350,
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                  mb: 2,
                 }}
-              />
+              >
+                <SearchBar
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search schedule..."
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    width: { xs: '100%', sm: 350 },
+                    maxWidth: { xs: 'auto', sm: 350 },
+                  }}
+                />
+              </Box>
             </Box>
 
             <Box

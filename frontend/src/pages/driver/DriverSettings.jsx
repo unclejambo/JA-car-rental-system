@@ -29,6 +29,7 @@ import DriverSideBar from '../../ui/components/DriverSideBar';
 import Loading from '../../ui/components/Loading';
 import ConfirmationModal from '../../ui/components/modal/ConfirmationModal';
 import SaveCancelModal from '../../ui/components/modal/SaveCancelModal';
+import PhoneVerificationModal from '../../components/PhoneVerificationModal';
 import { HiCog8Tooth } from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
@@ -112,6 +113,11 @@ export default function DriverSettings() {
   const [profileImage, setProfileImage] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [imageUploading, setImageUploading] = useState(false);
+
+  // Phone verification states
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
+  const [pendingPhoneNumber, setPendingPhoneNumber] = useState('');
+  const [pendingProfileChanges, setPendingProfileChanges] = useState(null);
 
   // Auth + API
   const { logout } = useAuth();
@@ -300,6 +306,40 @@ export default function DriverSettings() {
     setShowConfirmModal(false);
 
     try {
+      // Check if phone number has changed
+      const phoneNumberChanged = draft.contactNo !== profile.contactNo;
+      
+      if (phoneNumberChanged) {
+        // Store pending changes and trigger phone verification
+        const updateData = {
+          first_name: draft.firstName,
+          last_name: draft.lastName,
+          contact_no: draft.contactNo,
+          email: draft.email,
+          username: draft.username,
+          address: draft.address,
+          license_number: licenseNumber,
+        };
+
+        // Include password fields only if user is changing password
+        if (passwordData.newPassword && passwordData.newPassword.trim() !== '') {
+          updateData.password = passwordData.newPassword;
+          updateData.currentPassword = passwordData.currentPassword;
+        }
+
+        setPendingProfileChanges({
+          updateData,
+          profileImage: profileImage,
+          driverId: JSON.parse(localStorage.getItem('userInfo'))?.id
+        });
+        setPendingPhoneNumber(draft.contactNo);
+        setSaving(false);
+        
+        // Trigger phone verification
+        await sendPhoneOTP(draft.contactNo);
+        return;
+      }
+
       // Upload profile image first if changed
       let imageUrl = null;
       if (profileImage) {
@@ -588,6 +628,137 @@ export default function DriverSettings() {
     } finally {
       setLicenseImageUploading(false);
     }
+  };
+
+  // Phone verification functions
+  const sendPhoneOTP = async (phoneNumber) => {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/phone-verification/send-otp`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phoneNumber: phoneNumber,
+            purpose: 'phone_change',
+            userId: userInfo?.id,
+            userType: 'driver'
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setShowPhoneVerification(true);
+      } else {
+        throw new Error(result.message || 'Failed to send OTP');
+      }
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      setError(error.message || 'Failed to send OTP');
+    }
+  };
+
+  const handlePhoneVerificationSuccess = async (data) => {
+    try {
+      setSaving(true);
+      
+      if (!pendingProfileChanges) {
+        throw new Error('No pending changes found');
+      }
+
+      const { updateData, profileImage: pendingImage, driverId } = pendingProfileChanges;
+
+      // Upload profile image first if changed
+      let imageUrl = null;
+      if (pendingImage) {
+        imageUrl = await uploadProfileImage();
+      }
+
+      // Add profile image URL - either new upload or preserve existing
+      if (imageUrl) {
+        updateData.profile_img_url = imageUrl;
+      } else if (profile.profileImageUrl) {
+        updateData.profile_img_url = profile.profileImageUrl;
+      }
+
+      // Update driver with phone verification included
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/driver-profile`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        const updated = result.data || {};
+
+        // Update local states from backend response
+        const updatedProfile = {
+          firstName: updated.first_name || '',
+          lastName: updated.last_name || '',
+          contactNo: updated.contact_no || '',
+          email: updated.email || '',
+          username: updated.username || '',
+          userType: updated.user_type || profile.userType || 'driver',
+          address: updated.address || '',
+          profileImageUrl:
+            updated.profile_img_url ||
+            imageUrl ||
+            profile.profileImageUrl ||
+            '',
+        };
+
+        setProfile(updatedProfile);
+        setDraft(updatedProfile);
+        setProfileImage(null); // Clear the file after upload
+
+        // Update image preview to match the saved profile image
+        setImagePreview(updatedProfile.profileImageUrl);
+
+        // Update license-related data if returned
+        if (updated.license_number) setLicenseNumber(updated.license_number);
+        if (updated.license_expiry) setLicenseExpiration(updated.license_expiry);
+        if (updated.license_restrictions) setLicenseRestrictions(updated.license_restrictions);
+
+        // Reset editing + password state
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
+        setIsEditing(false);
+
+        // Clear pending states
+        setPendingProfileChanges(null);
+        setPendingPhoneNumber('');
+        setShowPhoneVerification(false);
+
+        // Success feedback
+        setSuccessMessage('Profile and phone number updated successfully!');
+        setShowSuccess(true);
+      } else {
+        throw new Error(result.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setError(error.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePhoneVerificationError = (error) => {
+    console.error('Phone verification error:', error);
+    setPendingProfileChanges(null);
+    setPendingPhoneNumber('');
+    setShowPhoneVerification(false);
   };
 
   // Profile image validation
@@ -1823,6 +1994,18 @@ export default function DriverSettings() {
           {successMessage}
         </Alert>
       </Snackbar>
+
+      {/* Phone Verification Modal */}
+      <PhoneVerificationModal
+        open={showPhoneVerification}
+        onClose={() => setShowPhoneVerification(false)}
+        phoneNumber={pendingPhoneNumber}
+        purpose="phone_change"
+        userId={JSON.parse(localStorage.getItem('userInfo'))?.id}
+        userType="driver"
+        onVerificationSuccess={handlePhoneVerificationSuccess}
+        onVerificationError={handlePhoneVerificationError}
+      />
     </Box>
   );
 }

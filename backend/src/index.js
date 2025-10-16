@@ -21,6 +21,7 @@ import customerProfileRoutes from "./routes/customerProfileRoutes.js";
 import driverLicenseRoutes from "./routes/driverLicenseRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import maintenanceRoutes from "./routes/maintenanceRoutes.js";
+import { getAllMaintenanceRecords } from "./controllers/maintenanceController.js";
 import waitlistRoutes from "./routes/waitlistRoutes.js";
 import manageFeesRoutes from "./routes/manageFeesRoutes.js";
 import releaseRoutes from "./routes/releaseRoute.js";
@@ -28,6 +29,7 @@ import releasePaymentRoutes from "./routes/releasePaymentRoute.js";
 import returnRoutes from "./routes/returnRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import autoCancelRoutes from "./routes/autoCancelRoutes.js";
+import phoneVerificationRoutes from "./routes/phoneVerificationRoutes.js";
 import { autoCancelExpiredBookings } from "./utils/autoCancel.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -75,6 +77,12 @@ app.use("/api/customer-profile", customerProfileRoutes);
 app.use("/api/driver-license", driverLicenseRoutes);
 app.use("/api/customer-license", driverLicenseRoutes);
 app.use("/analytics", analyticsRoutes);
+app.use("/maintenance", (req, res, next) => {
+  if (req.method === 'GET' && req.path === '/') {
+    return getAllMaintenanceRecords(req, res);
+  }
+  next();
+});
 app.use("/cars/:carId/maintenance", maintenanceRoutes);
 app.use("/manage-fees", manageFeesRoutes);
 app.use("/releases", releaseRoutes);
@@ -82,6 +90,7 @@ app.use("/release-payments", releasePaymentRoutes);
 app.use("/returns", returnRoutes);
 app.use("/admins", adminRoutes);
 app.use("/api", autoCancelRoutes);
+app.use("/api/phone-verification", phoneVerificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

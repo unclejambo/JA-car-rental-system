@@ -3,7 +3,7 @@ import multer from 'multer';
 import { createRelease, uploadReleaseImages, getReleases, getReleaseById } from '../controllers/releaseController.js';
 
 const router = express.Router();
-const upload = multer(); // memory storage
+const upload = multer({ storage: multer.memoryStorage() }); // memory storage
 
 // GET /releases - Get all releases
 router.get('/', getReleases);

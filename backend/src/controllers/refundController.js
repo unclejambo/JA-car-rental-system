@@ -17,6 +17,21 @@ function shapeRefund(r) {
 	};
 }
 
+// @desc    Get all refunds (for analytics - returns raw data)
+// @route   GET /refunds/analytics
+// @access  Private/Admin
+export const getAllRefundsForAnalytics = async (req, res) => {
+	try {
+		const refunds = await prisma.refund.findMany({
+			orderBy: { refund_date: 'desc' },
+		});
+		res.json(refunds); // Return raw data without shaping
+	} catch (error) {
+		console.error('Error fetching refunds for analytics:', error);
+		res.status(500).json({ error: 'Failed to fetch refunds' });
+	}
+};
+
 export const getRefunds = async (req, res) => {
 	try {
 		const refunds = await prisma.refund.findMany({
@@ -41,6 +56,65 @@ export const createRefund = async (req, res) => {
 			return res.status(400).json({ error: 'booking_id, customer_id and refund_amount are required' });
 		}
 
+		// Get the booking with payments and existing refunds
+		const booking = await prisma.booking.findUnique({
+			where: { booking_id: Number(booking_id) },
+			include: {
+				payments: {
+					select: { amount: true },
+				},
+				refunds: {
+					select: { refund_amount: true },
+				},
+			},
+		});
+
+		if (!booking) {
+			return res.status(404).json({ error: 'Booking not found' });
+		}
+
+		// Check if booking has paid status
+		if (booking.payment_status !== 'Paid') {
+			return res.status(400).json({
+				error: 'Refund can only be issued for paid bookings',
+				details: {
+					currentPaymentStatus: booking.payment_status
+				}
+			});
+		}
+
+		// Calculate total paid and total refunded
+		const totalPaid = booking.payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+		const totalRefunded = booking.refunds?.reduce((sum, refund) => sum + (refund.refund_amount || 0), 0) || 0;
+		const availableForRefund = totalPaid - totalRefunded;
+		const refundAmountNum = Number(refund_amount);
+
+		// Special handling for security deposit fee
+		const isSecurityDeposit = description && description.toLowerCase().includes('security deposit');
+
+		if (!isSecurityDeposit) {
+			// For regular refunds, validate against available amount
+			if (refundAmountNum > availableForRefund) {
+				return res.status(400).json({
+					error: 'Refund amount exceeds available refund balance',
+					details: {
+						totalPaid: totalPaid,
+						totalRefunded: totalRefunded,
+						availableForRefund: availableForRefund,
+						attemptedRefund: refundAmountNum
+					}
+				});
+			}
+		} else {
+			// For security deposit refund, deduct from booking total_amount
+			await prisma.booking.update({
+				where: { booking_id: Number(booking_id) },
+				data: {
+					total_amount: booking.total_amount - refundAmountNum
+				}
+			});
+		}
+
 		const created = await prisma.refund.create({
 			data: {
 				booking_id: Number(booking_id),
@@ -48,7 +122,7 @@ export const createRefund = async (req, res) => {
 				refund_method,
 				gcash_no,
 				reference_no,
-				refund_amount: Number(refund_amount),
+				refund_amount: refundAmountNum,
 				refund_date: refund_date ? new Date(refund_date) : new Date(),
 				description,
 			},

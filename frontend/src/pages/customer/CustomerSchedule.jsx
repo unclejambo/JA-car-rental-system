@@ -140,6 +140,9 @@ function CustomerSchedule() {
           p: { xs: 1, sm: 2, md: 3 },
           width: `calc(100% - 18.7dvw)`,
           ml: { xs: '0px', sm: '0px', md: '18.7dvw' },
+          '@media (max-width: 1024px)': {
+            ml: '0px',
+          },
           mt: { xs: '64px', sm: '64px', md: '56px' },
           display: 'flex',
           flexDirection: 'column',

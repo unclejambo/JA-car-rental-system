@@ -755,7 +755,7 @@ export const adminCancelBooking = async (req, res) => {
       where: { booking_id: bookingId },
       data: {
         booking_status: "Cancelled",
-        isCancel: true,
+        isCancel: false,
       },
       include: {
         car: { select: { make: true, model: true, year: true } },
@@ -847,7 +847,7 @@ export const confirmCancellationRequest = async (req, res) => {
       where: { booking_id: bookingId },
       data: {
         booking_status: "Cancelled",
-        isCancel: true,
+        isCancel: false,
       },
       include: {
         car: { select: { make: true, model: true, year: true } },

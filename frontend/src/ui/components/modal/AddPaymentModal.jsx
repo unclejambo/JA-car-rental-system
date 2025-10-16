@@ -129,7 +129,14 @@ export default function AddPaymentModal({ show, onClose }) {
     if (name === 'customerName') {
       const match = findCustomerByName(value);
       next.customerId = match ? match.customer_id : undefined;
-      console.log('🔍 Customer search:', value, '→ Found:', match ? `${match.first_name} ${match.last_name} (ID: ${match.customer_id})` : 'No match');
+      console.log(
+        '🔍 Customer search:',
+        value,
+        '→ Found:',
+        match
+          ? `${match.first_name} ${match.last_name} (ID: ${match.customer_id})`
+          : 'No match'
+      );
       updateBookingOptions(next.customerId);
     }
     setFormData(next);
@@ -191,6 +198,17 @@ export default function AddPaymentModal({ show, onClose }) {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        // Check if there are validation details
+        if (err.details) {
+          const {
+            bookingTotal,
+            amountPaid,
+            remainingBalance,
+            attemptedPayment,
+          } = err.details;
+          const detailedMessage = `${err.error || 'Payment validation failed'}\n\nBooking Total: ₱${bookingTotal?.toFixed(2)}\nAmount Paid: ₱${amountPaid?.toFixed(2)}\nRemaining Balance: ₱${remainingBalance?.toFixed(2)}\nAttempted Payment: ₱${attemptedPayment?.toFixed(2)}`;
+          throw new Error(detailedMessage);
+        }
         throw new Error(err.error || 'Failed to create payment');
       }
       onClose?.();
@@ -218,11 +236,11 @@ export default function AddPaymentModal({ show, onClose }) {
           authFetch(`${base}/api/customers`), // ✅ Fixed: Added /api prefix
           authFetch(`${base}/bookings`),
         ]);
-        
+
         if (!cRes.ok || !bRes.ok) {
           throw new Error('Failed to fetch data - authentication required');
         }
-        
+
         const [cData, bData] = await Promise.all([cRes.json(), bRes.json()]);
         if (!cancel) {
           console.log('🏪 Loaded customers:', cData?.length || 0);
@@ -236,7 +254,10 @@ export default function AddPaymentModal({ show, onClose }) {
         }
       } catch (err) {
         console.error('Failed to fetch customers/bookings', err);
-        setErrors((prev) => ({ ...prev, form: 'Failed to load data. Please ensure you are logged in.' }));
+        setErrors((prev) => ({
+          ...prev,
+          form: 'Failed to load data. Please ensure you are logged in.',
+        }));
       } finally {
         if (!cancel) setLoadingData(false);
       }
@@ -260,8 +281,18 @@ export default function AddPaymentModal({ show, onClose }) {
 
       <DialogContent dividers>
         {errors.form && (
-          <Box sx={{ mb: 2, p: 2, backgroundColor: 'error.light', borderRadius: 1 }}>
-            <Box component="span" sx={{ color: 'error.contrastText', fontSize: '0.875rem' }}>
+          <Box
+            sx={{
+              mb: 2,
+              p: 2,
+              backgroundColor: 'error.light',
+              borderRadius: 1,
+            }}
+          >
+            <Box
+              component="span"
+              sx={{ color: 'error.contrastText', fontSize: '0.875rem' }}
+            >
               {errors.form}
             </Box>
           </Box>
@@ -269,6 +300,7 @@ export default function AddPaymentModal({ show, onClose }) {
         <form id="addPaymentForm" onSubmit={handleSubmit}>
           <Stack spacing={2}>
             <TextField
+              select
               label="Customer Name"
               name="customerName"
               value={formData.customerName}
@@ -277,11 +309,29 @@ export default function AddPaymentModal({ show, onClose }) {
               disabled={loadingData}
               error={!!errors.customerName}
               helperText={
-                errors.customerName || 'Type exact full name (First Last)'
+                errors.customerName || 'Select a customer from the list'
               }
               fullWidth
-              placeholder={loadingData ? 'Loading...' : 'e.g., Juan Dela Cruz'}
-            />
+            >
+              {customers.length === 0 && loadingData && (
+                <MenuItem value="" disabled>
+                  Loading customers...
+                </MenuItem>
+              )}
+              {customers.length === 0 && !loadingData && (
+                <MenuItem value="" disabled>
+                  No customers found
+                </MenuItem>
+              )}
+              {customers.map((customer) => (
+                <MenuItem
+                  key={customer.customer_id}
+                  value={`${customer.first_name} ${customer.last_name}`}
+                >
+                  {customer.first_name} {customer.last_name}
+                </MenuItem>
+              ))}
+            </TextField>
 
             <TextField
               select
@@ -307,7 +357,7 @@ export default function AddPaymentModal({ show, onClose }) {
                   : d.toISOString().split('T')[0];
                 return (
                   <MenuItem key={b.booking_id} value={b.booking_id}>
-                    {dateStr} (ID #{b.booking_id})
+                    (ID #{b.booking_id}) - {dateStr} - {b.booking_status}
                   </MenuItem>
                 );
               })}

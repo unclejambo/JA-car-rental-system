@@ -1,10 +1,20 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Box, Typography, Select, MenuItem, Chip, Stack } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Select,
+  MenuItem,
+  Chip,
+  Stack,
+  Button,
+} from '@mui/material';
+import DownloadIcon from '@mui/icons-material/Download';
 import Header from '../../ui/components/Header';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import { HiChartBar } from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
+import { generateAnalyticsPDF } from '../../utils/pdfExport';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -17,6 +27,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { useMediaQuery, useTheme } from '@mui/material';
 
 ChartJS.register(
   CategoryScale,
@@ -54,6 +65,8 @@ export default function AdminReportAnalytics() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const theme = useTheme();
+  const isXs = useMediaQuery(theme.breakpoints.only('xs'));
 
   // View toggles from the sketches
   const [primaryView, setPrimaryView] = useState('income'); // 'income' | 'expenses' | 'topCars' | 'topCustomers'
@@ -147,11 +160,12 @@ export default function AdminReportAnalytics() {
         setIsInitialLoad(false);
       } catch (err) {
         console.error('Error fetching available years:', err);
-        
+
         // Fallback to current year range if API fails
         const currentYear = new Date().getFullYear();
         const fallbackYears = [];
-        for (let year = 2020; year <= currentYear + 1; year++) { // Include next year for future payments
+        for (let year = 2020; year <= currentYear + 1; year++) {
+          // Include next year for future payments
           fallbackYears.push(year);
         }
         setApiAvailableYears(fallbackYears.sort((a, b) => b - a));
@@ -201,56 +215,156 @@ export default function AdminReportAnalytics() {
 
         const authFetch = authenticatedFetch();
 
-        // Handle expenses view separately (use revenue data)
+        // Handle expenses view - fetch real maintenance and refund data
         if (primaryView === 'expenses') {
-          // Use revenue endpoint for expenses data
-          const endpoint = `/analytics/revenue?${params}`;
-          console.log(
-            'Fetching revenue data for expenses view from:',
-            `${API_BASE}${endpoint}`
-          );
-          const response = await authFetch(`${API_BASE}${endpoint}`);
+          console.log('Fetching expenses data (maintenance + refunds)');
 
-          if (!response.ok) {
-            throw new Error(`Revenue API error: ${response.status}`);
+          // Fetch maintenance and refunds data
+          const [maintenanceRes, refundsRes] = await Promise.all([
+            authFetch(`${API_BASE}/maintenance`),
+            authFetch(`${API_BASE}/refunds/analytics`), // Use analytics endpoint for raw data
+          ]);
+
+          if (!maintenanceRes.ok || !refundsRes.ok) {
+            throw new Error('Failed to fetch expenses data');
           }
 
-          const result = await response.json();
-          console.log('Revenue API response:', result);
+          const maintenanceRecords = await maintenanceRes.json();
+          const refundRecords = await refundsRes.json();
 
-          // Process revenue data for expenses view
-          // TODO: Fetch real maintenance and refund data from backend
-          // Currently showing zeros until proper endpoints are implemented
-          if (result.byMethod) {
-            let labels, maintenance, refunds;
-            
-            if (period === 'monthly') {
-              const daysInMonth = new Date(selectedYear, selectedMonthIndex + 1, 0).getDate();
-              labels = Array.from({ length: daysInMonth }, (_, i) => `Day ${i + 1}`);
-              maintenance = Array(daysInMonth).fill(0);
-              refunds = Array(daysInMonth).fill(0);
-            } else if (period === 'quarterly') {
-              const quarterStartMonth = (selectedQuarter - 1) * 3;
-              labels = Array.from({ length: 3 }, (_, i) => 
-                new Date(2000, quarterStartMonth + i, 1).toLocaleString(undefined, { month: 'short' })
-              );
-              maintenance = Array(3).fill(0);
-              refunds = Array(3).fill(0);
-            } else {
-              labels = DEFAULT_MONTHS;
-              maintenance = Array(12).fill(0);
-              refunds = Array(12).fill(0);
-            }
-            
-            setMaintenanceData(maintenance);
-            setRefundsData(refunds);
-            setChartLabels(labels);
-            setTotalMaintenance(0);
-            setTotalRefunds(0);
-            setTotalIncome(0);
+          console.log('Maintenance records:', maintenanceRecords);
+          console.log('Refund records:', refundRecords);
+
+          // Filter and aggregate data based on period
+          let labels, maintenanceAggregated, refundsAggregated;
+
+          if (period === 'monthly') {
+            // Show daily data for selected month
+            const daysInMonth = new Date(
+              selectedYear,
+              selectedMonthIndex + 1,
+              0
+            ).getDate();
+            labels = Array.from(
+              { length: daysInMonth },
+              (_, i) => `Day ${i + 1}`
+            );
+
+            // Initialize arrays
+            maintenanceAggregated = Array(daysInMonth).fill(0);
+            refundsAggregated = Array(daysInMonth).fill(0);
+
+            // Aggregate maintenance by day
+            maintenanceRecords.forEach((record) => {
+              const date = new Date(record.maintenance_start_date);
+              if (
+                date.getFullYear() === selectedYear &&
+                date.getMonth() === selectedMonthIndex
+              ) {
+                const day = date.getDate() - 1; // 0-indexed
+                maintenanceAggregated[day] += Number(
+                  record.maintenance_cost || 0
+                );
+              }
+            });
+
+            // Aggregate refunds by day
+            refundRecords.forEach((record) => {
+              const date = new Date(record.refund_date);
+              if (
+                date.getFullYear() === selectedYear &&
+                date.getMonth() === selectedMonthIndex
+              ) {
+                const day = date.getDate() - 1; // 0-indexed
+                refundsAggregated[day] += Number(record.refund_amount || 0);
+              }
+            });
+          } else if (period === 'quarterly') {
+            // Show monthly data for selected quarter
+            const quarterStartMonth = (selectedQuarter - 1) * 3;
+            labels = Array.from({ length: 3 }, (_, i) =>
+              new Date(2000, quarterStartMonth + i, 1).toLocaleString(
+                undefined,
+                { month: 'short' }
+              )
+            );
+
+            maintenanceAggregated = Array(3).fill(0);
+            refundsAggregated = Array(3).fill(0);
+
+            // Aggregate maintenance by quarter month
+            maintenanceRecords.forEach((record) => {
+              const date = new Date(record.maintenance_start_date);
+              if (date.getFullYear() === selectedYear) {
+                const month = date.getMonth();
+                const quarterMonth = month - quarterStartMonth;
+                if (quarterMonth >= 0 && quarterMonth < 3) {
+                  maintenanceAggregated[quarterMonth] += Number(
+                    record.maintenance_cost || 0
+                  );
+                }
+              }
+            });
+
+            // Aggregate refunds by quarter month
+            refundRecords.forEach((record) => {
+              const date = new Date(record.refund_date);
+              if (date.getFullYear() === selectedYear) {
+                const month = date.getMonth();
+                const quarterMonth = month - quarterStartMonth;
+                if (quarterMonth >= 0 && quarterMonth < 3) {
+                  refundsAggregated[quarterMonth] += Number(
+                    record.refund_amount || 0
+                  );
+                }
+              }
+            });
           } else {
-            setError('Failed to fetch expenses data');
+            // Show all 12 months for yearly view
+            labels = DEFAULT_MONTHS;
+            maintenanceAggregated = Array(12).fill(0);
+            refundsAggregated = Array(12).fill(0);
+
+            // Aggregate maintenance by month
+            maintenanceRecords.forEach((record) => {
+              const date = new Date(record.maintenance_start_date);
+              if (date.getFullYear() === selectedYear) {
+                const month = date.getMonth();
+                maintenanceAggregated[month] += Number(
+                  record.maintenance_cost || 0
+                );
+              }
+            });
+
+            // Aggregate refunds by month
+            refundRecords.forEach((record) => {
+              const date = new Date(record.refund_date);
+              if (date.getFullYear() === selectedYear) {
+                const month = date.getMonth();
+                refundsAggregated[month] += Number(record.refund_amount || 0);
+              }
+            });
           }
+
+          console.log('Aggregated maintenance data:', maintenanceAggregated);
+          console.log('Aggregated refunds data:', refundsAggregated);
+
+          // Calculate totals
+          const maintenanceTotal = maintenanceAggregated.reduce(
+            (sum, val) => sum + val,
+            0
+          );
+          const refundsTotal = refundsAggregated.reduce(
+            (sum, val) => sum + val,
+            0
+          );
+
+          setMaintenanceData(maintenanceAggregated);
+          setRefundsData(refundsAggregated);
+          setChartLabels(labels);
+          setTotalMaintenance(maintenanceTotal);
+          setTotalRefunds(refundsTotal);
+          setTotalIncome(maintenanceTotal + refundsTotal); // Total expenses
 
           setLoading(false);
           return;
@@ -293,47 +407,60 @@ export default function AdminReportAnalytics() {
           // Revenue endpoint response: { byMethod: [...], monthly: [...] }
           if (data.monthly) {
             let labels, chartValues;
-            
+
             if (period === 'monthly') {
               // For monthly view, show daily data for the selected month
               const dailyRevenue = {};
-              data.monthly.forEach(payment => {
+              data.monthly.forEach((payment) => {
                 const day = new Date(payment.paid_date).getDate();
                 dailyRevenue[day] = (dailyRevenue[day] || 0) + payment.amount;
               });
-              
-              const daysInMonth = new Date(selectedYear, selectedMonthIndex + 1, 0).getDate();
-              labels = Array.from({ length: daysInMonth }, (_, i) => `Day ${i + 1}`);
-              chartValues = Array.from({ length: daysInMonth }, (_, i) => dailyRevenue[i + 1] || 0);
+
+              const daysInMonth = new Date(
+                selectedYear,
+                selectedMonthIndex + 1,
+                0
+              ).getDate();
+              labels = Array.from(
+                { length: daysInMonth },
+                (_, i) => `Day ${i + 1}`
+              );
+              chartValues = Array.from(
+                { length: daysInMonth },
+                (_, i) => dailyRevenue[i + 1] || 0
+              );
             } else if (period === 'quarterly') {
               // For quarterly view, show monthly data for the selected quarter
               const monthlyRevenue = Array(3).fill(0);
               const quarterStartMonth = (selectedQuarter - 1) * 3;
-              
-              data.monthly.forEach(payment => {
+
+              data.monthly.forEach((payment) => {
                 const month = new Date(payment.paid_date).getMonth();
                 const quarterMonth = month - quarterStartMonth;
                 if (quarterMonth >= 0 && quarterMonth < 3) {
                   monthlyRevenue[quarterMonth] += payment.amount;
                 }
               });
-              
-              const quarterMonths = Array.from({ length: 3 }, (_, i) => 
-                new Date(2000, quarterStartMonth + i, 1).toLocaleString(undefined, { month: 'short' })
+
+              const quarterMonths = Array.from({ length: 3 }, (_, i) =>
+                new Date(2000, quarterStartMonth + i, 1).toLocaleString(
+                  undefined,
+                  { month: 'short' }
+                )
               );
               labels = quarterMonths;
               chartValues = monthlyRevenue;
             } else {
               // For yearly view, show all 12 months
               const monthlyRevenue = Array(12).fill(0);
-              data.monthly.forEach(payment => {
+              data.monthly.forEach((payment) => {
                 const month = new Date(payment.paid_date).getMonth();
                 monthlyRevenue[month] += payment.amount;
               });
               labels = DEFAULT_MONTHS;
               chartValues = monthlyRevenue;
             }
-            
+
             setChartData(chartValues);
             setChartLabels(labels);
             setTotalIncome(chartValues.reduce((sum, val) => sum + val, 0));
@@ -342,8 +469,8 @@ export default function AdminReportAnalytics() {
           // Car utilization endpoint response: [{ carId, make, model, bookingCount, utilization }]
           if (Array.isArray(data)) {
             const topCars = data.slice(0, 5); // Top 5 cars
-            const labels = topCars.map(car => `${car.make} ${car.model}`);
-            const values = topCars.map(car => car.bookingCount);
+            const labels = topCars.map((car) => `${car.make} ${car.model}`);
+            const values = topCars.map((car) => car.bookingCount);
             setChartData(values);
             setChartLabels(labels);
             setTotalIncome(values.reduce((sum, val) => sum + val, 0));
@@ -352,8 +479,10 @@ export default function AdminReportAnalytics() {
           // Top customers endpoint response: [{ customerId, firstName, lastName, fullName, bookingCount }]
           if (Array.isArray(data)) {
             const topCustomers = data.slice(0, 5); // Top 5 customers
-            const labels = topCustomers.map(customer => customer.fullName);
-            const values = topCustomers.map(customer => customer.bookingCount);
+            const labels = topCustomers.map((customer) => customer.fullName);
+            const values = topCustomers.map(
+              (customer) => customer.bookingCount
+            );
             setChartData(values);
             setChartLabels(labels);
             setTotalIncome(values.reduce((sum, val) => sum + val, 0));
@@ -387,13 +516,35 @@ export default function AdminReportAnalytics() {
       maximumFractionDigits: 2,
     })}`;
 
+  // Handle PDF download
+  const handleDownloadPDF = () => {
+    generateAnalyticsPDF({
+      primaryView,
+      period,
+      selectedYear,
+      selectedQuarter,
+      selectedMonthIndex,
+      chartData,
+      chartLabels,
+      totalIncome,
+      totalMaintenance,
+      totalRefunds,
+      maintenanceData,
+      refundsData,
+    });
+  };
+
   // Line dataset builder
   const lineData = useMemo(() => {
     // Use the chart labels that have been set based on the period
-    const labels = chartLabels.length > 0 ? chartLabels : 
-      (period === 'quarterly' ? ['Q1 Month 1', 'Q1 Month 2', 'Q1 Month 3'] :
-       period === 'monthly' ? ['Day 1', 'Day 2', '...'] : 
-       DEFAULT_MONTHS);
+    const labels =
+      chartLabels.length > 0
+        ? chartLabels
+        : period === 'quarterly'
+          ? ['Q1 Month 1', 'Q1 Month 2', 'Q1 Month 3']
+          : period === 'monthly'
+            ? ['Day 1', 'Day 2', '...']
+            : DEFAULT_MONTHS;
 
     console.log('Line chart data:', { labels, primaryView, period });
 
@@ -406,7 +557,7 @@ export default function AdminReportAnalytics() {
       console.log('Expenses chart data:', {
         maintenanceChartData,
         refundsChartData,
-        period
+        period,
       });
 
       return {
@@ -449,7 +600,14 @@ export default function AdminReportAnalytics() {
         ],
       };
     }
-  }, [primaryView, chartData, chartLabels, maintenanceData, refundsData, period]);
+  }, [
+    primaryView,
+    chartData,
+    chartLabels,
+    maintenanceData,
+    refundsData,
+    period,
+  ]);
 
   const lineOptions = useMemo(
     () => ({
@@ -587,100 +745,134 @@ export default function AdminReportAnalytics() {
               boxSizing: 'border-box',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 1,
+                mb: 1,
+              }}
+            >
               <Typography
                 variant="h4"
                 component="h1"
-                gutterBottom
                 sx={{
-                  fontSize: '1.8rem',
+                  fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
                   color: '#000',
-                  '@media (max-width: 1024px)': {
-                    fontSize: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                }}
+              >
+                <HiChartBar style={{ verticalAlign: 'middle' }} />
+                REPORT & ANALYTICS
+              </Typography>
+
+              {/* Download PDF Button */}
+              <Button
+                variant="outlined"
+                onClick={handleDownloadPDF}
+                disabled={!chartData || chartData.length === 0}
+                sx={{
+                  color: '#000',
+                  p: 0,
+                  py: 0,
+                  height: { xs: 30, sm: 32, md: 36 },
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  minWidth: 'auto',
+                  '&:hover': {
+                    backgroundColor: 'transparent',
+                    color: 'grey',
+                    boxShadow: 'none',
+                  },
+                  '&:disabled': {
+                    color: '#666',
                   },
                 }}
               >
-                <HiChartBar
-                  style={{ verticalAlign: '-3px', marginRight: '5px' }}
+                <DownloadIcon
+                  sx={{
+                    width: { xs: '18px', sm: '26px' },
+                    height: { xs: '18px', sm: '26px' },
+                  }}
                 />
-                REPORT & ANALYTICS
-              </Typography>
-              
-              {/* Period Controls Section */}
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
+              </Button>
+            </Box>
+
+            {/* Period Controls Section */}
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
                 gap: 1,
                 flexWrap: 'wrap',
-                '@media (max-width: 768px)': {
-                  flexDirection: 'column',
-                  alignItems: 'flex-end',
-                  gap: 0.5
-                }
-              }}>
-                {/* Period Type Selector */}
+              }}
+            >
+              {/* Period Type Selector */}
+              <Select
+                size="small"
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+                sx={{ bgcolor: '#fff', minWidth: 120 }}
+                MenuProps={{ disableScrollLock: true }}
+              >
+                <MenuItem value="monthly">Monthly</MenuItem>
+                <MenuItem value="quarterly">Quarterly</MenuItem>
+                <MenuItem value="yearly">Yearly</MenuItem>
+              </Select>
+
+              {/* Quarter Selector - Only show when quarterly is selected */}
+              {period === 'quarterly' && (
                 <Select
                   size="small"
-                  value={period}
-                  onChange={(e) => setPeriod(e.target.value)}
+                  value={selectedQuarter}
+                  onChange={(e) => setSelectedQuarter(e.target.value)}
+                  sx={{ bgcolor: '#fff', minWidth: 110 }}
+                  MenuProps={{ disableScrollLock: true }}
+                >
+                  <MenuItem value={1}>Quarter 1</MenuItem>
+                  <MenuItem value={2}>Quarter 2</MenuItem>
+                  <MenuItem value={3}>Quarter 3</MenuItem>
+                  <MenuItem value={4}>Quarter 4</MenuItem>
+                </Select>
+              )}
+
+              {/* Month Selector - Only show when monthly is selected */}
+              {period === 'monthly' && (
+                <Select
+                  size="small"
+                  value={selectedMonthIndex}
+                  onChange={(e) => setSelectedMonthIndex(e.target.value)}
                   sx={{ bgcolor: '#fff', minWidth: 120 }}
                   MenuProps={{ disableScrollLock: true }}
                 >
-                  <MenuItem value="monthly">Monthly</MenuItem>
-                  <MenuItem value="quarterly">Quarterly</MenuItem>
-                  <MenuItem value="yearly">Yearly</MenuItem>
-                </Select>
-
-                {/* Quarter Selector - Only show when quarterly is selected */}
-                {period === 'quarterly' && (
-                  <Select
-                    size="small"
-                    value={selectedQuarter}
-                    onChange={(e) => setSelectedQuarter(e.target.value)}
-                    sx={{ bgcolor: '#fff', minWidth: 110 }}
-                    MenuProps={{ disableScrollLock: true }}
-                  >
-                    <MenuItem value={1}>Quarter 1</MenuItem>
-                    <MenuItem value={2}>Quarter 2</MenuItem>
-                    <MenuItem value={3}>Quarter 3</MenuItem>
-                    <MenuItem value={4}>Quarter 4</MenuItem>
-                  </Select>
-                )}
-
-                {/* Month Selector - Only show when monthly is selected */}
-                {period === 'monthly' && (
-                  <Select
-                    size="small"
-                    value={selectedMonthIndex}
-                    onChange={(e) => setSelectedMonthIndex(e.target.value)}
-                    sx={{ bgcolor: '#fff', minWidth: 120 }}
-                    MenuProps={{ disableScrollLock: true }}
-                  >
-                    {Array.from({ length: 12 }).map((_, i) => (
-                      <MenuItem key={i} value={i}>
-                        {new Date(2000, i, 1).toLocaleString(undefined, {
-                          month: 'long',
-                        })}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                )}
-
-                {/* Year Selector - Always show */}
-                <Select
-                  size="small"
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  sx={{ bgcolor: '#fff', minWidth: 100 }}
-                  MenuProps={{ disableScrollLock: true }}
-                >
-                  {availableYears.map((year) => (
-                    <MenuItem key={year} value={year}>
-                      {year}
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <MenuItem key={i} value={i}>
+                      {new Date(2000, i, 1).toLocaleString(undefined, {
+                        month: 'long',
+                      })}
                     </MenuItem>
                   ))}
                 </Select>
-              </Box>
+              )}
+
+              {/* Year Selector - Always show */}
+              <Select
+                size="small"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                sx={{ bgcolor: '#fff', minWidth: 100 }}
+                MenuProps={{ disableScrollLock: true }}
+              >
+                {availableYears.map((year) => (
+                  <MenuItem key={year} value={year}>
+                    {year}
+                  </MenuItem>
+                ))}
+              </Select>
             </Box>
             <Box
               sx={{
@@ -691,10 +883,14 @@ export default function AdminReportAnalytics() {
               }}
             >
               {/* Summary Section */}
-              <Box sx={{ mb: 2 }}>
+              <Box sx={{ mt: 2, mb: 2 }}>
                 <Typography
                   variant="h6"
-                  sx={{ fontWeight: 700, color: '#111' }}
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: { xs: '1rem', sm: '1.25rem' },
+                    color: '#111',
+                  }}
                   className="font-pathway"
                 >
                   {primaryView === 'income' &&
@@ -768,7 +964,7 @@ export default function AdminReportAnalytics() {
                 <Stack
                   direction="row"
                   spacing={0.4}
-                  sx={{ width: '100%', flexWrap: 'nowrap' }}
+                  sx={{ width: '100%', overflowX: 'hidden' }}
                 >
                   <Chip
                     label="INCOME"
@@ -821,7 +1017,7 @@ export default function AdminReportAnalytics() {
                     }}
                   />
                   <Chip
-                    label="TOP CARS"
+                    label={isXs ? 'CARS' : 'TOP CARS'}
                     clickable
                     onClick={() => {
                       setPrimaryView('topCars');
@@ -849,7 +1045,7 @@ export default function AdminReportAnalytics() {
                     }}
                   />
                   <Chip
-                    label="TOP CUSTOMERS"
+                    label={isXs ? 'CUSTOMERS' : 'TOP CUSTOMERS'}
                     clickable
                     onClick={() => {
                       setPrimaryView('topCustomers');
@@ -861,6 +1057,7 @@ export default function AdminReportAnalytics() {
                       minWidth: 0,
                       borderRadius: 0,
                       borderTopRightRadius: '8px',
+                      fontSize: { xs: '0.65rem', sm: '0.8rem' },
                       bgcolor:
                         primaryView === 'topCustomers' ? '#1976d2' : '#d9d9d9',
                       color: primaryView === 'topCustomers' ? '#fff' : '#333',

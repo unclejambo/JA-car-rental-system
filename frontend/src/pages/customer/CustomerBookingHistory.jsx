@@ -309,15 +309,20 @@ function CustomerBookingHistory() {
           p: { xs: 1, sm: 2, md: 3 },
           width: `calc(100% - 18.7dvw)`,
           ml: { xs: '0px', sm: '0px', md: '18.7dvw' },
+          '@media (max-width: 1024px)': {
+            ml: '0px',
+          },
           mt: { xs: '64px', sm: '64px', md: '56px' },
+          border: 'none',
+          boxShadow: 'none',
         }}
       >
         <Card
           sx={{
-            p: { xs: 2, sm: 3 },
-            borderRadius: 3,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            p: 0,
+            border: 'none',
             backgroundColor: '#fff',
+            boxShadow: 'none',
           }}
         >
           <CardContent>
@@ -416,12 +421,13 @@ function CustomerBookingHistory() {
             {/* Search Bar - Aligned to the right like Refresh button */}
             <Box
               sx={{
-                mb: 3,
+                mt: -1,
+                mb: -1,
                 display: 'flex',
                 justifyContent: 'flex-end',
               }}
             >
-              <Box sx={{ width: { xs: '100%', sm: 300, md: 350 } }}>
+              <Box sx={{ width: '100%' }}>
                 {activeTab === 0 ? (
                   <SearchBar
                     value={bookingSearchQuery}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import DownloadIcon from '@mui/icons-material/Download';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
 import { HiDocumentCurrencyDollar } from 'react-icons/hi2';
@@ -13,6 +14,7 @@ import Loading from '../../ui/components/Loading';
 import { useTransactionStore } from '../../store/transactions';
 import AddPaymentModal from '../../ui/components/modal/AddPaymentModal';
 import AddRefundModal from '../../ui/components/modal/AddRefundModal';
+import { generateTransactionPDF } from '../../utils/pdfExport';
 
 export default function AdminTransactionPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -172,6 +174,11 @@ export default function AdminTransactionPage() {
   const openAddRefundModal = () => setShowAddRefundModal(true);
   const closeAddRefundModal = () => setShowAddRefundModal(false);
 
+  // Handle PDF download
+  const handleDownloadPDF = () => {
+    generateTransactionPDF(activeTab, rows);
+  };
+
   // Initial & on-tab-change data loader
   useEffect(() => {
     const load = async () => {
@@ -306,109 +313,189 @@ export default function AdminTransactionPage() {
               boxSizing: 'border-box',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography
-                variant="h4"
-                component="h1"
-                gutterBottom
-                sx={{
-                  fontSize: '1.8rem',
-                  color: '#000',
-                  '@media (max-width: 1024px)': {
-                    fontSize: '1.5rem',
-                  },
-                }}
-              >
-                <HiDocumentCurrencyDollar
-                  style={{ verticalAlign: '-3px', marginRight: '5px' }}
-                />
-                {activeTab}
-              </Typography>
-              {activeTab === 'PAYMENT' && (
-                <Button
-                  variant="outlined"
-                  startIcon={
-                    <AddIcon
-                      sx={{ width: '18px', height: '18px', mt: '-2px' }}
-                    />
-                  }
-                  onClick={openAddPaymentModal}
-                  sx={{
-                    color: '#fff',
-                    p: 1,
-                    pb: 0.5,
-                    height: 36,
-                    border: 'none',
-                    backgroundColor: '#c10007',
-                    '&:hover': {
-                      backgroundColor: '#a00006',
-                      color: '#fff',
-                      fontWeight: 600,
-                      borderColor: '#4a4a4a',
-                      boxShadow: 'none',
-                    },
-                    '@media (max-width: 600px)': {
-                      height: 28,
-                    },
-                  }}
-                >
-                  Add New {activeTab}
-                </Button>
-              )}
-              {activeTab === 'REFUND' && (
-                <Button
-                  variant="outlined"
-                  startIcon={
-                    <AddIcon
-                      sx={{ width: '18px', height: '18px', mt: '-2px' }}
-                    />
-                  }
-                  onClick={openAddRefundModal}
-                  sx={{
-                    color: '#fff',
-                    p: 1,
-                    pb: 0.5,
-                    height: 36,
-                    border: 'none',
-                    backgroundColor: '#c10007',
-                    '&:hover': {
-                      backgroundColor: '#a00006',
-                      color: '#fff',
-                      fontWeight: 600,
-                      borderColor: '#4a4a4a',
-                      boxShadow: 'none',
-                    },
-                    '@media (max-width: 600px)': {
-                      height: 28,
-                    },
-                  }}
-                >
-                  Add New {activeTab}
-                </Button>
-              )}
-            </Box>
-
-            {/* Search Bar */}
             <Box
               sx={{
                 display: 'flex',
-                justifyContent: 'flex-end',
-                alignItems: 'center',
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between',
                 mb: 2,
-                mt: 1,
+                gap: { xs: 1, sm: 1 },
               }}
             >
-              <SearchBar
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`Search ${activeTab.toLowerCase()}...`}
-                variant="outlined"
-                size="small"
+              <Box
                 sx={{
-                  width: { xs: '100%', sm: 350 },
-                  maxWidth: 350,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: { xs: 1, sm: 5 },
+                  alignItems: 'center',
                 }}
-              />
+              >
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Typography
+                    variant="h4"
+                    component="h1"
+                    sx={{
+                      fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
+                      color: '#000',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      mb: 0,
+                    }}
+                  >
+                    <HiDocumentCurrencyDollar
+                      style={{
+                        verticalAlign: 'middle',
+                      }}
+                    />
+                    {activeTab}
+                  </Typography>
+                  {/* Download PDF Button */}
+                  <Button
+                    variant="outlined"
+                    onClick={handleDownloadPDF}
+                    disabled={!rows || rows.length === 0}
+                    sx={{
+                      color: '#000',
+                      p: 0,
+                      py: 0,
+                      height: { xs: 30, sm: 32, md: 36 },
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      minWidth: 'auto',
+                      '&:hover': {
+                        backgroundColor: 'transparent',
+                        color: 'grey',
+                        boxShadow: 'none',
+                      },
+                      '&:disabled': {
+                        color: '#666',
+                      },
+                    }}
+                  >
+                    <DownloadIcon
+                      sx={{
+                        width: { xs: '18px', sm: '26px' },
+                        height: { xs: '18px', sm: '26px' },
+                      }}
+                    />
+                  </Button>
+                </Box>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 1,
+                  }}
+                >
+                  {activeTab === 'PAYMENT' && (
+                    <Button
+                      variant="outlined"
+                      startIcon={
+                        <AddIcon
+                          sx={{ width: '18px', height: '18px', mt: '-2px' }}
+                        />
+                      }
+                      onClick={openAddPaymentModal}
+                      sx={{
+                        color: '#fff',
+                        p: 1,
+                        pb: 0.5,
+                        height: 36,
+                        border: 'none',
+                        backgroundColor: '#c10007',
+                        whiteSpace: 'nowrap',
+                        minWidth: 'auto',
+                        '&:hover': {
+                          backgroundColor: '#a00006',
+                          color: '#fff',
+                          fontWeight: 600,
+                          borderColor: '#4a4a4a',
+                          boxShadow: 'none',
+                        },
+                        '@media (max-width: 600px)': {
+                          height: 32,
+                          fontSize: '0.7rem',
+                          px: 0.75,
+                          py: 0.5,
+                          '& .MuiButton-startIcon': {
+                            marginRight: '2px',
+                          },
+                          '& .MuiSvgIcon-root': {
+                            width: '14px',
+                            height: '14px',
+                          },
+                        },
+                      }}
+                    >
+                      Add New {activeTab}
+                    </Button>
+                  )}
+                  {activeTab === 'REFUND' && (
+                    <Button
+                      variant="outlined"
+                      startIcon={
+                        <AddIcon
+                          sx={{ width: '18px', height: '18px', mt: '-2px' }}
+                        />
+                      }
+                      onClick={openAddRefundModal}
+                      sx={{
+                        color: '#fff',
+                        p: 1,
+                        pb: 0.5,
+                        height: 36,
+                        border: 'none',
+                        backgroundColor: '#c10007',
+                        whiteSpace: 'nowrap',
+                        minWidth: 'auto',
+                        '&:hover': {
+                          backgroundColor: '#a00006',
+                          color: '#fff',
+                          fontWeight: 600,
+                          borderColor: '#4a4a4a',
+                          boxShadow: 'none',
+                        },
+                        '@media (max-width: 600px)': {
+                          height: 32,
+                          fontSize: '0.7rem',
+                          px: 0.75,
+                          py: 0.5,
+                          '& .MuiButton-startIcon': {
+                            marginRight: '2px',
+                          },
+                          '& .MuiSvgIcon-root': {
+                            width: '14px',
+                            height: '14px',
+                          },
+                        },
+                      }}
+                    >
+                      Add New {activeTab}
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+
+              {/* Search Bar */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                }}
+              >
+                <SearchBar
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={`Search ${activeTab.toLowerCase()}...`}
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    width: { xs: '100%', sm: 350 },
+                    maxWidth: 'auto',
+                  }}
+                />
+              </Box>
             </Box>
 
             <Box

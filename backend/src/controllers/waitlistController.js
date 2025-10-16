@@ -1,4 +1,5 @@
 import prisma from '../config/prisma.js';
+import { sendCarAvailabilityNotification } from '../utils/notificationService.js';
 
 // @desc    Get waitlist entries for a car
 // @route   GET /cars/:carId/waitlist
@@ -13,7 +14,7 @@ export const getCarWaitlist = async (req, res) => {
         status: 'waiting'
       },
       include: {
-        customer: {
+        Customer: {
           select: {
             first_name: true,
             last_name: true,
@@ -22,7 +23,7 @@ export const getCarWaitlist = async (req, res) => {
         }
       },
       orderBy: {
-        position: 'asc'
+        created_at: 'asc'
       }
     });
     
@@ -49,55 +50,62 @@ export const joinWaitlist = async (req, res) => {
       return res.status(403).json({ error: 'Only customers can join waitlist' });
     }
 
-    const {
-      requested_start_date,
-      requested_end_date,
-      purpose,
-      pickup_time,
-      dropoff_time,
-      pickup_location,
-      dropoff_location,
-      delivery_type,
-      is_self_drive,
-      selected_driver_id,
-      special_requests,
-      total_cost,
-      notification_preference // Optional: can be '1' (SMS), '2' (Email), '3' (Both)
-    } = req.body;
-
-    // Check if customer is already on waitlist for this car
+    // Check if customer already has an entry for this car
     const existingEntry = await prisma.waitlist.findFirst({
       where: {
         customer_id: parseInt(customerId),
-        car_id: carId,
-        status: 'waiting'
+        car_id: carId
       }
     });
 
+    let waitlistEntry;
+
     if (existingEntry) {
-      return res.status(400).json({ error: 'You are already on the waitlist for this car' });
-    }
-
-    // Get next position in waitlist
-    const lastPosition = await prisma.waitlist.findFirst({
-      where: { car_id: carId, status: 'waiting' },
-      orderBy: { position: 'desc' }
-    });
-
-    const nextPosition = (lastPosition?.position || 0) + 1;
-
-    // If no booking details provided (simple waitlist join), create basic entry
-    if (!requested_start_date || !requested_end_date) {
-      const waitlistEntry = await prisma.waitlist.create({
+      // If already waiting, reject
+      if (existingEntry.status === 'waiting') {
+        return res.status(400).json({ error: 'You are already on the waitlist for this car' });
+      }
+      
+      // If previously notified, reactivate the entry
+      if (existingEntry.status === 'notified') {
+        waitlistEntry = await prisma.waitlist.update({
+          where: { waitlist_id: existingEntry.waitlist_id },
+          data: {
+            status: 'waiting',
+            notified_date: null,
+            notification_method: null,
+            notification_success: null
+          },
+          include: {
+            Customer: {
+              select: {
+                first_name: true,
+                last_name: true,
+                email: true,
+                contact_no: true,
+                isRecUpdate: true
+              }
+            },
+            Car: {
+              select: {
+                make: true,
+                model: true,
+                year: true
+              }
+            }
+          }
+        });
+      }
+    } else {
+      // Create new waitlist entry for notifications
+      waitlistEntry = await prisma.waitlist.create({
         data: {
           customer_id: parseInt(customerId),
           car_id: carId,
-          position: nextPosition,
-          status: 'waiting',
-          payment_status: 'Unpaid'
+          status: 'waiting'
         },
         include: {
-          customer: {
+          Customer: {
             select: {
               first_name: true,
               last_name: true,
@@ -106,7 +114,7 @@ export const joinWaitlist = async (req, res) => {
               isRecUpdate: true
             }
           },
-          car: {
+          Car: {
             select: {
               make: true,
               model: true,
@@ -115,194 +123,21 @@ export const joinWaitlist = async (req, res) => {
           }
         }
       });
-
-      return res.status(201).json({
-        success: true,
-        message: `You have been added to the waitlist. You are position #${nextPosition}. You will be notified when this car becomes available.`,
-        waitlist_entry: waitlistEntry
-      });
     }
 
-    // Create full waitlist entry with booking details
-    const waitlistEntry = await prisma.waitlist.create({
-      data: {
-        customer_id: parseInt(customerId),
-        car_id: carId,
-        requested_start_date: new Date(requested_start_date),
-        requested_end_date: new Date(requested_end_date),
-        purpose,
-        pickup_time,
-        dropoff_time,
-        pickup_location,
-        dropoff_location,
-        delivery_type,
-        is_self_drive: is_self_drive ?? true,
-        selected_driver_id: selected_driver_id ? parseInt(selected_driver_id) : null,
-        special_requests,
-        total_cost,
-        position: nextPosition,
-        status: 'waiting',
-        payment_status: 'Unpaid'
-      },
-      include: {
-        customer: {
-          select: {
-            first_name: true,
-            last_name: true,
-            email: true,
-            contact_no: true,
-            isRecUpdate: true
-          }
-        },
-        car: {
-          select: {
-            make: true,
-            model: true,
-            year: true
-          }
-        }
-      }
-    });
+    const isReactivated = existingEntry && existingEntry.status === 'notified';
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: `You have been added to the waitlist. You are position #${nextPosition}`,
-      waitlist_entry: waitlistEntry
+      message: `You will be notified when the ${waitlistEntry.Car.make} ${waitlistEntry.Car.model} becomes available.`,
+      waitlist_entry: waitlistEntry,
+      reactivated: isReactivated
     });
   } catch (error) {
     console.error('Error joining waitlist:', error);
     res.status(500).json({ error: 'Failed to join waitlist' });
   }
 };
-
-// @desc    Get available dates for a car (considering existing bookings)
-// @route   GET /cars/:carId/available-dates
-// @access  Public
-export const getAvailableDates = async (req, res) => {
-  try {
-    const carId = parseInt(req.params.carId);
-    const { start_date, end_date } = req.query;
-    
-    // Get car details
-    const car = await prisma.car.findUnique({
-      where: { car_id: carId }
-    });
-    
-    if (!car) {
-      return res.status(404).json({ error: 'Car not found' });
-    }
-
-    // If car is in maintenance, return no available dates (except maintenance status)
-    if (car.car_status?.toLowerCase().includes('maint')) {
-      return res.json({
-        car_status: car.car_status,
-        available_dates: [],
-        next_available_date: null,
-        message: 'Car is currently under maintenance. No dates available.'
-      });
-    }
-
-    // Get all confirmed bookings for this car
-    const existingBookings = await prisma.booking.findMany({
-      where: {
-        car_id: carId,
-        booking_status: { not: 'cancelled' },
-        OR: [
-          { booking_status: 'confirmed' },
-          { booking_status: 'ongoing' },
-          { booking_status: 'pending' }
-        ]
-      },
-      select: {
-        start_date: true,
-        end_date: true,
-        booking_status: true
-      },
-      orderBy: {
-        start_date: 'asc'
-      }
-    });
-
-    // Get paid waitlist entries that should block dates
-    const paidWaitlistEntries = await prisma.waitlist.findMany({
-      where: {
-        car_id: carId,
-        payment_status: 'Paid', // Capitalized for consistency
-        status: { not: 'cancelled' }
-      },
-      select: {
-        requested_start_date: true,
-        requested_end_date: true,
-        status: true,
-        payment_status: true,
-        paid_date: true
-      },
-      orderBy: {
-        requested_start_date: 'asc'
-      }
-    });
-
-    // Combine bookings and paid waitlist entries for date blocking
-    const allBlockedRanges = [
-      ...existingBookings.map(booking => ({
-        start: new Date(booking.start_date),
-        end: new Date(booking.end_date),
-        status: booking.booking_status,
-        type: 'booking'
-      })),
-      ...paidWaitlistEntries.map(waitlist => ({
-        start: new Date(waitlist.requested_start_date),
-        end: new Date(waitlist.requested_end_date),
-        status: waitlist.status,
-        payment_status: waitlist.payment_status,
-        type: 'paid_waitlist'
-      }))
-    ];
-
-    // Sort all blocked ranges by start date
-    allBlockedRanges.sort((a, b) => a.start - b.start);
-
-    // If car is rented or has paid waitlist entries, find the earliest available date
-    let nextAvailableDate = null;
-    if (car.car_status?.toLowerCase().includes('rent') || allBlockedRanges.length > 0) {
-      // Find the latest end date from all blocked ranges
-      const latestEndDate = allBlockedRanges.reduce((latest, range) => {
-        return range.end > latest ? range.end : latest;
-      }, allBlockedRanges.length > 0 ? allBlockedRanges[0].end : new Date());
-      
-      // Add one day for maintenance after rental/reservation
-      nextAvailableDate = new Date(latestEndDate);
-      nextAvailableDate.setDate(nextAvailableDate.getDate() + 1);
-    }
-
-    res.json({
-      car_status: car.car_status,
-      existing_bookings: existingBookings.map(booking => ({
-        start: new Date(booking.start_date),
-        end: new Date(booking.end_date),
-        status: booking.booking_status
-      })),
-      paid_waitlist_reservations: paidWaitlistEntries.map(waitlist => ({
-        start: new Date(waitlist.requested_start_date),
-        end: new Date(waitlist.requested_end_date),
-        status: waitlist.status,
-        payment_status: waitlist.payment_status,
-        paid_date: waitlist.paid_date
-      })),
-      blocked_ranges: allBlockedRanges,
-      next_available_date: nextAvailableDate,
-      message: nextAvailableDate 
-        ? `Car has reservations. Next available date: ${nextAvailableDate.toISOString().split('T')[0]}`
-        : car.car_status === 'Available' 
-          ? 'Car is available for booking'
-          : `Car status: ${car.car_status}`
-    });
-  } catch (error) {
-    console.error('Error getting available dates:', error);
-    res.status(500).json({ error: 'Failed to get available dates' });
-  }
-};
-
 // @desc    Remove customer from waitlist
 // @route   DELETE /waitlist/:waitlistId
 // @access  Private (Customer - own entries only)
@@ -334,18 +169,6 @@ export const leaveWaitlist = async (req, res) => {
       where: { waitlist_id: waitlistId }
     });
 
-    // Reorder remaining positions
-    await prisma.waitlist.updateMany({
-      where: {
-        car_id: waitlistEntry.car_id,
-        position: { gt: waitlistEntry.position },
-        status: 'waiting'
-      },
-      data: {
-        position: { decrement: 1 }
-      }
-    });
-
     res.json({ 
       success: true, 
       message: 'Successfully removed from waitlist' 
@@ -373,7 +196,7 @@ export const getMyWaitlistEntries = async (req, res) => {
         status: 'waiting'
       },
       include: {
-        car: {
+        Car: {
           select: {
             make: true,
             model: true,
@@ -384,7 +207,7 @@ export const getMyWaitlistEntries = async (req, res) => {
         }
       },
       orderBy: {
-        date_created: 'desc'
+        created_at: 'desc'
       }
     });
 
@@ -395,113 +218,138 @@ export const getMyWaitlistEntries = async (req, res) => {
   }
 };
 
-// @desc    Process payment for waitlist entry
-// @route   POST /waitlist/:waitlistId/payment
-// @access  Private (Customer - own entries only)
-export const processWaitlistPayment = async (req, res) => {
+// @desc    Notify customers on waitlist when car becomes available
+// @route   Used internally by car controller
+// @access  Internal
+export const notifyWaitlistOnCarAvailable = async (carId) => {
   try {
-    const waitlistId = parseInt(req.params.waitlistId);
-    const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
+    console.log(`\n🔔 Checking waitlist for car ${carId}...`);
     
-    if (!customerId) {
-      return res.status(401).json({ error: 'Customer authentication required' });
-    }
-
-    const {
-      payment_method,
-      gcash_no,
-      reference_no,
-      amount
-    } = req.body;
-
-    // Find the waitlist entry
-    const waitlistEntry = await prisma.waitlist.findUnique({
-      where: { waitlist_id: waitlistId },
+    // Get all waiting customers for this car who haven't been notified yet
+    const waitingCustomers = await prisma.waitlist.findMany({
+      where: {
+        car_id: carId,
+        status: 'waiting',
+        notified_date: null
+      },
       include: {
-        car: {
+        Customer: {
           select: {
+            customer_id: true,
+            first_name: true,
+            last_name: true,
+            contact_no: true,
+            email: true,
+            isRecUpdate: true
+          }
+        },
+        Car: {
+          select: {
+            car_id: true,
             make: true,
             model: true,
-            year: true
+            year: true,
+            car_status: true
           }
         }
+      },
+      orderBy: {
+        created_at: 'asc' // First come, first served
       }
     });
-
-    if (!waitlistEntry) {
-      return res.status(404).json({ error: 'Waitlist entry not found' });
+    
+    if (waitingCustomers.length === 0) {
+      console.log(`   ℹ️  No customers waiting for car ${carId}`);
+      return { success: true, notified: 0 };
     }
-
-    // Check if customer owns this waitlist entry
-    if (waitlistEntry.customer_id !== parseInt(customerId)) {
-      return res.status(403).json({ error: 'You can only pay for your own waitlist entries' });
-    }
-
-    // Check if already paid
-    if (waitlistEntry.payment_status === 'Paid') { // Capitalized for consistency
-      return res.status(400).json({ error: 'Waitlist entry is already paid' });
-    }
-
-    // Validate payment amount
-    if (amount !== waitlistEntry.total_cost) {
-      return res.status(400).json({ 
-        error: `Payment amount (₱${amount}) does not match total cost (₱${waitlistEntry.total_cost})` 
-      });
-    }
-
-    // Start transaction to update waitlist and create payment record
-    const result = await prisma.$transaction(async (tx) => {
-      // Create payment record
-      const payment = await tx.payment.create({
-        data: {
-          waitlist_id: waitlistId,
-          customer_id: parseInt(customerId),
-          description: `Waitlist reservation for ${waitlistEntry.car.make} ${waitlistEntry.car.model} ${waitlistEntry.car.year}`,
-          payment_method,
-          gcash_no,
-          reference_no,
-          amount,
-          paid_date: new Date(),
-          balance: 0
-        }
-      });
-
-      // Update waitlist entry payment status
-      const updatedWaitlist = await tx.waitlist.update({
-        where: { waitlist_id: waitlistId },
-        data: {
-          payment_status: 'Paid', // Capitalized for consistency
-          paid_date: new Date()
-        },
-        include: {
-          customer: {
-            select: {
-              first_name: true,
-              last_name: true,
-              email: true
-            }
-          },
-          car: {
-            select: {
-              make: true,
-              model: true,
-              year: true
-            }
+    
+    console.log(`   📋 Found ${waitingCustomers.length} customer(s) waiting for this car`);
+    
+    const results = {
+      total: waitingCustomers.length,
+      notified: 0,
+      failed: 0,
+      skipped: 0,
+      details: []
+    };
+    
+    // Send notifications to all waiting customers
+    for (const entry of waitingCustomers) {
+      const { Customer: customer, Car: car } = entry;
+      
+      // Skip if customer has notifications disabled
+      if (!customer.isRecUpdate || customer.isRecUpdate === 0) {
+        console.log(`   ⏭️  Skipping customer ${customer.customer_id} (notifications disabled)`);
+        results.skipped++;
+        results.details.push({
+          customer_id: customer.customer_id,
+          status: 'skipped',
+          reason: 'notifications_disabled'
+        });
+        continue;
+      }
+      
+      // Send notification
+      const notificationResult = await sendCarAvailabilityNotification(customer, car);
+      
+      // Update waitlist entry
+      try {
+        await prisma.waitlist.update({
+          where: { waitlist_id: entry.waitlist_id },
+          data: {
+            status: 'notified',
+            notified_date: new Date(),
+            notification_method: notificationResult.method || 'none',
+            notification_success: notificationResult.success
           }
+        });
+        
+        if (notificationResult.success) {
+          results.notified++;
+          results.details.push({
+            customer_id: customer.customer_id,
+            status: 'success',
+            method: notificationResult.method
+          });
+        } else {
+          results.failed++;
+          results.details.push({
+            customer_id: customer.customer_id,
+            status: 'failed',
+            error: notificationResult.error
+          });
         }
-      });
-
-      return { payment, waitlist: updatedWaitlist };
-    });
-
-    res.status(201).json({
+      } catch (updateError) {
+        console.error(`   ❌ Failed to update waitlist entry ${entry.waitlist_id}:`, updateError);
+        results.failed++;
+        results.details.push({
+          customer_id: customer.customer_id,
+          status: 'failed',
+          error: 'database_update_failed'
+        });
+      }
+    }
+    
+    console.log(`\n✅ Notification summary for car ${carId}:`);
+    console.log(`   Total: ${results.total}`);
+    console.log(`   Notified: ${results.notified}`);
+    console.log(`   Failed: ${results.failed}`);
+    console.log(`   Skipped: ${results.skipped}\n`);
+    
+    return {
       success: true,
-      message: 'Payment processed successfully. Your dates are now reserved!',
-      payment: result.payment,
-      waitlist_entry: result.waitlist
-    });
+      ...results
+    };
+    
   } catch (error) {
-    console.error('Error processing waitlist payment:', error);
-    res.status(500).json({ error: 'Failed to process payment' });
+    console.error('❌ Error notifying waitlist:', error);
+    return {
+      success: false,
+      error: error.message,
+      total: 0,
+      notified: 0,
+      failed: 0,
+      skipped: 0
+    };
   }
 };

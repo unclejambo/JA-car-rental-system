@@ -20,6 +20,9 @@ model Admin {
   isActive        Boolean?
   address         String?
   profile_img_url String?
+<<<<<<< Updated upstream
+  Booking         Booking[]
+=======
   bookings        Booking[]
 }
 
@@ -72,7 +75,6 @@ model Driver {
   bookings          Booking[]
   driver_license    DriverLicense @relation(fields: [driver_license_no], references: [driver_license_no])
   releases          Release[]
-  Waitlist          Waitlist[]
 }
 
 model Car {
@@ -92,6 +94,7 @@ model Car {
   maintenances  Maintenance[]
   transactions  Transaction[]
   Waitlist      Waitlist[]
+>>>>>>> Stashed changes
 }
 
 model Booking {
@@ -121,16 +124,86 @@ model Booking {
   deliver_loc    String?
   balance        Int?          @default(0)
   isPay          Boolean?      @default(false)
-  admin          Admin?        @relation(fields: [admin_id], references: [admin_id])
-  car            Car           @relation(fields: [car_id], references: [car_id])
-  customer       Customer      @relation(fields: [customer_id], references: [customer_id])
-  driver         Driver?       @relation(fields: [drivers_id], references: [drivers_id])
-  extensions     Extension[]
-  payments       Payment[]
-  refunds        Refund[]
-  releases       Release[]
+  Admin          Admin?        @relation(fields: [admin_id], references: [admin_id])
+  Car            Car           @relation(fields: [car_id], references: [car_id])
+  Customer       Customer      @relation(fields: [customer_id], references: [customer_id])
+  Driver         Driver?       @relation(fields: [drivers_id], references: [drivers_id])
+  Extension      Extension[]
+  Payment        Payment[]
+  Refund         Refund[]
+  Release        Release[]
   Return         Return[]
-  transactions   Transaction[]
+  Transaction    Transaction[]
+}
+
+model Car {
+  car_id        Int           @id @default(autoincrement())
+  car_img_url   String?
+  car_status    String?
+  license_plate String?
+  make          String?
+  mileage       Int?
+  model         String?
+  no_of_seat    Int
+  rent_price    Int
+  year          Int?
+  car_type      String?
+  hasGPS        Boolean?
+  Booking       Booking[]
+  Maintenance   Maintenance[]
+  Transaction   Transaction[]
+  Waitlist      Waitlist[]
+}
+
+model Customer {
+  customer_id       Int            @id @default(autoincrement())
+  first_name        String
+  last_name         String
+  address           String?
+  contact_no        String?
+  email             String
+  username          String
+  password          String
+  fb_link           String?
+  date_created      DateTime?      @db.Timestamptz(6)
+  status            String?
+  driver_license_no String?
+  isRecUpdate       Int?           @db.SmallInt
+  profile_img_url   String?
+  phone_verified    Boolean?       @default(false)
+  Booking           Booking[]
+  DriverLicense     DriverLicense? @relation(fields: [driver_license_no], references: [driver_license_no])
+  Payment           Payment[]
+  Refund            Refund[]
+  Transaction       Transaction[]
+  Waitlist          Waitlist[]
+}
+
+model Driver {
+  drivers_id        Int           @id @default(autoincrement())
+  first_name        String
+  last_name         String
+  address           String?
+  contact_no        String?
+  email             String
+  username          String
+  password          String
+  driver_license_no String
+  status            String?
+  profile_img_url   String?
+  phone_verified    Boolean?      @default(false)
+  Booking           Booking[]
+  DriverLicense     DriverLicense @relation(fields: [driver_license_no], references: [driver_license_no])
+  Release           Release[]
+}
+
+model DriverLicense {
+  driver_license_no String     @id
+  expiry_date       DateTime?  @db.Timestamptz(6)
+  restrictions      String?
+  dl_img_url        String?
+  Customer          Customer[]
+  Driver            Driver[]
 }
 
 model Extension {
@@ -138,7 +211,37 @@ model Extension {
   booking_id   Int
   old_end_date DateTime  @db.Timestamptz(6)
   new_end_date DateTime? @db.Timestamptz(6)
-  booking      Booking   @relation(fields: [booking_id], references: [booking_id])
+  Booking      Booking   @relation(fields: [booking_id], references: [booking_id])
+}
+
+model Maintenance {
+  maintenance_id         Int       @id @default(autoincrement())
+  car_id                 Int
+  maintenance_start_date DateTime? @db.Timestamptz(6)
+  maintenance_end_date   DateTime? @db.Timestamptz(6)
+  description            String?
+  maintenance_cost       Int?
+  maintenance_shop_name  String?
+  Car                    Car       @relation(fields: [car_id], references: [car_id])
+}
+
+model ManageFees {
+  fee_id   BigInt @id @default(autoincrement())
+  fee_type String
+  amount   Int?
+}
+
+model PasswordResetToken {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  user_type  String
+  email      String
+  token      String   @unique
+  code       String
+  expires_at DateTime @db.Timestamptz(6)
+  used       Boolean  @default(false)
+  created_at DateTime @db.Timestamptz(6)
+  updated_at DateTime @db.Timestamptz(6)
 }
 
 model Payment {
@@ -158,13 +261,15 @@ model Payment {
   verified_by_admin_id Int?
   verification_date    DateTime? @db.Timestamptz(6)
   verification_notes   String?
-  booking              Booking?  @relation(fields: [booking_id], references: [booking_id], onDelete: Restrict)
-  customer             Customer  @relation(fields: [customer_id], references: [customer_id])
+  Booking              Booking?  @relation(fields: [booking_id], references: [booking_id], onDelete: Restrict)
+  Customer             Customer  @relation(fields: [customer_id], references: [customer_id])
   Waitlist             Waitlist? @relation(fields: [waitlist_id], references: [waitlist_id])
 
   @@index([verification_status], map: "idx_payment_verification_status")
 }
 
+<<<<<<< Updated upstream
+=======
 model Refund {
   refund_id     Int       @id @default(autoincrement())
   booking_id    Int
@@ -276,37 +381,21 @@ model Waitlist {
   waitlist_id          Int       @id @default(autoincrement())
   customer_id          Int
   car_id               Int
-  requested_start_date DateTime? @db.Timestamptz(6)
-  requested_end_date   DateTime? @db.Timestamptz(6)
-  purpose              String?
-  pickup_time          String?
-  dropoff_time         String?
-  pickup_location      String?
-  dropoff_location     String?
-  delivery_type        String?
-  is_self_drive        Boolean?  @default(true)
-  selected_driver_id   Int?
-  special_requests     String?
-  total_cost           Int?
   status               String?   @default("waiting")
-  position             Int
-  date_created         DateTime? @db.Timestamptz(6)
   notified_date        DateTime? @db.Timestamptz(6)
-  payment_status       String?   @default("unpaid")
-  paid_date            DateTime? @db.Timestamptz(6)
   created_at           DateTime  @default(now()) @db.Timestamptz(6)
   notification_method  String?
   notification_success Boolean?  @default(false)
   Payment              Payment[]
   Car                  Car       @relation(fields: [car_id], references: [car_id], onDelete: Cascade)
   Customer             Customer  @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
-  Driver               Driver?   @relation(fields: [selected_driver_id], references: [drivers_id])
 
-  @@index([car_id, status, position])
+  @@unique([customer_id, car_id], name: "unique_customer_car_waitlist")
+  @@index([car_id, status])
   @@index([customer_id])
-  @@index([payment_status])
 }
 
+>>>>>>> Stashed changes
 model PhoneVerification {
   id           Int       @id @default(autoincrement())
   phone_number String
@@ -322,6 +411,100 @@ model PhoneVerification {
 
   @@index([expires_at])
   @@index([phone_number, is_verified])
+}
+
+model Refund {
+  refund_id     Int       @id @default(autoincrement())
+  booking_id    Int
+  customer_id   Int
+  refund_method String?
+  gcash_no      String?
+  reference_no  String?
+  refund_amount Int
+  refund_date   DateTime? @db.Timestamptz(6)
+  description   String?
+  Booking       Booking   @relation(fields: [booking_id], references: [booking_id])
+  Customer      Customer  @relation(fields: [customer_id], references: [customer_id])
+}
+
+model Release {
+  release_id        Int      @id @default(autoincrement())
+  booking_id        Int
+  drivers_id        Int
+  valid_id_img1     String?
+  valid_id_img2     String?
+  equipment         String?
+  equip_others      String?
+  gas_level         String?
+  license_presented Boolean? @default(false)
+  front_img         String?
+  back_img          String?
+  right_img         String?
+  left_img          String?
+  Booking           Booking  @relation(fields: [booking_id], references: [booking_id])
+  Driver            Driver   @relation(fields: [drivers_id], references: [drivers_id])
+}
+
+model Return {
+  return_id      BigInt   @id @unique @default(autoincrement())
+  booking_id     Int?
+  damage_check   String?
+  damage_img     String?  @db.VarChar
+  equipment      String?
+  gas_level      String?
+  odometer       BigInt?
+  total_fee      Int?
+  equip_others   String?
+  isClean        Boolean? @default(true)
+  hasStain       Boolean? @default(false)
+  fees_breakdown String?
+  Booking        Booking? @relation(fields: [booking_id], references: [booking_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Transaction {
+  transaction_id    Int       @id @default(autoincrement())
+  booking_id        Int
+  customer_id       Int
+  car_id            Int
+  completion_date   DateTime? @db.Timestamptz(6)
+  cancellation_date DateTime? @db.Timestamptz(6)
+  Booking           Booking   @relation(fields: [booking_id], references: [booking_id])
+  Car               Car       @relation(fields: [car_id], references: [car_id])
+  Customer          Customer  @relation(fields: [customer_id], references: [customer_id])
+}
+
+model VerificationCode {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  user_type    String
+  identifier   String
+  code         String
+  type         String
+  purpose      String
+  attempts     Int      @default(0)
+  max_attempts Int      @default(3)
+  expires_at   DateTime @db.Timestamptz(6)
+  verified     Boolean  @default(false)
+  created_at   DateTime @db.Timestamptz(6)
+  updated_at   DateTime @db.Timestamptz(6)
+}
+
+model Waitlist {
+  waitlist_id          Int       @id @default(autoincrement())
+  customer_id          Int
+  car_id               Int
+  status               String?   @default("waiting")
+  notified_date        DateTime? @db.Timestamptz(6)
+  created_at           DateTime  @default(now()) @db.Timestamptz(6)
+  notification_method  String?
+  notification_success Boolean?  @default(false)
+  Payment              Payment[]
+  Car                  Car       @relation(fields: [car_id], references: [car_id], onDelete: Cascade)
+  Customer             Customer  @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
+
+  @@unique([customer_id, car_id])
+  @@index([car_id, status])
+  @@index([customer_id])
 }
 
 enum damage_level {

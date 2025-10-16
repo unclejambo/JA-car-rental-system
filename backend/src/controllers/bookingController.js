@@ -1,4 +1,5 @@
 import prisma from "../config/prisma.js";
+import { sendBookingSuccessNotification, sendBookingConfirmationNotification, sendPaymentReceivedNotification, sendCancellationApprovedNotification } from "../utils/notificationService.js";
 
 export const getBookings = async (req, res) => {
   try {
@@ -353,8 +354,8 @@ export const createBooking = async (req, res) => {
     const newBooking = await prisma.booking.create({
       data: bookingData,
       include: {
-        customer: { select: { first_name: true, last_name: true } },
-        car: { select: { make: true, model: true, year: true } },
+        customer: { select: { first_name: true, last_name: true, email: true, contact_no: true } },
+        car: { select: { make: true, model: true, year: true, license_plate: true } },
       },
     });
 
@@ -389,6 +390,31 @@ export const createBooking = async (req, res) => {
     } catch (paymentError) {
       console.error("Error creating payment record:", paymentError);
       // Don't fail the booking creation if payment record fails
+    }
+
+    // Send booking success notification to customer
+    try {
+      console.log('📧 Sending booking success notification...');
+      await sendBookingSuccessNotification(
+        newBooking,
+        {
+          customer_id: newBooking.customer_id,
+          first_name: newBooking.customer.first_name,
+          last_name: newBooking.customer.last_name,
+          email: newBooking.customer.email,
+          contact_no: newBooking.customer.contact_no
+        },
+        {
+          make: newBooking.car.make,
+          model: newBooking.car.model,
+          year: newBooking.car.year,
+          license_plate: newBooking.car.license_plate
+        }
+      );
+      console.log('✅ Booking success notification sent');
+    } catch (notificationError) {
+      console.error("Error sending booking notification:", notificationError);
+      // Don't fail the booking creation if notification fails
     }
 
     res.status(201).json({
@@ -850,10 +876,43 @@ export const confirmCancellationRequest = async (req, res) => {
         isCancel: false,
       },
       include: {
-        car: { select: { make: true, model: true, year: true } },
-        customer: { select: { first_name: true, last_name: true } }
+        car: { select: { make: true, model: true, year: true, license_plate: true } },
+        customer: { 
+          select: { 
+            customer_id: true,
+            first_name: true, 
+            last_name: true,
+            email: true,
+            contact_no: true
+          } 
+        }
       },
     });
+
+    // Send cancellation approved notification to customer
+    try {
+      console.log('🚫 Sending cancellation approved notification...');
+      await sendCancellationApprovedNotification(
+        updatedBooking,
+        {
+          customer_id: updatedBooking.customer.customer_id,
+          first_name: updatedBooking.customer.first_name,
+          last_name: updatedBooking.customer.last_name,
+          email: updatedBooking.customer.email,
+          contact_no: updatedBooking.customer.contact_no
+        },
+        {
+          make: updatedBooking.car.make,
+          model: updatedBooking.car.model,
+          year: updatedBooking.car.year,
+          license_plate: updatedBooking.car.license_plate
+        }
+      );
+      console.log('✅ Cancellation approved notification sent');
+    } catch (notificationError) {
+      console.error("Error sending cancellation notification:", notificationError);
+      // Don't fail the cancellation if notification fails
+    }
 
     // Create a transaction record for the cancellation with PH timezone
     try {
@@ -1378,6 +1437,24 @@ export const confirmBooking = async (req, res) => {
       include: {
         payments: {
           select: { amount: true }
+        },
+        customer: { 
+          select: { 
+            customer_id: true,
+            first_name: true, 
+            last_name: true, 
+            email: true, 
+            contact_no: true 
+          } 
+        },
+        car: { 
+          select: { 
+            car_id: true,
+            make: true, 
+            model: true, 
+            year: true, 
+            license_plate: true 
+          } 
         }
       }
     });
@@ -1429,6 +1506,8 @@ export const confirmBooking = async (req, res) => {
       isPay: false  // Always set isPay to false
     };
     
+    let shouldSendConfirmation = false;
+    
     // Determine booking status based on total paid amount
     // Case 1: isPay is TRUE and status is Pending
     if (normalizedStatus === 'pending') {
@@ -1436,6 +1515,7 @@ export const confirmBooking = async (req, res) => {
       // If totalPaid < 1000, keep it Pending
       if (totalPaid >= 1000) {
         updateData.booking_status = 'Confirmed';
+        shouldSendConfirmation = true; // Send confirmation notification
         console.log('Action: Pending -> Confirmed (totalPaid >= 1000), isPay -> false');
       } else {
         updateData.booking_status = 'Pending';
@@ -1467,6 +1547,69 @@ export const confirmBooking = async (req, res) => {
       newStatus: updatedBooking.booking_status,
       newIsPay: updatedBooking.isPay
     });
+
+    // Send payment received notification (for GCash approval)
+    // This happens when admin approves a GCash payment request
+    try {
+      // Get the latest payment for this booking
+      const latestPayment = await prisma.payment.findFirst({
+        where: { booking_id: bookingId },
+        orderBy: { paid_date: 'desc' }
+      });
+
+      if (latestPayment && latestPayment.payment_method === 'GCash') {
+        console.log('💰 Sending payment received notification for GCash approval...');
+        await sendPaymentReceivedNotification(
+          latestPayment,
+          {
+            customer_id: booking.customer.customer_id,
+            first_name: booking.customer.first_name,
+            last_name: booking.customer.last_name,
+            email: booking.customer.email,
+            contact_no: booking.customer.contact_no
+          },
+          {
+            make: booking.car.make,
+            model: booking.car.model,
+            year: booking.car.year,
+            license_plate: booking.car.license_plate
+          },
+          { ...booking, balance: updatedBooking.balance },
+          'gcash'
+        );
+        console.log('✅ GCash payment received notification sent');
+      }
+    } catch (notificationError) {
+      console.error("Error sending payment notification:", notificationError);
+      // Don't fail the confirmation if notification fails
+    }
+
+    // Send booking confirmation notification if booking was just confirmed
+    if (shouldSendConfirmation) {
+      try {
+        console.log('📧 Sending booking confirmation notification...');
+        await sendBookingConfirmationNotification(
+          { ...booking, ...updateData }, // Merge updated data with booking
+          {
+            customer_id: booking.customer.customer_id,
+            first_name: booking.customer.first_name,
+            last_name: booking.customer.last_name,
+            email: booking.customer.email,
+            contact_no: booking.customer.contact_no
+          },
+          {
+            make: booking.car.make,
+            model: booking.car.model,
+            year: booking.car.year,
+            license_plate: booking.car.license_plate
+          }
+        );
+        console.log('✅ Booking confirmation notification sent');
+      } catch (notificationError) {
+        console.error("Error sending confirmation notification:", notificationError);
+        // Don't fail the confirmation if notification fails
+      }
+    }
 
     res.json({
       message: 'Booking confirmed successfully',

@@ -263,6 +263,508 @@ async function sendEmailNotification(email, subject, body) {
 }
 
 /**
+ * Calculate payment deadline based on booking start date
+ * @param {Date} bookingDate - When the booking was created
+ * @param {Date} startDate - When the rental starts
+ * @returns {Object} Deadline info
+ */
+function calculatePaymentDeadline(bookingDate, startDate) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const daysUntilStart = Math.ceil((startDateOnly - today) / (1000 * 60 * 60 * 24));
+  
+  let deadline;
+  let deadlineDescription;
+  
+  if (daysUntilStart === 0) {
+    // Booking start date is TODAY - 1 hour deadline
+    deadline = new Date(bookingDate.getTime() + (1 * 60 * 60 * 1000));
+    deadlineDescription = '1 hour';
+  } else if (daysUntilStart > 0 && daysUntilStart <= 3) {
+    // Booking start date is within 3 days (but not today) - 24 hour deadline
+    deadline = new Date(bookingDate.getTime() + (24 * 60 * 60 * 1000));
+    deadlineDescription = '24 hours';
+  } else {
+    // Booking start date is more than 3 days away - 72 hour (3 day) deadline
+    deadline = new Date(bookingDate.getTime() + (72 * 60 * 60 * 1000));
+    deadlineDescription = '72 hours (3 days)';
+  }
+  
+  return { deadline, deadlineDescription };
+}
+
+/**
+ * Format date to Philippine timezone string
+ * @param {Date} date - Date to format
+ * @returns {String} Formatted date string
+ */
+function formatDatePH(date) {
+  return new Date(date).toLocaleString('en-US', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+/**
+ * Send booking success notification to customer
+ * @param {Object} booking - Booking object with all details
+ * @param {Object} customer - Customer object
+ * @param {Object} car - Car object
+ * @returns {Promise<Object>} Result of notification attempt
+ */
+export async function sendBookingSuccessNotification(booking, customer, car) {
+  const { first_name, contact_no, email, customer_id } = customer;
+  const { make, model, year } = car;
+  const carName = `${make} ${model} (${year})`;
+  
+  console.log(`📬 Sending booking success notification to customer ${customer_id} for booking ${booking.booking_id}`);
+  
+  // Calculate payment deadline
+  const { deadline, deadlineDescription } = calculatePaymentDeadline(
+    booking.booking_date,
+    booking.start_date
+  );
+  
+  const deadlineFormatted = formatDatePH(deadline);
+  const startDateFormatted = formatDatePH(booking.start_date);
+  const endDateFormatted = formatDatePH(booking.end_date);
+  
+  // Build notification messages
+  const smsMessage = `Hi ${first_name}! Your booking for ${carName} is successful! To confirm, pay ₱${booking.balance?.toLocaleString() || booking.total_amount?.toLocaleString()} within ${deadlineDescription} (by ${deadlineFormatted}). Booking ID: ${booking.booking_id}. - JA Car Rental`;
+  
+  const emailSubject = `Booking Successful - ${carName} (Booking #${booking.booking_id})`;
+  const emailBody = `
+Hi ${first_name},
+
+Congratulations! Your booking has been successfully created.
+
+📋 BOOKING DETAILS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Booking ID: ${booking.booking_id}
+Car: ${carName}
+Pickup Date: ${startDateFormatted}
+Return Date: ${endDateFormatted}
+Pickup Location: ${booking.pickup_loc || 'JA Car Rental Office'}
+Drop-off Location: ${booking.dropoff_loc || 'JA Car Rental Office'}
+
+💰 PAYMENT INFORMATION:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total Amount: ₱${booking.total_amount?.toLocaleString() || '0'}
+Amount Due: ₱${booking.balance?.toLocaleString() || booking.total_amount?.toLocaleString() || '0'}
+
+⏰ IMPORTANT - PAYMENT DEADLINE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+To confirm your booking, you must pay at least ₱1,000 (minimum confirmation fee) within ${deadlineDescription}.
+
+Payment Deadline: ${deadlineFormatted}
+
+⚠️ Your booking will be automatically cancelled if payment is not received by the deadline.
+
+📝 NEXT STEPS:
+1. Make a payment of at least ₱1,000 to confirm your booking
+2. Wait for admin confirmation
+3. You'll receive a confirmation notification once payment is verified
+
+For payment instructions or assistance, please contact JA Car Rental.
+
+Thank you for choosing JA Car Rental!
+
+Best regards,
+JA Car Rental Team
+  `;
+  
+  const results = {
+    success: false,
+    sms: null,
+    email: null,
+    method: null
+  };
+  
+  try {
+    // Always send both SMS and Email for booking notifications
+    console.log(`   → Sending SMS to ${contact_no} and Email to ${email}`);
+    const promises = [];
+    
+    if (contact_no) {
+      promises.push(sendSMSNotification(contact_no, smsMessage));
+    }
+    if (email) {
+      promises.push(sendEmailNotification(email, emailSubject, emailBody));
+    }
+    
+    if (promises.length > 0) {
+      const results_array = await Promise.allSettled(promises);
+      
+      results.sms = contact_no ? results_array[0]?.value || null : null;
+      results.email = email ? results_array[contact_no ? 1 : 0]?.value || null : null;
+      results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+      results.method = 'Both';
+    } else {
+      console.log(`   ⚠️  No contact info available for customer ${customer_id}`);
+      results.success = false;
+      results.error = 'No contact information';
+    }
+    
+    if (results.success) {
+      console.log(`   ✅ Booking notification sent successfully`);
+    } else {
+      console.log(`   ❌ Failed to send booking notification: ${results.error || 'Unknown error'}`);
+    }
+    
+    return results;
+  } catch (error) {
+    console.error(`   ❌ Error sending booking notification:`, error);
+    return { 
+      success: false, 
+      error: error.message,
+      sms: null,
+      email: null
+    };
+  }
+}
+
+/**
+ * Send booking confirmation notification to customer (after payment)
+ * @param {Object} booking - Booking object with all details
+ * @param {Object} customer - Customer object
+ * @param {Object} car - Car object
+ * @returns {Promise<Object>} Result of notification attempt
+ */
+export async function sendBookingConfirmationNotification(booking, customer, car) {
+  const { first_name, contact_no, email, customer_id } = customer;
+  const { make, model, year, license_plate } = car;
+  const carName = `${make} ${model} (${year})`;
+  
+  console.log(`📬 Sending booking confirmation notification to customer ${customer_id} for booking ${booking.booking_id}`);
+  
+  const startDateFormatted = formatDatePH(booking.start_date);
+  const endDateFormatted = formatDatePH(booking.end_date);
+  
+  // Build notification messages
+  const smsMessage = `Hi ${first_name}! Your booking for ${carName} is now CONFIRMED! Pickup: ${startDateFormatted}. Booking ID: ${booking.booking_id}. See you soon! - JA Car Rental`;
+  
+  const emailSubject = `Booking Confirmed - ${carName} (Booking #${booking.booking_id})`;
+  const emailBody = `
+Hi ${first_name},
+
+Great news! Your booking has been CONFIRMED. 🎉
+
+📋 CONFIRMED BOOKING DETAILS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Booking ID: ${booking.booking_id}
+Status: ✅ CONFIRMED
+
+🚗 VEHICLE INFORMATION:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Car: ${carName}
+${license_plate ? `Plate Number: ${license_plate}` : ''}
+
+📅 RENTAL PERIOD:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Pickup Date & Time: ${startDateFormatted}
+Return Date & Time: ${endDateFormatted}
+
+📍 LOCATION:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Pickup Location: ${booking.pickup_loc || 'JA Car Rental Office'}
+Drop-off Location: ${booking.dropoff_loc || 'JA Car Rental Office'}
+
+💰 PAYMENT STATUS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total Amount: ₱${booking.total_amount?.toLocaleString() || '0'}
+Amount Paid: ₱${((booking.total_amount || 0) - (booking.balance || 0))?.toLocaleString() || '0'}
+Remaining Balance: ₱${booking.balance?.toLocaleString() || '0'}
+
+📝 WHAT'S NEXT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Arrive at the pickup location on the scheduled date and time
+2. Bring a valid driver's license and ID
+${booking.balance > 0 ? `3. Pay the remaining balance of ₱${booking.balance?.toLocaleString()} upon pickup` : ''}
+
+${booking.balance > 0 ? `💡 TIP: You can pay the remaining balance online before pickup for a faster process.` : ''}
+
+If you need to make any changes to your booking or have questions, please contact us.
+
+We look forward to serving you!
+
+Best regards,
+JA Car Rental Team
+  `;
+  
+  const results = {
+    success: false,
+    sms: null,
+    email: null,
+    method: null
+  };
+  
+  try {
+    // Always send both SMS and Email for confirmation notifications
+    console.log(`   → Sending SMS to ${contact_no} and Email to ${email}`);
+    const promises = [];
+    
+    if (contact_no) {
+      promises.push(sendSMSNotification(contact_no, smsMessage));
+    }
+    if (email) {
+      promises.push(sendEmailNotification(email, emailSubject, emailBody));
+    }
+    
+    if (promises.length > 0) {
+      const results_array = await Promise.allSettled(promises);
+      
+      results.sms = contact_no ? results_array[0]?.value || null : null;
+      results.email = email ? results_array[contact_no ? 1 : 0]?.value || null : null;
+      results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+      results.method = 'Both';
+    } else {
+      console.log(`   ⚠️  No contact info available for customer ${customer_id}`);
+      results.success = false;
+      results.error = 'No contact information';
+    }
+    
+    if (results.success) {
+      console.log(`   ✅ Confirmation notification sent successfully`);
+    } else {
+      console.log(`   ❌ Failed to send confirmation notification: ${results.error || 'Unknown error'}`);
+    }
+    
+    return results;
+  } catch (error) {
+    console.error(`   ❌ Error sending confirmation notification:`, error);
+    return { 
+      success: false, 
+      error: error.message,
+      sms: null,
+      email: null
+    };
+  }
+}
+
+/**
+ * Send payment received notification (for GCash approval or Cash payment)
+ * @param {Object} payment - Payment object with details
+ * @param {Object} customer - Customer object
+ * @param {Object} car - Car object
+ * @param {Object} booking - Booking object
+ * @param {string} paymentType - Type of payment ('gcash' or 'cash')
+ * @returns {Promise<Object>} Result of notification attempt
+ */
+export async function sendPaymentReceivedNotification(payment, customer, car, booking, paymentType = 'payment') {
+  const { first_name, contact_no, email, customer_id } = customer;
+  const { make, model, year, license_plate } = car;
+  const { booking_id, start_date, end_date, total_amount, balance } = booking;
+  
+  console.log(`💰 Sending payment received notification for booking ${booking_id}`);
+  console.log(`   Payment type: ${paymentType}, Amount: ₱${payment.amount}`);
+  
+  // Build notification messages
+  const carName = `${make} ${model} (${year})`;
+  const paymentMethodText = paymentType === 'gcash' ? 'GCash' : 'Cash';
+  const startDateFormatted = formatDatePH(start_date);
+  const endDateFormatted = formatDatePH(end_date);
+  
+  // SMS Message (keep it concise)
+  const smsMessage = `Hi ${first_name}! We've received your ${paymentMethodText} payment of ₱${payment.amount.toLocaleString()} for your ${carName} booking (${startDateFormatted} to ${endDateFormatted}). Remaining balance: ₱${balance.toLocaleString()}. Thank you! - JA Car Rental`;
+  
+  // Email
+  const emailSubject = `Payment Received - ₱${payment.amount.toLocaleString()} for ${carName}`;
+  const emailBody = `
+    Hi ${first_name},
+    
+    We are pleased to confirm that we have received your payment for your car rental booking.
+    
+    PAYMENT DETAILS:
+    - Amount Received: ₱${payment.amount.toLocaleString()}
+    - Payment Method: ${paymentMethodText}
+    ${payment.reference_no ? `- Reference Number: ${payment.reference_no}` : ''}
+    - Payment Date: ${formatDatePH(payment.paid_date || new Date())}
+    
+    BOOKING DETAILS:
+    - Booking ID: #${booking_id}
+    - Vehicle: ${carName}
+    - Plate Number: ${license_plate || 'TBA'}
+    - Pickup Date: ${startDateFormatted}
+    - Return Date: ${endDateFormatted}
+    
+    PAYMENT SUMMARY:
+    - Total Amount: ₱${total_amount.toLocaleString()}
+    - Amount Paid: ₱${(total_amount - balance).toLocaleString()}
+    - Remaining Balance: ₱${balance.toLocaleString()}
+    ${balance > 0 ? '\n    ⚠️ Please pay the remaining balance before your pickup date.' : '\n    ✅ Your booking is fully paid!'}
+    
+    ${balance > 0 
+      ? 'You can pay the remaining balance via GCash or cash on the day of pickup.' 
+      : 'Your booking is now fully confirmed. We look forward to serving you!'}
+    
+    If you have any questions about your payment or booking, please don't hesitate to contact us.
+    
+    Thank you for choosing JA Car Rental!
+    
+    Best regards,
+    JA Car Rental Team
+  `;
+  
+  const results = {
+    success: false,
+    sms: null,
+    email: null,
+    method: null
+  };
+  
+  try {
+    // Always send both SMS and Email for payment confirmations
+    console.log(`   → Sending SMS to ${contact_no} and Email to ${email}`);
+    const promises = [];
+    
+    if (contact_no) {
+      promises.push(sendSMSNotification(contact_no, smsMessage));
+    }
+    if (email) {
+      promises.push(sendEmailNotification(email, emailSubject, emailBody));
+    }
+    
+    if (promises.length > 0) {
+      const results_array = await Promise.allSettled(promises);
+      
+      results.sms = contact_no ? results_array[0]?.value || null : null;
+      results.email = email ? results_array[contact_no ? 1 : 0]?.value || null : null;
+      results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+      results.method = 'Both';
+    } else {
+      console.log(`   ⚠️  No contact info available for customer ${customer_id}`);
+      results.success = false;
+      results.error = 'No contact information';
+    }
+    
+    if (results.success) {
+      console.log(`   ✅ Payment received notification sent successfully`);
+    } else {
+      console.log(`   ❌ Failed to send payment notification: ${results.error || 'Unknown error'}`);
+    }
+    
+    return results;
+  } catch (error) {
+    console.error(`   ❌ Error sending payment notification:`, error);
+    return { 
+      success: false, 
+      error: error.message,
+      sms: null,
+      email: null
+    };
+  }
+}
+
+/**
+ * Send cancellation approved notification
+ * @param {Object} booking - Booking object with details
+ * @param {Object} customer - Customer object
+ * @param {Object} car - Car object
+ * @returns {Promise<Object>} Result of notification attempt
+ */
+export async function sendCancellationApprovedNotification(booking, customer, car) {
+  const { first_name, contact_no, email, customer_id } = customer;
+  const { make, model, year, license_plate } = car;
+  const { booking_id, start_date, end_date, total_amount } = booking;
+  
+  console.log(`🚫 Sending cancellation approved notification for booking ${booking_id}`);
+  
+  // Build notification messages
+  const carName = `${make} ${model} (${year})`;
+  const startDateFormatted = formatDatePH(start_date);
+  const endDateFormatted = formatDatePH(end_date);
+  
+  // SMS Message (keep it concise)
+  const smsMessage = `Hi ${first_name}! Your cancellation request for ${carName} (${startDateFormatted} to ${endDateFormatted}) has been approved. Any applicable refunds will be processed shortly. - JA Car Rental`;
+  
+  // Email
+  const emailSubject = `Cancellation Approved - ${carName} Booking`;
+  const emailBody = `
+    Hi ${first_name},
+    
+    Your booking cancellation request has been approved.
+    
+    CANCELLED BOOKING DETAILS:
+    - Booking ID: #${booking_id}
+    - Vehicle: ${carName}
+    - Plate Number: ${license_plate || 'TBA'}
+    - Original Pickup Date: ${startDateFormatted}
+    - Original Return Date: ${endDateFormatted}
+    - Total Amount: ₱${total_amount.toLocaleString()}
+    
+    WHAT'S NEXT:
+    - Your booking has been officially cancelled
+    - If you made any payments, our team will review your refund eligibility
+    - Refunds (if applicable) will be processed within 5-7 business days
+    - You will receive a separate notification once the refund is processed
+    
+    REBOOKING:
+    You're always welcome to book with us again! Visit our website to check available vehicles for your next trip.
+    
+    If you have any questions about your cancellation or refund, please don't hesitate to contact us.
+    
+    We hope to serve you again in the future!
+    
+    Best regards,
+    JA Car Rental Team
+  `;
+  
+  const results = {
+    success: false,
+    sms: null,
+    email: null,
+    method: null
+  };
+  
+  try {
+    // Always send both SMS and Email for cancellation confirmations
+    console.log(`   → Sending SMS to ${contact_no} and Email to ${email}`);
+    const promises = [];
+    
+    if (contact_no) {
+      promises.push(sendSMSNotification(contact_no, smsMessage));
+    }
+    if (email) {
+      promises.push(sendEmailNotification(email, emailSubject, emailBody));
+    }
+    
+    if (promises.length > 0) {
+      const results_array = await Promise.allSettled(promises);
+      
+      results.sms = contact_no ? results_array[0]?.value || null : null;
+      results.email = email ? results_array[contact_no ? 1 : 0]?.value || null : null;
+      results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+      results.method = 'Both';
+    } else {
+      console.log(`   ⚠️  No contact info available for customer ${customer_id}`);
+      results.success = false;
+      results.error = 'No contact information';
+    }
+    
+    if (results.success) {
+      console.log(`   ✅ Cancellation approved notification sent successfully`);
+    } else {
+      console.log(`   ❌ Failed to send cancellation notification: ${results.error || 'Unknown error'}`);
+    }
+    
+    return results;
+  } catch (error) {
+    console.error(`   ❌ Error sending cancellation notification:`, error);
+    return { 
+      success: false, 
+      error: error.message,
+      sms: null,
+      email: null
+    };
+  }
+}
+
+/**
  * Send test notification (for debugging)
  * @param {Object} params - Test parameters
  */

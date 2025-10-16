@@ -634,13 +634,13 @@ function CustomerBookings() {
                         component="div"
                         sx={{
                           width: { xs: '100%', sm: 120 },
-                          height: { xs: 160, sm: 'auto' },
+                          height: { xs: 160, sm: 120 },
                           minWidth: { xs: 'auto', sm: 120 },
                           backgroundColor: '#f5f5f5',
                           backgroundImage: booking.car_details.image_url
                             ? `url(${booking.car_details.image_url})`
                             : 'none',
-                          backgroundSize: 'contain',
+                          backgroundSize: 'cover',
                           backgroundRepeat: 'no-repeat',
                           backgroundPosition: 'center',
                           display: 'flex',

@@ -924,6 +924,7 @@ function CustomerCars() {
                           sx={{
                             display: 'flex',
                             justifyContent: 'center',
+                            alignItems: 'stretch',
                           }}
                         >
                           <Card
@@ -932,6 +933,7 @@ function CustomerCars() {
                               maxWidth: 380,
                               minWidth: 300,
                               height: '100%',
+                              minHeight: 450,
                               display: 'flex',
                               flexDirection: 'column',
                               justifyContent: 'space-between',
@@ -964,9 +966,9 @@ function CustomerCars() {
                               sx={{
                                 width: '100%',
                                 height: 200,
-                                objectFit: 'contain',
+                                objectFit: 'cover',
                                 backgroundColor: '#f9f9f9',
-                                p: 2,
+                                p: 0,
                                 borderTopLeftRadius: 12,
                                 borderTopRightRadius: 12,
                               }}

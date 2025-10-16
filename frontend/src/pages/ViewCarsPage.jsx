@@ -161,6 +161,7 @@ function ViewCarsPage() {
                         sx={{
                           display: 'flex',
                           justifyContent: 'center',
+                          alignItems: 'stretch',
                         }}
                       >
                         <Card
@@ -169,6 +170,7 @@ function ViewCarsPage() {
                             maxWidth: 380, // ✅ Consistent card width
                             minWidth: 300, // ✅ Prevents shrinking too much on small devices
                             height: '100%', // ✅ Makes all cards equal height
+                            minHeight: 450,
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'space-between',
@@ -191,9 +193,9 @@ function ViewCarsPage() {
                             sx={{
                               width: '100%',
                               height: 200,
-                              objectFit: 'contain',
+                              objectFit: 'cover',
                               backgroundColor: '#f9f9f9',
-                              p: 2,
+                              p: 0,
                               borderTopLeftRadius: 12,
                               borderTopRightRadius: 12,
                             }}

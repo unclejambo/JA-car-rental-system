@@ -1,8 +1,9 @@
 /**
  * Format currency for display
+ * Using 'PHP' instead of '₱' to avoid encoding issues in CSV files
  */
 const formatCurrency = (amount) => {
-  return `₱ ${Number(amount || 0).toLocaleString('en-US', {
+  return `PHP ${Number(amount || 0).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -111,8 +112,9 @@ export const generateTransactionCSV = (activeTab, rows) => {
     ...dataRows.map(row => row.map(escapeCSVField).join(','))
   ].join('\n');
 
-  // Create blob and download
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  // Create blob and download with UTF-8 BOM for better Excel compatibility
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
   
@@ -220,8 +222,9 @@ export const generateAnalyticsCSV = (params) => {
 
   const csvContent = csvLines.join('\n');
 
-  // Create blob and download
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  // Create blob and download with UTF-8 BOM for better Excel compatibility
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
   

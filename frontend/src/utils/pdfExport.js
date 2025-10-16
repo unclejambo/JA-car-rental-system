@@ -3,9 +3,10 @@ import autoTable from 'jspdf-autotable';
 
 /**
  * Format currency for display
+ * Using 'PHP' prefix for consistency across all export formats
  */
 const formatCurrency = (amount) => {
-  return `₱ ${Number(amount || 0).toLocaleString('en-US', {
+  return `PHP ${Number(amount || 0).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;

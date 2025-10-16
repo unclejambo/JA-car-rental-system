@@ -348,7 +348,7 @@ const AdminScheduleTable = ({
       }
 
       // Show return button if today is end date and status is 'Ongoing'
-      if ('2025-10-14' === endDate && params.row.status === 'In Progress') {
+      if (today === endDate && params.row.status === 'In Progress') {
         return (
           <Button
             variant="contained"

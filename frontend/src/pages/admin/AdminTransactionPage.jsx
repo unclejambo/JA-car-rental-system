@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
+import { FaFileCsv } from 'react-icons/fa';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
 import { HiDocumentCurrencyDollar } from 'react-icons/hi2';
@@ -14,6 +15,7 @@ import { useTransactionStore } from '../../store/transactions';
 import AddPaymentModal from '../../ui/components/modal/AddPaymentModal';
 import AddRefundModal from '../../ui/components/modal/AddRefundModal';
 import { generateTransactionPDF } from '../../utils/pdfExport';
+import { generateTransactionCSV } from '../../utils/csvExport';
 
 export default function AdminTransactionPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -118,6 +120,11 @@ export default function AdminTransactionPage() {
   // Handle PDF download
   const handleDownloadPDF = () => {
     generateTransactionPDF(activeTab, rows);
+  };
+
+  // Handle CSV download
+  const handleDownloadCSV = () => {
+    generateTransactionCSV(activeTab, rows);
   };
 
   // Initial & on-tab-change data loader
@@ -339,6 +346,54 @@ export default function AdminTransactionPage() {
                 >
                   Download PDF
                 </Button>
+                
+                {/* Download CSV Button */}
+                <Button
+                  variant="outlined"
+                  startIcon={
+                    <FaFileCsv
+                      style={{ width: '18px', height: '18px', marginTop: '-2px' }}
+                    />
+                  }
+                  onClick={handleDownloadCSV}
+                  disabled={!rows || rows.length === 0}
+                  sx={{
+                    color: '#fff',
+                    p: 1,
+                    pb: 0.5,
+                    height: 36,
+                    border: 'none',
+                    backgroundColor: '#2e7d32',
+                    whiteSpace: 'nowrap',
+                    minWidth: 'auto',
+                    '&:hover': {
+                      backgroundColor: '#1b5e20',
+                      color: '#fff',
+                      fontWeight: 600,
+                      boxShadow: 'none',
+                    },
+                    '&:disabled': {
+                      backgroundColor: '#ccc',
+                      color: '#666',
+                    },
+                    '@media (max-width: 600px)': {
+                      height: 32,
+                      fontSize: '0.7rem',
+                      px: 0.75,
+                      py: 0.5,
+                      '& .MuiButton-startIcon': {
+                        marginRight: '2px',
+                      },
+                      '& svg': {
+                        width: '14px',
+                        height: '14px',
+                      },
+                    },
+                  }}
+                >
+                  Download CSV
+                </Button>
+                
                 {activeTab === 'PAYMENT' && (
                 <Button
                   variant="outlined"

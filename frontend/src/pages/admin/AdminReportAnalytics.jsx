@@ -1,12 +1,14 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Box, Typography, Select, MenuItem, Chip, Stack, Button } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
+import { FaFileCsv } from 'react-icons/fa';
 import Header from '../../ui/components/Header';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import { HiChartBar } from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 import { generateAnalyticsPDF } from '../../utils/pdfExport';
+import { generateAnalyticsCSV } from '../../utils/csvExport';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -407,6 +409,23 @@ export default function AdminReportAnalytics() {
     });
   };
 
+  const handleDownloadCSV = () => {
+    generateAnalyticsCSV({
+      primaryView,
+      period,
+      selectedYear,
+      selectedQuarter,
+      selectedMonthIndex,
+      chartData,
+      chartLabels,
+      totalIncome,
+      totalMaintenance,
+      totalRefunds,
+      maintenanceData,
+      refundsData,
+    });
+  };
+
   // Line dataset builder
   const lineData = useMemo(() => {
     // Use the chart labels that have been set based on the period
@@ -637,52 +656,107 @@ export default function AdminReportAnalytics() {
                 REPORT & ANALYTICS
               </Typography>
               
-              {/* Download PDF Button */}
-              <Button
-                variant="outlined"
-                startIcon={
-                  <DownloadIcon
-                    sx={{ width: '18px', height: '18px', mt: '-2px' }}
-                  />
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 1,
+                '@media (max-width: 600px)': {
+                  flexWrap: 'wrap',
                 }
-                onClick={handleDownloadPDF}
-                disabled={!chartData || chartData.length === 0}
-                sx={{
-                  color: '#fff',
-                  p: 1,
-                  pb: 0.5,
-                  height: 36,
-                  border: 'none',
-                  backgroundColor: '#1976d2',
-                  whiteSpace: 'nowrap',
-                  minWidth: 'auto',
-                  '&:hover': {
-                    backgroundColor: '#1565c0',
+              }}>
+                {/* Download PDF Button */}
+                <Button
+                  variant="outlined"
+                  startIcon={
+                    <DownloadIcon
+                      sx={{ width: '18px', height: '18px', mt: '-2px' }}
+                    />
+                  }
+                  onClick={handleDownloadPDF}
+                  disabled={!chartData || chartData.length === 0}
+                  sx={{
                     color: '#fff',
-                    fontWeight: 600,
-                    boxShadow: 'none',
-                  },
-                  '&:disabled': {
-                    backgroundColor: '#ccc',
-                    color: '#666',
-                  },
-                  '@media (max-width: 600px)': {
-                    height: 32,
-                    fontSize: '0.75rem',
-                    px: 1,
-                    py: 0.5,
-                    '& .MuiButton-startIcon': {
-                      marginRight: '4px',
+                    p: 1,
+                    pb: 0.5,
+                    height: 36,
+                    border: 'none',
+                    backgroundColor: '#1976d2',
+                    whiteSpace: 'nowrap',
+                    minWidth: 'auto',
+                    '&:hover': {
+                      backgroundColor: '#1565c0',
+                      color: '#fff',
+                      fontWeight: 600,
+                      boxShadow: 'none',
                     },
-                    '& .MuiSvgIcon-root': {
-                      width: '16px',
-                      height: '16px',
+                    '&:disabled': {
+                      backgroundColor: '#ccc',
+                      color: '#666',
                     },
-                  },
-                }}
-              >
-                Download PDF
-              </Button>
+                    '@media (max-width: 600px)': {
+                      height: 32,
+                      fontSize: '0.75rem',
+                      px: 1,
+                      py: 0.5,
+                      '& .MuiButton-startIcon': {
+                        marginRight: '4px',
+                      },
+                      '& .MuiSvgIcon-root': {
+                        width: '16px',
+                        height: '16px',
+                      },
+                    },
+                  }}
+                >
+                  Download PDF
+                </Button>
+                
+                {/* Download CSV Button */}
+                <Button
+                  variant="outlined"
+                  startIcon={
+                    <FaFileCsv
+                      style={{ width: '18px', height: '18px', marginTop: '-2px' }}
+                    />
+                  }
+                  onClick={handleDownloadCSV}
+                  disabled={!chartData || chartData.length === 0}
+                  sx={{
+                    color: '#fff',
+                    p: 1,
+                    pb: 0.5,
+                    height: 36,
+                    border: 'none',
+                    backgroundColor: '#2e7d32',
+                    whiteSpace: 'nowrap',
+                    minWidth: 'auto',
+                    '&:hover': {
+                      backgroundColor: '#1b5e20',
+                      color: '#fff',
+                      fontWeight: 600,
+                      boxShadow: 'none',
+                    },
+                    '&:disabled': {
+                      backgroundColor: '#ccc',
+                      color: '#666',
+                    },
+                    '@media (max-width: 600px)': {
+                      height: 32,
+                      fontSize: '0.75rem',
+                      px: 1,
+                      py: 0.5,
+                      '& .MuiButton-startIcon': {
+                        marginRight: '4px',
+                      },
+                      '& svg': {
+                        width: '16px',
+                        height: '16px',
+                      },
+                    },
+                  }}
+                >
+                  Download CSV
+                </Button>
+              </Box>
             </Box>
                 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>

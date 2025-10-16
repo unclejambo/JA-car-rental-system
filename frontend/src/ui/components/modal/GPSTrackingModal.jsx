@@ -72,9 +72,6 @@ console.log('  Token preview:', FLESPI_CONFIG.token?.substring(0, 30) + '...');
 console.log('  Device ID:', FLESPI_CONFIG.deviceId);
 console.log('  Base URL:', FLESPI_CONFIG.baseUrl);
 
-// Cars with GPS installed (hardcoded for now - move to database later)
-const CARS_WITH_GPS = [4]; // Car ID 4 has GPS installed
-
 function TabPanel({ children, value, index, ...other }) {
   return (
     <div
@@ -100,20 +97,53 @@ const GPSTrackingModal = ({ open, onClose, booking }) => {
   const [route, setRoute] = useState([]);
   const [selectedPoint, setSelectedPoint] = useState(null); // For showing map of selected point
 
-  // Extract car ID from various possible field names
+  // Extract car ID and GPS status from booking data
   const carId = booking?.car_id || booking?.carId || booking?.car?.car_id || null;
-  
-  // 🧪 TESTING FALLBACK: If no car ID found, use Car ID 4 for testing
-  const effectiveCarId = carId || 4;
+  const hasGPSFromDB = booking?.car?.hasGPS || booking?.hasGPS || false;
   
   // Debug: Log booking data to see what's available
   console.log('📦 GPS Modal - Booking data received:', booking);
   console.log('🚗 Extracted car ID:', carId);
-  console.log('📦 Car object:', booking?.car);
-  console.log('🧪 Effective car ID (with fallback):', effectiveCarId);
+  console.log('� Has GPS from DB:', hasGPSFromDB);
+  console.log('�📦 Car object:', booking?.car);
   console.log('🔍 Available fields:', Object.keys(booking || {}));
   
-  const hasGPS = CARS_WITH_GPS.includes(effectiveCarId);
+  // Only allow GPS tracking if car ID exists and car has GPS enabled
+  const hasGPS = carId && hasGPSFromDB;
+  
+  // If no car ID, show error
+  if (!carId) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle>GPS Tracking Error</DialogTitle>
+        <DialogContent>
+          <Alert severity="error">
+            Unable to identify car for GPS tracking. Car ID is missing from booking data.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+  
+  // If car doesn't have GPS, show error
+  if (!hasGPSFromDB) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle>GPS Not Available</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning">
+            Car ID {carId} does not have GPS tracking enabled. Please contact administrator to enable GPS for this vehicle.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
 
   // Fetch latest GPS position from messages (using messages endpoint instead of telemetry due to CORS)
   const fetchLivePosition = async () => {
@@ -242,7 +272,7 @@ const GPSTrackingModal = ({ open, onClose, booking }) => {
   // Initial data fetch
   useEffect(() => {
     if (open && hasGPS) {
-      console.log('🚗 GPS Modal Opened for Car ID:', effectiveCarId);
+      console.log('🚗 GPS Modal Opened for Car ID:', carId);
       console.log('  Original car ID from booking:', carId);
       console.log('  Booking data:', booking);
       console.log('  Has GPS:', hasGPS);
@@ -262,9 +292,8 @@ const GPSTrackingModal = ({ open, onClose, booking }) => {
       };
     } else if (open && !hasGPS) {
       console.log('⚠️ GPS Modal opened but car does not have GPS');
-      console.log('  Car ID:', effectiveCarId);
-      console.log('  Original car ID:', carId);
-      console.log('  Cars with GPS:', CARS_WITH_GPS);
+      console.log('  Car ID:', carId);
+      console.log('  Booking:', booking);
     }
   }, [open, hasGPS]);
 
@@ -336,7 +365,7 @@ const GPSTrackingModal = ({ open, onClose, booking }) => {
       <DialogTitle sx={{ bgcolor: '#1976d2', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
         <HiLocationMarker size={24} />
         <Typography variant="h6" component="span">
-          GPS Tracking - {booking?.car?.make || 'Car'} {booking?.car?.model || ''} {booking?.car?.license_plate ? `(${booking.car.license_plate})` : `(Car ID ${effectiveCarId})`}
+          GPS Tracking - {booking?.car?.make || 'Car'} {booking?.car?.model || ''} {booking?.car?.license_plate ? `(${booking.car.license_plate})` : `(Car ID ${carId})`}
         </Typography>
       </DialogTitle>
 

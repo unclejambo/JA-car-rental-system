@@ -274,6 +274,7 @@ export const updateCar = async (req, res) => {
       car_status,
       car_img_url,
       mileage,
+      hasGPS,
     } = req.body;
 
     let imageUrl = car_img_url;
@@ -347,6 +348,7 @@ export const updateCar = async (req, res) => {
     if (car_status !== undefined) updateData.car_status = car_status;
     if (imageUrl !== undefined) updateData.car_img_url = imageUrl;
     if (mileage !== undefined) updateData.mileage = mileage ? parseFloat(mileage) : null;
+    if (hasGPS !== undefined) updateData.hasGPS = hasGPS === true || hasGPS === 'true';
 
     const updatedCar = await prisma.car.update({
       where: { car_id: carId },

@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import { FaFileCsv } from 'react-icons/fa';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
 import { HiDocumentCurrencyDollar } from 'react-icons/hi2';
@@ -15,6 +18,7 @@ import { useTransactionStore } from '../../store/transactions';
 import AddPaymentModal from '../../ui/components/modal/AddPaymentModal';
 import AddRefundModal from '../../ui/components/modal/AddRefundModal';
 import { generateTransactionPDF } from '../../utils/pdfExport';
+import { generateTransactionCSV } from '../../utils/csvExport';
 
 export default function AdminTransactionPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -174,9 +178,28 @@ export default function AdminTransactionPage() {
   const openAddRefundModal = () => setShowAddRefundModal(true);
   const closeAddRefundModal = () => setShowAddRefundModal(false);
 
+  // Download menu state
+  const [downloadAnchorEl, setDownloadAnchorEl] = useState(null);
+  const downloadMenuOpen = Boolean(downloadAnchorEl);
+
+  const handleDownloadClick = (event) => {
+    setDownloadAnchorEl(event.currentTarget);
+  };
+
+  const handleDownloadClose = () => {
+    setDownloadAnchorEl(null);
+  };
+
   // Handle PDF download
   const handleDownloadPDF = () => {
     generateTransactionPDF(activeTab, rows);
+    handleDownloadClose();
+  };
+
+  // Handle CSV download
+  const handleDownloadCSV = () => {
+    generateTransactionCSV(activeTab, rows);
+    handleDownloadClose();
   };
 
   // Initial & on-tab-change data loader
@@ -350,36 +373,78 @@ export default function AdminTransactionPage() {
                     />
                     {activeTab}
                   </Typography>
-                  {/* Download PDF Button */}
-                  <Button
-                    variant="outlined"
-                    onClick={handleDownloadPDF}
-                    disabled={!rows || rows.length === 0}
-                    sx={{
-                      color: '#000',
-                      p: 0,
-                      py: 0,
-                      height: { xs: 30, sm: 32, md: 36 },
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      minWidth: 'auto',
-                      '&:hover': {
-                        backgroundColor: 'transparent',
-                        color: 'grey',
-                        boxShadow: 'none',
-                      },
-                      '&:disabled': {
-                        color: '#666',
-                      },
-                    }}
-                  >
-                    <DownloadIcon
+                  {/* Download Button with Dropdown */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                    <Button
+                      variant="outlined"
+                      onClick={handleDownloadClick}
+                      disabled={!rows || rows.length === 0}
                       sx={{
-                        width: { xs: '18px', sm: '26px' },
-                        height: { xs: '18px', sm: '26px' },
+                        color: '#000',
+                        p: 0,
+                        py: 0,
+                        pr: 0.5,
+                        height: { xs: 30, sm: 32, md: 36 },
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        minWidth: 'auto',
+                        '&:hover': {
+                          backgroundColor: 'transparent',
+                          color: 'grey',
+                          boxShadow: 'none',
+                        },
+                        '&:disabled': {
+                          color: '#666',
+                        },
                       }}
-                    />
-                  </Button>
+                    >
+                      <DownloadIcon
+                        sx={{
+                          width: { xs: '18px', sm: '26px' },
+                          height: { xs: '18px', sm: '26px' },
+                        }}
+                      />
+                      <ArrowDropDownIcon
+                        sx={{
+                          width: { xs: '16px', sm: '20px' },
+                          height: { xs: '16px', sm: '20px' },
+                          ml: -0.5,
+                        }}
+                      />
+                    </Button>
+                    <Menu
+                      anchorEl={downloadAnchorEl}
+                      open={downloadMenuOpen}
+                      onClose={handleDownloadClose}
+                      anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'left',
+                      }}
+                      transformOrigin={{
+                        vertical: 'top',
+                        horizontal: 'left',
+                      }}
+                      sx={{
+                        '& .MuiPaper-root': {
+                          minWidth: '150px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                        },
+                      }}
+                    >
+                      <MenuItem onClick={handleDownloadPDF}>
+                        <ListItemIcon>
+                          <PictureAsPdfIcon fontSize="small" sx={{ color: '#d32f2f' }} />
+                        </ListItemIcon>
+                        <ListItemText>PDF</ListItemText>
+                      </MenuItem>
+                      <MenuItem onClick={handleDownloadCSV}>
+                        <ListItemIcon>
+                          <FaFileCsv style={{ fontSize: '18px', color: '#2e7d32' }} />
+                        </ListItemIcon>
+                        <ListItemText>CSV</ListItemText>
+                      </MenuItem>
+                    </Menu>
+                  </Box>
                 </Box>
                 <Box
                   sx={{

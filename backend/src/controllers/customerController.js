@@ -231,7 +231,7 @@ export const updateCustomer = async (req, res) => {
 export const getCurrentCustomer = async (req, res) => {
   try {
     // req.user is set by authMiddleware
-    const customerId = req.user?.customer_id || req.user?.id;
+    const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
     
     if (!customerId) {
       return res.status(401).json({ error: "Unauthorized - No customer ID found" });

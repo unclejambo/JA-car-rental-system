@@ -284,9 +284,9 @@ model Waitlist {
   Car                  Car       @relation(fields: [car_id], references: [car_id], onDelete: Cascade)
   Customer             Customer  @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
 
-  @@unique([customer_id, car_id])
-  @@index([customer_id])
+  @@unique([customer_id, car_id], name: "unique_customer_car_waitlist")
   @@index([car_id, status])
+  @@index([customer_id])
 }
 
 model PhoneVerification {

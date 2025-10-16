@@ -24,7 +24,7 @@ export const getSchedules = async (req, res) => {
           select: { first_name: true, last_name: true },
         },
         car: {
-          select: { car_id: true, make: true, model: true, hasGPS: true },
+          select: { car_id: true, make: true, model: true, hasGPS: true, license_plate: true },
         },
       },
       orderBy: { start_date: "desc" },
@@ -47,6 +47,7 @@ export const getSchedules = async (req, res) => {
       car_model: `${s.car?.make ?? ""}${
         s.car?.make && s.car?.model ? " " : ""
       }${s.car?.model ?? ""}`.trim(),
+      plate_number: s.car?.license_plate || null,
       isSelfDriver: s.isSelfDriver,
       booking_status: s.booking_status,
       balance: s.balance,

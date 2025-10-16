@@ -293,7 +293,7 @@ export default function ReleaseModal({
       maxWidth="xs"
       disableScrollLock
     >
-      <DialogTitle>Releasing of {carName}</DialogTitle>
+      <DialogTitle>Releasing of {carName}: {reservation?.plate_number || 'N/A'}</DialogTitle>
       <DialogContent dividers>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>

@@ -1056,47 +1056,49 @@ function CustomerCars() {
 
                                 {/* Book Now Button */}
                                 <Button
-                                variant="contained"
-                                fullWidth
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleBookNow(car);
-                                }}
-                                disabled={car.car_status
-                                  ?.toLowerCase()
-                                  .includes('maint')}
-                                sx={{
-                                  backgroundColor: car.car_status
+                                  variant="contained"
+                                  fullWidth
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleBookNow(car);
+                                  }}
+                                  disabled={car.car_status
                                     ?.toLowerCase()
-                                    .includes('rent')
-                                    ? '#ff9800'
-                                    : '#c10007',
-                                  color: '#fff',
-                                  fontWeight: 600,
-                                  py: 1,
-                                  borderRadius: 2,
-                                  textTransform: 'none',
-                                  '&:hover': {
+                                    .includes('maint')}
+                                  sx={{
                                     backgroundColor: car.car_status
                                       ?.toLowerCase()
                                       .includes('rent')
-                                      ? '#f57c00'
-                                      : '#a50006',
-                                  },
-                                  '&:disabled': {
-                                    backgroundColor: '#ccc',
-                                    color: '#666',
-                                  },
-                                }}
-                              >
-                                {car.car_status?.toLowerCase().includes('maint')
-                                  ? 'Under Maintenance'
-                                  : car.car_status
+                                      ? '#ff9800'
+                                      : '#c10007',
+                                    color: '#fff',
+                                    fontWeight: 600,
+                                    py: 1,
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    '&:hover': {
+                                      backgroundColor: car.car_status
                                         ?.toLowerCase()
                                         .includes('rent')
-                                    ? 'Notify me when available'
-                                    : 'Book Now'}
-                              </Button>
+                                        ? '#f57c00'
+                                        : '#a50006',
+                                    },
+                                    '&:disabled': {
+                                      backgroundColor: '#ccc',
+                                      color: '#666',
+                                    },
+                                  }}
+                                >
+                                  {car.car_status
+                                    ?.toLowerCase()
+                                    .includes('maint')
+                                    ? 'Under Maintenance'
+                                    : car.car_status
+                                          ?.toLowerCase()
+                                          .includes('rent')
+                                      ? 'Notify me when available'
+                                      : 'Book Now'}
+                                </Button>
                               </Box>
                             </CardContent>
                           </Card>

@@ -139,7 +139,6 @@ function ViewCarsPage() {
                   container
                   spacing={3}
                   justifyContent="center"
-                  alignItems="stretch"
                   sx={{
                     px: { xs: 1, sm: 2, md: 3 },
                   }}
@@ -154,23 +153,19 @@ function ViewCarsPage() {
                     return (
                       <Grid
                         item
-                        xs={12} // 1 card per row on mobile
-                        sm={6} // 2 per row on tablets
-                        md={4} // 3 per row on desktop
+                        xs={12}
+                        sm={6}
+                        md={3}
                         key={car.car_id}
                         sx={{
                           display: 'flex',
                           justifyContent: 'center',
-                          alignItems: 'stretch',
                         }}
                       >
                         <Card
                           sx={{
-                            width: '100%',
-                            maxWidth: 380, // ✅ Consistent card width
-                            minWidth: 300, // ✅ Prevents shrinking too much on small devices
-                            height: '100%', // ✅ Makes all cards equal height
-                            minHeight: 450,
+                            width: 280,
+                            height: 450,
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'space-between',

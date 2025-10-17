@@ -169,7 +169,9 @@ function CustomerCars() {
     if (isRented) {
       // This is a waitlist request - fetch customer settings first
       try {
-        const response = await authenticatedFetch(`${API_BASE}/api/customers/me`);
+        const response = await authenticatedFetch(
+          `${API_BASE}/api/customers/me`
+        );
         if (response.ok) {
           const customerData = await response.json();
           const notificationSetting = customerData.isRecUpdate || 0;
@@ -192,8 +194,15 @@ function CustomerCars() {
           }
         } else {
           const errorData = await response.json().catch(() => ({}));
-          console.error('Failed to fetch customer settings:', response.status, errorData);
-          setSnackbarMessage(errorData.error || 'Failed to load notification settings. Please try again.');
+          console.error(
+            'Failed to fetch customer settings:',
+            response.status,
+            errorData
+          );
+          setSnackbarMessage(
+            errorData.error ||
+              'Failed to load notification settings. Please try again.'
+          );
           setSnackbarOpen(true);
         }
       } catch (error) {
@@ -900,7 +909,6 @@ function CustomerCars() {
                     container
                     spacing={3}
                     justifyContent="center"
-                    alignItems="stretch"
                     sx={{
                       px: { xs: 1, sm: 2, md: 3 },
                     }}
@@ -915,21 +923,17 @@ function CustomerCars() {
                           item
                           xs={12}
                           sm={6}
-                          md={4}
+                          md={3}
                           key={car.car_id}
                           sx={{
                             display: 'flex',
                             justifyContent: 'center',
-                            alignItems: 'stretch',
                           }}
                         >
                           <Card
                             sx={{
-                              width: '100%',
-                              maxWidth: 380,
-                              minWidth: 300,
-                              height: '100%',
-                              minHeight: 450,
+                              width: 280,
+                              height: 450,
                               display: 'flex',
                               flexDirection: 'column',
                               justifyContent: 'space-between',

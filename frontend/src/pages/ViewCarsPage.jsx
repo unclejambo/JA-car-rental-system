@@ -139,7 +139,6 @@ function ViewCarsPage() {
                   container
                   spacing={3}
                   justifyContent="center"
-                  alignItems="stretch"
                   sx={{
                     px: { xs: 1, sm: 2, md: 3 },
                   }}
@@ -154,23 +153,19 @@ function ViewCarsPage() {
                     return (
                       <Grid
                         item
-                        xs={12} // 1 card per row on mobile
-                        sm={6} // 2 per row on tablets
-                        md={4} // 3 per row on desktop
+                        xs={12}
+                        sm={6}
+                        md={3}
                         key={car.car_id}
                         sx={{
                           display: 'flex',
                           justifyContent: 'center',
-                          alignItems: 'stretch',
                         }}
                       >
                         <Card
                           sx={{
-                            width: '100%',
-                            maxWidth: 380, // ✅ Consistent card width
-                            minWidth: 300, // ✅ Prevents shrinking too much on small devices
-                            height: '100%', // ✅ Makes all cards equal height
-                            minHeight: 450,
+                            width: 280,
+                            height: 450,
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'space-between',
@@ -186,25 +181,35 @@ function ViewCarsPage() {
                           }}
                         >
                           {/* Car Image */}
-                          <CardMedia
-                            component="img"
-                            image={car.car_img_url}
-                            alt={`${car.make} ${car.model}`}
+                          <Box
                             sx={{
                               width: '100%',
                               height: 200,
-                              objectFit: 'cover',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                               backgroundColor: '#f9f9f9',
-                              p: 0,
                               borderTopLeftRadius: 12,
                               borderTopRightRadius: 12,
+                              overflow: 'hidden',
                             }}
-                          />
+                          >
+                            <CardMedia
+                              component="img"
+                              image={car.car_img_url}
+                              alt={`${car.make} ${car.model}`}
+                              sx={{
+                                maxWidth: '100%',
+                                maxHeight: '100%',
+                                objectFit: 'contain',
+                              }}
+                            />
+                          </Box>
 
                           {/* Car Info */}
                           <CardContent
                             sx={{
-                              flexGrow: 1,
+                              height: 250,
                               p: 2,
                               display: 'flex',
                               flexDirection: 'column',
@@ -218,6 +223,9 @@ function ViewCarsPage() {
                                   fontWeight: 700,
                                   mb: 0.5,
                                   color: '#333',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
                                 }}
                               >
                                 {car.make} {car.model}
@@ -251,43 +259,45 @@ function ViewCarsPage() {
                               />
                             </Box>
 
-                            <Typography
-                              variant="h6"
-                              sx={{
-                                fontWeight: 'bold',
-                                color: '#c10007',
-                                fontSize: '1.2rem',
-                                mb: 1,
-                              }}
-                            >
-                              ₱{car.rent_price?.toLocaleString() || '0'}/day
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color="success.main"
-                              sx={{ mb: 1, fontWeight: 500 }}
-                            >
-                              Automatic Transmission
-                            </Typography>
+                            <Box>
+                              <Typography
+                                variant="h6"
+                                sx={{
+                                  fontWeight: 'bold',
+                                  color: '#c10007',
+                                  fontSize: '1.2rem',
+                                  mb: 1,
+                                }}
+                              >
+                                ₱{car.rent_price?.toLocaleString() || '0'}/day
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="success.main"
+                                sx={{ mb: 1, fontWeight: 500 }}
+                              >
+                                Automatic Transmission
+                              </Typography>
 
-                            <Button
-                              variant="contained"
-                              fullWidth
-                              onClick={handleLoginRedirect}
-                              sx={{
-                                backgroundColor: '#c10007',
-                                color: '#fff',
-                                fontWeight: 600,
-                                py: 1,
-                                borderRadius: 2,
-                                textTransform: 'none',
-                                '&:hover': {
-                                  backgroundColor: '#005fa3',
-                                },
-                              }}
-                            >
-                              Book Now!
-                            </Button>
+                              <Button
+                                variant="contained"
+                                fullWidth
+                                onClick={handleLoginRedirect}
+                                sx={{
+                                  backgroundColor: '#c10007',
+                                  color: '#fff',
+                                  fontWeight: 600,
+                                  py: 1,
+                                  borderRadius: 2,
+                                  textTransform: 'none',
+                                  '&:hover': {
+                                    backgroundColor: '#005fa3',
+                                  },
+                                }}
+                              >
+                                Book Now!
+                              </Button>
+                            </Box>
                           </CardContent>
                         </Card>
                       </Grid>

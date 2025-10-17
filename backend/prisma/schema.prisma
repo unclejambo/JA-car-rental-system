@@ -72,7 +72,6 @@ model Driver {
   bookings          Booking[]
   driver_license    DriverLicense @relation(fields: [driver_license_no], references: [driver_license_no])
   releases          Release[]
-  Waitlist          Waitlist[]
 }
 
 model Car {
@@ -276,35 +275,18 @@ model Waitlist {
   waitlist_id          Int       @id @default(autoincrement())
   customer_id          Int
   car_id               Int
-  requested_start_date DateTime? @db.Timestamptz(6)
-  requested_end_date   DateTime? @db.Timestamptz(6)
-  purpose              String?
-  pickup_time          String?
-  dropoff_time         String?
-  pickup_location      String?
-  dropoff_location     String?
-  delivery_type        String?
-  is_self_drive        Boolean?  @default(true)
-  selected_driver_id   Int?
-  special_requests     String?
-  total_cost           Int?
   status               String?   @default("waiting")
-  position             Int
-  date_created         DateTime? @db.Timestamptz(6)
   notified_date        DateTime? @db.Timestamptz(6)
-  payment_status       String?   @default("unpaid")
-  paid_date            DateTime? @db.Timestamptz(6)
   created_at           DateTime  @default(now()) @db.Timestamptz(6)
   notification_method  String?
   notification_success Boolean?  @default(false)
   Payment              Payment[]
   Car                  Car       @relation(fields: [car_id], references: [car_id], onDelete: Cascade)
   Customer             Customer  @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
-  Driver               Driver?   @relation(fields: [selected_driver_id], references: [drivers_id])
 
-  @@index([car_id, status, position])
+  @@unique([customer_id, car_id])
   @@index([customer_id])
-  @@index([payment_status])
+  @@index([car_id, status])
 }
 
 model PhoneVerification {

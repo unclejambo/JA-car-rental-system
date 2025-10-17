@@ -661,22 +661,6 @@ export const getMyPayments = async (req, res) => {
             },
           },
         },
-        Waitlist: {
-          select: {
-            waitlist_id: true,
-            requested_start_date: true,
-            requested_end_date: true,
-            total_cost: true,
-            Car: {
-              select: {
-                make: true,
-                model: true,
-                year: true,
-                license_plate: true,
-              },
-            },
-          },
-        },
       },
       orderBy: { paid_date: "desc" },
     });
@@ -699,19 +683,6 @@ export const getMyPayments = async (req, res) => {
             car_details: payment.booking.car,
             total_amount: payment.booking.total_amount,
             type: "booking",
-          }
-        : null,
-      waitlist_info: payment.waitlist
-        ? {
-            waitlist_id: payment.waitlist.waitlist_id,
-            dates: `${
-              payment.waitlist.requested_start_date?.toISOString().split("T")[0]
-            } to ${
-              payment.waitlist.requested_end_date?.toISOString().split("T")[0]
-            }`,
-            car_details: payment.waitlist.car,
-            total_cost: payment.waitlist.total_cost,
-            type: "waitlist",
           }
         : null,
     }));

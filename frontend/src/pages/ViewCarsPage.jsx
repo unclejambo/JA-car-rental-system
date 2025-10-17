@@ -181,25 +181,35 @@ function ViewCarsPage() {
                           }}
                         >
                           {/* Car Image */}
-                          <CardMedia
-                            component="img"
-                            image={car.car_img_url}
-                            alt={`${car.make} ${car.model}`}
+                          <Box
                             sx={{
                               width: '100%',
                               height: 200,
-                              objectFit: 'cover',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                               backgroundColor: '#f9f9f9',
-                              p: 0,
                               borderTopLeftRadius: 12,
                               borderTopRightRadius: 12,
+                              overflow: 'hidden',
                             }}
-                          />
+                          >
+                            <CardMedia
+                              component="img"
+                              image={car.car_img_url}
+                              alt={`${car.make} ${car.model}`}
+                              sx={{
+                                maxWidth: '100%',
+                                maxHeight: '100%',
+                                objectFit: 'contain',
+                              }}
+                            />
+                          </Box>
 
                           {/* Car Info */}
                           <CardContent
                             sx={{
-                              flexGrow: 1,
+                              height: 250,
                               p: 2,
                               display: 'flex',
                               flexDirection: 'column',
@@ -213,6 +223,9 @@ function ViewCarsPage() {
                                   fontWeight: 700,
                                   mb: 0.5,
                                   color: '#333',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
                                 }}
                               >
                                 {car.make} {car.model}
@@ -246,43 +259,45 @@ function ViewCarsPage() {
                               />
                             </Box>
 
-                            <Typography
-                              variant="h6"
-                              sx={{
-                                fontWeight: 'bold',
-                                color: '#c10007',
-                                fontSize: '1.2rem',
-                                mb: 1,
-                              }}
-                            >
-                              ₱{car.rent_price?.toLocaleString() || '0'}/day
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color="success.main"
-                              sx={{ mb: 1, fontWeight: 500 }}
-                            >
-                              Automatic Transmission
-                            </Typography>
+                            <Box>
+                              <Typography
+                                variant="h6"
+                                sx={{
+                                  fontWeight: 'bold',
+                                  color: '#c10007',
+                                  fontSize: '1.2rem',
+                                  mb: 1,
+                                }}
+                              >
+                                ₱{car.rent_price?.toLocaleString() || '0'}/day
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="success.main"
+                                sx={{ mb: 1, fontWeight: 500 }}
+                              >
+                                Automatic Transmission
+                              </Typography>
 
-                            <Button
-                              variant="contained"
-                              fullWidth
-                              onClick={handleLoginRedirect}
-                              sx={{
-                                backgroundColor: '#c10007',
-                                color: '#fff',
-                                fontWeight: 600,
-                                py: 1,
-                                borderRadius: 2,
-                                textTransform: 'none',
-                                '&:hover': {
-                                  backgroundColor: '#005fa3',
-                                },
-                              }}
-                            >
-                              Book Now!
-                            </Button>
+                              <Button
+                                variant="contained"
+                                fullWidth
+                                onClick={handleLoginRedirect}
+                                sx={{
+                                  backgroundColor: '#c10007',
+                                  color: '#fff',
+                                  fontWeight: 600,
+                                  py: 1,
+                                  borderRadius: 2,
+                                  textTransform: 'none',
+                                  '&:hover': {
+                                    backgroundColor: '#005fa3',
+                                  },
+                                }}
+                              >
+                                Book Now!
+                              </Button>
+                            </Box>
                           </CardContent>
                         </Card>
                       </Grid>

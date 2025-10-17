@@ -303,9 +303,8 @@ export default function AdminBookingPage() {
                   <Typography
                     variant="h4"
                     component="h1"
-                    gutterBottom
                     sx={{
-                      fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
+                      fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
                       color: '#000',
                     }}
                   >
@@ -321,8 +320,8 @@ export default function AdminBookingPage() {
                       startIcon={
                         <HiCurrencyDollar
                           sx={{
-                            width: { xs: '16px', sm: '18px' },
-                            height: { xs: '16px', sm: '18px' },
+                            width: { xs: '14px', sm: '18px' },
+                            height: { xs: '14px', sm: '18px' },
                             mt: '-3px',
                           }}
                         />
@@ -331,8 +330,8 @@ export default function AdminBookingPage() {
                       sx={{
                         color: '#fff',
                         p: 1,
-                        fontSize: { xs: '.775rem', sm: '.875rem', md: '1rem' },
-                        height: 30,
+                        fontSize: { xs: '.7rem', md: '.875rem' },
+                        height: { xs: 26, md: 30 },
                         border: 'none',
                         backgroundColor: '#3895d3',
                         '&:hover': {
@@ -364,8 +363,17 @@ export default function AdminBookingPage() {
                   variant="outlined"
                   size="small"
                   sx={{
-                    width: { xs: '100%', sm: 350 },
+                    width: { xs: '100%', md: 350 },
                     maxWidth: 'auto',
+                    height: { xs: 26, md: 30 },
+                    backgroundColor: '#fff',
+                    '& .MuiOutlinedInput-root': {
+                      height: { xs: 26, md: 30 },
+                      backgroundColor: '#fff',
+                    },
+                    '& .MuiInputBase-input': {
+                      padding: { xs: '4px 8px', md: '6px 10px' },
+                    },
                   }}
                 />
               </Box>

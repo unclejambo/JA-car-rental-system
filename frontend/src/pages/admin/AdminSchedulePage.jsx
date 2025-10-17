@@ -218,13 +218,18 @@ export default function AdminSchedulePage() {
               boxSizing: 'border-box',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                width: '100%',
+              }}
+            >
               <Typography
                 variant="h4"
                 component="h1"
-                gutterBottom
                 sx={{
-                  fontSize: { xs: '1.33rem', sm: '1.5rem', md: '1.8rem' },
+                  fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
                   color: '#000',
                 }}
               >
@@ -240,7 +245,6 @@ export default function AdminSchedulePage() {
                   display: 'flex',
                   justifyContent: 'flex-end',
                   alignItems: 'center',
-                  mb: 2,
                 }}
               >
                 <SearchBar
@@ -250,8 +254,17 @@ export default function AdminSchedulePage() {
                   variant="outlined"
                   size="small"
                   sx={{
-                    width: { xs: '100%', sm: 350 },
-                    maxWidth: { xs: 'auto', sm: 350 },
+                    width: { xs: '90%', md: 350 },
+                    maxWidth: 'auto',
+                    height: { xs: 26, md: 30 },
+                    backgroundColor: '#fff',
+                    '& .MuiOutlinedInput-root': {
+                      height: { xs: 26, md: 30 },
+                      backgroundColor: '#fff',
+                    },
+                    '& .MuiInputBase-input': {
+                      padding: { xs: '4px 8px', md: '6px 10px' },
+                    },
                   }}
                 />
               </Box>

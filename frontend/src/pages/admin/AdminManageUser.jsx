@@ -261,26 +261,23 @@ export default function AdminManageUser() {
                 justifyContent: 'space-between',
                 mb: 2,
                 gap: { xs: 1, sm: 1 },
-                pr: { xs: 1.3, sm: 0 },
               }}
             >
               <Box
                 sx={{
                   display: 'flex',
-                  gap: 1,
-                  justifyContent: { xs: 'space-between', sm: 'flex-start' },
+                  justifyContent: 'space-between',
+                  flex: { md: 1 },
+                  gap: { xs: 1, sm: 1 },
+                  alignItems: 'center',
                 }}
               >
                 <Typography
                   variant="h4"
                   component="h1"
-                  gutterBottom
                   sx={{
-                    fontSize: '1.8rem',
+                    fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
                     color: '#000',
-                    '@media (max-width: 1024px)': {
-                      fontSize: '1.5rem',
-                    },
                   }}
                 >
                   <HiOutlineUserGroup
@@ -295,26 +292,30 @@ export default function AdminManageUser() {
                     variant="outlined"
                     startIcon={
                       <AddIcon
-                        sx={{ width: '18px', height: '18px', mt: '-3px' }}
+                        sx={{
+                          width: { xs: '14px', md: '18px' },
+                          height: { xs: '14px', md: '18px' },
+                          mt: '-3px',
+                        }}
                       />
                     }
                     onClick={openAddStaffModal}
                     sx={{
                       color: '#fff',
                       p: 1,
-                      pb: 0.5,
-                      height: 28,
+                      height: { xs: 26, md: 30 },
+                      fontSize: { xs: '.7rem', md: '.875rem' },
                       border: 'none',
+
                       backgroundColor: '#c10007',
+
+                      minWidth: 150,
                       '&:hover': {
                         backgroundColor: '#a00006',
                         color: '#fff',
                         fontWeight: 600,
                         borderColor: '#4a4a4a',
                         boxShadow: 'none',
-                      },
-                      '@media (max-width: 600px)': {
-                        height: 28,
                       },
                     }}
                   >
@@ -326,26 +327,28 @@ export default function AdminManageUser() {
                     variant="outlined"
                     startIcon={
                       <AddIcon
-                        sx={{ width: '18px', height: '18px', mt: '-3px' }}
+                        sx={{
+                          width: { xs: '14px', md: '18px' },
+                          height: { xs: '14px', md: '18px' },
+                          mt: '-3px',
+                        }}
                       />
                     }
                     onClick={openAddDriverModal}
                     sx={{
                       color: '#fff',
                       p: 1,
-                      pb: 0.5,
-                      height: 28,
+                      height: { xs: 26, md: 30 },
+                      fontSize: { xs: '.7rem', md: '.875rem' },
                       border: 'none',
                       backgroundColor: '#c10007',
+                      minWidth: 150,
                       '&:hover': {
                         backgroundColor: '#a00006',
                         color: '#fff',
                         fontWeight: 600,
                         borderColor: '#4a4a4a',
                         boxShadow: 'none',
-                      },
-                      '@media (max-width: 600px)': {
-                        height: 28,
                       },
                     }}
                   >
@@ -368,8 +371,17 @@ export default function AdminManageUser() {
                   variant="outlined"
                   size="small"
                   sx={{
-                    width: { xs: '100%', sm: 350 },
+                    width: { xs: '100%', md: 350 },
                     maxWidth: 350,
+                    height: { xs: 26, md: 30 },
+                    backgroundColor: '#fff',
+                    '& .MuiOutlinedInput-root': {
+                      height: { xs: 26, md: 30 },
+                      backgroundColor: '#fff',
+                    },
+                    '& .MuiInputBase-input': {
+                      padding: { xs: '4px 8px', md: '6px 10px' },
+                    },
                   }}
                 />
               </Box>

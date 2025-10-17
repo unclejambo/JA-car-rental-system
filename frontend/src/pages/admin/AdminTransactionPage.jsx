@@ -357,14 +357,13 @@ export default function AdminTransactionPage() {
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
-                  gap: { xs: 1, sm: 5 },
+                  flex: { md: 1 },
                   alignItems: 'center',
                 }}
               >
                 <Box
                   sx={{
                     display: 'flex',
-                    flex: 1,
                     width: '100%',
                   }}
                 >
@@ -372,7 +371,7 @@ export default function AdminTransactionPage() {
                     variant="h4"
                     component="h1"
                     sx={{
-                      fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
+                      fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
                       color: '#000',
                       display: 'flex',
                       alignItems: 'center',
@@ -478,8 +477,8 @@ export default function AdminTransactionPage() {
                       startIcon={
                         <AddIcon
                           sx={{
-                            width: { xs: '16px', sm: '18px' },
-                            height: { xs: '16px', sm: '18px' },
+                            width: { xs: '14px', md: '18px' },
+                            height: { xs: '14px', md: '18px' },
                             mt: '-3px',
                           }}
                         />
@@ -488,12 +487,12 @@ export default function AdminTransactionPage() {
                       sx={{
                         color: '#fff',
                         p: 1,
-                        height: 30,
-                        fontSize: { xs: '.775rem', sm: '.875rem', md: '1rem' },
+                        height: { xs: 26, md: 30 },
+                        fontSize: { xs: '.7rem', md: '.875rem' },
                         border: 'none',
                         backgroundColor: '#c10007',
                         whiteSpace: 'nowrap',
-                        minWidth: 'auto',
+                        minWidth: 150,
                         '&:hover': {
                           backgroundColor: '#a00006',
                           color: '#fff',
@@ -511,38 +510,29 @@ export default function AdminTransactionPage() {
                       variant="outlined"
                       startIcon={
                         <AddIcon
-                          sx={{ width: '18px', height: '18px', mt: '-2px' }}
+                          sx={{
+                            width: { xs: '14px', md: '18px' },
+                            height: { xs: '14px', md: '18px' },
+                            mt: '-3px',
+                          }}
                         />
                       }
                       onClick={openAddRefundModal}
                       sx={{
                         color: '#fff',
                         p: 1,
-                        pb: 0.5,
-                        height: 36,
+                        height: { xs: 26, md: 30 },
+                        fontSize: { xs: '.7rem', md: '.875rem' },
                         border: 'none',
                         backgroundColor: '#c10007',
                         whiteSpace: 'nowrap',
-                        minWidth: 'auto',
+                        minWidth: 150,
                         '&:hover': {
                           backgroundColor: '#a00006',
                           color: '#fff',
                           fontWeight: 600,
                           borderColor: '#4a4a4a',
                           boxShadow: 'none',
-                        },
-                        '@media (max-width: 600px)': {
-                          height: 32,
-                          fontSize: '0.7rem',
-                          px: 0.75,
-                          py: 0.5,
-                          '& .MuiButton-startIcon': {
-                            marginRight: '2px',
-                          },
-                          '& .MuiSvgIcon-root': {
-                            width: '14px',
-                            height: '14px',
-                          },
                         },
                       }}
                     >
@@ -567,8 +557,17 @@ export default function AdminTransactionPage() {
                   variant="outlined"
                   size="small"
                   sx={{
-                    width: { xs: '100%', sm: 350 },
+                    width: { xs: '100%', md: 350 },
                     maxWidth: 'auto',
+                    height: { xs: 26, md: 30 },
+                    backgroundColor: '#fff',
+                    '& .MuiOutlinedInput-root': {
+                      height: { xs: 26, md: 30 },
+                      backgroundColor: '#fff',
+                    },
+                    '& .MuiInputBase-input': {
+                      padding: { xs: '4px 8px', md: '6px 10px' },
+                    },
                   }}
                 />
               </Box>

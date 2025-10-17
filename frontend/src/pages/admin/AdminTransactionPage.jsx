@@ -430,6 +430,7 @@ export default function AdminTransactionPage() {
                       anchorEl={downloadAnchorEl}
                       open={downloadMenuOpen}
                       onClose={handleDownloadClose}
+                      disableScrollLock
                       anchorOrigin={{
                         vertical: 'bottom',
                         horizontal: 'left',

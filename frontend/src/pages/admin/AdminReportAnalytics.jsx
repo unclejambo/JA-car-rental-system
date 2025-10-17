@@ -851,6 +851,7 @@ export default function AdminReportAnalytics() {
                   anchorEl={downloadAnchorEl}
                   open={downloadMenuOpen}
                   onClose={handleDownloadClose}
+                  disableScrollLock
                   anchorOrigin={{
                     vertical: 'bottom',
                     horizontal: 'left',
@@ -868,13 +869,18 @@ export default function AdminReportAnalytics() {
                 >
                   <MenuItem onClick={handleDownloadPDF}>
                     <ListItemIcon>
-                      <PictureAsPdfIcon fontSize="small" sx={{ color: '#d32f2f' }} />
+                      <PictureAsPdfIcon
+                        fontSize="small"
+                        sx={{ color: '#d32f2f' }}
+                      />
                     </ListItemIcon>
                     <ListItemText>PDF</ListItemText>
                   </MenuItem>
                   <MenuItem onClick={handleDownloadCSV}>
                     <ListItemIcon>
-                      <FaFileCsv style={{ fontSize: '18px', color: '#2e7d32' }} />
+                      <FaFileCsv
+                        style={{ fontSize: '18px', color: '#2e7d32' }}
+                      />
                     </ListItemIcon>
                     <ListItemText>CSV</ListItemText>
                   </MenuItem>

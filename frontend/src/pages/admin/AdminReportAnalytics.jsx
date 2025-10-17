@@ -797,7 +797,7 @@ export default function AdminReportAnalytics() {
                 variant="h4"
                 component="h1"
                 sx={{
-                  fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
+                  fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
                   color: '#000',
                   display: 'flex',
                   alignItems: 'center',

@@ -137,7 +137,7 @@ function CustomerSchedule() {
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 1, sm: 2, md: 3 },
+          p: 1,
           width: `calc(100% - 18.7dvw)`,
           ml: { xs: '0px', sm: '0px', md: '18.7dvw' },
           '@media (max-width: 1024px)': {
@@ -150,7 +150,7 @@ function CustomerSchedule() {
       >
         <Card
           sx={{
-            p: { xs: 2, sm: 3 },
+            p: 1,
             borderRadius: 3,
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             flexGrow: 1,
@@ -172,7 +172,12 @@ function CustomerSchedule() {
               >
                 <Typography
                   variant="h4"
-                  sx={{ fontWeight: 'bold', color: '#c10007' }}
+                  component="h1"
+                  sx={{
+                    fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
+                    fontWeight: 'bold',
+                    color: '#c10007',
+                  }}
                 >
                   <HiCalendarDays
                     style={{ verticalAlign: '-3px', marginRight: '8px' }}

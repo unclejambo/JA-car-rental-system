@@ -584,13 +584,9 @@ export default function AdminSettings() {
               <Typography
                 variant="h4"
                 component="h1"
-                gutterBottom
                 sx={{
-                  fontSize: '1.8rem',
+                  fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
                   color: '#000',
-                  '@media (max-width: 1024px)': {
-                    fontSize: '1.5rem',
-                  },
                 }}
               >
                 <HiCog8Tooth

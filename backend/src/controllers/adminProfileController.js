@@ -1,7 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
-import prisma from '../config/prisma.js';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { createClient } from "@supabase/supabase-js";
+import prisma from "../config/prisma.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -12,29 +12,32 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  */
 const refreshProfileImageUrl = async (profileImgUrl) => {
   if (!profileImgUrl) return null;
-  
+
   try {
     // Extract the path from the existing URL
     // Format: https://...supabase.co/storage/v1/object/sign/licenses/profile_img/filename?token=...
-    const urlParts = profileImgUrl.split('/');
-    const bucketIndex = urlParts.findIndex(part => part === 'licenses');
-    
+    const urlParts = profileImgUrl.split("/");
+    const bucketIndex = urlParts.findIndex((part) => part === "licenses");
+
     if (bucketIndex === -1) return profileImgUrl; // Return original if can't parse
-    
-    const path = urlParts.slice(bucketIndex + 1).join('/').split('?')[0]; // Remove query params
-    
+
+    const path = urlParts
+      .slice(bucketIndex + 1)
+      .join("/")
+      .split("?")[0]; // Remove query params
+
     const { data: signedUrlData, error } = await supabase.storage
-      .from('licenses')
+      .from("licenses")
       .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year expiration
-    
+
     if (error) {
-      console.error('Error refreshing signed URL:', error);
+      console.error("Error refreshing signed URL:", error);
       return profileImgUrl; // Return original URL if refresh fails
     }
-    
+
     return signedUrlData.signedUrl;
   } catch (error) {
-    console.error('Error parsing profile image URL:', error);
+    console.error("Error parsing profile image URL:", error);
     return profileImgUrl; // Return original URL if parsing fails
   }
 };
@@ -59,15 +62,17 @@ export const getAllAdminProfiles = async (req, res) => {
         // Don't return password
       },
       orderBy: {
-        first_name: 'asc'
-      }
+        first_name: "asc",
+      },
     });
 
     // Refresh profile image URLs for all admins
     const adminsWithFreshUrls = await Promise.all(
       admins.map(async (admin) => {
         if (admin.profile_img_url) {
-          admin.profile_img_url = await refreshProfileImageUrl(admin.profile_img_url);
+          admin.profile_img_url = await refreshProfileImageUrl(
+            admin.profile_img_url
+          );
         }
         return admin;
       })
@@ -75,10 +80,10 @@ export const getAllAdminProfiles = async (req, res) => {
 
     res.json(adminsWithFreshUrls);
   } catch (error) {
-    console.error('Error fetching all admin profiles:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch admin profiles' 
+    console.error("Error fetching all admin profiles:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch admin profiles",
     });
   }
 };
@@ -89,10 +94,10 @@ export const getAllAdminProfiles = async (req, res) => {
 export const getAdminProfile = async (req, res) => {
   try {
     const adminId = req.user.sub; // From JWT token middleware
-    
+
     const admin = await prisma.admin.findUnique({
-      where: { 
-        admin_id: adminId 
+      where: {
+        admin_id: adminId,
       },
       select: {
         admin_id: true,
@@ -105,30 +110,32 @@ export const getAdminProfile = async (req, res) => {
         user_type: true,
         profile_img_url: true,
         // Don't return password
-      }
+      },
     });
 
     if (!admin) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Admin not found' 
+      return res.status(404).json({
+        success: false,
+        message: "Admin not found",
       });
     }
 
     // Refresh the profile image URL if it exists (for private bucket signed URLs)
     if (admin.profile_img_url) {
-      admin.profile_img_url = await refreshProfileImageUrl(admin.profile_img_url);
+      admin.profile_img_url = await refreshProfileImageUrl(
+        admin.profile_img_url
+      );
     }
 
     res.json({
       success: true,
-      data: admin
+      data: admin,
     });
   } catch (error) {
-    console.error('Error fetching admin profile:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch profile' 
+    console.error("Error fetching admin profile:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch profile",
     });
   }
 };
@@ -139,63 +146,66 @@ export const getAdminProfile = async (req, res) => {
 export const updateAdminProfile = async (req, res) => {
   try {
     const adminId = req.user.sub; // From JWT token middleware
-    const { 
-      first_name, 
-      last_name, 
+    const {
+      first_name,
+      last_name,
       address,
-      contact_no, 
-      email, 
-      username, 
-      password, 
+      contact_no,
+      email,
+      username,
+      password,
       currentPassword,
-      profile_img_url 
+      profile_img_url,
     } = req.body;
-    
-    console.log('🔄 Admin profile update request:', { 
-      adminId, 
-      first_name, 
-      last_name, 
-      email, 
-      username, 
-      profile_img_url: profile_img_url ? 'URL provided' : 'No URL' 
+
+    console.log("🔄 Admin profile update request:", {
+      adminId,
+      first_name,
+      last_name,
+      email,
+      username,
+      profile_img_url: profile_img_url ? "URL provided" : "No URL",
     });
 
     // Validate required fields
     if (!first_name || !last_name || !email || !username) {
       return res.status(400).json({
         success: false,
-        message: 'First name, last name, email, and username are required'
+        message: "First name, last name, email, and username are required",
       });
     }
 
     // Get current admin data
     const currentAdmin = await prisma.admin.findUnique({
-      where: { admin_id: adminId }
+      where: { admin_id: adminId },
     });
 
     if (!currentAdmin) {
       return res.status(404).json({
         success: false,
-        message: 'Admin not found'
+        message: "Admin not found",
       });
     }
 
     // If password is being changed, validate current password
     let hashedPassword = currentAdmin.password;
-    if (password && password.trim() !== '') {
+    if (password && password.trim() !== "") {
       if (!currentPassword) {
         return res.status(400).json({
           success: false,
-          message: 'Current password is required to change password'
+          message: "Current password is required to change password",
         });
       }
 
       // Verify current password
-      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, currentAdmin.password);
+      const isCurrentPasswordValid = await bcrypt.compare(
+        currentPassword,
+        currentAdmin.password
+      );
       if (!isCurrentPasswordValid) {
         return res.status(400).json({
           success: false,
-          message: 'Current password is incorrect'
+          message: "Current password is incorrect",
         });
       }
 
@@ -209,20 +219,19 @@ export const updateAdminProfile = async (req, res) => {
         AND: [
           { admin_id: { not: adminId } }, // Exclude current admin
           {
-            OR: [
-              { email: email },
-              { username: username }
-            ]
-          }
-        ]
-      }
+            OR: [{ email: email }, { username: username }],
+          },
+        ],
+      },
     });
 
     if (existingAdmin) {
-      const field = existingAdmin.email === email ? 'email' : 'username';
+      const field = existingAdmin.email === email ? "email" : "username";
       return res.status(400).json({
         success: false,
-        message: `${field.charAt(0).toUpperCase() + field.slice(1)} is already taken`
+        message: `${
+          field.charAt(0).toUpperCase() + field.slice(1)
+        } is already taken`,
       });
     }
 
@@ -250,34 +259,38 @@ export const updateAdminProfile = async (req, res) => {
         user_type: true,
         profile_img_url: true,
         // Don't return password
-      }
+      },
     });
 
     // Refresh the profile image URL if it exists (for private bucket signed URLs)
     if (updatedAdmin.profile_img_url) {
-      updatedAdmin.profile_img_url = await refreshProfileImageUrl(updatedAdmin.profile_img_url);
+      updatedAdmin.profile_img_url = await refreshProfileImageUrl(
+        updatedAdmin.profile_img_url
+      );
     }
 
     res.json({
       success: true,
-      message: 'Profile updated successfully',
-      data: updatedAdmin
+      message: "Profile updated successfully",
+      data: updatedAdmin,
     });
   } catch (error) {
-    console.error('Error updating admin profile:', error);
-    
+    console.error("Error updating admin profile:", error);
+
     // Handle Prisma unique constraint errors
-    if (error.code === 'P2002') {
-      const field = error.meta?.target?.[0] || 'field';
+    if (error.code === "P2002") {
+      const field = error.meta?.target?.[0] || "field";
       return res.status(400).json({
         success: false,
-        message: `${field.charAt(0).toUpperCase() + field.slice(1)} is already taken`
+        message: `${
+          field.charAt(0).toUpperCase() + field.slice(1)
+        } is already taken`,
       });
     }
-    
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to update profile' 
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to update profile",
     });
   }
 };
@@ -293,55 +306,58 @@ export const changeAdminPassword = async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Both current and new passwords are required'
+        message: "Both current and new passwords are required",
       });
     }
 
     if (newPassword.length < 6) {
       return res.status(400).json({
         success: false,
-        message: 'New password must be at least 6 characters long'
+        message: "New password must be at least 6 characters long",
       });
     }
 
     // Get current admin
     const admin = await prisma.admin.findUnique({
-      where: { admin_id: adminId }
+      where: { admin_id: adminId },
     });
 
     if (!admin) {
       return res.status(404).json({
         success: false,
-        message: 'Admin not found'
+        message: "Admin not found",
       });
     }
 
     // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, admin.password);
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      admin.password
+    );
     if (!isCurrentPasswordValid) {
       return res.status(400).json({
         success: false,
-        message: 'Current password is incorrect'
+        message: "Current password is incorrect",
       });
     }
 
     // Hash and update new password
     const hashedPassword = await bcrypt.hash(newPassword, 12);
-    
+
     await prisma.admin.update({
       where: { admin_id: adminId },
-      data: { password: hashedPassword }
+      data: { password: hashedPassword },
     });
 
     res.json({
       success: true,
-      message: 'Password changed successfully'
+      message: "Password changed successfully",
     });
   } catch (error) {
-    console.error('Error changing admin password:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to change password' 
+    console.error("Error changing admin password:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to change password",
     });
   }
 };

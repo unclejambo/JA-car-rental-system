@@ -293,7 +293,9 @@ export default function ReleaseModal({
       maxWidth="xs"
       disableScrollLock
     >
-      <DialogTitle>Releasing of {carName}: {reservation?.plate_number || 'N/A'}</DialogTitle>
+      <DialogTitle>
+        Releasing of {carName}: {reservation?.plate_number || 'N/A'}
+      </DialogTitle>
       <DialogContent dividers>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -368,6 +370,12 @@ export default function ReleaseModal({
                   value={g}
                   control={<Radio />}
                   label={g}
+                  sx={{
+                    '& .MuiFormControlLabel-label': {
+                      userSelect: 'none',
+                      pointerEvents: 'none',
+                    },
+                  }}
                 />
               ))}
             </RadioGroup>
@@ -421,8 +429,24 @@ export default function ReleaseModal({
                 value="complete"
                 control={<Radio />}
                 label="Complete"
+                sx={{
+                  '& .MuiFormControlLabel-label': {
+                    userSelect: 'none',
+                    pointerEvents: 'none',
+                  },
+                }}
               />
-              <FormControlLabel value="no" control={<Radio />} label="No" />
+              <FormControlLabel
+                value="no"
+                control={<Radio />}
+                label="No"
+                sx={{
+                  '& .MuiFormControlLabel-label': {
+                    userSelect: 'none',
+                    pointerEvents: 'none',
+                  },
+                }}
+              />
             </RadioGroup>
             {formData.equipmentStatus === 'no' && (
               <TextField

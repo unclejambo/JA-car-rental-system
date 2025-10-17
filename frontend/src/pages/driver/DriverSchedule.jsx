@@ -126,14 +126,14 @@ export default function DriverSchedule() {
           p: { xs: 1, sm: 2, md: 3 },
           width: `calc(100% - 18.7dvw)`,
           ml: { xs: '0px', sm: '0px', md: '18.7dvw' },
-          mt: { xs: '64px', sm: '64px', md: '56px' },
+          mt: { xs: '74px', sm: '74px', md: '64px' },
         }}
       >
         <Card
           sx={{
-            p: { xs: 2, sm: 3 },
+            p: 0,
             borderRadius: 3,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
             backgroundColor: '#fff',
           }}
         >
@@ -149,7 +149,7 @@ export default function DriverSchedule() {
                 }}
               >
                 <Typography
-                  variant="h4"
+                  variant="h6"
                   sx={{
                     fontWeight: 'bold',
                     color: '#c10007',
@@ -216,7 +216,7 @@ export default function DriverSchedule() {
                 }}
               >
                 <Tab
-                  label={`Active Schedules (${activeSchedules?.length || 0})`}
+                  label={`Schedule (${activeSchedules?.length || 0})`}
                   icon={<HiCalendar />}
                   iconPosition="start"
                 />

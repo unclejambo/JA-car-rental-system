@@ -1001,9 +1001,7 @@ export default function CustomerSettings() {
                 {/* Settings Card */}
                 <Box
                   sx={{
-                    width: '100%',
-                    minWidth: '100%',
-                    maxWidth: 900,
+                    maxWidth: '100%',
                     bgcolor: '#ffffff',
                     borderRadius: 2,
                     p: 2,

@@ -308,7 +308,7 @@ export default function DriverSettings() {
     try {
       // Check if phone number has changed
       const phoneNumberChanged = draft.contactNo !== profile.contactNo;
-      
+
       if (phoneNumberChanged) {
         // Store pending changes and trigger phone verification
         const updateData = {
@@ -322,7 +322,10 @@ export default function DriverSettings() {
         };
 
         // Include password fields only if user is changing password
-        if (passwordData.newPassword && passwordData.newPassword.trim() !== '') {
+        if (
+          passwordData.newPassword &&
+          passwordData.newPassword.trim() !== ''
+        ) {
           updateData.password = passwordData.newPassword;
           updateData.currentPassword = passwordData.currentPassword;
         }
@@ -330,11 +333,11 @@ export default function DriverSettings() {
         setPendingProfileChanges({
           updateData,
           profileImage: profileImage,
-          driverId: JSON.parse(localStorage.getItem('userInfo'))?.id
+          driverId: JSON.parse(localStorage.getItem('userInfo'))?.id,
         });
         setPendingPhoneNumber(draft.contactNo);
         setSaving(false);
-        
+
         // Trigger phone verification
         await sendPhoneOTP(draft.contactNo);
         return;
@@ -591,7 +594,11 @@ export default function DriverSettings() {
     }
 
     // Confirm deletion
-    if (!window.confirm('Are you sure you want to remove the license image? This action cannot be undone.')) {
+    if (
+      !window.confirm(
+        'Are you sure you want to remove the license image? This action cannot be undone.'
+      )
+    ) {
       return;
     }
 
@@ -610,12 +617,14 @@ export default function DriverSettings() {
 
       if (response.ok && result.success) {
         console.log('✅ License image deleted successfully');
-        
+
         // Update local state to default image
-        setLicenseImage('https://cdn-icons-png.flaticon.com/512/3135/3135715.png');
+        setLicenseImage(
+          'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+        );
         setPreviewLicenseImage(null);
         setDraftLicenseImage(null);
-        
+
         setSuccessMessage('License image removed successfully');
         setShowSuccess(true);
         setError(null);
@@ -643,8 +652,8 @@ export default function DriverSettings() {
             phoneNumber: phoneNumber,
             purpose: 'phone_change',
             userId: userInfo?.id,
-            userType: 'driver'
-          })
+            userType: 'driver',
+          }),
         }
       );
 
@@ -664,12 +673,16 @@ export default function DriverSettings() {
   const handlePhoneVerificationSuccess = async (data) => {
     try {
       setSaving(true);
-      
+
       if (!pendingProfileChanges) {
         throw new Error('No pending changes found');
       }
 
-      const { updateData, profileImage: pendingImage, driverId } = pendingProfileChanges;
+      const {
+        updateData,
+        profileImage: pendingImage,
+        driverId,
+      } = pendingProfileChanges;
 
       // Upload profile image first if changed
       let imageUrl = null;
@@ -724,8 +737,10 @@ export default function DriverSettings() {
 
         // Update license-related data if returned
         if (updated.license_number) setLicenseNumber(updated.license_number);
-        if (updated.license_expiry) setLicenseExpiration(updated.license_expiry);
-        if (updated.license_restrictions) setLicenseRestrictions(updated.license_restrictions);
+        if (updated.license_expiry)
+          setLicenseExpiration(updated.license_expiry);
+        if (updated.license_restrictions)
+          setLicenseRestrictions(updated.license_restrictions);
 
         // Reset editing + password state
         setPasswordData({
@@ -1172,7 +1187,7 @@ export default function DriverSettings() {
                               mt: { xs: 2, md: 0 },
                               position: { md: 'absolute' },
                               top: { md: 155 },
-                              left: { md: 8 },
+                              left: { md: 20 },
                               display: 'flex',
                               flexDirection: 'column',
                               gap: 1,
@@ -1183,6 +1198,7 @@ export default function DriverSettings() {
                               variant="contained"
                               component="label"
                               size="small"
+                              startIcon={<PhotoCamera />}
                               disabled={imageUploading}
                               sx={{
                                 fontSize: '0.75rem',
@@ -1204,6 +1220,7 @@ export default function DriverSettings() {
                                 variant="outlined"
                                 size="small"
                                 color="error"
+                                startIcon={<PhotoCamera />}
                                 onClick={handleRemoveImage}
                                 disabled={imageUploading}
                                 sx={{
@@ -1226,17 +1243,16 @@ export default function DriverSettings() {
                       {/* Details */}
                       <Box
                         sx={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 1, // <-- add this line to ensure proper spacing vertically
-                          width: { xs: '100%', md: '48%' }, // responsive width for side-by-side inputs
+                          flex: 1,
+                          pl: { xs: 0, md: 6 },
+                          width: '100%',
                         }}
                       >
                         {isEditing ? (
                           <Box
                             sx={{
                               display: 'flex',
-                              gap: 2,
+                              gap: 1,
                               flexDirection: { xs: 'column', md: 'row' },
                             }}
                           >
@@ -1246,6 +1262,7 @@ export default function DriverSettings() {
                               value={draft.firstName || ''}
                               onChange={handleChange}
                               size="small"
+                              fullWidth
                               required
                             />
                             <TextField
@@ -1254,6 +1271,7 @@ export default function DriverSettings() {
                               value={draft.lastName || ''}
                               onChange={handleChange}
                               size="small"
+                              fullWidth
                               required
                             />
                           </Box>
@@ -1277,53 +1295,13 @@ export default function DriverSettings() {
 
                         {isEditing ? (
                           <TextField
-                            label="Contact Number"
-                            name="contactNo"
-                            value={draft.contactNo || ''}
-                            onChange={handleChange}
-                            size="small"
-                            placeholder="e.g., 09123456789"
-                          />
-                        ) : (
-                          <Typography sx={{ fontWeight: 700 }}>
-                            Contact Number:{' '}
-                            <span style={{ fontWeight: 400 }}>
-                              {profile.contactNo || 'N/A'}
-                            </span>
-                          </Typography>
-                        )}
-
-                        {isEditing ? (
-                          <TextField
-                            label="Email"
-                            name="email"
-                            type="email"
-                            value={draft.email || ''}
-                            onChange={handleChange}
-                            size="small"
-                            sx={{ width: { xs: '100%', md: '70%' } }}
-                            required
-                          />
-                        ) : (
-                          <Typography sx={{ fontWeight: 700 }}>
-                            Email:{' '}
-                            <span style={{ fontWeight: 400 }}>
-                              {profile.email || 'N/A'}
-                            </span>
-                          </Typography>
-                        )}
-
-                        {isEditing ? (
-                          <TextField
                             label="Address"
                             name="address"
                             value={draft.address || ''}
                             onChange={handleChange}
                             size="small"
-                            sx={{ width: { xs: '100%', md: '70%' } }}
-                            placeholder="e.g., 123 Main St, City"
-                            multiline
-                            rows={2}
+                            fullWidth
+                            sx={{ mt: 1 }}
                           />
                         ) : (
                           <Typography sx={{ fontWeight: 700 }}>
@@ -1332,6 +1310,52 @@ export default function DriverSettings() {
                               {profile.address || 'N/A'}
                             </span>
                           </Typography>
+                        )}
+
+                        {isEditing ? (
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              gap: 1,
+                              flexDirection: { xs: 'column', md: 'row' },
+                              mt: 1,
+                            }}
+                          >
+                            <TextField
+                              label="Email"
+                              name="email"
+                              type="email"
+                              value={draft.email || ''}
+                              onChange={handleChange}
+                              size="small"
+                              fullWidth
+                              required
+                            />
+                            <TextField
+                              label="Contact Number"
+                              name="contactNo"
+                              value={draft.contactNo || ''}
+                              onChange={handleChange}
+                              size="small"
+                              fullWidth
+                              placeholder="e.g., 09123456789"
+                            />
+                          </Box>
+                        ) : (
+                          <>
+                            <Typography sx={{ fontWeight: 700 }}>
+                              Email:{' '}
+                              <span style={{ fontWeight: 400 }}>
+                                {profile.email || 'N/A'}
+                              </span>
+                            </Typography>
+                            <Typography sx={{ fontWeight: 700 }}>
+                              Contact Number:{' '}
+                              <span style={{ fontWeight: 400 }}>
+                                {profile.contactNo || 'N/A'}
+                              </span>
+                            </Typography>
+                          </>
                         )}
 
                         {/* userType read-only */}
@@ -1700,38 +1724,39 @@ export default function DriverSettings() {
                             )}
                           </Box>
                         )}
-                        {!isEditingLicense && 
-                          licenseImage && 
-                          licenseImage !== 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' && (
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              gap: 1,
-                              mt: 1,
-                            }}
-                          >
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              color="error"
-                              onClick={handleRemoveLicenseImage}
-                              disabled={licenseImageUploading}
+                        {!isEditingLicense &&
+                          licenseImage &&
+                          licenseImage !==
+                            'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' && (
+                            <Box
                               sx={{
-                                fontSize: '0.75rem',
-                                px: 1.5,
-                                minWidth: 'auto',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: 1,
+                                mt: 1,
                               }}
                             >
-                              Remove Image
-                            </Button>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                color="error"
+                                onClick={handleRemoveLicenseImage}
+                                disabled={licenseImageUploading}
+                                sx={{
+                                  fontSize: '0.75rem',
+                                  px: 1.5,
+                                  minWidth: 'auto',
+                                }}
+                              >
+                                Remove Image
+                              </Button>
 
-                            {licenseImageUploading && (
-                              <CircularProgress size={20} sx={{ mt: 1 }} />
-                            )}
-                          </Box>
-                        )}
+                              {licenseImageUploading && (
+                                <CircularProgress size={20} sx={{ mt: 1 }} />
+                              )}
+                            </Box>
+                          )}
                       </Box>
                     </Box>
 

@@ -1,5 +1,5 @@
 import prisma from "../config/prisma.js";
-import { sendBookingSuccessNotification, sendBookingConfirmationNotification, sendPaymentReceivedNotification, sendCancellationApprovedNotification } from "../utils/notificationService.js";
+import { sendBookingSuccessNotification, sendBookingConfirmationNotification, sendPaymentReceivedNotification, sendCancellationApprovedNotification, sendAdminNewBookingNotification, sendAdminCancellationRequestNotification, sendCancellationDeniedNotification, sendAdminPaymentCompletedNotification } from "../utils/notificationService.js";
 
 export const getBookings = async (req, res) => {
   try {
@@ -417,6 +417,31 @@ export const createBooking = async (req, res) => {
       // Don't fail the booking creation if notification fails
     }
 
+    // Send new booking notification to admin/staff
+    try {
+      console.log('📢 Sending new booking notification to admin...');
+      await sendAdminNewBookingNotification(
+        newBooking,
+        {
+          customer_id: newBooking.customer_id,
+          first_name: newBooking.customer.first_name,
+          last_name: newBooking.customer.last_name,
+          email: newBooking.customer.email,
+          contact_no: newBooking.customer.contact_no
+        },
+        {
+          make: newBooking.car.make,
+          model: newBooking.car.model,
+          year: newBooking.car.year,
+          license_plate: newBooking.car.license_plate
+        }
+      );
+      console.log('✅ Admin new booking notification sent');
+    } catch (adminNotificationError) {
+      console.error("Error sending admin booking notification:", adminNotificationError);
+      // Don't fail the booking creation if notification fails
+    }
+
     res.status(201).json({
       success: true,
       message: "Booking created successfully",
@@ -717,10 +742,35 @@ export const cancelMyBooking = async (req, res) => {
         // booking_status remains unchanged until admin confirms
       },
       include: {
-        car: { select: { make: true, model: true, year: true } },
-        customer: { select: { first_name: true, last_name: true } },
+        car: { select: { make: true, model: true, year: true, license_plate: true } },
+        customer: { select: { first_name: true, last_name: true, email: true, contact_no: true } },
       },
     });
+
+    // Send cancellation request notification to admin/staff
+    try {
+      console.log('🚫 Sending cancellation request notification to admin...');
+      await sendAdminCancellationRequestNotification(
+        updatedBooking,
+        {
+          customer_id: updatedBooking.customer_id,
+          first_name: updatedBooking.customer.first_name,
+          last_name: updatedBooking.customer.last_name,
+          email: updatedBooking.customer.email,
+          contact_no: updatedBooking.customer.contact_no
+        },
+        {
+          make: updatedBooking.car.make,
+          model: updatedBooking.car.model,
+          year: updatedBooking.car.year,
+          license_plate: updatedBooking.car.license_plate
+        }
+      );
+      console.log('✅ Admin cancellation request notification sent');
+    } catch (adminNotificationError) {
+      console.error("Error sending admin cancellation notification:", adminNotificationError);
+      // Don't fail the request if notification fails
+    }
 
     res.json({
       success: true,
@@ -988,10 +1038,36 @@ export const rejectCancellationRequest = async (req, res) => {
         isCancel: false,
       },
       include: {
-        car: { select: { make: true, model: true, year: true } },
-        customer: { select: { first_name: true, last_name: true } }
+        car: { select: { make: true, model: true, year: true, license_plate: true } },
+        customer: { select: { first_name: true, last_name: true, email: true, contact_no: true, isRecUpdate: true } }
       },
     });
+
+    // Send cancellation denied notification to customer
+    try {
+      console.log('❌ Sending cancellation denied notification to customer...');
+      await sendCancellationDeniedNotification(
+        updatedBooking,
+        {
+          customer_id: updatedBooking.customer_id,
+          first_name: updatedBooking.customer.first_name,
+          last_name: updatedBooking.customer.last_name,
+          email: updatedBooking.customer.email,
+          contact_no: updatedBooking.customer.contact_no,
+          isRecUpdate: updatedBooking.customer.isRecUpdate
+        },
+        {
+          make: updatedBooking.car.make,
+          model: updatedBooking.car.model,
+          year: updatedBooking.car.year,
+          license_plate: updatedBooking.car.license_plate
+        }
+      );
+      console.log('✅ Cancellation denied notification sent');
+    } catch (notificationError) {
+      console.error("Error sending cancellation denied notification:", notificationError);
+      // Don't fail the rejection if notification fails
+    }
 
     res.json({
       success: true,
@@ -1578,6 +1654,34 @@ export const confirmBooking = async (req, res) => {
           'gcash'
         );
         console.log('✅ GCash payment received notification sent');
+
+        // Send admin notification for GCash payment approval
+        console.log('💰 Sending admin notification for GCash payment approval...');
+        await sendAdminPaymentCompletedNotification(
+          latestPayment,
+          {
+            customer_id: booking.customer.customer_id,
+            first_name: booking.customer.first_name,
+            last_name: booking.customer.last_name,
+            email: booking.customer.email,
+            contact_no: booking.customer.contact_no
+          },
+          { 
+            booking_id: booking.booking_id,
+            start_date: booking.start_date,
+            end_date: booking.end_date,
+            total_amount: booking.total_amount,
+            balance: updatedBooking.balance
+          },
+          {
+            make: booking.car.make,
+            model: booking.car.model,
+            year: booking.car.year,
+            license_plate: booking.car.license_plate
+          },
+          'gcash'
+        );
+        console.log('✅ Admin GCash payment approval notification sent');
       }
     } catch (notificationError) {
       console.error("Error sending payment notification:", notificationError);

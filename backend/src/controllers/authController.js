@@ -288,6 +288,7 @@ async function register(req, res, next) {
         status: 'active',
         driver_license_no: licenseNumber,
         date_created: new Date(),
+        isRecUpdate: 3, // Enable both SMS and Email notifications by default
       },
     });
 

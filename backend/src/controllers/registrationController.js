@@ -212,7 +212,8 @@ export const registerUser = async (req, res) => {
         contact_no: contactNumber,
         driver_license_no: licenseNumber,
         status: 'Active',
-        date_created: new Date()
+        date_created: new Date(),
+        isRecUpdate: 3 // Enable both SMS and Email notifications by default
       }
     });
 

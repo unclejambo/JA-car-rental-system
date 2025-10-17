@@ -1,5 +1,5 @@
 import prisma from "../config/prisma.js";
-import { sendBookingConfirmationNotification, sendPaymentReceivedNotification } from "../utils/notificationService.js";
+import { sendBookingConfirmationNotification, sendPaymentReceivedNotification, sendAdminPaymentRequestNotification, sendAdminPaymentCompletedNotification } from "../utils/notificationService.js";
 
 function shapePayment(p) {
   const { booking, customer, ...rest } = p;
@@ -258,6 +258,39 @@ export const createPayment = async (req, res) => {
         console.log('✅ Cash payment received notification sent');
       } catch (notificationError) {
         console.error("Error sending payment notification:", notificationError);
+        // Don't fail the payment creation if notification fails
+      }
+
+      // Send admin notification for cash payment recorded
+      try {
+        console.log('💰 Sending admin notification for Cash payment...');
+        await sendAdminPaymentCompletedNotification(
+          created,
+          {
+            customer_id: updatedBooking.customer.customer_id,
+            first_name: updatedBooking.customer.first_name,
+            last_name: updatedBooking.customer.last_name,
+            email: updatedBooking.customer.email,
+            contact_no: updatedBooking.customer.contact_no
+          },
+          {
+            booking_id: updatedBooking.booking_id,
+            start_date: updatedBooking.start_date,
+            end_date: updatedBooking.end_date,
+            total_amount: updatedBooking.total_amount,
+            balance: finalBalance
+          },
+          {
+            make: updatedBooking.car.make,
+            model: updatedBooking.car.model,
+            year: updatedBooking.car.year,
+            license_plate: updatedBooking.car.license_plate
+          },
+          'cash'
+        );
+        console.log('✅ Admin cash payment notification sent');
+      } catch (adminNotificationError) {
+        console.error("Error sending admin cash payment notification:", adminNotificationError);
         // Don't fail the payment creation if notification fails
       }
     }
@@ -553,7 +586,8 @@ export const processBookingPayment = async (req, res) => {
     const booking = await prisma.booking.findUnique({
       where: { booking_id: parseInt(booking_id) },
       include: {
-        car: { select: { make: true, model: true, year: true } },
+        car: { select: { make: true, model: true, year: true, license_plate: true } },
+        customer: { select: { first_name: true, last_name: true, email: true, contact_no: true } },
       },
     });
 
@@ -581,11 +615,13 @@ export const processBookingPayment = async (req, res) => {
         balance: Math.max(0, (booking.total_amount || 0) - parseInt(amount)),
       },
       include: {
-        customer: { select: { first_name: true, last_name: true } },
+        customer: { select: { first_name: true, last_name: true, email: true, contact_no: true } },
         booking: {
           select: {
             booking_id: true,
             total_amount: true,
+            start_date: true,
+            end_date: true,
           },
         },
       },
@@ -613,6 +649,47 @@ export const processBookingPayment = async (req, res) => {
         booking_status: bookingStatus, // Auto-confirm if payment >= 1000
       },
     });
+
+    // Send payment request notification to admin/staff (GCash only - customer submitted proof)
+    // Cash payments are recorded by admin/staff, so no request notification needed
+    if (payment_method === 'GCash') {
+      try {
+        console.log('💳 Sending GCash payment request notification to admin...');
+        await sendAdminPaymentRequestNotification(
+          {
+            payment_id: payment.payment_id,
+            payment_method,
+            gcash_no,
+            reference_no,
+            amount: parseInt(amount),
+            description: payment.description
+          },
+          {
+            customer_id: parseInt(customerId),
+            first_name: booking.customer.first_name,
+            last_name: booking.customer.last_name,
+            email: booking.customer.email,
+            contact_no: booking.customer.contact_no
+          },
+          {
+            booking_id: booking.booking_id,
+            start_date: booking.start_date,
+            end_date: booking.end_date,
+            total_amount: booking.total_amount
+          },
+          {
+            make: booking.car.make,
+            model: booking.car.model,
+            year: booking.car.year,
+            license_plate: booking.car.license_plate
+          }
+        );
+        console.log('✅ Admin GCash payment request notification sent');
+      } catch (adminNotificationError) {
+        console.error("Error sending admin payment notification:", adminNotificationError);
+        // Don't fail the payment request if notification fails
+      }
+    }
 
     res.status(201).json({
       success: true,

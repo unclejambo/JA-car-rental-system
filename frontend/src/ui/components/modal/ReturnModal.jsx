@@ -333,6 +333,10 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     ? `${bookingData.car.make} ${bookingData.car.model}`
     : 'Vehicle';
 
+  const carPlateNumber = bookingData?.car
+    ? `${bookingData.car.license_plate}`
+    : 'N/A';
+
   return (
     <>
       <Dialog
@@ -342,7 +346,9 @@ export default function ReturnModal({ show, onClose, bookingId }) {
         maxWidth={isMobile ? 'sm' : 'md'}
         disableScrollLock
       >
-        <DialogTitle>Returning of {carName}</DialogTitle>
+        <DialogTitle>
+          Returning of {carName}: {carPlateNumber}
+        </DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>
           {error && (
             <Alert severity="error" sx={{ m: 2 }}>
@@ -385,6 +391,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                       name="gasLevel"
                       value={formData.gasLevel}
                       onChange={handleInputChange}
+                      sx={{ display: 'flex', gap: 1 }}
                     >
                       {['High', 'Mid', 'Low'].map((g) => (
                         <FormControlLabel
@@ -392,6 +399,12 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                           value={g}
                           control={<Radio />}
                           label={g}
+                          sx={{
+                            '& .MuiFormControlLabel-label': {
+                              userSelect: 'none',
+                              pointerEvents: 'none', // Label won't capture clicks
+                            },
+                          }}
                         />
                       ))}
                     </RadioGroup>
@@ -532,21 +545,40 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                       name="damageStatus"
                       value={formData.damageStatus}
                       onChange={handleInputChange}
+                      sx={{ display: 'flex', gap: 1 }}
                     >
                       <FormControlLabel
                         value="noDamage"
                         control={<Radio />}
                         label="No Damages"
+                        sx={{
+                          '& .MuiFormControlLabel-label': {
+                            userSelect: 'none',
+                            pointerEvents: 'none',
+                          },
+                        }}
                       />
                       <FormControlLabel
                         value="major"
                         control={<Radio />}
                         label="Major"
+                        sx={{
+                          '& .MuiFormControlLabel-label': {
+                            userSelect: 'none',
+                            pointerEvents: 'none',
+                          },
+                        }}
                       />
                       <FormControlLabel
                         value="minor"
                         control={<Radio />}
                         label="Minor"
+                        sx={{
+                          '& .MuiFormControlLabel-label': {
+                            userSelect: 'none',
+                            pointerEvents: 'none',
+                          },
+                        }}
                       />
                     </RadioGroup>
 
@@ -606,16 +638,29 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                       name="equipmentStatus"
                       value={formData.equipmentStatus}
                       onChange={handleInputChange}
+                      sx={{ display: 'flex', gap: 1 }}
                     >
                       <FormControlLabel
                         value="complete"
                         control={<Radio />}
                         label="Complete"
+                        sx={{
+                          '& .MuiFormControlLabel-label': {
+                            userSelect: 'none',
+                            pointerEvents: 'none',
+                          },
+                        }}
                       />
                       <FormControlLabel
                         value="no"
                         control={<Radio />}
                         label="No"
+                        sx={{
+                          '& .MuiFormControlLabel-label': {
+                            userSelect: 'none',
+                            pointerEvents: 'none',
+                          },
+                        }}
                       />
                     </RadioGroup>
                     {formData.equipmentStatus === 'no' && (
@@ -641,16 +686,29 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                       name="isClean"
                       value={formData.isClean}
                       onChange={handleInputChange}
+                      sx={{ display: 'flex', gap: 1 }}
                     >
                       <FormControlLabel
                         value={true}
                         control={<Radio />}
                         label="Yes"
+                        sx={{
+                          '& .MuiFormControlLabel-label': {
+                            userSelect: 'none',
+                            pointerEvents: 'none',
+                          },
+                        }}
                       />
                       <FormControlLabel
                         value={false}
                         control={<Radio />}
                         label="No"
+                        sx={{
+                          '& .MuiFormControlLabel-label': {
+                            userSelect: 'none',
+                            pointerEvents: 'none',
+                          },
+                        }}
                       />
                       {!formData.isClean && (
                         <Box>
@@ -661,9 +719,16 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                                   name="hasStain"
                                   checked={formData.hasStain}
                                   onChange={handleInputChange}
+                                  sx={{ display: 'flex', gap: 1 }}
                                 />
                               }
                               label="Stain"
+                              sx={{
+                                '& .MuiFormControlLabel-label': {
+                                  userSelect: 'none',
+                                  pointerEvents: 'none',
+                                },
+                              }}
                             />
                           </FormGroup>
                         </Box>
@@ -953,14 +1018,37 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                   payment_method: e.target.value,
                 }))
               }
+              sx={{ display: 'flex', gap: 1 }}
             >
-              <FormControlLabel value="Cash" control={<Radio />} label="Cash" />
-              <FormControlLabel
-                value="GCash"
-                control={<Radio />}
-                label="GCash"
-              />
+              <FormControlLabel value="Cash" control={<Radio />}>
+                Cash
+              </FormControlLabel>
+              <FormControlLabel value="GCash" control={<Radio />}>
+                GCash
+              </FormControlLabel>
             </RadioGroup>
+            <FormControlLabel
+              value="Cash"
+              control={<Radio />}
+              label="Cash"
+              sx={{
+                '& .MuiFormControlLabel-label': {
+                  userSelect: 'none',
+                  pointerEvents: 'none',
+                },
+              }}
+            />
+            <FormControlLabel
+              value="GCash"
+              control={<Radio />}
+              label="GCash"
+              sx={{
+                '& .MuiFormControlLabel-label': {
+                  userSelect: 'none',
+                  pointerEvents: 'none',
+                },
+              }}
+            />
 
             {paymentData.payment_method === 'GCash' && (
               <>

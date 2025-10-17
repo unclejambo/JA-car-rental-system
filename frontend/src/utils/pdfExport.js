@@ -3,9 +3,10 @@ import autoTable from 'jspdf-autotable';
 
 /**
  * Format currency for display
+ * Using 'PHP' prefix for consistency across all export formats
  */
 const formatCurrency = (amount) => {
-  return `₱ ${Number(amount || 0).toLocaleString('en-US', {
+  return `PHP ${Number(amount || 0).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -65,25 +66,23 @@ export const generateTransactionPDF = (activeTab, rows) => {
 
   if (activeTab === 'TRANSACTIONS') {
     columns = [
+      { header: 'Transaction ID', dataKey: 'transactionId' },
       { header: 'Booking ID', dataKey: 'bookingId' },
       { header: 'Customer', dataKey: 'customerName' },
       { header: 'Car Model', dataKey: 'carModel' },
       { header: 'Booking Date', dataKey: 'bookingDate' },
-      { header: 'Start Date', dataKey: 'startDate' },
-      { header: 'End Date', dataKey: 'endDate' },
-      { header: 'Total Amount', dataKey: 'totalAmount' },
-      { header: 'Status', dataKey: 'status' },
+      { header: 'Completion Date', dataKey: 'completionDate' },
+      { header: 'Cancellation Date', dataKey: 'cancellationDate' },
     ];
 
     dataRows = rows.map(row => ({
-      bookingId: row.bookingId || 'N/A',
+      transactionId: row.transactionId || row.transaction_id || 'N/A',
+      bookingId: row.bookingId || row.booking_id || 'N/A',
       customerName: row.customerName || 'N/A',
       carModel: row.carModel || 'N/A',
-      bookingDate: formatDate(row.bookingDate),
-      startDate: formatDate(row.startDate),
-      endDate: formatDate(row.endDate),
-      totalAmount: formatCurrency(row.totalAmount),
-      status: row.status || 'N/A',
+      bookingDate: formatDate(row.bookingDate || row.booking_date),
+      completionDate: formatDate(row.completionDate || row.completion_date),
+      cancellationDate: formatDate(row.cancellationDate || row.cancellation_date),
     }));
   } else if (activeTab === 'PAYMENT') {
     columns = [
@@ -92,17 +91,17 @@ export const generateTransactionPDF = (activeTab, rows) => {
       { header: 'Customer', dataKey: 'customerName' },
       { header: 'Amount', dataKey: 'amount' },
       { header: 'Payment Method', dataKey: 'paymentMethod' },
-      { header: 'Payment Date', dataKey: 'paymentDate' },
+      { header: 'Paid Date', dataKey: 'paidDate' },
       { header: 'Description', dataKey: 'description' },
     ];
 
     dataRows = rows.map(row => ({
-      paymentId: row.paymentId || 'N/A',
-      bookingId: row.bookingId || 'N/A',
+      paymentId: row.paymentId || row.payment_id || 'N/A',
+      bookingId: row.bookingId || row.booking_id || 'N/A',
       customerName: row.customerName || 'N/A',
-      amount: formatCurrency(row.amount),
-      paymentMethod: row.paymentMethod || 'N/A',
-      paymentDate: formatDateTime(row.paymentDate),
+      amount: formatCurrency(row.totalAmount || row.amount),
+      paymentMethod: row.paymentMethod || row.payment_method || 'N/A',
+      paidDate: formatDate(row.paidDate || row.paid_date),
       description: row.description || 'N/A',
     }));
   } else if (activeTab === 'REFUND') {
@@ -116,11 +115,11 @@ export const generateTransactionPDF = (activeTab, rows) => {
     ];
 
     dataRows = rows.map(row => ({
-      refundId: row.refundId || 'N/A',
-      bookingId: row.bookingId || 'N/A',
+      refundId: row.refundId || row.refund_id || 'N/A',
+      bookingId: row.bookingId || row.booking_id || 'N/A',
       customerName: row.customerName || 'N/A',
-      amount: formatCurrency(row.amount),
-      refundDate: formatDateTime(row.refundDate),
+      amount: formatCurrency(row.refundAmount || row.refund_amount),
+      refundDate: formatDate(row.refundDate || row.refund_date),
       description: row.description || 'N/A',
     }));
   }
@@ -148,7 +147,12 @@ export const generateTransactionPDF = (activeTab, rows) => {
 
   // Calculate totals if applicable
   if (activeTab === 'PAYMENT' || activeTab === 'REFUND') {
-    const total = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+    const total = rows.reduce((sum, row) => {
+      const amount = activeTab === 'PAYMENT' 
+        ? (row.totalAmount || row.amount || 0)
+        : (row.refundAmount || row.refund_amount || 0);
+      return sum + Number(amount);
+    }, 0);
     const finalY = doc.lastAutoTable.finalY + 10;
     
     doc.setFontSize(12);

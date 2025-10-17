@@ -65,6 +65,7 @@ export const getReturnData = async (req, res) => {
             car_id: true,
             make: true,
             model: true,
+            license_plate: true,
             mileage: true
           }
         }

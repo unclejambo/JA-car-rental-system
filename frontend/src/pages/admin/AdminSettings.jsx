@@ -20,6 +20,7 @@ import ConfirmationModal from '../../ui/components/modal/ConfirmationModal';
 import { HiCog8Tooth } from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
+import PhotoCamera from '@mui/icons-material/PhotoCamera';
 
 export default function AdminSettings() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -67,6 +68,7 @@ export default function AdminSettings() {
             adminId: result.data.admin_id,
             firstName: result.data.first_name || '',
             lastName: result.data.last_name || '',
+            address: result.data.address || '',
             contactNo: result.data.contact_no || '',
             email: result.data.email || '',
             username: result.data.username || '',
@@ -133,6 +135,9 @@ export default function AdminSettings() {
             break;
           case 'lastName':
             fieldLabel = 'Last Name';
+            break;
+          case 'address':
+            fieldLabel = 'Address';
             break;
           case 'contactNo':
             fieldLabel = 'Contact Number';
@@ -383,6 +388,7 @@ export default function AdminSettings() {
       const updateData = {
         first_name: draft.firstName,
         last_name: draft.lastName,
+        address: draft.address,
         contact_no: draft.contactNo,
         email: draft.email,
         username: draft.username,
@@ -399,6 +405,7 @@ export default function AdminSettings() {
       const hasOtherChanges =
         draft.firstName !== profile.firstName ||
         draft.lastName !== profile.lastName ||
+        draft.address !== profile.address ||
         draft.contactNo !== profile.contactNo ||
         draft.email !== profile.email ||
         draft.username !== profile.username ||
@@ -449,6 +456,7 @@ export default function AdminSettings() {
         adminId: result.data.admin_id,
         firstName: result.data.first_name || '',
         lastName: result.data.last_name || '',
+        address: result.data.address || '',
         contactNo: result.data.contact_no || '',
         email: result.data.email || '',
         username: result.data.username || '',
@@ -584,13 +592,9 @@ export default function AdminSettings() {
               <Typography
                 variant="h4"
                 component="h1"
-                gutterBottom
                 sx={{
-                  fontSize: '1.8rem',
+                  fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
                   color: '#000',
-                  '@media (max-width: 1024px)': {
-                    fontSize: '1.5rem',
-                  },
                 }}
               >
                 <HiCog8Tooth
@@ -698,7 +702,7 @@ export default function AdminSettings() {
                             mt: { xs: 2, md: 0 },
                             position: { md: 'absolute' },
                             top: { md: 155 },
-                            left: { md: 8 },
+                            left: { md: 20 },
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 1,
@@ -709,6 +713,7 @@ export default function AdminSettings() {
                             variant="contained"
                             component="label"
                             size="small"
+                            startIcon={<PhotoCamera />}
                             disabled={imageUploading}
                             sx={{
                               fontSize: '0.75rem',
@@ -730,6 +735,7 @@ export default function AdminSettings() {
                               variant="outlined"
                               size="small"
                               color="error"
+                              startIcon={<PhotoCamera />}
                               onClick={handleRemoveImage}
                               disabled={imageUploading}
                               sx={{
@@ -763,7 +769,7 @@ export default function AdminSettings() {
                           <Box
                             sx={{
                               display: 'flex',
-                              gap: 2,
+                              gap: 1,
                               flexDirection: { xs: 'column', md: 'row' },
                             }}
                           >
@@ -773,7 +779,7 @@ export default function AdminSettings() {
                               value={draft.firstName || ''}
                               onChange={handleChange}
                               size="small"
-                              fullWidth={false}
+                              fullWidth
                               required
                             />
                             <TextField
@@ -782,7 +788,7 @@ export default function AdminSettings() {
                               value={draft.lastName || ''}
                               onChange={handleChange}
                               size="small"
-                              fullWidth={false}
+                              fullWidth
                               required
                             />
                           </Box>
@@ -806,40 +812,67 @@ export default function AdminSettings() {
 
                         {isEditing ? (
                           <TextField
-                            label="Contact Number"
-                            name="contactNo"
-                            value={draft.contactNo || ''}
+                            label="Address"
+                            name="address"
+                            value={draft.address || ''}
                             onChange={handleChange}
                             size="small"
-                            placeholder="e.g., 09123456789"
+                            fullWidth
+                            sx={{ mt: 1 }}
                           />
                         ) : (
                           <Typography sx={{ fontWeight: 700 }}>
-                            Contact Number:{' '}
+                            Address:{' '}
                             <span style={{ fontWeight: 400 }}>
-                              {profile.contactNo || 'N/A'}
+                              {profile.address || 'N/A'}
                             </span>
                           </Typography>
                         )}
 
                         {isEditing ? (
-                          <TextField
-                            label="Email"
-                            name="email"
-                            type="email"
-                            value={draft.email || ''}
-                            onChange={handleChange}
-                            size="small"
-                            sx={{ width: { xs: '100%', md: '70%' } }}
-                            required
-                          />
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              gap: 1,
+                              flexDirection: { xs: 'column', md: 'row' },
+                              mt: 1,
+                            }}
+                          >
+                            <TextField
+                              label="Email"
+                              name="email"
+                              type="email"
+                              value={draft.email || ''}
+                              onChange={handleChange}
+                              size="small"
+                              fullWidth
+                              required
+                            />
+                            <TextField
+                              label="Contact Number"
+                              name="contactNo"
+                              value={draft.contactNo || ''}
+                              onChange={handleChange}
+                              size="small"
+                              fullWidth
+                              placeholder="e.g., 09123456789"
+                            />
+                          </Box>
                         ) : (
-                          <Typography sx={{ fontWeight: 700 }}>
-                            Email:{' '}
-                            <span style={{ fontWeight: 400 }}>
-                              {profile.email || 'N/A'}
-                            </span>
-                          </Typography>
+                          <>
+                            <Typography sx={{ fontWeight: 700 }}>
+                              Email:{' '}
+                              <span style={{ fontWeight: 400 }}>
+                                {profile.email || 'N/A'}
+                              </span>
+                            </Typography>
+                            <Typography sx={{ fontWeight: 700 }}>
+                              Contact Number:{' '}
+                              <span style={{ fontWeight: 400 }}>
+                                {profile.contactNo || 'N/A'}
+                              </span>
+                            </Typography>
+                          </>
                         )}
 
                         {!isEditing && (

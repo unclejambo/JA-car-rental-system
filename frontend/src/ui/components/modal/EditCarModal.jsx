@@ -14,6 +14,8 @@ import {
   Typography,
   InputAdornment,
   Alert,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import { FaUpload } from 'react-icons/fa';
 
@@ -43,6 +45,7 @@ export default function EditCarModal({ show, onClose, car, onStatusChange }) {
         rent_price: raw.rent_price ?? car.rent_price ?? '',
         license_plate: raw.license_plate || car.license_plate || '',
         car_img_url: raw.car_img_url || car.image || '',
+        hasGPS: raw.hasGPS ?? car.hasGPS ?? false,
       });
     }
   }, [car]);
@@ -50,6 +53,11 @@ export default function EditCarModal({ show, onClose, car, onStatusChange }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleToggle = (e) => {
+    const { name, checked } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
   const handleFileChange = (e) => {
@@ -218,6 +226,29 @@ export default function EditCarModal({ show, onClose, car, onStatusChange }) {
               required
               placeholder="e.g., ABC-123"
             />
+
+            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    name="hasGPS"
+                    checked={formData.hasGPS || false}
+                    onChange={handleToggle}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                      GPS Tracking Enabled
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Enable if this vehicle has GPS tracking installed
+                    </Typography>
+                  </Box>
+                }
+              />
+            </Box>
 
             <Box>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>

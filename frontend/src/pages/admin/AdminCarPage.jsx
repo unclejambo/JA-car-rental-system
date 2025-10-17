@@ -532,17 +532,15 @@ export default function AdminCarPage() {
               boxSizing: 'border-box',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}
+            >
               <Typography
                 variant="h4"
                 component="h1"
-                gutterBottom
                 sx={{
-                  fontSize: '1.8rem',
+                  fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
                   color: '#000',
-                  '@media (max-width: 1024px)': {
-                    fontSize: '1.5rem',
-                  },
                 }}
               >
                 {activeTab === 'CARS' ? (
@@ -562,26 +560,28 @@ export default function AdminCarPage() {
                   variant="outlined"
                   startIcon={
                     <AddIcon
-                      sx={{ width: '18px', height: '18px', mt: '-2px' }}
+                      sx={{
+                        width: { xs: '14px', md: '18px' },
+                        height: { xs: '14px', md: '18px' },
+                        mt: '-3px',
+                      }}
                     />
                   }
                   onClick={openAddModal}
                   sx={{
                     color: '#fff',
                     p: 1,
-                    pb: 0.5,
-                    height: 36,
+                    height: { xs: 26, md: 30 },
+                    fontSize: { xs: '.7rem', md: '.875rem' },
                     border: 'none',
                     backgroundColor: '#c10007',
+                    minWidth: 150,
                     '&:hover': {
                       backgroundColor: '#a00006',
                       color: '#fff',
                       fontWeight: 600,
                       borderColor: '#4a4a4a',
                       boxShadow: 'none',
-                    },
-                    '@media (max-width: 600px)': {
-                      height: 28,
                     },
                   }}
                 >

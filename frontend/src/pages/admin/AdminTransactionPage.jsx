@@ -1,7 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Button,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import { FaFileCsv } from 'react-icons/fa';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
 import { HiDocumentCurrencyDollar } from 'react-icons/hi2';
@@ -15,6 +26,7 @@ import { useTransactionStore } from '../../store/transactions';
 import AddPaymentModal from '../../ui/components/modal/AddPaymentModal';
 import AddRefundModal from '../../ui/components/modal/AddRefundModal';
 import { generateTransactionPDF } from '../../utils/pdfExport';
+import { generateTransactionCSV } from '../../utils/csvExport';
 
 export default function AdminTransactionPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -174,9 +186,28 @@ export default function AdminTransactionPage() {
   const openAddRefundModal = () => setShowAddRefundModal(true);
   const closeAddRefundModal = () => setShowAddRefundModal(false);
 
+  // Download menu state
+  const [downloadAnchorEl, setDownloadAnchorEl] = useState(null);
+  const downloadMenuOpen = Boolean(downloadAnchorEl);
+
+  const handleDownloadClick = (event) => {
+    setDownloadAnchorEl(event.currentTarget);
+  };
+
+  const handleDownloadClose = () => {
+    setDownloadAnchorEl(null);
+  };
+
   // Handle PDF download
   const handleDownloadPDF = () => {
     generateTransactionPDF(activeTab, rows);
+    handleDownloadClose();
+  };
+
+  // Handle CSV download
+  const handleDownloadCSV = () => {
+    generateTransactionCSV(activeTab, rows);
+    handleDownloadClose();
   };
 
   // Initial & on-tab-change data loader
@@ -326,16 +357,21 @@ export default function AdminTransactionPage() {
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
-                  gap: { xs: 1, sm: 5 },
+                  flex: { md: 1 },
                   alignItems: 'center',
                 }}
               >
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    width: '100%',
+                  }}
+                >
                   <Typography
                     variant="h4"
                     component="h1"
                     sx={{
-                      fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
+                      fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
                       color: '#000',
                       display: 'flex',
                       alignItems: 'center',
@@ -350,36 +386,84 @@ export default function AdminTransactionPage() {
                     />
                     {activeTab}
                   </Typography>
-                  {/* Download PDF Button */}
-                  <Button
-                    variant="outlined"
-                    onClick={handleDownloadPDF}
-                    disabled={!rows || rows.length === 0}
-                    sx={{
-                      color: '#000',
-                      p: 0,
-                      py: 0,
-                      height: { xs: 30, sm: 32, md: 36 },
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      minWidth: 'auto',
-                      '&:hover': {
-                        backgroundColor: 'transparent',
-                        color: 'grey',
-                        boxShadow: 'none',
-                      },
-                      '&:disabled': {
-                        color: '#666',
-                      },
-                    }}
-                  >
-                    <DownloadIcon
+                  {/* Download Button with Dropdown */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                    <Button
+                      variant="outlined"
+                      onClick={handleDownloadClick}
+                      disabled={!rows || rows.length === 0}
                       sx={{
-                        width: { xs: '18px', sm: '26px' },
-                        height: { xs: '18px', sm: '26px' },
+                        color: '#000',
+                        p: 0,
+                        py: 0,
+                        pr: 0.5,
+                        height: { xs: 30, sm: 32, md: 36 },
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        minWidth: 'auto',
+                        '&:hover': {
+                          backgroundColor: 'transparent',
+                          color: 'grey',
+                          boxShadow: 'none',
+                        },
+                        '&:disabled': {
+                          color: '#666',
+                        },
                       }}
-                    />
-                  </Button>
+                    >
+                      <DownloadIcon
+                        sx={{
+                          width: { xs: '18px', sm: '26px' },
+                          height: { xs: '18px', sm: '26px' },
+                        }}
+                      />
+                      <ArrowDropDownIcon
+                        sx={{
+                          width: { xs: '16px', sm: '20px' },
+                          height: { xs: '16px', sm: '20px' },
+                          ml: -0.5,
+                        }}
+                      />
+                    </Button>
+                    <Menu
+                      anchorEl={downloadAnchorEl}
+                      open={downloadMenuOpen}
+                      onClose={handleDownloadClose}
+                      disableScrollLock
+                      anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'left',
+                      }}
+                      transformOrigin={{
+                        vertical: 'top',
+                        horizontal: 'left',
+                      }}
+                      sx={{
+                        '& .MuiPaper-root': {
+                          minWidth: '150px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                        },
+                      }}
+                    >
+                      <MenuItem onClick={handleDownloadPDF}>
+                        <ListItemIcon>
+                          <PictureAsPdfIcon
+                            fontSize="small"
+                            sx={{ color: '#d32f2f' }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText>PDF</ListItemText>
+                      </MenuItem>
+                      <MenuItem onClick={handleDownloadCSV}>
+                        <ListItemIcon>
+                          <FaFileCsv
+                            style={{ fontSize: '18px', color: '#2e7d32' }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText>CSV</ListItemText>
+                      </MenuItem>
+                    </Menu>
+                  </Box>
                 </Box>
                 <Box
                   sx={{
@@ -392,38 +476,29 @@ export default function AdminTransactionPage() {
                       variant="outlined"
                       startIcon={
                         <AddIcon
-                          sx={{ width: '18px', height: '18px', mt: '-2px' }}
+                          sx={{
+                            width: { xs: '14px', md: '18px' },
+                            height: { xs: '14px', md: '18px' },
+                            mt: '-3px',
+                          }}
                         />
                       }
                       onClick={openAddPaymentModal}
                       sx={{
                         color: '#fff',
                         p: 1,
-                        pb: 0.5,
-                        height: 36,
+                        height: { xs: 26, md: 30 },
+                        fontSize: { xs: '.7rem', md: '.875rem' },
                         border: 'none',
                         backgroundColor: '#c10007',
                         whiteSpace: 'nowrap',
-                        minWidth: 'auto',
+                        minWidth: 150,
                         '&:hover': {
                           backgroundColor: '#a00006',
                           color: '#fff',
                           fontWeight: 600,
                           borderColor: '#4a4a4a',
                           boxShadow: 'none',
-                        },
-                        '@media (max-width: 600px)': {
-                          height: 32,
-                          fontSize: '0.7rem',
-                          px: 0.75,
-                          py: 0.5,
-                          '& .MuiButton-startIcon': {
-                            marginRight: '2px',
-                          },
-                          '& .MuiSvgIcon-root': {
-                            width: '14px',
-                            height: '14px',
-                          },
                         },
                       }}
                     >
@@ -435,38 +510,29 @@ export default function AdminTransactionPage() {
                       variant="outlined"
                       startIcon={
                         <AddIcon
-                          sx={{ width: '18px', height: '18px', mt: '-2px' }}
+                          sx={{
+                            width: { xs: '14px', md: '18px' },
+                            height: { xs: '14px', md: '18px' },
+                            mt: '-3px',
+                          }}
                         />
                       }
                       onClick={openAddRefundModal}
                       sx={{
                         color: '#fff',
                         p: 1,
-                        pb: 0.5,
-                        height: 36,
+                        height: { xs: 26, md: 30 },
+                        fontSize: { xs: '.7rem', md: '.875rem' },
                         border: 'none',
                         backgroundColor: '#c10007',
                         whiteSpace: 'nowrap',
-                        minWidth: 'auto',
+                        minWidth: 150,
                         '&:hover': {
                           backgroundColor: '#a00006',
                           color: '#fff',
                           fontWeight: 600,
                           borderColor: '#4a4a4a',
                           boxShadow: 'none',
-                        },
-                        '@media (max-width: 600px)': {
-                          height: 32,
-                          fontSize: '0.7rem',
-                          px: 0.75,
-                          py: 0.5,
-                          '& .MuiButton-startIcon': {
-                            marginRight: '2px',
-                          },
-                          '& .MuiSvgIcon-root': {
-                            width: '14px',
-                            height: '14px',
-                          },
                         },
                       }}
                     >
@@ -491,8 +557,17 @@ export default function AdminTransactionPage() {
                   variant="outlined"
                   size="small"
                   sx={{
-                    width: { xs: '100%', sm: 350 },
+                    width: { xs: '100%', md: 350 },
                     maxWidth: 'auto',
+                    height: { xs: 26, md: 30 },
+                    backgroundColor: '#fff',
+                    '& .MuiOutlinedInput-root': {
+                      height: { xs: 26, md: 30 },
+                      backgroundColor: '#fff',
+                    },
+                    '& .MuiInputBase-input': {
+                      padding: { xs: '4px 8px', md: '6px 10px' },
+                    },
                   }}
                 />
               </Box>

@@ -67,7 +67,7 @@ const RegisterPage = () => {
   const [showTerms, setShowTerms] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  
+
   // Phone verification states
   const [showPhoneVerification, setShowPhoneVerification] = useState(false);
   const [pendingRegistrationData, setPendingRegistrationData] = useState(null);
@@ -205,7 +205,10 @@ const RegisterPage = () => {
       }
 
       // 2) Send OTP to phone number for verification
-      const otpUrl = new URL('/api/phone-verification/send-otp', BASE).toString();
+      const otpUrl = new URL(
+        '/api/phone-verification/send-otp',
+        BASE
+      ).toString();
       const otpRes = await fetch(otpUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -242,7 +245,6 @@ const RegisterPage = () => {
       // Show phone verification modal
       setLoading(false);
       setShowPhoneVerification(true);
-
     } catch (err) {
       console.error('Registration error:', err);
       setServerError(err.message || 'Registration failed');
@@ -256,8 +258,10 @@ const RegisterPage = () => {
       setLoading(true);
       setShowPhoneVerification(false);
 
-      const BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL).replace(/\/+$/, '');
-      
+      const BASE = (
+        import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL
+      ).replace(/\/+$/, '');
+
       // Complete registration with verified phone
       const regUrl = new URL('/api/auth/register', BASE).toString();
       const regRes = await fetch(regUrl, {
@@ -275,10 +279,12 @@ const RegisterPage = () => {
         );
       }
 
-      setSuccessMessage(regJson?.message || 'Registration successful! Your phone number has been verified.');
+      setSuccessMessage(
+        regJson?.message ||
+          'Registration successful! Your phone number has been verified.'
+      );
       setShowSuccess(true);
       setPendingRegistrationData(null);
-      
     } catch (err) {
       console.error('Registration completion error:', err);
       setServerError(err.message || 'Registration failed');
@@ -320,6 +326,31 @@ const RegisterPage = () => {
           className="relative z-10 w-full max-w-md bg-white rounded-xl shadow-md p-6 register-card"
           style={{ backgroundImage: `url(${carImage})` }}
         >
+          {/* Back to Login (MUI) - Sticky */}
+          <Box
+            sx={{
+              zIndex: 10,
+              backgroundColor: 'transparent',
+              mb: 1,
+            }}
+          >
+            <Button
+              variant="text"
+              color="primary"
+              size="small"
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate('/login')}
+              aria-label="Back to login"
+              sx={{
+                '&:hover': {
+                  backgroundColor: 'transparent',
+                },
+              }}
+            >
+              Back to Login
+            </Button>
+          </Box>
+
           {/* add `register-card` class so custom CSS can target the card */}
           <form
             className="register-form flex flex-col space-y-3"
@@ -328,34 +359,6 @@ const RegisterPage = () => {
             noValidate
             encType="multipart/form-data"
           >
-            {/* Back to Login (MUI) - Sticky */}
-            <Box
-              sx={{
-                position: 'sticky',
-                top: 0,
-                zIndex: 10,
-                backgroundColor: 'white',
-                py: 1,
-                mb: 1,
-              }}
-            >
-              <Button
-                variant="text"
-                color="primary"
-                size="small"
-                startIcon={<ArrowBackIcon />}
-                onClick={() => navigate('/login')}
-                aria-label="Back to login"
-                sx={{
-                  '&:hover': {
-                    backgroundColor: 'rgba(37, 99, 235, 0.08)',
-                  },
-                }}
-              >
-                Back to Login
-              </Button>
-            </Box>
-
             {/* Email */}
             <Box sx={{ mb: 2 }}>
               <TextField

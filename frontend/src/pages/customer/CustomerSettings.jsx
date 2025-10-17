@@ -117,7 +117,7 @@ export default function CustomerSettings() {
       setShowConfirmModal(false);
       setPendingPhoneNumber(draft.contactNumber);
       setPendingProfileChanges({ changedFields, customerId });
-      
+
       // Send OTP to new phone number
       sendPhoneOTP(draft.contactNumber);
       return;
@@ -243,18 +243,21 @@ export default function CustomerSettings() {
   // Phone verification functions
   const sendPhoneOTP = async (phoneNumber) => {
     try {
-      const response = await fetch(`${API_BASE}/api/phone-verification/send-otp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phoneNumber: phoneNumber,
-          purpose: 'phone_change',
-          userId: JSON.parse(localStorage.getItem('userInfo'))?.id,
-          userType: 'customer',
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE}/api/phone-verification/send-otp`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            phoneNumber: phoneNumber,
+            purpose: 'phone_change',
+            userId: JSON.parse(localStorage.getItem('userInfo'))?.id,
+            userType: 'customer',
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -326,7 +329,10 @@ export default function CustomerSettings() {
                 setInitialReceiveUpdatesEmail(receiveUpdatesEmail);
               }
             } catch (notifError) {
-              console.error('Error updating notification settings:', notifError);
+              console.error(
+                'Error updating notification settings:',
+                notifError
+              );
             }
           }
 
@@ -1096,7 +1102,7 @@ export default function CustomerSettings() {
                                 mt: { xs: 2, md: 0 },
                                 position: { md: 'absolute' },
                                 top: { md: 155 },
-                                left: { md: 8 },
+                                left: { md: 20 },
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: 1,
@@ -1107,6 +1113,7 @@ export default function CustomerSettings() {
                                 variant="contained"
                                 component="label"
                                 size="small"
+                                startIcon={<PhotoCamera />}
                                 disabled={imageUploading}
                                 sx={{
                                   fontSize: '0.75rem',
@@ -1128,6 +1135,7 @@ export default function CustomerSettings() {
                                   variant="outlined"
                                   size="small"
                                   color="error"
+                                  startIcon={<PhotoCamera />}
                                   onClick={handleRemoveImage}
                                   disabled={imageUploading}
                                   sx={{
@@ -1162,7 +1170,7 @@ export default function CustomerSettings() {
                               <Box
                                 sx={{
                                   display: 'flex',
-                                  gap: 0,
+                                  gap: 1,
                                   flexDirection: { xs: 'column', md: 'row' },
                                 }}
                               >
@@ -1172,7 +1180,7 @@ export default function CustomerSettings() {
                                   value={draft.firstName}
                                   onChange={handleChange}
                                   size="small"
-                                  fullWidth={false}
+                                  fullWidth
                                 />
                                 <TextField
                                   label="Last Name"
@@ -1180,7 +1188,7 @@ export default function CustomerSettings() {
                                   value={draft.lastName}
                                   onChange={handleChange}
                                   size="small"
-                                  fullWidth={false}
+                                  fullWidth
                                 />
                               </Box>
                             ) : (
@@ -1206,6 +1214,7 @@ export default function CustomerSettings() {
                                 value={draft.address}
                                 onChange={handleChange}
                                 size="small"
+                                fullWidth
                               />
                             ) : (
                               <Typography sx={{ fontWeight: 700 }}>
@@ -1216,38 +1225,45 @@ export default function CustomerSettings() {
                               </Typography>
                             )}
                             {isEditing ? (
-                              <TextField
-                                label="Email"
-                                name="email"
-                                value={draft.email}
-                                onChange={handleChange}
-                                size="small"
-                                sx={{ width: { xs: '100%', md: '50%' } }}
-                              />
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  gap: 1,
+                                  flexDirection: { xs: 'column', md: 'row' },
+                                }}
+                              >
+                                <TextField
+                                  label="Email"
+                                  name="email"
+                                  value={draft.email}
+                                  onChange={handleChange}
+                                  size="small"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="Contact Number"
+                                  name="contactNumber"
+                                  value={draft.contactNumber}
+                                  onChange={handleChange}
+                                  size="small"
+                                  fullWidth
+                                />
+                              </Box>
                             ) : (
-                              <Typography sx={{ fontWeight: 700 }}>
-                                Email:{' '}
-                                <span style={{ fontWeight: 400 }}>
-                                  {profile.email}
-                                </span>
-                              </Typography>
-                            )}
-                            {isEditing ? (
-                              <TextField
-                                label="Contactnumber"
-                                name="contactNumber"
-                                value={draft.contactNumber}
-                                onChange={handleChange}
-                                size="small"
-                                sx={{ width: { xs: '100%', md: '50%' } }}
-                              />
-                            ) : (
-                              <Typography sx={{ fontWeight: 700 }}>
-                                Contact Number:{' '}
-                                <span style={{ fontWeight: 400 }}>
-                                  {profile.contactNumber}
-                                </span>
-                              </Typography>
+                              <>
+                                <Typography sx={{ fontWeight: 700 }}>
+                                  Email:{' '}
+                                  <span style={{ fontWeight: 400 }}>
+                                    {profile.email}
+                                  </span>
+                                </Typography>
+                                <Typography sx={{ fontWeight: 700 }}>
+                                  Contact Number:{' '}
+                                  <span style={{ fontWeight: 400 }}>
+                                    {profile.contactNumber}
+                                  </span>
+                                </Typography>
+                              </>
                             )}
                           </Box>
                           <Box

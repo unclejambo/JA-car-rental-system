@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js';
 import { createClient } from '@supabase/supabase-js';
+import { notifyWaitlistOnCarAvailable } from './waitlistController.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -274,6 +275,7 @@ export const updateCar = async (req, res) => {
       car_status,
       car_img_url,
       mileage,
+      hasGPS,
     } = req.body;
 
     let imageUrl = car_img_url;
@@ -347,11 +349,35 @@ export const updateCar = async (req, res) => {
     if (car_status !== undefined) updateData.car_status = car_status;
     if (imageUrl !== undefined) updateData.car_img_url = imageUrl;
     if (mileage !== undefined) updateData.mileage = mileage ? parseFloat(mileage) : null;
+    if (hasGPS !== undefined) updateData.hasGPS = hasGPS === true || hasGPS === 'true';
+
+    // Get current status before update to detect changes
+    const currentCar = await prisma.car.findUnique({
+      where: { car_id: carId },
+      select: { car_status: true }
+    });
 
     const updatedCar = await prisma.car.update({
       where: { car_id: carId },
       data: updateData,
     });
+    
+    // Check if car status changed to "Available" - notify waitlist
+    if (car_status && car_status === 'Available' && currentCar?.car_status !== 'Available') {
+      console.log(`\n🚗 Car ${carId} status changed to "Available" - checking waitlist...`);
+      
+      // Trigger waitlist notifications asynchronously (don't wait for it)
+      notifyWaitlistOnCarAvailable(carId)
+        .then(result => {
+          if (result.success && result.notified > 0) {
+            console.log(`✅ Waitlist notification complete: ${result.notified} customer(s) notified`);
+          }
+        })
+        .catch(error => {
+          console.error('❌ Error in waitlist notification:', error);
+        });
+    }
+    
     res.json(updatedCar);
   } catch (error) {
     console.error('Error updating car:', error);

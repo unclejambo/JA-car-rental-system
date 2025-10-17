@@ -162,42 +162,53 @@ function CustomerCars() {
     setPriceRange(newValue);
   };
 
-  // Fetch customer notification settings
-  const fetchCustomerSettings = async () => {
-    try {
-      const response = await authenticatedFetch(`${API_BASE}/api/customers/me`);
-      if (response.ok) {
-        const customerData = await response.json();
-        setCustomerNotificationSetting(customerData.isRecUpdate || 0);
-      }
-    } catch (error) {
-      console.error('Error fetching customer settings:', error);
-    }
-  };
-
   // Handle booking button click - now handles both regular booking and waitlist
   const handleBookNow = async (car) => {
     const isRented = car.car_status?.toLowerCase().includes('rent');
 
     if (isRented) {
-      // This is a waitlist request
-      await fetchCustomerSettings();
-      setSelectedCar(car);
-
-      // Check if notifications are disabled (0)
-      if (customerNotificationSetting === 0 || !customerNotificationSetting) {
-        setSnackbarMessage(
-          'Please enable notification settings in your account settings to join the waitlist.'
+      // This is a waitlist request - fetch customer settings first
+      try {
+        const response = await authenticatedFetch(
+          `${API_BASE}/api/customers/me`
         );
+        if (response.ok) {
+          const customerData = await response.json();
+          const notificationSetting = customerData.isRecUpdate || 0;
+          setCustomerNotificationSetting(notificationSetting);
+          setSelectedCar(car);
+
+          // Check if notifications are disabled (0)
+          if (notificationSetting === 0) {
+            setSnackbarMessage(
+              'Please enable notification settings in your account settings to join the waitlist.'
+            );
+            setSnackbarOpen(true);
+            // Redirect to settings page after a delay only when isRecUpdate is 0
+            setTimeout(() => {
+              window.location.href = '/customer-account';
+            }, 3000);
+          } else {
+            // Notifications are enabled (1=SMS, 2=Email, 3=Both), join waitlist directly
+            await joinWaitlist(car);
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          console.error(
+            'Failed to fetch customer settings:',
+            response.status,
+            errorData
+          );
+          setSnackbarMessage(
+            errorData.error ||
+              'Failed to load notification settings. Please try again.'
+          );
+          setSnackbarOpen(true);
+        }
+      } catch (error) {
+        console.error('Error fetching customer settings:', error);
+        setSnackbarMessage('Error loading settings. Please try again.');
         setSnackbarOpen(true);
-        // Optionally, you can redirect to settings page after a delay
-        setTimeout(() => {
-          // Navigate to account settings (you'll need to implement this route)
-          window.location.href = '/customer-account'; // Adjust route as needed
-        }, 3000);
-      } else {
-        // Notifications are enabled, join waitlist directly
-        await joinWaitlist(car);
       }
     } else {
       // Regular booking flow
@@ -221,9 +232,9 @@ function CustomerCars() {
       );
 
       if (response.ok) {
-        const result = await response.json();
+        await response.json(); // Consume response
         setSnackbarMessage(
-          `Successfully joined waitlist! You'll be notified when this car becomes available.`
+          `You'll be notified when the ${car.make} ${car.model} becomes available!`
         );
         setSnackbarOpen(true);
         fetchWaitlistEntries(); // Refresh waitlist entries
@@ -847,17 +858,11 @@ function CustomerCars() {
                         }}
                       >
                         <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                          {entry.car.make} {entry.car.model} ({entry.car.year})
+                          {entry.Car.make} {entry.Car.model} ({entry.Car.year})
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          Position #{entry.position} • Requested:{' '}
-                          {new Date(
-                            entry.requested_start_date
-                          ).toLocaleDateString()}{' '}
-                          -{' '}
-                          {new Date(
-                            entry.requested_end_date
-                          ).toLocaleDateString()}
+                          Status: {entry.Car.car_status} • Joined:{' '}
+                          {new Date(entry.created_at).toLocaleDateString()}
                         </Typography>
                       </Box>
                     ))}
@@ -904,7 +909,6 @@ function CustomerCars() {
                     container
                     spacing={3}
                     justifyContent="center"
-                    alignItems="stretch"
                     sx={{
                       px: { xs: 1, sm: 2, md: 3 },
                     }}
@@ -919,7 +923,7 @@ function CustomerCars() {
                           item
                           xs={12}
                           sm={6}
-                          md={4}
+                          md={3}
                           key={car.car_id}
                           sx={{
                             display: 'flex',
@@ -928,10 +932,8 @@ function CustomerCars() {
                         >
                           <Card
                             sx={{
-                              width: '100%',
-                              maxWidth: 380,
-                              minWidth: 300,
-                              height: '100%',
+                              width: 280,
+                              height: 450,
                               display: 'flex',
                               flexDirection: 'column',
                               justifyContent: 'space-between',
@@ -957,24 +959,34 @@ function CustomerCars() {
                               !isUnderMaintenance && handleBookNow(car)
                             }
                           >
-                            <CardMedia
-                              component="img"
-                              image={car.car_img_url}
-                              alt={`${car.make} ${car.model}`}
+                            <Box
                               sx={{
                                 width: '100%',
                                 height: 200,
-                                objectFit: 'contain',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
                                 backgroundColor: '#f9f9f9',
-                                p: 2,
                                 borderTopLeftRadius: 12,
                                 borderTopRightRadius: 12,
+                                overflow: 'hidden',
                               }}
-                            />
+                            >
+                              <CardMedia
+                                component="img"
+                                image={car.car_img_url}
+                                alt={`${car.make} ${car.model}`}
+                                sx={{
+                                  maxWidth: '100%',
+                                  maxHeight: '100%',
+                                  objectFit: 'contain',
+                                }}
+                              />
+                            </Box>
 
                             <CardContent
                               sx={{
-                                flexGrow: 1,
+                                height: 250,
                                 p: 2,
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -989,6 +1001,9 @@ function CustomerCars() {
                                     fontWeight: 700,
                                     mb: 0.5,
                                     color: '#333',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
                                   }}
                                 >
                                   {car.make} {car.model}
@@ -1025,62 +1040,66 @@ function CustomerCars() {
                                 />
                               </Box>
 
-                              {/* Price */}
-                              <Typography
-                                variant="h6"
-                                sx={{
-                                  fontWeight: 'bold',
-                                  color: '#c10007',
-                                  fontSize: '1.2rem',
-                                  mb: 1,
-                                }}
-                              >
-                                ₱{car.rent_price?.toLocaleString() || '0'}/day
-                              </Typography>
+                              <Box>
+                                {/* Price */}
+                                <Typography
+                                  variant="h6"
+                                  sx={{
+                                    fontWeight: 'bold',
+                                    color: '#c10007',
+                                    fontSize: '1.2rem',
+                                    mb: 1,
+                                  }}
+                                >
+                                  ₱{car.rent_price?.toLocaleString() || '0'}/day
+                                </Typography>
 
-                              {/* Book Now Button */}
-                              <Button
-                                variant="contained"
-                                fullWidth
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleBookNow(car);
-                                }}
-                                disabled={car.car_status
-                                  ?.toLowerCase()
-                                  .includes('maint')}
-                                sx={{
-                                  backgroundColor: car.car_status
+                                {/* Book Now Button */}
+                                <Button
+                                  variant="contained"
+                                  fullWidth
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleBookNow(car);
+                                  }}
+                                  disabled={car.car_status
                                     ?.toLowerCase()
-                                    .includes('rent')
-                                    ? '#ff9800'
-                                    : '#c10007',
-                                  color: '#fff',
-                                  fontWeight: 600,
-                                  py: 1,
-                                  borderRadius: 2,
-                                  textTransform: 'none',
-                                  '&:hover': {
+                                    .includes('maint')}
+                                  sx={{
                                     backgroundColor: car.car_status
                                       ?.toLowerCase()
                                       .includes('rent')
-                                      ? '#f57c00'
-                                      : '#a50006',
-                                  },
-                                  '&:disabled': {
-                                    backgroundColor: '#ccc',
-                                    color: '#666',
-                                  },
-                                }}
-                              >
-                                {car.car_status?.toLowerCase().includes('maint')
-                                  ? 'Under Maintenance'
-                                  : car.car_status
+                                      ? '#ff9800'
+                                      : '#c10007',
+                                    color: '#fff',
+                                    fontWeight: 600,
+                                    py: 1,
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    '&:hover': {
+                                      backgroundColor: car.car_status
                                         ?.toLowerCase()
                                         .includes('rent')
-                                    ? 'Notify me when available'
-                                    : 'Book Now'}
-                              </Button>
+                                        ? '#f57c00'
+                                        : '#a50006',
+                                    },
+                                    '&:disabled': {
+                                      backgroundColor: '#ccc',
+                                      color: '#666',
+                                    },
+                                  }}
+                                >
+                                  {car.car_status
+                                    ?.toLowerCase()
+                                    .includes('maint')
+                                    ? 'Under Maintenance'
+                                    : car.car_status
+                                          ?.toLowerCase()
+                                          .includes('rent')
+                                      ? 'Notify me when available'
+                                      : 'Book Now'}
+                                </Button>
+                              </Box>
                             </CardContent>
                           </Card>
                         </Grid>

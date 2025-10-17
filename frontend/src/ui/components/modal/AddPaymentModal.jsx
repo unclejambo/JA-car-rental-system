@@ -19,7 +19,12 @@ const paymentSchema = z
     customerName: z.string().min(1, 'Customer name is required'),
     customerId: z.number().positive().optional(),
     bookingId: z.coerce.number().int().gt(0, 'Select a booking'),
-    description: z.string().min(1, 'Description is required'),
+    description: z.enum(
+      ['Security Deposit', 'Reservation', 'Booking Payment'],
+      {
+        errorMap: () => ({ message: 'Select a payment type' }),
+      }
+    ),
     paymentMethod: z.enum(['Cash', 'GCash']),
     paymentAmount: z.coerce
       .number()
@@ -364,16 +369,20 @@ export default function AddPaymentModal({ show, onClose }) {
             </TextField>
 
             <TextField
-              label="Description"
+              select
+              label="Payment Type"
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              placeholder="Description"
               required
               error={!!errors.description}
               helperText={errors.description}
               fullWidth
-            />
+            >
+              <MenuItem value="Security Deposit">Security Deposit</MenuItem>
+              <MenuItem value="Reservation">Reservation</MenuItem>
+              <MenuItem value="Booking Payment">Booking Payment</MenuItem>
+            </TextField>
 
             <TextField
               select

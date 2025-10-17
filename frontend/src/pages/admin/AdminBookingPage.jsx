@@ -277,70 +277,77 @@ export default function AdminBookingPage() {
             <Box
               sx={{
                 display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
                 justifyContent: 'space-between',
                 mb: 2,
                 gap: { xs: 1, sm: 1 },
-                pr: { xs: 1.3, sm: 0 },
               }}
             >
               <Box
                 sx={{
                   display: 'flex',
+                  justifyContent: 'space-between',
                   gap: 1,
-                  justifyContent: { xs: 'space-between', sm: 'flex-start' },
+                  alignItems: 'center',
                 }}
               >
-                <Typography
-                  variant="h4"
-                  component="h1"
-                  gutterBottom
+                <Box
                   sx={{
-                    fontSize: '1.8rem',
-                    color: '#000',
-                    '@media (max-width: 1024px)': {
-                      fontSize: '1.5rem',
-                    },
+                    display: 'flex',
+                    flex: 1,
+                    gap: { xs: 1, sm: 2 },
+                    justifyContent: 'space-between',
+                    width: '100%',
                   }}
                 >
-                  <HiBookOpen
-                    style={{ verticalAlign: '-5px', marginRight: '5px' }}
-                  />
-                  {activeTab}
-                </Typography>
-
-                {activeTab === 'BOOKINGS' && (
-                  <Button
-                    variant="outlined"
-                    startIcon={
-                      <HiCurrencyDollar
-                        sx={{ width: '18px', height: '18px', mt: '-2px' }}
-                      />
-                    }
-                    onClick={openManageFeesModal}
+                  <Typography
+                    variant="h4"
+                    component="h1"
                     sx={{
-                      color: '#fff',
-                      p: 1,
-                      pb: 0.5,
-                      height: 36,
-                      border: 'none',
-                      backgroundColor: '#3895d3',
-                      '&:hover': {
-                        backgroundColor: '#1261a0',
-                        color: '#fff',
-                        fontWeight: 600,
-                        borderColor: '#4a4a4a',
-                        boxShadow: 'none',
-                      },
-                      '@media (max-width: 600px)': {
-                        height: 28,
-                      },
+                      fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
+                      color: '#000',
                     }}
                   >
-                    Manage Fees
-                  </Button>
-                )}
-              </Box>
+                    <HiBookOpen
+                      style={{ verticalAlign: '-5px', marginRight: '5px' }}
+                    />
+                    {activeTab}
+                  </Typography>
 
+                  {activeTab === 'BOOKINGS' && (
+                    <Button
+                      variant="outlined"
+                      startIcon={
+                        <HiCurrencyDollar
+                          sx={{
+                            width: { xs: '14px', sm: '18px' },
+                            height: { xs: '14px', sm: '18px' },
+                            mt: '-3px',
+                          }}
+                        />
+                      }
+                      onClick={openManageFeesModal}
+                      sx={{
+                        color: '#fff',
+                        p: 1,
+                        fontSize: { xs: '.7rem', md: '.875rem' },
+                        height: { xs: 26, md: 30 },
+                        border: 'none',
+                        backgroundColor: '#3895d3',
+                        '&:hover': {
+                          backgroundColor: '#1261a0',
+                          color: '#fff',
+                          fontWeight: 600,
+                          borderColor: '#4a4a4a',
+                          boxShadow: 'none',
+                        },
+                      }}
+                    >
+                      Manage Fees
+                    </Button>
+                  )}
+                </Box>
+              </Box>
               {/* Search Bar */}
               <Box
                 sx={{
@@ -356,8 +363,17 @@ export default function AdminBookingPage() {
                   variant="outlined"
                   size="small"
                   sx={{
-                    width: { xs: '100%', sm: 350 },
-                    maxWidth: 350,
+                    width: { xs: '100%', md: 350 },
+                    maxWidth: 'auto',
+                    height: { xs: 26, md: 30 },
+                    backgroundColor: '#fff',
+                    '& .MuiOutlinedInput-root': {
+                      height: { xs: 26, md: 30 },
+                      backgroundColor: '#fff',
+                    },
+                    '& .MuiInputBase-input': {
+                      padding: { xs: '4px 8px', md: '6px 10px' },
+                    },
                   }}
                 />
               </Box>

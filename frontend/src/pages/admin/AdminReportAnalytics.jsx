@@ -7,14 +7,21 @@ import {
   Chip,
   Stack,
   Button,
+  Menu,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import { FaFileCsv } from 'react-icons/fa';
 import Header from '../../ui/components/Header';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import { HiChartBar } from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 import { generateAnalyticsPDF } from '../../utils/pdfExport';
+import { generateAnalyticsCSV } from '../../utils/csvExport';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -516,6 +523,18 @@ export default function AdminReportAnalytics() {
       maximumFractionDigits: 2,
     })}`;
 
+  // Download menu state
+  const [downloadAnchorEl, setDownloadAnchorEl] = useState(null);
+  const downloadMenuOpen = Boolean(downloadAnchorEl);
+
+  const handleDownloadClick = (event) => {
+    setDownloadAnchorEl(event.currentTarget);
+  };
+
+  const handleDownloadClose = () => {
+    setDownloadAnchorEl(null);
+  };
+
   // Handle PDF download
   const handleDownloadPDF = () => {
     generateAnalyticsPDF({
@@ -532,6 +551,26 @@ export default function AdminReportAnalytics() {
       maintenanceData,
       refundsData,
     });
+    handleDownloadClose();
+  };
+
+  // Handle CSV download
+  const handleDownloadCSV = () => {
+    generateAnalyticsCSV({
+      primaryView,
+      period,
+      selectedYear,
+      selectedQuarter,
+      selectedMonthIndex,
+      chartData,
+      chartLabels,
+      totalIncome,
+      totalMaintenance,
+      totalRefunds,
+      maintenanceData,
+      refundsData,
+    });
+    handleDownloadClose();
   };
 
   // Line dataset builder
@@ -758,7 +797,7 @@ export default function AdminReportAnalytics() {
                 variant="h4"
                 component="h1"
                 sx={{
-                  fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
+                  fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
                   color: '#000',
                   display: 'flex',
                   alignItems: 'center',
@@ -769,36 +808,84 @@ export default function AdminReportAnalytics() {
                 REPORT & ANALYTICS
               </Typography>
 
-              {/* Download PDF Button */}
-              <Button
-                variant="outlined"
-                onClick={handleDownloadPDF}
-                disabled={!chartData || chartData.length === 0}
-                sx={{
-                  color: '#000',
-                  p: 0,
-                  py: 0,
-                  height: { xs: 30, sm: 32, md: 36 },
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  minWidth: 'auto',
-                  '&:hover': {
-                    backgroundColor: 'transparent',
-                    color: 'grey',
-                    boxShadow: 'none',
-                  },
-                  '&:disabled': {
-                    color: '#666',
-                  },
-                }}
-              >
-                <DownloadIcon
+              {/* Download Button with Dropdown */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleDownloadClick}
+                  disabled={!chartData || chartData.length === 0}
                   sx={{
-                    width: { xs: '18px', sm: '26px' },
-                    height: { xs: '18px', sm: '26px' },
+                    color: '#000',
+                    p: 0,
+                    py: 0,
+                    pr: 0.5,
+                    height: { xs: 30, sm: 32, md: 36 },
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    minWidth: 'auto',
+                    '&:hover': {
+                      backgroundColor: 'transparent',
+                      color: 'grey',
+                      boxShadow: 'none',
+                    },
+                    '&:disabled': {
+                      color: '#666',
+                    },
                   }}
-                />
-              </Button>
+                >
+                  <DownloadIcon
+                    sx={{
+                      width: { xs: '18px', sm: '26px' },
+                      height: { xs: '18px', sm: '26px' },
+                    }}
+                  />
+                  <ArrowDropDownIcon
+                    sx={{
+                      width: { xs: '16px', sm: '20px' },
+                      height: { xs: '16px', sm: '20px' },
+                      ml: -0.5,
+                    }}
+                  />
+                </Button>
+                <Menu
+                  anchorEl={downloadAnchorEl}
+                  open={downloadMenuOpen}
+                  onClose={handleDownloadClose}
+                  disableScrollLock
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'left',
+                  }}
+                  sx={{
+                    '& .MuiPaper-root': {
+                      minWidth: '150px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    },
+                  }}
+                >
+                  <MenuItem onClick={handleDownloadPDF}>
+                    <ListItemIcon>
+                      <PictureAsPdfIcon
+                        fontSize="small"
+                        sx={{ color: '#d32f2f' }}
+                      />
+                    </ListItemIcon>
+                    <ListItemText>PDF</ListItemText>
+                  </MenuItem>
+                  <MenuItem onClick={handleDownloadCSV}>
+                    <ListItemIcon>
+                      <FaFileCsv
+                        style={{ fontSize: '18px', color: '#2e7d32' }}
+                      />
+                    </ListItemIcon>
+                    <ListItemText>CSV</ListItemText>
+                  </MenuItem>
+                </Menu>
+              </Box>
             </Box>
 
             {/* Period Controls Section */}

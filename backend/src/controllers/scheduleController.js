@@ -9,6 +9,7 @@ export const getSchedules = async (req, res) => {
       select: {
         booking_id: true,
         customer_id: true,
+        car_id: true,
         drivers_id: true,
         start_date: true,
         pickup_time: true,
@@ -23,7 +24,7 @@ export const getSchedules = async (req, res) => {
           select: { first_name: true, last_name: true },
         },
         car: {
-          select: { make: true, model: true },
+          select: { car_id: true, make: true, model: true, hasGPS: true, license_plate: true },
         },
       },
       orderBy: { start_date: "desc" },
@@ -32,6 +33,7 @@ export const getSchedules = async (req, res) => {
     const mapped = schedules.map((s) => ({
       booking_id: s.booking_id,
       customer_id: s.customer_id,
+      car_id: s.car_id,
       drivers_id: s.drivers_id,
       customer_name: `${s.customer?.first_name ?? ""} ${
         s.customer?.last_name ?? ""
@@ -45,9 +47,15 @@ export const getSchedules = async (req, res) => {
       car_model: `${s.car?.make ?? ""}${
         s.car?.make && s.car?.model ? " " : ""
       }${s.car?.model ?? ""}`.trim(),
+      plate_number: s.car?.license_plate || null,
       isSelfDriver: s.isSelfDriver,
       booking_status: s.booking_status,
       balance: s.balance,
+      car: {
+        car_id: s.car?.car_id,
+        hasGPS: s.car?.hasGPS || false,
+      },
+      hasGPS: s.car?.hasGPS || false, // Also include at root level for easy access
     }));
 
     res.json(mapped);

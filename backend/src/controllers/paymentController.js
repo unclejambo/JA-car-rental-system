@@ -1,4 +1,5 @@
 import prisma from "../config/prisma.js";
+import { sendBookingConfirmationNotification, sendPaymentReceivedNotification } from "../utils/notificationService.js";
 
 function shapePayment(p) {
   const { booking, customer, ...rest } = p;
@@ -193,6 +194,9 @@ export const createPayment = async (req, res) => {
     // Determine appropriate booking status
     const newBookingStatus = determineBookingStatus(newTotalPaid, booking.total_amount, booking.booking_status);
     
+    // Track if status is changing from Pending to Confirmed (for notification)
+    const isNewlyConfirmed = booking.booking_status === 'Pending' && newBookingStatus === 'Confirmed';
+    
     // Prepare booking update data
     const bookingUpdateData = { 
       balance: finalBalance,
@@ -204,10 +208,86 @@ export const createPayment = async (req, res) => {
       bookingUpdateData.booking_status = newBookingStatus;
     }
 
-    await prisma.booking.update({
+    const updatedBooking = await prisma.booking.update({
       where: { booking_id: Number(booking_id) },
       data: bookingUpdateData,
+      include: {
+        customer: {
+          select: {
+            customer_id: true,
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true
+          }
+        },
+        car: {
+          select: {
+            make: true,
+            model: true,
+            year: true,
+            license_plate: true
+          }
+        }
+      }
     });
+
+    // Send payment received notification for Cash payments
+    // For GCash, notification is sent when admin approves via confirmBooking
+    if (payment_method === 'Cash') {
+      try {
+        console.log('💰 Sending payment received notification for Cash payment...');
+        await sendPaymentReceivedNotification(
+          created,
+          {
+            customer_id: updatedBooking.customer.customer_id,
+            first_name: updatedBooking.customer.first_name,
+            last_name: updatedBooking.customer.last_name,
+            email: updatedBooking.customer.email,
+            contact_no: updatedBooking.customer.contact_no
+          },
+          {
+            make: updatedBooking.car.make,
+            model: updatedBooking.car.model,
+            year: updatedBooking.car.year,
+            license_plate: updatedBooking.car.license_plate
+          },
+          updatedBooking,
+          'cash'
+        );
+        console.log('✅ Cash payment received notification sent');
+      } catch (notificationError) {
+        console.error("Error sending payment notification:", notificationError);
+        // Don't fail the payment creation if notification fails
+      }
+    }
+
+    // Send booking confirmation notification if booking was just confirmed
+    if (isNewlyConfirmed) {
+      try {
+        console.log('📧 Payment received! Sending booking confirmation notification...');
+        await sendBookingConfirmationNotification(
+          updatedBooking,
+          {
+            customer_id: updatedBooking.customer.customer_id,
+            first_name: updatedBooking.customer.first_name,
+            last_name: updatedBooking.customer.last_name,
+            email: updatedBooking.customer.email,
+            contact_no: updatedBooking.customer.contact_no
+          },
+          {
+            make: updatedBooking.car.make,
+            model: updatedBooking.car.model,
+            year: updatedBooking.car.year,
+            license_plate: updatedBooking.car.license_plate
+          }
+        );
+        console.log('✅ Booking confirmation notification sent after payment');
+      } catch (notificationError) {
+        console.error("Error sending confirmation notification:", notificationError);
+        // Don't fail the payment creation if notification fails
+      }
+    }
 
     res.status(201).json(shapePayment(created));
   } catch (error) {

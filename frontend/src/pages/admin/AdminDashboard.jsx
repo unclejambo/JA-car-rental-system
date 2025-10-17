@@ -140,11 +140,7 @@ function AdminDashboard() {
       // Filter extension/cancellation requests
       const extensionCancellationRequests = Array.isArray(allBookings)
         ? allBookings
-            .filter(
-              (booking) =>
-                (booking.isExtend && !booking.extension_approved) ||
-                (booking.isCancel && !booking.cancellation_approved)
-            )
+            .filter((booking) => booking.isExtend || booking.isCancel)
             .slice(0, 2)
         : [];
 

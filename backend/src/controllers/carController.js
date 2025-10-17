@@ -135,7 +135,7 @@ export const getAvailableCars = async (req, res) => {
     const cars = await prisma.car.findMany({
       where: {
         car_status: {
-          in: ['Available', 'Rented', 'Maintenance'] // Include all except deleted/inactive
+          in: ['Available'] // Include all except deleted/inactive
         }
       },
       orderBy: {

@@ -61,9 +61,13 @@ function CustomerDashboard() {
     if (diffDays === 1) return 'Tomorrow';
     if (diffDays === -1) return 'Yesterday';
     if (diffDays > 1 && diffDays <= 7) return `In ${diffDays} days`;
-    if (diffDays < -1 && diffDays >= -7) return `${Math.abs(diffDays)} days ago`;
+    if (diffDays < -1 && diffDays >= -7)
+      return `${Math.abs(diffDays)} days ago`;
 
-    return targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return targetDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   useEffect(() => {
@@ -79,30 +83,35 @@ function CustomerDashboard() {
       });
 
       // Fetch customer-specific data using dedicated endpoints
-      const [
-        customerBookings,
-        customerSchedules,
-        availableCars,
-      ] = await Promise.all([
-        // Use customer-specific booking endpoint
-        authFetch(`${API_BASE}/bookings/my-bookings/list`).then(r => r.ok ? r.json() : []),
-        // Use customer-specific schedule endpoint  
-        authFetch(`${API_BASE}/schedules/me`).then(r => r.ok ? r.json() : []),
-        // Get available cars for favorite car details
-        authFetch(`${API_BASE}/cars/available`).then(r => r.ok ? r.json() : []),
-      ]);
+      const [customerBookings, customerSchedules, availableCars] =
+        await Promise.all([
+          // Use customer-specific booking endpoint
+          authFetch(`${API_BASE}/bookings/my-bookings/list`).then((r) =>
+            r.ok ? r.json() : []
+          ),
+          // Use customer-specific schedule endpoint
+          authFetch(`${API_BASE}/schedules/me`).then((r) =>
+            r.ok ? r.json() : []
+          ),
+          // Get available cars for favorite car details
+          authFetch(`${API_BASE}/cars/available`).then((r) =>
+            r.ok ? r.json() : []
+          ),
+        ]);
 
       console.log('📊 Raw API Data:', {
         customerBookings,
         customerSchedules,
-        availableCars: availableCars?.length || 0
+        availableCars: availableCars?.length || 0,
       });
 
       // Process bookings data (already filtered for current customer)
       const bookings = Array.isArray(customerBookings) ? customerBookings : [];
-      
+
       // Process schedules data (already filtered for current customer)
-      const schedules = Array.isArray(customerSchedules) ? customerSchedules : [];
+      const schedules = Array.isArray(customerSchedules)
+        ? customerSchedules
+        : [];
 
       // Get today's schedules
       const today = new Date();
@@ -110,25 +119,26 @@ function CustomerDashboard() {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const todaySchedule = schedules.filter(schedule => {
+      const todaySchedule = schedules.filter((schedule) => {
         const scheduleDate = new Date(schedule.start_date);
         return scheduleDate >= today && scheduleDate < tomorrow;
       });
 
       // Get unpaid settlements (bookings with unpaid or pending payment status)
       // Exclude cancelled bookings
-      const unpaidSettlements = bookings.filter(booking =>
-        (booking.payment_status?.toLowerCase() === 'unpaid' ||
-        booking.payment_status?.toLowerCase() === 'pending' ||
-        !booking.payment_status || 
-        booking.payment_status?.toLowerCase() === 'not_paid') &&
-        booking.booking_status?.toLowerCase() !== 'cancelled' // Exclude cancelled bookings
+      const unpaidSettlements = bookings.filter(
+        (booking) =>
+          (booking.payment_status?.toLowerCase() === 'unpaid' ||
+            booking.payment_status?.toLowerCase() === 'pending' ||
+            !booking.payment_status ||
+            booking.payment_status?.toLowerCase() === 'not_paid') &&
+          booking.booking_status?.toLowerCase() !== 'cancelled' // Exclude cancelled bookings
       );
 
       // Get favorite car (most booked car) with enhanced car details
       const carBookingCount = {};
-      
-      bookings.forEach(booking => {
+
+      bookings.forEach((booking) => {
         const carId = booking.car_id;
         if (carId) {
           if (!carBookingCount[carId]) {
@@ -149,12 +159,16 @@ function CustomerDashboard() {
 
       let favoriteCar = null;
       if (Object.keys(carBookingCount).length > 0) {
-        const mostBookedCar = Object.values(carBookingCount).sort((a, b) => b.count - a.count)[0];
+        const mostBookedCar = Object.values(carBookingCount).sort(
+          (a, b) => b.count - a.count
+        )[0];
 
         // Try to get additional car details from available cars if needed
         let carDetails = null;
         if (Array.isArray(availableCars)) {
-          carDetails = availableCars.find(car => car.car_id === mostBookedCar.carId);
+          carDetails = availableCars.find(
+            (car) => car.car_id === mostBookedCar.carId
+          );
         }
 
         favoriteCar = {
@@ -163,9 +177,11 @@ function CustomerDashboard() {
           make: mostBookedCar.make || carDetails?.make,
           model: mostBookedCar.model || carDetails?.model,
           year: mostBookedCar.year || carDetails?.year,
-          car_type: carDetails?.car_type,
+          car_type: mostBookedCar.car_type || carDetails?.car_type,
           carImgUrl: mostBookedCar.car_img_url || carDetails?.car_img_url,
-          carModel: mostBookedCar.display_name || `${mostBookedCar.make || carDetails?.make || ''} ${mostBookedCar.model || carDetails?.model || ''}`.trim(),
+          carModel:
+            mostBookedCar.display_name ||
+            `${mostBookedCar.make || carDetails?.make || ''} ${mostBookedCar.model || carDetails?.model || ''}`.trim(),
           carType: carDetails?.car_type,
         };
       }
@@ -279,7 +295,8 @@ function CustomerDashboard() {
                 boxShadow: 2,
                 height: '100%',
                 minHeight: { xs: 'auto', lg: 500 },
-              }}>
+              }}
+            >
               <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                 <Box
                   sx={{
@@ -296,29 +313,71 @@ function CustomerDashboard() {
                         fontWeight: 'bold',
                         mb: 0.5,
                         fontSize: { xs: '1.125rem', md: '1.25rem' },
-                        color: '#000'
+                        color: '#000',
                       }}
                     >
                       SCHEDULE
                     </Typography>
-                    <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, color: 'text.secondary' }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                        color: 'text.secondary',
+                      }}
+                    >
                       TODAY
                     </Typography>
                   </Box>
-                  <Avatar sx={{ bgcolor: '#c10007', width: { xs: 40, md: 48 }, height: { xs: 40, md: 48 } }}>
+                  <Avatar
+                    sx={{
+                      bgcolor: '#c10007',
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
+                    }}
+                  >
                     <Schedule sx={{ fontSize: { xs: 20, md: 24 } }} />
                   </Avatar>
                 </Box>
                 <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
 
-                {dashboardData.todaySchedule && dashboardData.todaySchedule.length > 0 ? (
-                  <TableContainer component={Paper} sx={{ boxShadow: 0, border: '1px solid #e0e0e0', maxHeight: { xs: 250, md: 320 }, overflowX: 'auto' }}>
+                {dashboardData.todaySchedule &&
+                dashboardData.todaySchedule.length > 0 ? (
+                  <TableContainer
+                    component={Paper}
+                    sx={{
+                      boxShadow: 0,
+                      border: '1px solid #e0e0e0',
+                      maxHeight: { xs: 250, md: 320 },
+                      overflowX: 'auto',
+                    }}
+                  >
                     <Table size="small">
                       <TableHead>
                         <TableRow sx={{ bgcolor: '#fafafa' }}>
-                          <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', md: '0.875rem' } }}>Time</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', md: '0.875rem' } }}>Car</TableCell>
-                          <TableCell sx={{ fontWeight: 'bold', fontSize: { xs: '0.75rem', md: '0.875rem' } }}>Type</TableCell>
+                          <TableCell
+                            sx={{
+                              fontWeight: 'bold',
+                              fontSize: { xs: '0.75rem', md: '0.875rem' },
+                            }}
+                          >
+                            Time
+                          </TableCell>
+                          <TableCell
+                            sx={{
+                              fontWeight: 'bold',
+                              fontSize: { xs: '0.75rem', md: '0.875rem' },
+                            }}
+                          >
+                            Car
+                          </TableCell>
+                          <TableCell
+                            sx={{
+                              fontWeight: 'bold',
+                              fontSize: { xs: '0.75rem', md: '0.875rem' },
+                            }}
+                          >
+                            Type
+                          </TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -327,20 +386,45 @@ function CustomerDashboard() {
                             key={schedule.schedule_id || schedule.booking_id}
                             sx={{ '&:hover': { bgcolor: '#f5f5f5' } }}
                           >
-                            <TableCell sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
-                              {schedule.pickup_time ? 
-                                new Date(schedule.pickup_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) :
-                                new Date(schedule.start_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-                              }
+                            <TableCell
+                              sx={{
+                                fontSize: { xs: '0.75rem', md: '0.875rem' },
+                              }}
+                            >
+                              {schedule.pickup_time
+                                ? new Date(
+                                    schedule.pickup_time
+                                  ).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })
+                                : new Date(
+                                    schedule.start_date
+                                  ).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
                             </TableCell>
-                            <TableCell sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
+                            <TableCell
+                              sx={{
+                                fontSize: { xs: '0.75rem', md: '0.875rem' },
+                              }}
+                            >
                               {schedule.car_model || 'N/A'}
                             </TableCell>
-                            <TableCell sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
+                            <TableCell
+                              sx={{
+                                fontSize: { xs: '0.75rem', md: '0.875rem' },
+                              }}
+                            >
                               <Chip
                                 label={schedule.booking_status || 'Active'}
                                 size="small"
-                                sx={{ bgcolor: '#c10007', color: 'white', fontSize: { xs: '0.65rem', md: '0.75rem' } }}
+                                sx={{
+                                  bgcolor: '#c10007',
+                                  color: 'white',
+                                  fontSize: { xs: '0.65rem', md: '0.75rem' },
+                                }}
                               />
                             </TableCell>
                           </TableRow>
@@ -349,7 +433,14 @@ function CustomerDashboard() {
                     </Table>
                   </TableContainer>
                 ) : (
-                  <Typography sx={{ my: { xs: 2, md: 3 }, fontSize: { xs: '0.875rem', md: '1rem' }, color: 'text.secondary', textAlign: 'center' }}>
+                  <Typography
+                    sx={{
+                      my: { xs: 2, md: 3 },
+                      fontSize: { xs: '0.875rem', md: '1rem' },
+                      color: 'text.secondary',
+                      textAlign: 'center',
+                    }}
+                  >
                     No schedule for today.
                   </Typography>
                 )}
@@ -380,7 +471,8 @@ function CustomerDashboard() {
                 boxShadow: 2,
                 height: '100%',
                 minHeight: { xs: 'auto', lg: 500 },
-              }}>
+              }}
+            >
               <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                 <Box
                   sx={{
@@ -397,57 +489,103 @@ function CustomerDashboard() {
                         fontWeight: 'bold',
                         mb: 0.5,
                         fontSize: { xs: '1.125rem', md: '1.25rem' },
-                        color: '#000'
+                        color: '#000',
                       }}
                     >
                       MY BOOKINGS
                     </Typography>
-                    <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, color: 'text.secondary' }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                        color: 'text.secondary',
+                      }}
+                    >
                       RECENT BOOKINGS
                     </Typography>
                   </Box>
-                  <Avatar sx={{ bgcolor: '#000', width: { xs: 40, md: 48 }, height: { xs: 40, md: 48 } }}>
+                  <Avatar
+                    sx={{
+                      bgcolor: '#000',
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
+                    }}
+                  >
                     <BookOnline sx={{ fontSize: { xs: 20, md: 24 } }} />
                   </Avatar>
                 </Box>
                 <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
 
-                {dashboardData.myBookings && dashboardData.myBookings.length > 0 ? (
-                  <List sx={{ py: 0, maxHeight: { xs: 250, md: 300 }, overflow: 'auto' }}>
+                {dashboardData.myBookings &&
+                dashboardData.myBookings.length > 0 ? (
+                  <List
+                    sx={{
+                      py: 0,
+                      maxHeight: { xs: 250, md: 300 },
+                      overflow: 'auto',
+                    }}
+                  >
                     {dashboardData.myBookings.map((booking, index) => (
                       <ListItem
                         key={booking.booking_id}
                         sx={{
                           bgcolor: '#f9f9f9',
                           borderRadius: 1,
-                          mb: index < dashboardData.myBookings.length - 1 ? 1 : 0,
+                          mb:
+                            index < dashboardData.myBookings.length - 1 ? 1 : 0,
                           border: '1px solid #e0e0e0',
                           p: { xs: 1, md: 2 },
                         }}
                       >
                         <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: '#000', width: { xs: 36, md: 40 }, height: { xs: 36, md: 40 } }}>
-                            <DirectionsCar sx={{ fontSize: { xs: 18, md: 20 } }} />
+                          <Avatar
+                            sx={{
+                              bgcolor: '#000',
+                              width: { xs: 36, md: 40 },
+                              height: { xs: 36, md: 40 },
+                            }}
+                          >
+                            <DirectionsCar
+                              sx={{ fontSize: { xs: 18, md: 20 } }}
+                            />
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
                           primary={booking.car_details?.display_name || 'N/A'}
                           secondary={`${new Date(booking.booking_date).toLocaleDateString()} - ${booking.booking_status || 'N/A'}`}
-                          primaryTypographyProps={{ fontSize: { xs: '0.875rem', md: '1rem' }, fontWeight: 500 }}
-                          secondaryTypographyProps={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}
+                          primaryTypographyProps={{
+                            fontSize: { xs: '0.875rem', md: '1rem' },
+                            fontWeight: 500,
+                          }}
+                          secondaryTypographyProps={{
+                            fontSize: { xs: '0.75rem', md: '0.875rem' },
+                          }}
                         />
                       </ListItem>
                     ))}
                   </List>
                 ) : (
-                  <Typography sx={{ my: { xs: 2, md: 3 }, fontSize: { xs: '0.875rem', md: '1rem' }, color: 'text.secondary', textAlign: 'center' }}>
+                  <Typography
+                    sx={{
+                      my: { xs: 2, md: 3 },
+                      fontSize: { xs: '0.875rem', md: '1rem' },
+                      color: 'text.secondary',
+                      textAlign: 'center',
+                    }}
+                  >
                     No bookings found.
                   </Typography>
                 )}
 
                 <Typography
                   variant="h6"
-                  sx={{ fontWeight: 'bold', fontSize: { xs: '1rem', md: '1.125rem' }, color: '#000', mt: { xs: 1.5, md: 2 }, mb: { xs: 1, md: 1.5 } }}
+                  sx={{
+                    fontWeight: 'bold',
+                    fontSize: { xs: '1rem', md: '1.125rem' },
+                    color: '#000',
+                    mt: { xs: 1.5, md: 2 },
+                    mb: { xs: 1, md: 1.5 },
+                  }}
                 >
                   TOTAL BOOKINGS: {dashboardData.totalBookings}
                 </Typography>
@@ -460,7 +598,10 @@ function CustomerDashboard() {
                   sx={{
                     borderColor: '#000',
                     color: '#000',
-                    '&:hover': { borderColor: '#333', bgcolor: 'rgba(0, 0, 0, 0.04)' },
+                    '&:hover': {
+                      borderColor: '#333',
+                      bgcolor: 'rgba(0, 0, 0, 0.04)',
+                    },
                     py: { xs: 1, md: 1.25 },
                   }}
                 >
@@ -502,50 +643,88 @@ function CustomerDashboard() {
                         fontWeight: 'bold',
                         mb: 0.5,
                         fontSize: { xs: '1.125rem', md: '1.25rem' },
-                        color: '#000'
+                        color: '#000',
                       }}
                     >
                       UNPAID
                     </Typography>
-                    <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, color: 'text.secondary' }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                        color: 'text.secondary',
+                      }}
+                    >
                       SETTLEMENTS
                     </Typography>
                   </Box>
-                  <Avatar sx={{ bgcolor: '#c10007', width: { xs: 40, md: 48 }, height: { xs: 40, md: 48 } }}>
+                  <Avatar
+                    sx={{
+                      bgcolor: '#c10007',
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
+                    }}
+                  >
                     <Payment sx={{ fontSize: { xs: 20, md: 24 } }} />
                   </Avatar>
                 </Box>
                 <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
 
-                {dashboardData.unpaidSettlements && dashboardData.unpaidSettlements.length > 0 ? (
+                {dashboardData.unpaidSettlements &&
+                dashboardData.unpaidSettlements.length > 0 ? (
                   <List sx={{ py: 0 }}>
-                    {dashboardData.unpaidSettlements.map((settlement, index) => (
-                      <ListItem
-                        key={settlement.booking_id}
-                        sx={{
-                          bgcolor: '#fff5f5',
-                          borderRadius: 1,
-                          mb: index < dashboardData.unpaidSettlements.length - 1 ? 1 : 0,
-                          border: '1px solid #ffcccb',
-                          p: { xs: 1, md: 2 },
-                        }}
-                      >
-                        <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: '#c10007', width: { xs: 36, md: 40 }, height: { xs: 36, md: 40 } }}>
-                            <Payment sx={{ fontSize: { xs: 18, md: 20 } }} />
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={settlement.car_details?.display_name || 'N/A'}
-                          secondary={`Due: ${new Date(settlement.booking_date).toLocaleDateString()} - ₱${settlement.total_amount || 0}`}
-                          primaryTypographyProps={{ fontSize: { xs: '0.875rem', md: '1rem' }, fontWeight: 500 }}
-                          secondaryTypographyProps={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}
-                        />
-                      </ListItem>
-                    ))}
+                    {dashboardData.unpaidSettlements.map(
+                      (settlement, index) => (
+                        <ListItem
+                          key={settlement.booking_id}
+                          sx={{
+                            bgcolor: '#fff5f5',
+                            borderRadius: 1,
+                            mb:
+                              index < dashboardData.unpaidSettlements.length - 1
+                                ? 1
+                                : 0,
+                            border: '1px solid #ffcccb',
+                            p: { xs: 1, md: 2 },
+                          }}
+                        >
+                          <ListItemAvatar>
+                            <Avatar
+                              sx={{
+                                bgcolor: '#c10007',
+                                width: { xs: 36, md: 40 },
+                                height: { xs: 36, md: 40 },
+                              }}
+                            >
+                              <Payment sx={{ fontSize: { xs: 18, md: 20 } }} />
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={
+                              settlement.car_details?.display_name || 'N/A'
+                            }
+                            secondary={`Due: ${new Date(settlement.booking_date).toLocaleDateString()} - ₱${settlement.total_amount || 0}`}
+                            primaryTypographyProps={{
+                              fontSize: { xs: '0.875rem', md: '1rem' },
+                              fontWeight: 500,
+                            }}
+                            secondaryTypographyProps={{
+                              fontSize: { xs: '0.75rem', md: '0.875rem' },
+                            }}
+                          />
+                        </ListItem>
+                      )
+                    )}
                   </List>
                 ) : (
-                  <Typography sx={{ my: { xs: 2, md: 3 }, fontSize: { xs: '0.875rem', md: '1rem' }, color: 'text.secondary', textAlign: 'center' }}>
+                  <Typography
+                    sx={{
+                      my: { xs: 2, md: 3 },
+                      fontSize: { xs: '0.875rem', md: '1rem' },
+                      color: 'text.secondary',
+                      textAlign: 'center',
+                    }}
+                  >
                     No unpaid settlements.
                   </Typography>
                 )}
@@ -588,16 +767,28 @@ function CustomerDashboard() {
                         fontWeight: 'bold',
                         mb: 0.5,
                         fontSize: { xs: '1.125rem', md: '1.25rem' },
-                        color: '#000'
+                        color: '#000',
                       }}
                     >
                       FAVORITE CAR
                     </Typography>
-                    <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, color: 'text.secondary' }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                        color: 'text.secondary',
+                      }}
+                    >
                       MOST BOOKED
                     </Typography>
                   </Box>
-                  <Avatar sx={{ bgcolor: '#000', width: { xs: 40, md: 48 }, height: { xs: 40, md: 48 } }}>
+                  <Avatar
+                    sx={{
+                      bgcolor: '#000',
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
+                    }}
+                  >
                     <Favorite sx={{ fontSize: { xs: 20, md: 24 } }} />
                   </Avatar>
                 </Box>
@@ -645,34 +836,65 @@ function CustomerDashboard() {
                           justifyContent: 'center',
                         }}
                       >
-                        <DirectionsCar sx={{ fontSize: { xs: 60, md: 80 }, color: '#c0c0c0' }} />
+                        <DirectionsCar
+                          sx={{
+                            fontSize: { xs: 60, md: 80 },
+                            color: '#c0c0c0',
+                          }}
+                        />
                       </Box>
                     )}
 
                     {/* Car Details */}
                     <Box>
-                      <Typography variant="h5" sx={{ fontWeight: 'bold', fontSize: { xs: '1.25rem', md: '1.5rem' }, color: '#000', mb: 0.5 }}>
-                        {dashboardData.favoriteCar.carModel || 
-                         `${dashboardData.favoriteCar.make || ''} ${dashboardData.favoriteCar.model || ''}`.trim() || 
-                         'N/A'}
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          fontWeight: 'bold',
+                          fontSize: { xs: '1.25rem', md: '1.5rem' },
+                          color: '#000',
+                          mb: 0.5,
+                        }}
+                      >
+                        {dashboardData.favoriteCar.carModel ||
+                          `${dashboardData.favoriteCar.make || ''} ${dashboardData.favoriteCar.model || ''}`.trim() ||
+                          'N/A'}
                       </Typography>
                       <Typography
                         variant="body2"
-                        sx={{ mb: { xs: 1.5, md: 2 }, fontSize: { xs: '0.875rem', md: '1rem' }, color: 'text.secondary' }}
+                        sx={{
+                          mb: { xs: 1.5, md: 2 },
+                          fontSize: { xs: '0.875rem', md: '1rem' },
+                          color: 'text.secondary',
+                        }}
                       >
-                        {dashboardData.favoriteCar.carType || dashboardData.favoriteCar.car_type || 'N/A'}
+                        {dashboardData.favoriteCar.carType ||
+                          dashboardData.favoriteCar.car_type ||
+                          'N/A'}
                       </Typography>
                       <Divider sx={{ my: { xs: 1.5, md: 2 } }} />
                       <Typography
                         variant="h6"
-                        sx={{ fontWeight: 'bold', fontSize: { xs: '1rem', md: '1.125rem' }, color: '#c10007' }}
+                        sx={{
+                          fontWeight: 'bold',
+                          fontSize: { xs: '1rem', md: '1.125rem' },
+                          color: '#c10007',
+                        }}
                       >
-                        {dashboardData.favoriteCar.count} BOOKING{dashboardData.favoriteCar.count !== 1 ? 'S' : ''}
+                        {dashboardData.favoriteCar.count} BOOKING
+                        {dashboardData.favoriteCar.count !== 1 ? 'S' : ''}
                       </Typography>
                     </Box>
                   </>
                 ) : (
-                  <Typography sx={{ my: { xs: 2, md: 3 }, fontSize: { xs: '0.875rem', md: '1rem' }, color: 'text.secondary', textAlign: 'center' }}>
+                  <Typography
+                    sx={{
+                      my: { xs: 2, md: 3 },
+                      fontSize: { xs: '0.875rem', md: '1rem' },
+                      color: 'text.secondary',
+                      textAlign: 'center',
+                    }}
+                  >
                     No favorite car yet.
                   </Typography>
                 )}

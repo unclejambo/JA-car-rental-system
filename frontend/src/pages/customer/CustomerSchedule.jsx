@@ -175,7 +175,7 @@ function CustomerSchedule() {
                   variant="h4"
                   component="h1"
                   sx={{
-                    fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
+                    fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
                     fontWeight: 'bold',
                     color: '#c10007',
                   }}

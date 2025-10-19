@@ -157,7 +157,7 @@ export default function DriverSchedule() {
                     alignItems: 'center',
                   }}
                 >
-                  <HiCalendar size={28} style={{ marginRight: '8px' }} />
+                  <HiCalendar size={24} style={{ marginRight: '8px' }} />
                   Driver Schedule
                 </Typography>
                 <Button

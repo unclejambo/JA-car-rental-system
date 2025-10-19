@@ -223,6 +223,7 @@ export default function AdminSchedulePage() {
                 display: 'flex',
                 justifyContent: 'space-between',
                 width: '100%',
+                mb: 2,
               }}
             >
               <Typography

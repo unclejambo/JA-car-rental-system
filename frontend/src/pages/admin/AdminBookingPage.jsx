@@ -287,6 +287,7 @@ export default function AdminBookingPage() {
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
+                  flex: { md: 1 },
                   gap: 1,
                   alignItems: 'center',
                 }}

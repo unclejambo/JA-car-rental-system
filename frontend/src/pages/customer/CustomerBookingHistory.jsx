@@ -340,6 +340,7 @@ function CustomerBookingHistory() {
                 <Typography
                   variant="h4"
                   sx={{
+                    fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
                     fontWeight: 'bold',
                     color: '#c10007',
                     display: 'flex',
@@ -347,7 +348,7 @@ function CustomerBookingHistory() {
                   }}
                 >
                   <HiOutlineClipboardDocumentCheck
-                    size={28}
+                    size={24}
                     style={{ marginRight: '8px' }}
                   />
                   Booking History

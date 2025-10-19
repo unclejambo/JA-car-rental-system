@@ -930,7 +930,11 @@ export default function CustomerSettings() {
                   >
                     <Typography
                       variant="h4"
-                      sx={{ fontWeight: 'bold', color: '#c10007' }}
+                      sx={{
+                        fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
+                        fontWeight: 'bold',
+                        color: '#c10007',
+                      }}
                     >
                       <HiCog8Tooth
                         style={{ verticalAlign: '-3px', marginRight: '8px' }}

@@ -1383,6 +1383,405 @@ export async function sendAdminPaymentCompletedNotification(payment, customer, b
 }
 
 /**
+ * Send admin notification when customer requests booking extension
+ * @param {Object} booking - Booking object with details
+ * @param {Object} customer - Customer object
+ * @param {Object} car - Car object
+ * @param {number} additionalDays - Number of days for extension
+ * @param {number} additionalCost - Cost for extension
+ * @returns {Promise<Object>} Result of notification attempt
+ */
+export async function sendAdminExtensionRequestNotification(booking, customer, car, additionalDays, additionalCost) {
+  // Import admin config
+  const { ADMIN_NOTIFICATION_CONFIG } = await import('../config/adminNotificationConfig.js');
+  
+  const { first_name, last_name, contact_no, email } = customer;
+  const { make, model, year, license_plate } = car;
+  const { booking_id, end_date, new_end_date, total_amount, balance } = booking;
+  
+  console.log(`📅 Sending extension request notification to admin for booking ${booking_id}`);
+  
+  // Build notification messages
+  const carName = `${make} ${model} (${year})`;
+  const customerName = `${first_name} ${last_name}`;
+  const oldEndDateFormatted = formatDatePH(end_date);
+  const newEndDateFormatted = formatDatePH(new_end_date);
+  
+  // SMS Message (concise for admin)
+  const smsMessage = `EXTENSION REQUEST! ${customerName} wants to extend ${carName} booking by ${additionalDays} days (${oldEndDateFormatted} → ${newEndDateFormatted}). Additional: ₱${additionalCost.toLocaleString()}. Booking #${booking_id}. - JA Car Rental`;
+  
+  // Email
+  const emailSubject = `Extension Request #${booking_id} - ${customerName} (+${additionalDays} days)`;
+  const emailBody = `
+    EXTENSION REQUEST NOTIFICATION
+    
+    A customer has requested to extend their ongoing booking and requires your review.
+    
+    CUSTOMER INFORMATION:
+    - Name: ${customerName}
+    - Email: ${email}
+    - Phone: ${contact_no}
+    
+    BOOKING DETAILS:
+    - Booking ID: #${booking_id}
+    - Current Status: Extension Requested
+    - Requested Date: ${formatDatePH(new Date())}
+    
+    VEHICLE INFORMATION:
+    - Vehicle: ${carName}
+    - Plate Number: ${license_plate || 'TBA'}
+    
+    EXTENSION DETAILS:
+    - Current End Date: ${oldEndDateFormatted}
+    - Requested New End Date: ${newEndDateFormatted}
+    - Additional Days: ${additionalDays} days
+    - Extension Cost: ₱${additionalCost.toLocaleString()}
+    
+    FINANCIAL IMPACT:
+    - Original Total: ₱${(total_amount - additionalCost).toLocaleString()}
+    - Extension Cost: ₱${additionalCost.toLocaleString()}
+    - New Total Amount: ₱${total_amount.toLocaleString()}
+    - New Balance Due: ₱${balance.toLocaleString()}
+    
+    ACTION REQUIRED:
+    Please review this extension request in the admin dashboard and either approve or reject it.
+    Consider the availability of the vehicle and the customer's payment history before making a decision.
+    
+    IMPORTANT:
+    - Verify the vehicle is available for the extended period
+    - Check for any conflicting bookings
+    - Customer will need to pay the additional ₱${additionalCost.toLocaleString()} for the extension
+    
+    ---
+    JA Car Rental Admin System
+    This is an automated notification.
+  `;
+  
+  const results = {
+    success: false,
+    sms: null,
+    email: null,
+    method: 'Both'
+  };
+  
+  try {
+    // Always send both SMS and Email to admin (no preference check needed)
+    console.log(`   → Sending SMS to ${ADMIN_NOTIFICATION_CONFIG.PHONE} and Email to ${ADMIN_NOTIFICATION_CONFIG.EMAIL}`);
+    const promises = [];
+    
+    // Send SMS to admin phone
+    promises.push(sendSMSNotification(ADMIN_NOTIFICATION_CONFIG.PHONE, smsMessage));
+    
+    // Send Email to admin email
+    promises.push(sendEmailNotification(ADMIN_NOTIFICATION_CONFIG.EMAIL, emailSubject, emailBody));
+    
+    const results_array = await Promise.allSettled(promises);
+    
+    results.sms = results_array[0]?.value || null;
+    results.email = results_array[1]?.value || null;
+    results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+    
+    if (results.success) {
+      console.log(`   ✅ Admin extension request notification sent successfully`);
+    } else {
+      console.log(`   ❌ Failed to send admin extension notification: ${results.error || 'Unknown error'}`);
+    }
+    
+    return results;
+  } catch (error) {
+    console.error(`   ❌ Error sending admin extension notification:`, error);
+    return { 
+      success: false, 
+      error: error.message,
+      sms: null,
+      email: null
+    };
+  }
+}
+
+/**
+ * Send extension approved notification to customer
+ * @param {Object} booking - Booking object with details
+ * @param {Object} customer - Customer object
+ * @param {Object} car - Car object
+ * @param {number} additionalDays - Number of days extension was approved for
+ * @param {number} additionalCost - Cost for extension
+ * @returns {Promise<Object>} Result of notification attempt
+ */
+export async function sendExtensionApprovedNotification(booking, customer, car, additionalDays, additionalCost) {
+  const { first_name, contact_no, email, customer_id, isRecUpdate } = customer;
+  const { make, model, year, license_plate } = car;
+  const { booking_id, end_date, balance, total_amount } = booking;
+  
+  console.log(`✅ Sending extension approved notification for booking ${booking_id}`);
+  
+  // Build notification messages
+  const carName = `${make} ${model} (${year})`;
+  const newEndDateFormatted = formatDatePH(end_date);
+  
+  // SMS Message (keep it concise)
+  const smsMessage = `Hi ${first_name}! Your extension request for ${carName} has been APPROVED! New end date: ${newEndDateFormatted}. Additional cost: ₱${additionalCost.toLocaleString()}. Please pay the balance. - JA Car Rental`;
+  
+  // Email
+  const emailSubject = `Extension Approved - ${carName} Booking Extended`;
+  const emailBody = `
+    Hi ${first_name},
+    
+    Great news! Your booking extension request has been approved! ✅
+    
+    BOOKING DETAILS:
+    - Booking ID: #${booking_id}
+    - Vehicle: ${carName}
+    - Plate Number: ${license_plate || 'TBA'}
+    - Status: Extension Approved
+    
+    EXTENSION DETAILS:
+    - Additional Days: ${additionalDays} days
+    - New Return Date: ${newEndDateFormatted}
+    - Extension Cost: ₱${additionalCost.toLocaleString()}
+    
+    PAYMENT INFORMATION:
+    - Total Booking Amount: ₱${total_amount.toLocaleString()}
+    - Current Balance Due: ₱${balance.toLocaleString()}
+    
+    IMPORTANT - PAYMENT REQUIRED:
+    ⚠️ Please pay the additional ₱${additionalCost.toLocaleString()} for the extension as soon as possible.
+    You can pay via:
+    - GCash (submit payment proof online)
+    - Cash (at our office)
+    
+    The extended period will be confirmed once payment is received.
+    
+    WHAT'S NEXT:
+    1. Make payment for the extension cost
+    2. Continue enjoying your rental
+    3. Return the vehicle on the new return date: ${newEndDateFormatted}
+    
+    If you have any questions about your extension or payment, please contact us.
+    
+    Thank you for choosing JA Car Rental!
+    
+    Best regards,
+    JA Car Rental Team
+  `;
+  
+  const results = {
+    success: false,
+    sms: null,
+    email: null,
+    method: null
+  };
+  
+  try {
+    // Check customer notification preference
+    const notifMethod = parseInt(isRecUpdate) || 0;
+    
+    if (notifMethod === 0) {
+      console.log(`   ⚠️  Customer ${customer_id} has notifications disabled (isRecUpdate = 0)`);
+      results.success = false;
+      results.error = 'Customer notifications disabled';
+      return results;
+    }
+    
+    const promises = [];
+    
+    if (notifMethod === 1 || notifMethod === 3) {
+      // Send SMS
+      if (contact_no) {
+        console.log(`   → Sending SMS to ${contact_no}`);
+        promises.push(sendSMSNotification(contact_no, smsMessage));
+        results.method = notifMethod === 1 ? 'SMS' : 'Both';
+      }
+    }
+    
+    if (notifMethod === 2 || notifMethod === 3) {
+      // Send Email
+      if (email) {
+        console.log(`   → Sending Email to ${email}`);
+        promises.push(sendEmailNotification(email, emailSubject, emailBody));
+        results.method = notifMethod === 2 ? 'Email' : 'Both';
+      }
+    }
+    
+    if (promises.length > 0) {
+      const results_array = await Promise.allSettled(promises);
+      
+      if (notifMethod === 3) {
+        results.sms = results_array[0]?.value || null;
+        results.email = results_array[1]?.value || null;
+      } else if (notifMethod === 1) {
+        results.sms = results_array[0]?.value || null;
+      } else if (notifMethod === 2) {
+        results.email = results_array[0]?.value || null;
+      }
+      
+      results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+    } else {
+      console.log(`   ⚠️  No contact info available for customer ${customer_id}`);
+      results.success = false;
+      results.error = 'No contact information';
+    }
+    
+    if (results.success) {
+      console.log(`   ✅ Extension approved notification sent successfully`);
+    } else {
+      console.log(`   ❌ Failed to send extension approved notification: ${results.error || 'Unknown error'}`);
+    }
+    
+    return results;
+  } catch (error) {
+    console.error(`   ❌ Error sending extension approved notification:`, error);
+    return { 
+      success: false, 
+      error: error.message,
+      sms: null,
+      email: null
+    };
+  }
+}
+
+/**
+ * Send extension rejected notification to customer
+ * @param {Object} booking - Booking object with details
+ * @param {Object} customer - Customer object
+ * @param {Object} car - Car object
+ * @param {number} additionalDays - Number of days extension was requested for
+ * @param {number} deductedAmount - Amount that was deducted after rejection
+ * @returns {Promise<Object>} Result of notification attempt
+ */
+export async function sendExtensionRejectedNotification(booking, customer, car, additionalDays, deductedAmount) {
+  const { first_name, contact_no, email, customer_id, isRecUpdate } = customer;
+  const { make, model, year, license_plate } = car;
+  const { booking_id, end_date, total_amount } = booking;
+  
+  console.log(`❌ Sending extension rejected notification for booking ${booking_id}`);
+  
+  // Build notification messages
+  const carName = `${make} ${model} (${year})`;
+  const endDateFormatted = formatDatePH(end_date);
+  
+  // SMS Message (keep it concise)
+  const smsMessage = `Hi ${first_name}! Your extension request for ${carName} has been denied. Original return date remains: ${endDateFormatted}. Please contact us if you have questions. - JA Car Rental`;
+  
+  // Email
+  const emailSubject = `Extension Request Denied - ${carName} Booking`;
+  const emailBody = `
+    Hi ${first_name},
+    
+    We have reviewed your extension request and unfortunately, we cannot approve it at this time.
+    
+    BOOKING DETAILS:
+    - Booking ID: #${booking_id}
+    - Vehicle: ${carName}
+    - Plate Number: ${license_plate || 'TBA'}
+    - Original Return Date: ${endDateFormatted}
+    - Status: Extension Denied
+    
+    WHAT THIS MEANS:
+    - Your booking end date remains unchanged
+    - You must return the vehicle on: ${endDateFormatted}
+    - The additional cost of ₱${deductedAmount.toLocaleString()} has been removed from your balance
+    - Your original booking terms remain in effect
+    
+    WHY WAS IT DENIED?
+    Extension requests may be denied due to:
+    - Vehicle already booked by another customer for that period
+    - Maintenance scheduled for the vehicle
+    - Other operational constraints
+    
+    ALTERNATIVE OPTIONS:
+    If you still need the vehicle for a longer period:
+    1. Contact us to check if a different vehicle is available
+    2. Make a new booking for the additional period
+    3. Discuss other possible arrangements with our staff
+    
+    NEED TO DISCUSS?
+    Please contact us:
+    - Phone: ${ADMIN_NOTIFICATION_CONFIG?.PHONE || '09925315378'}
+    - Email: ${ADMIN_NOTIFICATION_CONFIG?.EMAIL || 'gregg.marayan@gmail.com'}
+    
+    We apologize for any inconvenience and appreciate your understanding.
+    
+    Best regards,
+    JA Car Rental Team
+  `;
+  
+  const results = {
+    success: false,
+    sms: null,
+    email: null,
+    method: null
+  };
+  
+  try {
+    // Check customer notification preference
+    const notifMethod = parseInt(isRecUpdate) || 0;
+    
+    if (notifMethod === 0) {
+      console.log(`   ⚠️  Customer ${customer_id} has notifications disabled (isRecUpdate = 0)`);
+      results.success = false;
+      results.error = 'Customer notifications disabled';
+      return results;
+    }
+    
+    const promises = [];
+    
+    if (notifMethod === 1 || notifMethod === 3) {
+      // Send SMS
+      if (contact_no) {
+        console.log(`   → Sending SMS to ${contact_no}`);
+        promises.push(sendSMSNotification(contact_no, smsMessage));
+        results.method = notifMethod === 1 ? 'SMS' : 'Both';
+      }
+    }
+    
+    if (notifMethod === 2 || notifMethod === 3) {
+      // Send Email
+      if (email) {
+        console.log(`   → Sending Email to ${email}`);
+        promises.push(sendEmailNotification(email, emailSubject, emailBody));
+        results.method = notifMethod === 2 ? 'Email' : 'Both';
+      }
+    }
+    
+    if (promises.length > 0) {
+      const results_array = await Promise.allSettled(promises);
+      
+      if (notifMethod === 3) {
+        results.sms = results_array[0]?.value || null;
+        results.email = results_array[1]?.value || null;
+      } else if (notifMethod === 1) {
+        results.sms = results_array[0]?.value || null;
+      } else if (notifMethod === 2) {
+        results.email = results_array[0]?.value || null;
+      }
+      
+      results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+    } else {
+      console.log(`   ⚠️  No contact info available for customer ${customer_id}`);
+      results.success = false;
+      results.error = 'No contact information';
+    }
+    
+    if (results.success) {
+      console.log(`   ✅ Extension rejected notification sent successfully`);
+    } else {
+      console.log(`   ❌ Failed to send extension rejected notification: ${results.error || 'Unknown error'}`);
+    }
+    
+    return results;
+  } catch (error) {
+    console.error(`   ❌ Error sending extension rejected notification:`, error);
+    return { 
+      success: false, 
+      error: error.message,
+      sms: null,
+      email: null
+    };
+  }
+}
+
+/**
  * Send test notification (for debugging)
  * @param {Object} params - Test parameters
  */

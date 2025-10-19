@@ -1,5 +1,5 @@
 import prisma from "../config/prisma.js";
-import { sendBookingSuccessNotification, sendBookingConfirmationNotification, sendPaymentReceivedNotification, sendCancellationApprovedNotification, sendAdminNewBookingNotification, sendAdminCancellationRequestNotification, sendCancellationDeniedNotification, sendAdminPaymentCompletedNotification } from "../utils/notificationService.js";
+import { sendBookingSuccessNotification, sendBookingConfirmationNotification, sendPaymentReceivedNotification, sendCancellationApprovedNotification, sendAdminNewBookingNotification, sendAdminCancellationRequestNotification, sendCancellationDeniedNotification, sendAdminPaymentCompletedNotification, sendAdminExtensionRequestNotification, sendExtensionApprovedNotification, sendExtensionRejectedNotification } from "../utils/notificationService.js";
 
 export const getBookings = async (req, res) => {
   try {
@@ -1167,10 +1167,45 @@ export const extendMyBooking = async (req, res) => {
         payment_status: 'Unpaid', // Set to Unpaid since there's new balance
       },
       include: {
-        car: { select: { make: true, model: true, year: true } },
-        customer: { select: { first_name: true, last_name: true } },
+        car: { select: { make: true, model: true, year: true, license_plate: true } },
+        customer: { 
+          select: { 
+            customer_id: true,
+            first_name: true, 
+            last_name: true,
+            email: true,
+            contact_no: true
+          } 
+        },
       },
     });
+
+    // Send admin notification for extension request
+    try {
+      console.log('📅 Sending extension request notification to admin...');
+      await sendAdminExtensionRequestNotification(
+        updatedBooking,
+        {
+          customer_id: updatedBooking.customer.customer_id,
+          first_name: updatedBooking.customer.first_name,
+          last_name: updatedBooking.customer.last_name,
+          email: updatedBooking.customer.email,
+          contact_no: updatedBooking.customer.contact_no
+        },
+        {
+          make: updatedBooking.car.make,
+          model: updatedBooking.car.model,
+          year: updatedBooking.car.year,
+          license_plate: updatedBooking.car.license_plate
+        },
+        additionalDays,
+        additionalCost
+      );
+      console.log('✅ Admin extension request notification sent');
+    } catch (notificationError) {
+      console.error("Error sending extension request notification:", notificationError);
+      // Don't fail the extension request if notification fails
+    }
 
     res.json({
       success: true,
@@ -1196,6 +1231,27 @@ export const confirmExtensionRequest = async (req, res) => {
     // Find the booking
     const booking = await prisma.booking.findUnique({
       where: { booking_id: bookingId },
+      include: {
+        car: {
+          select: {
+            make: true,
+            model: true,
+            year: true,
+            license_plate: true,
+            rent_price: true
+          }
+        },
+        customer: {
+          select: {
+            customer_id: true,
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true,
+            isRecUpdate: true
+          }
+        }
+      }
     });
 
     if (!booking) {
@@ -1209,6 +1265,14 @@ export const confirmExtensionRequest = async (req, res) => {
     if (!booking.new_end_date) {
       return res.status(400).json({ error: "No new end date found for extension" });
     }
+
+    // Calculate additional days and cost for notification
+    const originalEndDate = new Date(booking.end_date);
+    const newEndDate = new Date(booking.new_end_date);
+    const additionalDays = Math.ceil(
+      (newEndDate - originalEndDate) / (1000 * 60 * 60 * 24)
+    );
+    const additionalCost = additionalDays * (booking.car.rent_price || 0);
 
     // Get Philippine timezone date
     const now = new Date();
@@ -1253,6 +1317,38 @@ export const confirmExtensionRequest = async (req, res) => {
       },
     });
 
+    // Send customer notification for extension approval
+    try {
+      console.log('✅ Sending extension approved notification to customer...');
+      await sendExtensionApprovedNotification(
+        {
+          ...updatedBooking,
+          total_amount: booking.total_amount,
+          balance: booking.balance
+        },
+        {
+          customer_id: booking.customer.customer_id,
+          first_name: booking.customer.first_name,
+          last_name: booking.customer.last_name,
+          email: booking.customer.email,
+          contact_no: booking.customer.contact_no,
+          isRecUpdate: booking.customer.isRecUpdate
+        },
+        {
+          make: booking.car.make,
+          model: booking.car.model,
+          year: booking.car.year,
+          license_plate: booking.car.license_plate
+        },
+        additionalDays,
+        additionalCost
+      );
+      console.log('✅ Extension approved notification sent');
+    } catch (notificationError) {
+      console.error("Error sending extension approved notification:", notificationError);
+      // Don't fail the confirmation if notification fails
+    }
+
     res.json({
       success: true,
       message: "Extension request confirmed successfully",
@@ -1277,9 +1373,23 @@ export const rejectExtensionRequest = async (req, res) => {
       include: {
         car: {
           select: {
-            rent_price: true,
-          },
+            make: true,
+            model: true,
+            year: true,
+            license_plate: true,
+            rent_price: true
+          }
         },
+        customer: {
+          select: {
+            customer_id: true,
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true,
+            isRecUpdate: true
+          }
+        }
       },
     });
 
@@ -1321,6 +1431,34 @@ export const rejectExtensionRequest = async (req, res) => {
         payment_status: paymentStatus, // Update payment status
       },
     });
+
+    // Send customer notification for extension rejection
+    try {
+      console.log('❌ Sending extension rejected notification to customer...');
+      await sendExtensionRejectedNotification(
+        updatedBooking,
+        {
+          customer_id: booking.customer.customer_id,
+          first_name: booking.customer.first_name,
+          last_name: booking.customer.last_name,
+          email: booking.customer.email,
+          contact_no: booking.customer.contact_no,
+          isRecUpdate: booking.customer.isRecUpdate
+        },
+        {
+          make: booking.car.make,
+          model: booking.car.model,
+          year: booking.car.year,
+          license_plate: booking.car.license_plate
+        },
+        additionalDays,
+        additionalCost
+      );
+      console.log('✅ Extension rejected notification sent');
+    } catch (notificationError) {
+      console.error("Error sending extension rejected notification:", notificationError);
+      // Don't fail the rejection if notification fails
+    }
 
     res.json({
       success: true,

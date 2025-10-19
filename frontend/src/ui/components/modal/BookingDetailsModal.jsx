@@ -976,8 +976,8 @@ export default function BookingDetailsModal({
                       Extended:
                     </Typography>
                     <Chip
-                      label={booking.isExtend ? 'Yes' : 'No'}
-                      color={booking.isExtend ? 'warning' : 'default'}
+                      label={booking.isExtended ? 'Yes' : 'No'}
+                      color={booking.isExtended ? 'success' : 'default'}
                       size="small"
                     />
                   </Box>

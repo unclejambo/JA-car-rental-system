@@ -1278,12 +1278,13 @@ export const confirmExtensionRequest = async (req, res) => {
     const now = new Date();
     const phTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
 
-    // Create extension record with old and new end dates
+    // Create extension record with old and new end dates and approval timestamp
     await prisma.extension.create({
       data: {
         booking_id: bookingId,
         old_end_date: booking.end_date,
         new_end_date: booking.new_end_date,
+        approve_time: phTime, // Timestamp when admin approved the extension
       },
     });
 
@@ -1740,9 +1741,11 @@ export const confirmBooking = async (req, res) => {
     else if (normalizedStatus === 'confirmed') {
       console.log('Action: isPay -> false (status remains Confirmed)');
     }
-    // Case 3: isPay is TRUE and status is In Progress -> Just set isPay to FALSE
+    // Case 3: isPay is TRUE and status is In Progress -> Set isPay to FALSE and isExtended to TRUE
     else if (normalizedStatus === 'in progress') {
-      console.log('Action: isPay -> false (status remains In Progress)');
+      updateData.booking_status = 'In Progress';
+      updateData.isExtended = true; // Mark as extended booking
+      console.log('Action: isPay -> false, isExtended -> true (status remains In Progress)');
     }
 
     // Check if balance is 0 or less and update payment_status to Paid

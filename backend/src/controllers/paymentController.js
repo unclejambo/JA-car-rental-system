@@ -72,12 +72,17 @@ export const recalculatePaymentBalances = async (bookingId) => {
 
 // Utility function to determine appropriate booking status based on payments
 const determineBookingStatus = (totalPaid, totalAmount, currentStatus) => {
+  // If current status is 'In Progress', preserve it regardless of payment status
+  if (currentStatus === 'In Progress') {
+    return 'In Progress';
+  }
+  
   if (totalPaid <= 0) {
     // No payments made - should be Pending (capitalized)
     return 'Pending';
   } else if (totalPaid >= totalAmount) {
     // Fully paid - should be confirmed or maintain current status if already progressed
-    return ['Confirmed', 'In Progress', 'Completed', 'Returned'].includes(currentStatus) 
+    return ['Confirmed', 'Completed', 'Returned'].includes(currentStatus) 
       ? currentStatus 
       : 'Confirmed';
   } else {
@@ -633,12 +638,16 @@ export const processBookingPayment = async (req, res) => {
     // Determine if booking should be auto-confirmed
     // If payment is >= 1000, automatically confirm the booking
     // Otherwise, booking stays in Pending status and requires admin confirmation
+    // IMPORTANT: Never change status if booking is 'In Progress' (customer is using the car)
     let bookingStatus = booking.booking_status;
-    if (totalPaid >= 1000) {
-      bookingStatus = 'Confirmed';
-    }
-    else if (totalPaid < 1000) {
-      bookingStatus = 'Pending';
+    
+    // Only update status if current status is NOT 'In Progress'
+    if (booking.booking_status !== 'In Progress') {
+      if (totalPaid >= 1000) {
+        bookingStatus = 'Confirmed';
+      } else if (totalPaid < 1000) {
+        bookingStatus = 'Pending';
+      }
     }
 
     // Update booking isPay flag and booking status
@@ -646,7 +655,7 @@ export const processBookingPayment = async (req, res) => {
       where: { booking_id: parseInt(booking_id) },
       data: { 
         isPay: true, // Set to true whenever customer makes payment
-        booking_status: bookingStatus, // Auto-confirm if payment >= 1000
+        booking_status: bookingStatus, // Auto-confirm if payment >= 1000, preserve 'In Progress'
       },
     });
 

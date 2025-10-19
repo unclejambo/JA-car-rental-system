@@ -360,7 +360,7 @@ const RegisterPage = () => {
             encType="multipart/form-data"
           >
             {/* Email */}
-            <Box sx={{ mb: 2 }}>
+            <Box sx={{ mt: 2, mb: 2 }}>
               <TextField
                 id="email"
                 name="email"

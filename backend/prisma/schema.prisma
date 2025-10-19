@@ -120,6 +120,7 @@ model Booking {
   deliver_loc    String?
   balance        Int?          @default(0)
   isPay          Boolean?      @default(false)
+  isExtended     Boolean?      @default(false)
   admin          Admin?        @relation(fields: [admin_id], references: [admin_id])
   car            Car           @relation(fields: [car_id], references: [car_id])
   customer       Customer      @relation(fields: [customer_id], references: [customer_id])
@@ -137,6 +138,7 @@ model Extension {
   booking_id   Int
   old_end_date DateTime  @db.Timestamptz(6)
   new_end_date DateTime? @db.Timestamptz(6)
+  approve_time DateTime? @db.Timestamptz(6)
   booking      Booking   @relation(fields: [booking_id], references: [booking_id])
 }
 

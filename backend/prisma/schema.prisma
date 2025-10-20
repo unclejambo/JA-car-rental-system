@@ -94,52 +94,55 @@ model Car {
 }
 
 model Booking {
-  booking_id     Int           @id @default(autoincrement())
-  customer_id    Int
-  car_id         Int
-  booking_date   DateTime      @db.Timestamptz(6)
-  purpose        String?
-  start_date     DateTime      @db.Timestamptz(6)
-  end_date       DateTime      @db.Timestamptz(6)
-  pickup_time    DateTime?     @db.Timestamptz(6)
-  pickup_loc     String?
-  dropoff_time   DateTime?     @db.Timestamptz(6)
-  dropoff_loc    String?
-  isSelfDriver   Boolean?      @default(false)
-  isExtend       Boolean?      @default(false)
-  new_end_date   DateTime?     @db.Timestamptz(6)
-  isCancel       Boolean?      @default(false)
-  total_amount   Int?
-  payment_status String?
-  isRelease      Boolean?      @default(false)
-  isReturned     Boolean?      @default(false)
-  booking_status String?
-  drivers_id     Int?
-  admin_id       Int?
-  isDeliver      Boolean?      @default(false)
-  deliver_loc    String?
-  balance        Int?          @default(0)
-  isPay          Boolean?      @default(false)
-  isExtended     Boolean?      @default(false)
-  admin          Admin?        @relation(fields: [admin_id], references: [admin_id])
-  car            Car           @relation(fields: [car_id], references: [car_id])
-  customer       Customer      @relation(fields: [customer_id], references: [customer_id])
-  driver         Driver?       @relation(fields: [drivers_id], references: [drivers_id])
-  extensions     Extension[]
-  payments       Payment[]
-  refunds        Refund[]
-  releases       Release[]
-  Return         Return[]
-  transactions   Transaction[]
+  booking_id                 Int           @id @default(autoincrement())
+  customer_id                Int
+  car_id                     Int
+  booking_date               DateTime      @db.Timestamptz(6)
+  purpose                    String?
+  start_date                 DateTime      @db.Timestamptz(6)
+  end_date                   DateTime      @db.Timestamptz(6)
+  pickup_time                DateTime?     @db.Timestamptz(6)
+  pickup_loc                 String?
+  dropoff_time               DateTime?     @db.Timestamptz(6)
+  dropoff_loc                String?
+  isSelfDriver               Boolean?      @default(false)
+  isExtend                   Boolean?      @default(false)
+  new_end_date               DateTime?     @db.Timestamptz(6)
+  isCancel                   Boolean?      @default(false)
+  total_amount               Int?
+  payment_status             String?
+  isRelease                  Boolean?      @default(false)
+  isReturned                 Boolean?      @default(false)
+  booking_status             String?
+  drivers_id                 Int?
+  admin_id                   Int?
+  isDeliver                  Boolean?      @default(false)
+  deliver_loc                String?
+  balance                    Int?          @default(0)
+  isPay                      Boolean?      @default(false)
+  isExtended                 Boolean?      @default(false)
+  extension_payment_deadline DateTime?     @db.Timestamptz(6)
+  admin                      Admin?        @relation(fields: [admin_id], references: [admin_id])
+  car                        Car           @relation(fields: [car_id], references: [car_id])
+  customer                   Customer      @relation(fields: [customer_id], references: [customer_id])
+  driver                     Driver?       @relation(fields: [drivers_id], references: [drivers_id])
+  extensions                 Extension[]
+  payments                   Payment[]
+  refunds                    Refund[]
+  releases                   Release[]
+  Return                     Return[]
+  transactions               Transaction[]
 }
 
 model Extension {
-  extension_id Int       @id @default(autoincrement())
-  booking_id   Int
-  old_end_date DateTime  @db.Timestamptz(6)
-  new_end_date DateTime? @db.Timestamptz(6)
-  approve_time DateTime? @db.Timestamptz(6)
-  booking      Booking   @relation(fields: [booking_id], references: [booking_id])
+  extension_id     Int       @id @default(autoincrement())
+  booking_id       Int
+  old_end_date     DateTime  @db.Timestamptz(6)
+  new_end_date     DateTime? @db.Timestamptz(6)
+  approve_time     DateTime? @db.Timestamptz(6)
+  extension_status String?
+  rejection_reason String?
+  booking          Booking   @relation(fields: [booking_id], references: [booking_id])
 }
 
 model Payment {

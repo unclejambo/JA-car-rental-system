@@ -93,7 +93,10 @@ export default function AdminSchedulePage() {
           `Failed to fetch schedules: ${res.status} ${res.statusText}`
         );
       }
-      const data = await res.json();
+      const response_data = await res.json();
+      // Handle paginated response - extract data array
+      const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
+      
       // Filter to only show reservations with status Confirmed or In Progress/Ongoing per requirement
       const filtered = Array.isArray(data)
         ? data.filter((r) => {

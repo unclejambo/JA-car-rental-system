@@ -128,9 +128,14 @@ function CustomerBookingHistory() {
         );
       }
 
-      const dataBookings = await resBookings.json();
-      const dataPayments = await resPayments.json();
-      const dataTransactions = await resTransactions.json();
+      const responseBookings = await resBookings.json();
+      const responsePayments = await resPayments.json();
+      const responseTransactions = await resTransactions.json();
+      
+      // Handle paginated responses - extract data arrays
+      const dataBookings = Array.isArray(responseBookings) ? responseBookings : (responseBookings.data || []);
+      const dataPayments = Array.isArray(responsePayments) ? responsePayments : (responsePayments.data || []);
+      const dataTransactions = Array.isArray(responseTransactions) ? responseTransactions : (responseTransactions.data || []);
 
       // Create a map of transactions by booking_id for easy lookup
       const transactionMap = {};
@@ -223,7 +228,10 @@ function CustomerBookingHistory() {
       );
 
       if (response.ok) {
-        const allBookings = await response.json();
+        const response_data = await response.json();
+        // Handle paginated response - extract data array
+        const allBookings = Array.isArray(response_data) ? response_data : (response_data.data || []);
+        
         const fullBooking = allBookings.find(
           (b) => b.booking_id === bookingRow.booking_id
         );

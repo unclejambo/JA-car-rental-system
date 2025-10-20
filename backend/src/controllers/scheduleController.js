@@ -1,11 +1,44 @@
 import prisma from "../config/prisma.js";
+import { getPaginationParams, getSortingParams, buildPaginationResponse, getSearchParam } from '../utils/pagination.js';
 
 /**
- * Get all schedules (admin/general use)
+ * Get all schedules with pagination (admin/general use)
+ * @route GET /schedules?page=1&pageSize=10&sortBy=start_date&sortOrder=desc&status=Confirmed
  */
 export const getSchedules = async (req, res) => {
   try {
+    // Get pagination parameters
+    const { page, pageSize, skip } = getPaginationParams(req);
+    const { sortBy, sortOrder } = getSortingParams(req, 'start_date', 'desc');
+    const search = getSearchParam(req);
+    
+    // Build where clause
+    const where = {};
+    
+    // Search filter (customer name or car model)
+    if (search) {
+      where.OR = [
+        { customer: { first_name: { contains: search, mode: 'insensitive' } } },
+        { customer: { last_name: { contains: search, mode: 'insensitive' } } },
+        { car: { make: { contains: search, mode: 'insensitive' } } },
+        { car: { model: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+    
+    // Status filter
+    if (req.query.status) {
+      where.booking_status = req.query.status;
+    }
+
+    // Get total count
+    const total = await prisma.booking.count({ where });
+
+    // Get paginated schedules
     const schedules = await prisma.booking.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { [sortBy]: sortOrder },
       select: {
         booking_id: true,
         customer_id: true,
@@ -27,7 +60,6 @@ export const getSchedules = async (req, res) => {
           select: { car_id: true, make: true, model: true, hasGPS: true, license_plate: true },
         },
       },
-      orderBy: { start_date: "desc" },
     });
 
     const mapped = schedules.map((s) => ({
@@ -55,10 +87,10 @@ export const getSchedules = async (req, res) => {
         car_id: s.car?.car_id,
         hasGPS: s.car?.hasGPS || false,
       },
-      hasGPS: s.car?.hasGPS || false, // Also include at root level for easy access
+      hasGPS: s.car?.hasGPS || false,
     }));
 
-    res.json(mapped);
+    res.json(buildPaginationResponse(mapped, total, page, pageSize));
   } catch (error) {
     console.error("Error fetching schedules:", error);
     res.status(500).json({ error: "Failed to fetch schedules" });
@@ -114,7 +146,8 @@ export const getSchedulesByCustomer = async (req, res) => {
 };
 
 /**
- * Get schedules for the currently authenticated CUSTOMER
+ * Get schedules for the currently authenticated CUSTOMER with pagination
+ * @route GET /schedules/my-schedules?page=1&pageSize=10&status=Confirmed
  */
 export const getMySchedules = async (req, res) => {
   try {
@@ -127,8 +160,27 @@ export const getMySchedules = async (req, res) => {
 
     if (!customerId) return res.status(401).json({ error: "Unauthorized" });
 
+    // Get pagination parameters
+    const { page, pageSize, skip } = getPaginationParams(req);
+    const { sortBy, sortOrder } = getSortingParams(req, 'start_date', 'desc');
+    
+    // Build where clause
+    const where = { customer_id: Number(customerId) };
+    
+    // Status filter
+    if (req.query.status) {
+      where.booking_status = req.query.status;
+    }
+
+    // Get total count
+    const total = await prisma.booking.count({ where });
+
+    // Get paginated schedules
     const schedules = await prisma.booking.findMany({
-      where: { customer_id: Number(customerId) },
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { [sortBy]: sortOrder },
       select: {
         booking_id: true,
         start_date: true,
@@ -142,7 +194,6 @@ export const getMySchedules = async (req, res) => {
           select: { make: true, model: true },
         },
       },
-      orderBy: { start_date: "desc" },
     });
 
     const mapped = schedules.map((s) => ({
@@ -159,7 +210,7 @@ export const getMySchedules = async (req, res) => {
       }${s.car?.model ?? ""}`.trim(),
     }));
 
-    res.json(mapped);
+    res.json(buildPaginationResponse(mapped, total, page, pageSize));
   } catch (error) {
     console.error("Error fetching my schedules:", error);
     res.status(500).json({ error: "Failed to fetch customer schedules" });
@@ -167,7 +218,8 @@ export const getMySchedules = async (req, res) => {
 };
 
 /**
- * Get schedules for the currently authenticated DRIVER
+ * Get schedules for the currently authenticated DRIVER with pagination
+ * @route GET /schedules/my-driver-schedules?page=1&pageSize=10&status=Confirmed
  */
 export const getMyDriverSchedules = async (req, res) => {
   try {
@@ -180,17 +232,34 @@ export const getMyDriverSchedules = async (req, res) => {
 
     if (!driverId) return res.status(401).json({ error: "Unauthorized" });
 
-    // ✅ use include instead of select
+    // Get pagination parameters
+    const { page, pageSize, skip } = getPaginationParams(req);
+    const { sortBy, sortOrder } = getSortingParams(req, 'start_date', 'desc');
+    
+    // Build where clause
+    const where = { drivers_id: Number(driverId) };
+    
+    // Status filter
+    if (req.query.status) {
+      where.booking_status = req.query.status;
+    }
+
+    // Get total count
+    const total = await prisma.booking.count({ where });
+
+    // Get paginated schedules
     const schedules = await prisma.booking.findMany({
-      where: { drivers_id: Number(driverId) },
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { [sortBy]: sortOrder },
       include: {
         customer: { select: { first_name: true, last_name: true } },
         car: { select: { make: true, model: true } },
       },
-      orderBy: { start_date: "desc" },
     });
 
-    // ✅ safely map names and models
+    // Map schedule data
     const mapped = schedules.map((s) => ({
       schedule_id: s.booking_id,
       start_date: s.start_date,
@@ -210,7 +279,7 @@ export const getMyDriverSchedules = async (req, res) => {
         : "Unknown Car",
     }));
 
-    res.json(mapped);
+    res.json(buildPaginationResponse(mapped, total, page, pageSize));
   } catch (error) {
     console.error("Error fetching driver schedules:", error);
     res.status(500).json({ error: "Failed to fetch driver schedules" });

@@ -1,5 +1,6 @@
 import prisma from "../config/prisma.js";
 import { sendBookingConfirmationNotification, sendPaymentReceivedNotification, sendAdminPaymentRequestNotification, sendAdminPaymentCompletedNotification } from "../utils/notificationService.js";
+import { getPaginationParams, getSortingParams, buildPaginationResponse, getSearchParam } from '../utils/pagination.js';
 
 function shapePayment(p) {
   const { booking, customer, ...rest } = p;
@@ -718,6 +719,9 @@ export const processBookingPayment = async (req, res) => {
 // @desc    Get customer's payment history
 // @route   GET /payments/my-payments
 // @access  Private (Customer)
+// @desc    Get customer's payment history with pagination
+// @route   GET /payments/my-payments?page=1&pageSize=10&sortBy=paid_date&sortOrder=desc
+// @access  Private/Customer
 export const getMyPayments = async (req, res) => {
   try {
     const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
@@ -728,8 +732,27 @@ export const getMyPayments = async (req, res) => {
         .json({ error: "Customer authentication required" });
     }
 
+    // Get pagination parameters
+    const { page, pageSize, skip } = getPaginationParams(req);
+    const { sortBy, sortOrder } = getSortingParams(req, 'paid_date', 'desc');
+    
+    // Build where clause
+    const where = { customer_id: parseInt(customerId) };
+    
+    // Payment method filter
+    if (req.query.payment_method) {
+      where.payment_method = req.query.payment_method;
+    }
+
+    // Get total count
+    const total = await prisma.payment.count({ where });
+
+    // Get paginated payments
     const payments = await prisma.payment.findMany({
-      where: { customer_id: parseInt(customerId) },
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { [sortBy]: sortOrder },
       include: {
         booking: {
           select: {
@@ -748,7 +771,6 @@ export const getMyPayments = async (req, res) => {
           },
         },
       },
-      orderBy: { paid_date: "desc" },
     });
 
     const shapedPayments = payments.map((payment) => ({
@@ -773,7 +795,7 @@ export const getMyPayments = async (req, res) => {
         : null,
     }));
 
-    res.json(shapedPayments);
+    res.json(buildPaginationResponse(shapedPayments, total, page, pageSize));
   } catch (error) {
     console.error("Error fetching customer payments:", error);
     res.status(500).json({ error: "Failed to fetch payment history" });

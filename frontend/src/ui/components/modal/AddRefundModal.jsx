@@ -261,11 +261,15 @@ export default function AddRefundModal({ show, onClose }) {
           authFetch(`${base}/bookings`),
           authFetch(`${base}/manage-fees`),
         ]);
-        const [cData, bData, fData] = await Promise.all([
+        const [cData_raw, bData_raw, fData] = await Promise.all([
           cRes.json(),
           bRes.json(),
           fRes.json(),
         ]);
+        // Handle paginated responses - extract data arrays
+        const cData = Array.isArray(cData_raw) ? cData_raw : (cData_raw?.data || []);
+        const bData = Array.isArray(bData_raw) ? bData_raw : (bData_raw?.data || []);
+        
         if (!cancel) {
           setCustomers(Array.isArray(cData) ? cData : []);
           setBookings(Array.isArray(bData) ? bData : []);

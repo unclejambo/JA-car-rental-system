@@ -86,13 +86,17 @@ function CustomerDashboard() {
       const [customerBookings, customerSchedules, availableCars] =
         await Promise.all([
           // Use customer-specific booking endpoint
-          authFetch(`${API_BASE}/bookings/my-bookings/list`).then((r) =>
-            r.ok ? r.json() : []
-          ),
+          authFetch(`${API_BASE}/bookings/my-bookings/list`).then(async (r) => {
+            if (!r.ok) return [];
+            const data = await r.json();
+            return Array.isArray(data) ? data : (data.data || []);
+          }),
           // Use customer-specific schedule endpoint
-          authFetch(`${API_BASE}/schedules/me`).then((r) =>
-            r.ok ? r.json() : []
-          ),
+          authFetch(`${API_BASE}/schedules/me`).then(async (r) => {
+            if (!r.ok) return [];
+            const data = await r.json();
+            return Array.isArray(data) ? data : (data.data || []);
+          }),
           // Get available cars for favorite car details
           authFetch(`${API_BASE}/cars/available`).then((r) =>
             r.ok ? r.json() : []

@@ -76,7 +76,9 @@ export default function DriverSchedule() {
       if (!res.ok)
         throw new Error(`Failed to fetch driver schedules: ${res.status}`);
 
-      const data = await res.json();
+      const response_data = await res.json();
+      // Handle paginated response - extract data array
+      const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
       setSchedules(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching driver schedules:', err);

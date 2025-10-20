@@ -71,7 +71,10 @@ function CustomerSchedule() {
 
       if (!res.ok) throw new Error(`Failed to fetch schedules: ${res.status}`);
 
-      const data = await res.json();
+      const response_data = await res.json();
+      // Handle paginated response - extract data array
+      const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
+      
       // Filter out completed and cancelled schedules
       const filteredSchedule = Array.isArray(data)
         ? data.filter((schedule) => {

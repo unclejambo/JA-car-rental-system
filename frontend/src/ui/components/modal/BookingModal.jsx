@@ -169,8 +169,10 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       console.log('Drivers response status:', response.status);
       
       if (response.ok) {
-        const data = await response.json();
-        console.log('Drivers data received:', data);
+        const response_data = await response.json();
+        console.log('Drivers data received:', response_data);
+        // Handle paginated response - extract data array
+        const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
         setDrivers(data);
       } else {
         const errorText = await response.text();

@@ -1,9 +1,49 @@
 import prisma from "../config/prisma.js";
 import { sendBookingSuccessNotification, sendBookingConfirmationNotification, sendPaymentReceivedNotification, sendCancellationApprovedNotification, sendAdminNewBookingNotification, sendAdminCancellationRequestNotification, sendCancellationDeniedNotification, sendAdminPaymentCompletedNotification, sendAdminExtensionRequestNotification, sendExtensionApprovedNotification, sendExtensionRejectedNotification } from "../utils/notificationService.js";
+import { getPaginationParams, getSortingParams, buildPaginationResponse, getSearchParam } from "../utils/pagination.js";
 
+// @desc    Get all bookings with pagination (Admin)
+// @route   GET /bookings?page=1&pageSize=10&sortBy=booking_date&sortOrder=desc&search=john&status=Pending
+// @access  Private/Admin
 export const getBookings = async (req, res) => {
   try {
+    // Get pagination parameters
+    const { page, pageSize, skip } = getPaginationParams(req);
+    const { sortBy, sortOrder } = getSortingParams(req, 'booking_id', 'desc');
+    const search = getSearchParam(req);
+    
+    // Build where clause for filtering
+    const where = {};
+    
+    // Search filter (customer name or car model)
+    if (search) {
+      where.OR = [
+        { customer: { first_name: { contains: search, mode: 'insensitive' } } },
+        { customer: { last_name: { contains: search, mode: 'insensitive' } } },
+        { car: { make: { contains: search, mode: 'insensitive' } } },
+        { car: { model: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+    
+    // Status filter
+    if (req.query.status) {
+      where.booking_status = req.query.status;
+    }
+    
+    // Payment status filter
+    if (req.query.payment_status) {
+      where.payment_status = req.query.payment_status;
+    }
+
+    // Get total count
+    const total = await prisma.booking.count({ where });
+
+    // Get paginated bookings
     const bookings = await prisma.booking.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { [sortBy]: sortOrder },
       include: {
         customer: { select: { first_name: true, last_name: true } },
         car: { select: { make: true, model: true, year: true } },
@@ -29,7 +69,7 @@ export const getBookings = async (req, res) => {
 
         return {
           ...rest,
-          balance: remainingBalance, // Use the calculated balance
+          balance: remainingBalance,
           customer_name: `${customer?.first_name ?? ""} ${
             customer?.last_name ?? ""
           }`.trim(),
@@ -40,7 +80,7 @@ export const getBookings = async (req, res) => {
       })
     );
 
-    res.json(shaped);
+    res.json(buildPaginationResponse(shaped, total, page, pageSize));
   } catch (error) {
     console.error("Error fetching bookings:", error);
     res.status(500).json({ error: "Failed to fetch bookings" });
@@ -589,6 +629,9 @@ export const deleteBooking = async (req, res) => {
 // @desc    Get customer's own bookings
 // @route   GET /bookings/my-bookings/list
 // @access  Private (Customer)
+// @desc    Get customer's own bookings with pagination
+// @route   GET /bookings/my-bookings?page=1&pageSize=10&status=Confirmed
+// @access  Private/Customer
 export const getMyBookings = async (req, res) => {
   try {
     const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
@@ -599,8 +642,32 @@ export const getMyBookings = async (req, res) => {
         .json({ error: "Customer authentication required" });
     }
 
+    // Get pagination parameters
+    const { page, pageSize, skip } = getPaginationParams(req);
+    const { sortBy, sortOrder } = getSortingParams(req, 'booking_date', 'desc');
+
+    // Build where clause
+    const where = { customer_id: parseInt(customerId) };
+    
+    // Status filter
+    if (req.query.status) {
+      where.booking_status = req.query.status;
+    }
+    
+    // Payment status filter
+    if (req.query.payment_status) {
+      where.payment_status = req.query.payment_status;
+    }
+
+    // Get total count
+    const total = await prisma.booking.count({ where });
+
+    // Get paginated bookings
     const bookings = await prisma.booking.findMany({
-      where: { customer_id: parseInt(customerId) },
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { [sortBy]: sortOrder },
       include: {
         customer: {
           select: {
@@ -635,7 +702,6 @@ export const getMyBookings = async (req, res) => {
           },
         },
       },
-      orderBy: { booking_date: "desc" },
     });
 
     const shaped = bookings.map(
@@ -667,7 +733,7 @@ export const getMyBookings = async (req, res) => {
       })
     );
 
-    res.json(shaped);
+    res.json(buildPaginationResponse(shaped, total, page, pageSize));
   } catch (error) {
     console.error("Error fetching customer bookings:", error);
     console.error("Error details:", {
@@ -1390,6 +1456,13 @@ export const rejectExtensionRequest = async (req, res) => {
             contact_no: true,
             isRecUpdate: true
           }
+        },
+        extensions: {
+          where: {
+            approve_time: null // Only pending extensions
+          },
+          orderBy: { extension_id: 'desc' },
+          take: 1
         }
       },
     });
@@ -1421,6 +1494,18 @@ export const rejectExtensionRequest = async (req, res) => {
     // Determine payment status based on restored balance
     const paymentStatus = restoredBalance <= 0 ? 'Paid' : 'Unpaid';
 
+    // Update Extension record (mark as rejected)
+    const pendingExtension = booking.extensions[0];
+    if (pendingExtension) {
+      await prisma.extension.update({
+        where: { extension_id: pendingExtension.extension_id },
+        data: {
+          extension_status: 'Rejected',
+          rejection_reason: req.body.reason || 'Extension request rejected by admin'
+        }
+      });
+    }
+
     // Update booking: clear new_end_date, set isExtend to false, restore total_amount and balance
     const updatedBooking = await prisma.booking.update({
       where: { booking_id: bookingId },
@@ -1430,6 +1515,7 @@ export const rejectExtensionRequest = async (req, res) => {
         total_amount: restoredTotalAmount, // Deduct additional cost
         balance: restoredBalance, // Deduct additional cost
         payment_status: paymentStatus, // Update payment status
+        extension_payment_deadline: null, // Clear payment deadline
       },
     });
 
@@ -1470,6 +1556,129 @@ export const rejectExtensionRequest = async (req, res) => {
   } catch (error) {
     console.error("Error rejecting extension:", error);
     res.status(500).json({ error: "Failed to reject extension request" });
+  }
+};
+
+// @desc    Customer cancels their own pending extension request
+// @route   POST /bookings/:id/cancel-extension
+// @access  Private (Customer - own bookings only)
+export const cancelExtensionRequest = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
+
+    if (!customerId) {
+      return res.status(401).json({ error: 'Customer authentication required' });
+    }
+
+    // Find the booking with pending extension
+    const booking = await prisma.booking.findUnique({
+      where: { booking_id: bookingId },
+      include: {
+        car: {
+          select: {
+            make: true,
+            model: true,
+            year: true,
+            license_plate: true,
+            rent_price: true
+          }
+        },
+        customer: {
+          select: {
+            customer_id: true,
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true,
+            isRecUpdate: true
+          }
+        },
+        extensions: {
+          where: {
+            approve_time: null // Only pending extensions
+          },
+          orderBy: { extension_id: 'desc' },
+          take: 1
+        }
+      }
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    // Verify customer owns this booking
+    if (booking.customer_id !== parseInt(customerId)) {
+      return res.status(403).json({ error: 'Not authorized to cancel this extension' });
+    }
+
+    // Check if there's a pending extension
+    if (!booking.isExtend) {
+      return res.status(400).json({ error: 'No pending extension request to cancel' });
+    }
+
+    if (!booking.new_end_date) {
+      return res.status(400).json({ error: 'No pending extension found' });
+    }
+
+    const pendingExtension = booking.extensions[0];
+    if (!pendingExtension) {
+      return res.status(404).json({ error: 'Pending extension record not found' });
+    }
+
+    // Calculate the additional cost to revert
+    const originalEndDate = new Date(booking.end_date);
+    const newEndDate = new Date(booking.new_end_date);
+    const additionalDays = Math.ceil(
+      (newEndDate - originalEndDate) / (1000 * 60 * 60 * 24)
+    );
+    const additionalCost = additionalDays * (booking.car.rent_price || 0);
+
+    // Restore original amounts
+    const restoredTotalAmount = (booking.total_amount || 0) - additionalCost;
+    const restoredBalance = (booking.balance || 0) - additionalCost;
+    const paymentStatus = restoredBalance <= 0 ? 'Paid' : 'Unpaid';
+
+    // Update Extension record (mark as cancelled by customer)
+    await prisma.extension.update({
+      where: { extension_id: pendingExtension.extension_id },
+      data: {
+        extension_status: 'Cancelled by Customer',
+        rejection_reason: 'Customer cancelled the extension request'
+      }
+    });
+
+    // Revert Booking to original state
+    const updatedBooking = await prisma.booking.update({
+      where: { booking_id: bookingId },
+      data: {
+        new_end_date: null,
+        isExtend: false,
+        total_amount: restoredTotalAmount,
+        balance: restoredBalance,
+        payment_status: paymentStatus,
+        extension_payment_deadline: null,
+      }
+    });
+
+    console.log(`✅ Customer cancelled extension for booking #${bookingId}`);
+
+    res.json({
+      success: true,
+      message: 'Extension request cancelled successfully',
+      booking: {
+        booking_id: updatedBooking.booking_id,
+        end_date: updatedBooking.end_date,
+        total_amount: restoredTotalAmount,
+        balance: restoredBalance,
+        payment_status: paymentStatus
+      }
+    });
+
+  } catch (error) {
+    console.error('Error cancelling extension request:', error);
+    res.status(500).json({ error: 'Failed to cancel extension request' });
   }
 };
 

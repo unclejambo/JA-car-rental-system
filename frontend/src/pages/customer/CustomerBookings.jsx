@@ -102,7 +102,11 @@ function CustomerBookings() {
       );
 
       if (response.ok) {
-        const data = await response.json();
+        const response_data = await response.json();
+        
+        // Handle paginated response - extract data array
+        const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
+        
         // Filter out cancelled bookings
         const activeBookings = (data || []).filter(
           (booking) =>
@@ -131,8 +135,12 @@ function CustomerBookings() {
       );
 
       if (response.ok) {
-        const data = await response.json();
-        console.log('Bookings response for settlement:', data);
+        const response_data = await response.json();
+        console.log('Bookings response for settlement:', response_data);
+        
+        // Handle paginated response - extract data array
+        const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
+        
         // Filter only unpaid bookings that are not cancelled
         const unpaidBookings = (data || []).filter(
           (booking) =>

@@ -143,7 +143,9 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
     try {
       const response = await authenticatedFetch(`${API_BASE}/drivers`);
       if (response.ok) {
-        const data = await response.json();
+        const response_data = await response.json();
+        // Handle paginated response - extract data array
+        const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
         setDrivers(data || []);
       }
     } catch (error) {

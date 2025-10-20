@@ -25,10 +25,11 @@ export const getSchedules = async (req, res) => {
       ];
     }
     
-    // Status filter
+    // Status filter - include all statuses including 'In Progress' and bookings with unpaid status
     if (req.query.status) {
       where.booking_status = req.query.status;
     }
+    // No default filter - show all bookings regardless of payment_status or booking_status
 
     // Get total count
     const total = await prisma.booking.count({ where });
@@ -52,6 +53,7 @@ export const getSchedules = async (req, res) => {
         dropoff_loc: true,
         isSelfDriver: true,
         booking_status: true,
+        payment_status: true,
         balance: true,
         customer: {
           select: { first_name: true, last_name: true },
@@ -82,6 +84,7 @@ export const getSchedules = async (req, res) => {
       plate_number: s.car?.license_plate || null,
       isSelfDriver: s.isSelfDriver,
       booking_status: s.booking_status,
+      payment_status: s.payment_status,
       balance: s.balance,
       car: {
         car_id: s.car?.car_id,

@@ -95,20 +95,29 @@ export default function AdminSchedulePage() {
       }
       const response_data = await res.json();
       // Handle paginated response - extract data array
-      const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
-      
-      // Filter to only show reservations with status Confirmed or In Progress/Ongoing per requirement
+      const data = Array.isArray(response_data)
+        ? response_data
+        : response_data.data || [];
+
+      // Show all bookings regardless of status or payment_status
+      // This includes Confirmed, In Progress, and Unpaid bookings
+      // Filter OUT bookings with status: Pending, Cancelled, or Completed
+      // This shows Confirmed, In Progress, and other active statuses (including unpaid extensions)
       const filtered = Array.isArray(data)
         ? data.filter((r) => {
-            const raw = (r.status || r.booking_status || '')
+            const status = (r.status || r.booking_status || '')
               .toString()
               .toLowerCase()
               .trim();
+            // Exclude these statuses
             return (
-              raw === 'confirmed' || raw === 'in progress' || raw === 'ongoing'
+              status !== 'pending' &&
+              status !== 'cancelled' &&
+              status !== 'completed'
             );
           })
         : [];
+
       setSchedule(filtered);
     } catch (error) {
       console.error('Error fetching schedules:', error);

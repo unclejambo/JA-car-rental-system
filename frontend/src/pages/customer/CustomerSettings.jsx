@@ -94,6 +94,7 @@ export default function CustomerSettings() {
       birthdate: 'birthdate',
       username: 'username',
       password: 'password',
+      socialMediaLink: 'fb_link',
     };
     const changedFields = {};
     Object.keys(draft).forEach((key) => {
@@ -204,6 +205,7 @@ export default function CustomerSettings() {
             typeof updated.password === 'string' && updated.password !== ''
               ? updated.password
               : draft.password || profile.password || '',
+          socialMediaLink: updated.fb_link || profile.socialMediaLink || '',
           profileImageUrl:
             updated.profile_img_url || profile.profileImageUrl || '',
         });
@@ -349,6 +351,7 @@ export default function CustomerSettings() {
               typeof updated.password === 'string' && updated.password !== ''
                 ? updated.password
                 : draft.password || profile.password || '',
+            socialMediaLink: updated.fb_link || profile.socialMediaLink || '',
             profileImageUrl:
               updated.profile_img_url || profile.profileImageUrl || '',
           });
@@ -407,6 +410,7 @@ export default function CustomerSettings() {
     birthdate: '',
     username: '',
     password: '',
+    socialMediaLink: '',
   });
 
   const [avatarOpen, setAvatarOpen] = useState(false);
@@ -507,6 +511,7 @@ export default function CustomerSettings() {
             contactNumber: customer.contact_no || '',
             username: customer.username || '',
             password: customer.password || '',
+            socialMediaLink: customer.fb_link || '',
             profileImageUrl: customer.profile_img_url || '', // ✅ Store profile image URL
           }));
         }
@@ -1266,6 +1271,24 @@ export default function CustomerSettings() {
                                   </span>
                                 </Typography>
                               </>
+                            )}
+                            {isEditing ? (
+                              <TextField
+                                label="Social Media Link"
+                                name="socialMediaLink"
+                                value={draft.socialMediaLink}
+                                onChange={handleChange}
+                                size="small"
+                                fullWidth
+                                placeholder="Facebook, Instagram, etc."
+                              />
+                            ) : (
+                              <Typography sx={{ fontWeight: 700 }}>
+                                Social Media Link:{' '}
+                                <span style={{ fontWeight: 400 }}>
+                                  {profile.socialMediaLink || 'Not provided'}
+                                </span>
+                              </Typography>
                             )}
                           </Box>
                           <Box

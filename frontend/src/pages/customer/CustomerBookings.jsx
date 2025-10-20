@@ -630,30 +630,38 @@ function CustomerBookings() {
                       </Box>
 
                       {/* Car Image - Left Side / Top on Mobile */}
-                      <CardMedia
-                        component="div"
+                      <Box
                         sx={{
-                          width: { xs: '100%', sm: 120 },
-                          height: { xs: 160, sm: 120 },
-                          minWidth: { xs: 'auto', sm: 120 },
-                          backgroundColor: '#f5f5f5',
-                          backgroundImage: booking.car_details.image_url
-                            ? `url(${booking.car_details.image_url})`
-                            : 'none',
-                          backgroundSize: 'cover',
-                          backgroundRepeat: 'no-repeat',
-                          backgroundPosition: 'center',
-                          display: 'flex',
-                          alignItems: 'center',
+                          alignContent: 'center',
                           justifyContent: 'center',
                         }}
                       >
-                        {!booking.car_details.image_url && (
-                          <Typography variant="caption" color="text.secondary">
-                            No Image
-                          </Typography>
-                        )}
-                      </CardMedia>
+                        <CardMedia
+                          component="div"
+                          sx={{
+                            width: '100%',
+                            height: { xs: 160, sm: 120 },
+                            minWidth: { xs: 'auto', sm: 200 },
+                            backgroundColor: '#f5f5f5',
+                            backgroundImage: booking.car_details.image_url
+                              ? `url(${booking.car_details.image_url})`
+                              : 'none',
+                            backgroundSize: 'cover',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'center',
+                            display: 'flex',
+                          }}
+                        >
+                          {!booking.car_details.image_url && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              No Image
+                            </Typography>
+                          )}
+                        </CardMedia>
+                      </Box>
 
                       {/* Content - Right Side / Bottom on Mobile */}
                       <Box

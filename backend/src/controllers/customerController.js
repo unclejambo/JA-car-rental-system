@@ -124,6 +124,7 @@ export const createCustomer = async (req, res) => {
         date_created,
         status,
         driver_license_no,
+        isRecUpdate: 3, // Enable both SMS and Email notifications by default
       },
       include: {
         driver_license: true, // ✅ include after create

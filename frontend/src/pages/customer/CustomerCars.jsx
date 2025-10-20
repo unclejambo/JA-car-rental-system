@@ -567,8 +567,8 @@ function CustomerCars() {
                   color="text.secondary"
                   sx={{ fontSize: { xs: '0.75rem', sm: '1rem' }, mt: 0.5 }}
                 >
-                  {filteredCars.length} car
-                  {filteredCars.length !== 1 ? 's' : ''} available and ready for
+                  {filteredCars.filter(car => car.car_status?.toLowerCase() === 'available').length} car
+                  {filteredCars.filter(car => car.car_status?.toLowerCase() === 'available').length !== 1 ? 's' : ''} available and ready for
                   rental
                 </Typography>
               </Box>

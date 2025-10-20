@@ -112,20 +112,24 @@ export default function ReleaseModal({
       return;
     }
 
-    // Basic validation
-    if (formData.paymentAmount && Number(formData.paymentAmount) <= 0) {
-      setError('Payment amount must be greater than 0');
-      setLoading(false);
-      return;
-    }
-
-    if (formData.paymentMethod === 'GCash' && formData.paymentAmount) {
-      if (!formData.gcash_no || !formData.reference_no) {
-        setError(
-          'GCash number and reference number are required for GCash payments'
-        );
+    // Validation - only if balance > 0
+    if (reservation?.balance > 0) {
+      // Check if payment amount is valid
+      if (formData.paymentAmount && Number(formData.paymentAmount) <= 0) {
+        setError('Payment amount must be greater than 0');
         setLoading(false);
         return;
+      }
+
+      // Check GCash requirements if GCash payment method is selected
+      if (formData.paymentMethod === 'GCash' && formData.paymentAmount) {
+        if (!formData.gcash_no || !formData.reference_no) {
+          setError(
+            'GCash number and reference number are required for GCash payments'
+          );
+          setLoading(false);
+          return;
+        }
       }
     }
 
@@ -235,8 +239,12 @@ export default function ReleaseModal({
         }
       }
 
-      // Step 3: Process payment
-      if (formData.paymentAmount && Number(formData.paymentAmount) > 0) {
+      // Step 3: Process payment (only if balance > 0 and payment amount provided)
+      if (
+        reservation?.balance > 0 &&
+        formData.paymentAmount &&
+        Number(formData.paymentAmount) > 0
+      ) {
         const paymentData = {
           booking_id: reservation.booking_id || reservation.id,
           customer_id: reservation.customer_id || reservation.customerId,
@@ -463,69 +471,78 @@ export default function ReleaseModal({
             )}
           </Box>
 
-          {/* Payment */}
-          <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-              Remaining Balance: ₱
-              {(reservation?.balance || 0).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </Typography>
-          </Box>
-
-          <Grid container spacing={2}>
-            <Grid>
-              <TextField
-                select
-                name="paymentMethod"
-                label="Payment Method"
-                value={formData.paymentMethod}
-                onChange={handleInputChange}
-                fullWidth
-                size="small"
-              >
-                <MenuItem value="Cash">Cash</MenuItem>
-                <MenuItem value="GCash">GCash</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid>
-              <TextField
-                name="paymentAmount"
-                label="Amount"
-                value={formData.paymentAmount}
-                onChange={handleAmountChange}
-                onKeyDown={blockNonNumericKeys}
-                fullWidth
-                size="small"
-                inputMode="numeric"
-                placeholder="Amount"
-                required
-              />
-            </Grid>
-            {formData.paymentMethod === 'GCash' && (
-              <Box display={'flex'} flexDirection="column" width="100%" gap={1}>
-                <TextField
-                  name="gcash_no"
-                  label="GCash No."
-                  value={formData.gcash_no}
-                  onChange={handleInputChange}
-                  fullWidth
-                  size="small"
-                  required
-                />
-                <TextField
-                  name="reference_no"
-                  label="Reference No."
-                  value={formData.reference_no}
-                  onChange={handleInputChange}
-                  fullWidth
-                  size="small"
-                  required
-                />
+          {/* Payment - Only show if balance > 0 */}
+          {reservation?.balance > 0 && (
+            <>
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                  Remaining Balance: ₱
+                  {(reservation?.balance || 0).toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </Typography>
               </Box>
-            )}
-          </Grid>
+
+              <Grid container spacing={2}>
+                <Grid>
+                  <TextField
+                    select
+                    name="paymentMethod"
+                    label="Payment Method"
+                    value={formData.paymentMethod}
+                    onChange={handleInputChange}
+                    fullWidth
+                    size="small"
+                  >
+                    <MenuItem value="Cash">Cash</MenuItem>
+                    <MenuItem value="GCash">GCash</MenuItem>
+                  </TextField>
+                </Grid>
+                <Grid>
+                  <TextField
+                    name="paymentAmount"
+                    label="Amount"
+                    value={formData.paymentAmount}
+                    onChange={handleAmountChange}
+                    onKeyDown={blockNonNumericKeys}
+                    fullWidth
+                    size="small"
+                    inputMode="numeric"
+                    placeholder="Amount"
+                    required
+                  />
+                </Grid>
+                {formData.paymentMethod === 'GCash' && (
+                  <Box
+                    display={'flex'}
+                    flexDirection="column"
+                    width="100%"
+                    gap={1}
+                  >
+                    <TextField
+                      name="gcash_no"
+                      label="GCash No."
+                      value={formData.gcash_no}
+                      onChange={handleInputChange}
+                      fullWidth
+                      size="small"
+                      required
+                    />
+                    <TextField
+                      name="reference_no"
+                      label="Reference No."
+                      value={formData.reference_no}
+                      onChange={handleInputChange}
+                      fullWidth
+                      size="small"
+                      required
+                    />
+                  </Box>
+                )}
+              </Grid>
+            </>
+          )}
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3 }}>

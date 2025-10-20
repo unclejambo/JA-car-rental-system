@@ -372,7 +372,7 @@ export default function AdminManageUser() {
                   size="small"
                   sx={{
                     width: { xs: '100%', md: 350 },
-                    maxWidth: 350,
+                    maxWidth: { xs: '100%', md: 350 },
                     height: { xs: 26, md: 30 },
                     backgroundColor: '#fff',
                     '& .MuiOutlinedInput-root': {

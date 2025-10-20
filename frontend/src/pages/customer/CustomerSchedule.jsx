@@ -137,14 +137,15 @@ function CustomerSchedule() {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 1,
+          p: { xs: 1, md: 2 },
           width: `calc(100% - 18.7dvw)`,
           ml: { xs: '0px', sm: '0px', md: '18.7dvw' },
           '@media (max-width: 1024px)': {
             ml: '0px',
           },
-          mt: { xs: '64px', sm: '64px', md: '56px' },
+          mt: { xs: '74px', sm: '74px', md: '64px' },
           display: 'flex',
+          overflow: 'hidden',
           flexDirection: 'column',
         }}
       >
@@ -152,7 +153,7 @@ function CustomerSchedule() {
           sx={{
             p: 1,
             borderRadius: 3,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
             flexGrow: 1,
             display: 'flex',
             flexDirection: 'column',
@@ -174,7 +175,7 @@ function CustomerSchedule() {
                   variant="h4"
                   component="h1"
                   sx={{
-                    fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
+                    fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
                     fontWeight: 'bold',
                     color: '#c10007',
                   }}

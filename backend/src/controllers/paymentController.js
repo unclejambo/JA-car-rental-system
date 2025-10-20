@@ -1,5 +1,5 @@
 import prisma from "../config/prisma.js";
-import { sendBookingConfirmationNotification, sendPaymentReceivedNotification } from "../utils/notificationService.js";
+import { sendBookingConfirmationNotification, sendPaymentReceivedNotification, sendAdminPaymentRequestNotification, sendAdminPaymentCompletedNotification } from "../utils/notificationService.js";
 
 function shapePayment(p) {
   const { booking, customer, ...rest } = p;
@@ -72,12 +72,17 @@ export const recalculatePaymentBalances = async (bookingId) => {
 
 // Utility function to determine appropriate booking status based on payments
 const determineBookingStatus = (totalPaid, totalAmount, currentStatus) => {
+  // If current status is 'In Progress', preserve it regardless of payment status
+  if (currentStatus === 'In Progress') {
+    return 'In Progress';
+  }
+  
   if (totalPaid <= 0) {
     // No payments made - should be Pending (capitalized)
     return 'Pending';
   } else if (totalPaid >= totalAmount) {
     // Fully paid - should be confirmed or maintain current status if already progressed
-    return ['Confirmed', 'In Progress', 'Completed', 'Returned'].includes(currentStatus) 
+    return ['Confirmed', 'Completed', 'Returned'].includes(currentStatus) 
       ? currentStatus 
       : 'Confirmed';
   } else {
@@ -258,6 +263,39 @@ export const createPayment = async (req, res) => {
         console.log('✅ Cash payment received notification sent');
       } catch (notificationError) {
         console.error("Error sending payment notification:", notificationError);
+        // Don't fail the payment creation if notification fails
+      }
+
+      // Send admin notification for cash payment recorded
+      try {
+        console.log('💰 Sending admin notification for Cash payment...');
+        await sendAdminPaymentCompletedNotification(
+          created,
+          {
+            customer_id: updatedBooking.customer.customer_id,
+            first_name: updatedBooking.customer.first_name,
+            last_name: updatedBooking.customer.last_name,
+            email: updatedBooking.customer.email,
+            contact_no: updatedBooking.customer.contact_no
+          },
+          {
+            booking_id: updatedBooking.booking_id,
+            start_date: updatedBooking.start_date,
+            end_date: updatedBooking.end_date,
+            total_amount: updatedBooking.total_amount,
+            balance: finalBalance
+          },
+          {
+            make: updatedBooking.car.make,
+            model: updatedBooking.car.model,
+            year: updatedBooking.car.year,
+            license_plate: updatedBooking.car.license_plate
+          },
+          'cash'
+        );
+        console.log('✅ Admin cash payment notification sent');
+      } catch (adminNotificationError) {
+        console.error("Error sending admin cash payment notification:", adminNotificationError);
         // Don't fail the payment creation if notification fails
       }
     }
@@ -553,7 +591,8 @@ export const processBookingPayment = async (req, res) => {
     const booking = await prisma.booking.findUnique({
       where: { booking_id: parseInt(booking_id) },
       include: {
-        car: { select: { make: true, model: true, year: true } },
+        car: { select: { make: true, model: true, year: true, license_plate: true } },
+        customer: { select: { first_name: true, last_name: true, email: true, contact_no: true } },
       },
     });
 
@@ -581,11 +620,13 @@ export const processBookingPayment = async (req, res) => {
         balance: Math.max(0, (booking.total_amount || 0) - parseInt(amount)),
       },
       include: {
-        customer: { select: { first_name: true, last_name: true } },
+        customer: { select: { first_name: true, last_name: true, email: true, contact_no: true } },
         booking: {
           select: {
             booking_id: true,
             total_amount: true,
+            start_date: true,
+            end_date: true,
           },
         },
       },
@@ -597,12 +638,16 @@ export const processBookingPayment = async (req, res) => {
     // Determine if booking should be auto-confirmed
     // If payment is >= 1000, automatically confirm the booking
     // Otherwise, booking stays in Pending status and requires admin confirmation
+    // IMPORTANT: Never change status if booking is 'In Progress' (customer is using the car)
     let bookingStatus = booking.booking_status;
-    if (totalPaid >= 1000) {
-      bookingStatus = 'Confirmed';
-    }
-    else if (totalPaid < 1000) {
-      bookingStatus = 'Pending';
+    
+    // Only update status if current status is NOT 'In Progress'
+    if (booking.booking_status !== 'In Progress') {
+      if (totalPaid >= 1000) {
+        bookingStatus = 'Confirmed';
+      } else if (totalPaid < 1000) {
+        bookingStatus = 'Pending';
+      }
     }
 
     // Update booking isPay flag and booking status
@@ -610,9 +655,50 @@ export const processBookingPayment = async (req, res) => {
       where: { booking_id: parseInt(booking_id) },
       data: { 
         isPay: true, // Set to true whenever customer makes payment
-        booking_status: bookingStatus, // Auto-confirm if payment >= 1000
+        booking_status: bookingStatus, // Auto-confirm if payment >= 1000, preserve 'In Progress'
       },
     });
+
+    // Send payment request notification to admin/staff (GCash only - customer submitted proof)
+    // Cash payments are recorded by admin/staff, so no request notification needed
+    if (payment_method === 'GCash') {
+      try {
+        console.log('💳 Sending GCash payment request notification to admin...');
+        await sendAdminPaymentRequestNotification(
+          {
+            payment_id: payment.payment_id,
+            payment_method,
+            gcash_no,
+            reference_no,
+            amount: parseInt(amount),
+            description: payment.description
+          },
+          {
+            customer_id: parseInt(customerId),
+            first_name: booking.customer.first_name,
+            last_name: booking.customer.last_name,
+            email: booking.customer.email,
+            contact_no: booking.customer.contact_no
+          },
+          {
+            booking_id: booking.booking_id,
+            start_date: booking.start_date,
+            end_date: booking.end_date,
+            total_amount: booking.total_amount
+          },
+          {
+            make: booking.car.make,
+            model: booking.car.model,
+            year: booking.car.year,
+            license_plate: booking.car.license_plate
+          }
+        );
+        console.log('✅ Admin GCash payment request notification sent');
+      } catch (adminNotificationError) {
+        console.error("Error sending admin payment notification:", adminNotificationError);
+        // Don't fail the payment request if notification fails
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -661,22 +747,6 @@ export const getMyPayments = async (req, res) => {
             },
           },
         },
-        Waitlist: {
-          select: {
-            waitlist_id: true,
-            requested_start_date: true,
-            requested_end_date: true,
-            total_cost: true,
-            Car: {
-              select: {
-                make: true,
-                model: true,
-                year: true,
-                license_plate: true,
-              },
-            },
-          },
-        },
       },
       orderBy: { paid_date: "desc" },
     });
@@ -699,19 +769,6 @@ export const getMyPayments = async (req, res) => {
             car_details: payment.booking.car,
             total_amount: payment.booking.total_amount,
             type: "booking",
-          }
-        : null,
-      waitlist_info: payment.waitlist
-        ? {
-            waitlist_id: payment.waitlist.waitlist_id,
-            dates: `${
-              payment.waitlist.requested_start_date?.toISOString().split("T")[0]
-            } to ${
-              payment.waitlist.requested_end_date?.toISOString().split("T")[0]
-            }`,
-            car_details: payment.waitlist.car,
-            total_cost: payment.waitlist.total_cost,
-            type: "waitlist",
           }
         : null,
     }));

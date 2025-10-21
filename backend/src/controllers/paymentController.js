@@ -476,7 +476,7 @@ export const deletePaymentByBookingId = async (req, res) => {
       .filter((p) => p.payment_id !== latestPayment.payment_id)
       .reduce((sum, p) => sum + (p.amount || 0), 0);
 
-    // Calculate new balance
+    // Calculate new balance - this will be the balance before the rejected payment was made
     const newBalance = (booking.total_amount || 0) - totalPaidAfterDeletion;
 
     // Delete the payment
@@ -484,14 +484,37 @@ export const deletePaymentByBookingId = async (req, res) => {
       where: { payment_id: latestPayment.payment_id },
     });
 
-    // When canceling/rejecting payment, booking should remain in Pending status with Unpaid payment_status
+    // Determine correct booking status after payment deletion
+    // If there are still enough payments (>= 1000 or >= total_amount), keep status as Confirmed
+    // Otherwise, set to Pending
+    let newBookingStatus = "Pending";
+    let newPaymentStatus = "Unpaid";
+
+    if (
+      totalPaidAfterDeletion >= 1000 ||
+      totalPaidAfterDeletion >= (booking.total_amount || 0)
+    ) {
+      // Customer has already paid enough - keep confirmed status
+      newBookingStatus = "Confirmed";
+      newPaymentStatus = newBalance <= 0 ? "Paid" : "Unpaid";
+    } else if (totalPaidAfterDeletion > 0) {
+      // Partial payment exists - keep current status unless it was only pending
+      newBookingStatus =
+        booking.booking_status === "Pending"
+          ? "Pending"
+          : booking.booking_status;
+      newPaymentStatus = "Unpaid";
+    }
+
+    // When canceling/rejecting payment, determine status based on remaining payments
+    // Balance is correctly reverted to what it was before the rejected payment
     // Note: isPay is already set to false by the updateIsPayStatus call from frontend
     await prisma.booking.update({
       where: { booking_id: bookingId },
       data: {
-        balance: newBalance,
-        payment_status: "Unpaid", // Always set to Unpaid when payment is cancelled/rejected
-        booking_status: "Pending", // Keep booking in Pending status when payment is rejected
+        balance: newBalance, // Balance reverts to before the rejected payment
+        payment_status: newPaymentStatus,
+        booking_status: newBookingStatus,
       },
     });
 
@@ -502,8 +525,9 @@ export const deletePaymentByBookingId = async (req, res) => {
       bookingId,
       deletedPaymentId: latestPayment.payment_id,
       newBalance,
-      newPaymentStatus: "Unpaid",
-      newBookingStatus: "Pending",
+      totalPaidAfterDeletion,
+      newPaymentStatus,
+      newBookingStatus,
     });
 
     res.status(200).json({
@@ -512,8 +536,8 @@ export const deletePaymentByBookingId = async (req, res) => {
       booking_update: {
         booking_id: bookingId,
         new_balance: newBalance,
-        new_payment_status: "Unpaid",
-        new_booking_status: "Pending",
+        new_payment_status: newPaymentStatus,
+        new_booking_status: newBookingStatus,
         total_paid: totalPaidAfterDeletion,
       },
     });

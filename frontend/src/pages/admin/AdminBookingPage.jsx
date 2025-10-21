@@ -139,7 +139,8 @@ export default function AdminBookingPage() {
       window.location.href = '/login';
     });
     const API_BASE = getApiBase().replace(/\/$/, '');
-    const bookingsUrl = `${API_BASE}/bookings`;
+    // Request all bookings by setting a large pageSize
+    const bookingsUrl = `${API_BASE}/bookings?pageSize=1000`;
 
     authFetch(bookingsUrl, { headers: { Accept: 'application/json' } })
       .then((response) => {
@@ -162,6 +163,8 @@ export default function AdminBookingPage() {
           ? response
           : response.data || [];
 
+        console.log('📊 Raw bookings data from backend:', bookingsData);
+
         let formattedData = bookingsData.map((item, index) => ({
           ...item,
           id: item.customerId || item.reservationId || `row-${index}`, // Add unique id property
@@ -171,17 +174,34 @@ export default function AdminBookingPage() {
           endDate: formatDateOnly(item.endDate),
           bookingDate: formatDateOnly(item.bookingDate),
         }));
-        // Show all bookings including pending, confirmed, and in progress status
+
+        console.log('📋 All bookings before filtering:', formattedData.length);
+        console.log(
+          '📋 Booking statuses:',
+          formattedData.map((b) => b.booking_status)
+        );
+
+        // Show all bookings including pending, confirmed, in progress, and ongoing status
         formattedData = formattedData.filter((b) => {
           const raw = (b.booking_status || b.status || '')
             .toString()
             .toLowerCase()
             .trim();
-          // Include confirmed, pending, and in progress bookings (for extensions)
+          // Include confirmed, pending, in progress, and ongoing bookings
           return (
-            raw === 'confirmed' || raw === 'pending' || raw === 'in progress'
+            raw === 'confirmed' ||
+            raw === 'pending' ||
+            raw === 'in progress' ||
+            raw === 'ongoing'
           );
         });
+
+        console.log('✅ Bookings after filtering:', formattedData.length);
+        console.log(
+          '✅ Filtered booking statuses:',
+          formattedData.map((b) => b.booking_status)
+        );
+
         setRows(formattedData);
         setError(null);
       })

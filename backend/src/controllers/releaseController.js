@@ -79,13 +79,27 @@ export const createRelease = async (req, res) => {
     });
 
     // Update the booking to set isRelease to true and status to In Progress
-    await prisma.booking.update({
+    const updatedBooking = await prisma.booking.update({
       where: { booking_id: Number(booking_id) },
       data: { 
         isRelease: true,
         booking_status: 'In Progress'
       }
     });
+
+    // Update driver booking_status if driver is assigned
+    if (updatedBooking.drivers_id) {
+      try {
+        await prisma.driver.update({
+          where: { drivers_id: updatedBooking.drivers_id },
+          data: { booking_status: 3 } // 3 = booking released and in progress
+        });
+        console.log(`✅ Driver ${updatedBooking.drivers_id} booking_status set to 3 (in progress)`);
+      } catch (driverUpdateError) {
+        console.error("Error updating driver booking_status:", driverUpdateError);
+        // Don't fail the release if driver status update fails
+      }
+    }
 
     console.log('Release created and booking updated:', {
       release_id: release.release_id,

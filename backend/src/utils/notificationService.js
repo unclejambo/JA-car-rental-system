@@ -1782,6 +1782,120 @@ export async function sendExtensionRejectedNotification(booking, customer, car, 
 }
 
 /**
+ * Send driver assignment notification (SMS only) - Status 1 (Booking Unconfirmed)
+ * @param {Object} booking - Booking object
+ * @param {Object} driver - Driver object
+ * @param {Object} customer - Customer object
+ * @param {Object} car - Car object
+ */
+export async function sendDriverAssignedNotification(booking, driver, customer, car) {
+  const { first_name: driverFirstName, last_name: driverLastName, contact_no: driverPhone, drivers_id } = driver;
+  const { first_name: customerFirstName, last_name: customerLastName, contact_no: customerPhone } = customer;
+  const { make, model, year, license_plate } = car;
+  const carName = `${make} ${model} (${year})`;
+  
+  console.log(`📬 Sending driver assignment notification to driver ${drivers_id} for booking ${booking.booking_id}`);
+  
+  const startDateFormatted = formatDatePH(booking.start_date);
+  const endDateFormatted = formatDatePH(booking.end_date);
+  const customerName = `${customerFirstName} ${customerLastName}`;
+  
+  // SMS message for driver - concise and informative
+  const smsMessage = `Hi ${driverFirstName}! You've been assigned to a new booking (ID: ${booking.booking_id}). Customer: ${customerName} (${customerPhone}). Car: ${carName} [${license_plate}]. Pickup: ${startDateFormatted}. Return: ${endDateFormatted}. Location: ${booking.pickup_loc || 'JA Office'}. Payment pending. - JA Car Rental`;
+  
+  const results = {
+    success: false,
+    sms: null,
+    method: 'SMS'
+  };
+  
+  try {
+    // Send SMS only to driver
+    if (driverPhone) {
+      console.log(`   → Sending SMS to driver ${driverPhone}`);
+      results.sms = await sendSMSNotification(driverPhone, smsMessage);
+      results.success = results.sms.success;
+    } else {
+      console.log(`   ⚠️  No contact number available for driver ${drivers_id}`);
+      results.success = false;
+      results.error = 'No contact number';
+    }
+    
+    if (results.success) {
+      console.log(`   ✅ Driver assignment notification sent successfully`);
+    } else {
+      console.log(`   ❌ Failed to send driver assignment notification: ${results.error || 'Unknown error'}`);
+    }
+    
+    return results;
+  } catch (error) {
+    console.error(`   ❌ Error sending driver assignment notification:`, error);
+    return { 
+      success: false, 
+      error: error.message,
+      sms: null
+    };
+  }
+}
+
+/**
+ * Send driver booking confirmed notification (SMS only) - Status 2 (Booking Confirmed)
+ * @param {Object} booking - Booking object
+ * @param {Object} driver - Driver object
+ * @param {Object} customer - Customer object
+ * @param {Object} car - Car object
+ */
+export async function sendDriverBookingConfirmedNotification(booking, driver, customer, car) {
+  const { first_name: driverFirstName, last_name: driverLastName, contact_no: driverPhone, drivers_id } = driver;
+  const { first_name: customerFirstName, last_name: customerLastName, contact_no: customerPhone } = customer;
+  const { make, model, year, license_plate } = car;
+  const carName = `${make} ${model} (${year})`;
+  
+  console.log(`📬 Sending booking confirmed notification to driver ${drivers_id} for booking ${booking.booking_id}`);
+  
+  const startDateFormatted = formatDatePH(booking.start_date);
+  const endDateFormatted = formatDatePH(booking.end_date);
+  const customerName = `${customerFirstName} ${customerLastName}`;
+  
+  // SMS message for driver - confirmed booking ready for release
+  const smsMessage = `Hi ${driverFirstName}! Booking ${booking.booking_id} is now CONFIRMED. Customer: ${customerName} (${customerPhone}). Car: ${carName} [${license_plate}]. Pickup: ${startDateFormatted}. Return: ${endDateFormatted}. Location: ${booking.pickup_loc || 'JA Office'}. Please prepare for car release. - JA Car Rental`;
+  
+  const results = {
+    success: false,
+    sms: null,
+    method: 'SMS'
+  };
+  
+  try {
+    // Send SMS only to driver
+    if (driverPhone) {
+      console.log(`   → Sending SMS to driver ${driverPhone}`);
+      results.sms = await sendSMSNotification(driverPhone, smsMessage);
+      results.success = results.sms.success;
+    } else {
+      console.log(`   ⚠️  No contact number available for driver ${drivers_id}`);
+      results.success = false;
+      results.error = 'No contact number';
+    }
+    
+    if (results.success) {
+      console.log(`   ✅ Driver booking confirmed notification sent successfully`);
+    } else {
+      console.log(`   ❌ Failed to send driver booking confirmed notification: ${results.error || 'Unknown error'}`);
+    }
+    
+    return results;
+  } catch (error) {
+    console.error(`   ❌ Error sending driver booking confirmed notification:`, error);
+    return { 
+      success: false, 
+      error: error.message,
+      sms: null
+    };
+  }
+}
+
+/**
  * Send test notification (for debugging)
  * @param {Object} params - Test parameters
  */

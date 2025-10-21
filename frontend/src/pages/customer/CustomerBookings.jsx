@@ -98,21 +98,28 @@ function CustomerBookings() {
       setError('');
 
       const response = await authenticatedFetch(
-        `${API_BASE}/bookings/my-bookings/list`
+        `${API_BASE}/bookings/my-bookings/list?pageSize=100`
       );
 
       if (response.ok) {
         const response_data = await response.json();
-        
+
         // Handle paginated response - extract data array
-        const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
-        
-        // Filter out cancelled bookings
-        const activeBookings = (data || []).filter(
-          (booking) =>
-            booking.booking_status?.toLowerCase() !== 'completed' &&
-            booking.booking_status?.toLowerCase() !== 'cancelled'
-        );
+        const data = Array.isArray(response_data)
+          ? response_data
+          : response_data.data || [];
+
+        // Filter to show only pending, confirmed, and in progress bookings
+        // Exclude completed and cancelled bookings
+        const activeBookings = (data || []).filter((booking) => {
+          const status = booking.booking_status?.toLowerCase();
+          return (
+            status === 'pending' ||
+            status === 'confirmed' ||
+            status === 'in progress' ||
+            status === 'ongoing'
+          );
+        });
         setBookings(activeBookings);
       } else {
         const errorData = await response.json();
@@ -131,16 +138,18 @@ function CustomerBookings() {
     try {
       console.log('Fetching unpaid bookings for settlement...');
       const response = await authenticatedFetch(
-        `${API_BASE}/bookings/my-bookings/list`
+        `${API_BASE}/bookings/my-bookings/list?pageSize=100`
       );
 
       if (response.ok) {
         const response_data = await response.json();
         console.log('Bookings response for settlement:', response_data);
-        
+
         // Handle paginated response - extract data array
-        const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
-        
+        const data = Array.isArray(response_data)
+          ? response_data
+          : response_data.data || [];
+
         // Filter only unpaid bookings that are not cancelled
         const unpaidBookings = (data || []).filter(
           (booking) =>
@@ -291,7 +300,11 @@ function CustomerBookings() {
 
   // Cancel extension request
   const handleCancelExtension = async (booking) => {
-    if (!confirm('Are you sure you want to cancel your extension request? Your booking will continue with the original end date.')) {
+    if (
+      !confirm(
+        'Are you sure you want to cancel your extension request? Your booking will continue with the original end date.'
+      )
+    ) {
       return;
     }
 
@@ -306,7 +319,9 @@ function CustomerBookings() {
 
       if (response.ok) {
         const result = await response.json();
-        alert(`✅ Extension request cancelled successfully!\n📅 Your booking continues until: ${formatPhilippineDate(result.booking.end_date)}`);
+        alert(
+          `✅ Extension request cancelled successfully!\n📅 Your booking continues until: ${formatPhilippineDate(result.booking.end_date)}`
+        );
         fetchBookings(); // Refresh the list
       } else {
         const errorData = await response.json();
@@ -543,11 +558,15 @@ function CustomerBookings() {
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
           {/* MY BOOKINGS TAB - HORIZONTAL LAYOUT */}
-          {filteredBookings.filter(
-            (b) =>
-              b.booking_status?.toLowerCase() !== 'completed' &&
-              b.booking_status?.toLowerCase() !== 'cancelled'
-          ).length === 0 && !loading ? (
+          {filteredBookings.filter((b) => {
+            const status = b.booking_status?.toLowerCase();
+            return (
+              status === 'pending' ||
+              status === 'confirmed' ||
+              status === 'in progress' ||
+              status === 'ongoing'
+            );
+          }).length === 0 && !loading ? (
             <Card sx={{ p: 4, textAlign: 'center', mx: { xs: 1, sm: 0 } }}>
               <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
                 {bookingSearchQuery
@@ -570,11 +589,15 @@ function CustomerBookings() {
               }}
             >
               {filteredBookings
-                .filter(
-                  (booking) =>
-                    booking.booking_status?.toLowerCase() !== 'completed' &&
-                    booking.booking_status?.toLowerCase() !== 'cancelled'
-                )
+                .filter((booking) => {
+                  const status = booking.booking_status?.toLowerCase();
+                  return (
+                    status === 'pending' ||
+                    status === 'confirmed' ||
+                    status === 'in progress' ||
+                    status === 'ongoing'
+                  );
+                })
                 .map((booking) => {
                   // Determine the status message and color based on pending requests
                   let statusMessage = '';
@@ -914,40 +937,46 @@ function CustomerBookings() {
 
                           {/* Extension Request Alert */}
                           {booking.isExtend && booking.new_end_date && (
-                            <Alert 
-                              severity="warning" 
-                              sx={{ 
+                            <Alert
+                              severity="warning"
+                              sx={{
                                 mb: 2,
-                                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
                               }}
                             >
-                              <Typography 
-                                variant="body2" 
-                                sx={{ 
+                              <Typography
+                                variant="body2"
+                                sx={{
                                   fontWeight: 'bold',
                                   mb: 0.5,
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
                                 }}
                               >
                                 ⏳ Extension Request Pending
                               </Typography>
-                              <Typography 
+                              <Typography
                                 variant="body2"
-                                sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' } }}
+                                sx={{
+                                  fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                                }}
                               >
-                                New End Date: {formatPhilippineDate(booking.new_end_date)}
+                                New End Date:{' '}
+                                {formatPhilippineDate(booking.new_end_date)}
                               </Typography>
                               {booking.extension_payment_deadline && (
-                                <Typography 
+                                <Typography
                                   variant="body2"
-                                  sx={{ 
+                                  sx={{
                                     fontSize: { xs: '0.7rem', sm: '0.8rem' },
                                     color: '#d32f2f',
                                     fontWeight: 'bold',
-                                    mt: 0.5
+                                    mt: 0.5,
                                   }}
                                 >
-                                  💰 Payment Due: {formatPhilippineDateTime(booking.extension_payment_deadline)}
+                                  💰 Payment Due:{' '}
+                                  {formatPhilippineDateTime(
+                                    booking.extension_payment_deadline
+                                  )}
                                 </Typography>
                               )}
                             </Alert>
@@ -1079,11 +1108,15 @@ function CustomerBookings() {
 
         <TabPanel value={activeTab} index={1}>
           {/* SETTLEMENT TAB - HORIZONTAL LAYOUT WITHOUT IMAGE */}
-          {filteredPayments.filter(
-            (b) =>
-              b.booking_status?.toLowerCase() !== 'completed' &&
-              b.booking_status?.toLowerCase() !== 'cancelled'
-          ).length === 0 && !loading ? (
+          {filteredPayments.filter((b) => {
+            const status = b.booking_status?.toLowerCase();
+            return (
+              status === 'pending' ||
+              status === 'confirmed' ||
+              status === 'in progress' ||
+              status === 'ongoing'
+            );
+          }).length === 0 && !loading ? (
             <Card sx={{ p: 4, textAlign: 'center', mx: { xs: 1, sm: 0 } }}>
               <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
                 {paymentSearchQuery
@@ -1106,11 +1139,15 @@ function CustomerBookings() {
               }}
             >
               {filteredPayments
-                .filter(
-                  (booking) =>
-                    booking.booking_status?.toLowerCase() !== 'completed' &&
-                    booking.booking_status?.toLowerCase() !== 'cancelled'
-                )
+                .filter((booking) => {
+                  const status = booking.booking_status?.toLowerCase();
+                  return (
+                    status === 'pending' ||
+                    status === 'confirmed' ||
+                    status === 'in progress' ||
+                    status === 'ongoing'
+                  );
+                })
                 .map((booking) => (
                   <Card
                     key={booking.booking_id}

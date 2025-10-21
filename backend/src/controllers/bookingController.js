@@ -1162,6 +1162,23 @@ export const confirmCancellationRequest = async (req, res) => {
       }
     }
 
+    // Update car status back to 'Available' when booking is cancelled
+    try {
+      await prisma.car.update({
+        where: { car_id: booking.car.car_id },
+        data: { car_status: "Available" },
+      });
+      console.log(
+        `✅ Car ${booking.car.car_id} status updated to 'Available' after cancellation`
+      );
+    } catch (carUpdateError) {
+      console.error(
+        "Error updating car status after cancellation:",
+        carUpdateError
+      );
+      // Don't fail the cancellation if car status update fails
+    }
+
     // Send cancellation approved notification to customer
     try {
       console.log("🚫 Sending cancellation approved notification...");

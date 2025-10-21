@@ -76,7 +76,8 @@ function CustomerBookings() {
   const [error, setError] = useState('');
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [showCancelExtensionDialog, setShowCancelExtensionDialog] = useState(false);
+  const [showCancelExtensionDialog, setShowCancelExtensionDialog] =
+    useState(false);
   const [showExtendDialog, setShowExtendDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -284,7 +285,7 @@ function CustomerBookings() {
     fetchPayments();
     setShowPaymentDialog(false);
     setSelectedBooking(null);
-    
+
     // Show success message via snackbar if provided
     if (result?.successMessage) {
       showMessage(result.successMessage, 'success');
@@ -310,13 +311,13 @@ function CustomerBookings() {
 
       if (response.ok) {
         const result = await response.json();
-        
+
         // Show success message with booking details
         showMessage(
           `Extension request submitted successfully! Additional cost: ₱${result.additional_cost?.toLocaleString()} | New total: ₱${result.new_total?.toLocaleString()}`,
           'success'
         );
-        
+
         fetchBookings(); // Refresh the list
         setShowExtendDialog(false);
         setSelectedBooking(null);
@@ -347,7 +348,7 @@ function CustomerBookings() {
     try {
       setActionLoading(true);
       setShowCancelExtensionDialog(false);
-      
+
       const response = await authenticatedFetch(
         `${API_BASE}/bookings/${selectedBooking.booking_id}/cancel-extension`,
         {
@@ -364,11 +365,17 @@ function CustomerBookings() {
         fetchBookings(); // Refresh the list
       } else {
         const errorData = await response.json();
-        showMessage(errorData.error || 'Failed to cancel extension request', 'error');
+        showMessage(
+          errorData.error || 'Failed to cancel extension request',
+          'error'
+        );
       }
     } catch (error) {
       console.error('Error cancelling extension:', error);
-      showMessage('Failed to cancel extension request. Please try again.', 'error');
+      showMessage(
+        'Failed to cancel extension request. Please try again.',
+        'error'
+      );
     } finally {
       setActionLoading(false);
       setSelectedBooking(null);
@@ -1219,7 +1226,6 @@ function CustomerBookings() {
                           position: 'absolute',
                           top: 10,
                           right: 10,
-                          zIndex: 10,
                           backgroundColor: '#FFA500',
                           color: 'white',
                           fontWeight: 'bold',
@@ -1233,7 +1239,6 @@ function CustomerBookings() {
                           position: 'absolute',
                           top: { xs: 8, sm: 12 },
                           right: { xs: 8, sm: 12 },
-                          zIndex: 10,
                           backgroundColor: '#c10007',
                           color: 'white',
                           fontSize: { xs: '0.75rem', sm: '0.875rem' },
@@ -1674,7 +1679,11 @@ function CustomerBookings() {
               '&:hover': { backgroundColor: '#a50006' },
             }}
           >
-            {actionLoading ? <CircularProgress size={20} /> : 'Yes, Cancel Extension'}
+            {actionLoading ? (
+              <CircularProgress size={20} />
+            ) : (
+              'Yes, Cancel Extension'
+            )}
           </Button>
         </DialogActions>
       </Dialog>

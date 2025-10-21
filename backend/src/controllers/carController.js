@@ -2,6 +2,7 @@ import prisma from '../config/prisma.js';
 import { createClient } from '@supabase/supabase-js';
 import { notifyWaitlistOnCarAvailable } from './waitlistController.js';
 import { getPaginationParams, getSortingParams, buildPaginationResponse, getSearchParam } from '../utils/pagination.js';
+import { getUnavailablePeriods } from '../utils/bookingUtils.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -422,6 +423,96 @@ export const updateCar = async (req, res) => {
   } catch (error) {
     console.error('Error updating car:', error);
     res.status(500).json({ error: 'Failed to update car' });
+  }
+};
+
+// @desc    Get unavailable periods for a car (existing bookings + maintenance days)
+// @route   GET /cars/:id/unavailable-periods
+// @access  Public
+export const getCarUnavailablePeriods = async (req, res) => {
+  try {
+    const carId = parseInt(req.params.id);
+    
+    // Verify car exists
+    const car = await prisma.car.findUnique({
+      where: { car_id: carId },
+      select: { car_id: true, make: true, model: true, year: true, car_status: true }
+    });
+
+    if (!car) {
+      return res.status(404).json({ error: 'Car not found' });
+    }
+
+    // Get all active bookings for this car
+    // Include: Pending (unpaid but reserved), Confirmed (paid), In Progress (currently rented)
+    // Exclude: Cancelled, Rejected, Returned, Completed
+    const bookings = await prisma.booking.findMany({
+      where: {
+        car_id: carId,
+        booking_status: {
+          in: ['Pending', 'Confirmed', 'In Progress']
+        },
+        isCancel: false
+      },
+      select: {
+        booking_id: true,
+        start_date: true,
+        end_date: true,
+        booking_status: true,
+        payment_status: true
+      },
+      orderBy: {
+        start_date: 'asc'
+      }
+    });
+
+    // Calculate unavailable periods including 1-day maintenance after each booking
+    const unavailablePeriods = getUnavailablePeriods(bookings, 1);
+    
+    // Get today's date to determine if booking is current or future
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Format response with additional details
+    const formattedPeriods = unavailablePeriods.map(period => {
+      const startDate = new Date(period.start_date);
+      const endDate = new Date(period.end_date);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+      
+      // Determine if this is a current rental (today is between start and end)
+      const isCurrentlyRented = today >= startDate && today <= endDate && !period.is_maintenance;
+      
+      // Find the booking to get its status
+      const booking = bookings.find(b => b.booking_id === period.booking_id);
+      
+      return {
+        start_date: period.start_date,
+        end_date: period.end_date,
+        reason: period.reason,
+        is_maintenance: period.is_maintenance || false,
+        is_currently_rented: isCurrentlyRented,
+        booking_status: booking?.booking_status || null,
+        payment_status: booking?.payment_status || null,
+        booking_id: period.booking_id || null
+      };
+    });
+
+    res.json({
+      car_id: carId,
+      car_info: {
+        make: car.make,
+        model: car.model,
+        year: car.year,
+        status: car.car_status
+      },
+      unavailable_periods: formattedPeriods,
+      total_blocked_periods: formattedPeriods.length,
+      active_bookings: bookings.length
+    });
+  } catch (error) {
+    console.error('Error fetching unavailable periods:', error);
+    res.status(500).json({ error: 'Failed to fetch unavailable periods' });
   }
 };
 

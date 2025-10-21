@@ -501,7 +501,7 @@ const RegisterPage = () => {
                 variant="body2"
                 sx={{ fontSize: '0.875rem', fontWeight: '600', mb: 1 }}
               >
-                NAME
+                Personal Details
               </Typography>
               <Box className="two-col flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
                 <TextField
@@ -793,6 +793,7 @@ const RegisterPage = () => {
                   component="label"
                   htmlFor="licenseUpload"
                   startIcon={<FaUpload />}
+                  size="medium"
                   sx={{
                     backgroundColor: 'rgba(229, 231, 235, 0.8)',
                     borderColor: 'rgba(156, 163, 175, 0.5)',

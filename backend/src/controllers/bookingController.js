@@ -1,5 +1,5 @@
 import prisma from "../config/prisma.js";
-import { sendBookingSuccessNotification, sendBookingConfirmationNotification, sendPaymentReceivedNotification, sendCancellationApprovedNotification, sendAdminNewBookingNotification, sendAdminCancellationRequestNotification, sendCancellationDeniedNotification, sendAdminPaymentCompletedNotification, sendAdminExtensionRequestNotification, sendExtensionApprovedNotification, sendExtensionRejectedNotification } from "../utils/notificationService.js";
+import { sendBookingSuccessNotification, sendBookingConfirmationNotification, sendPaymentReceivedNotification, sendCancellationApprovedNotification, sendAdminNewBookingNotification, sendAdminCancellationRequestNotification, sendCancellationDeniedNotification, sendAdminPaymentCompletedNotification, sendAdminExtensionRequestNotification, sendExtensionApprovedNotification, sendExtensionRejectedNotification, sendDriverAssignedNotification, sendDriverBookingConfirmedNotification } from "../utils/notificationService.js";
 
 export const getBookings = async (req, res) => {
   try {
@@ -356,6 +356,7 @@ export const createBooking = async (req, res) => {
       include: {
         customer: { select: { first_name: true, last_name: true, email: true, contact_no: true } },
         car: { select: { make: true, model: true, year: true, license_plate: true } },
+        driver: { select: { drivers_id: true, first_name: true, last_name: true, contact_no: true } },
       },
     });
 
@@ -390,6 +391,51 @@ export const createBooking = async (req, res) => {
     } catch (paymentError) {
       console.error("Error creating payment record:", paymentError);
       // Don't fail the booking creation if payment record fails
+    }
+
+    // Update driver booking_status if driver is assigned
+    if (newBooking.drivers_id) {
+      try {
+        await prisma.driver.update({
+          where: { drivers_id: newBooking.drivers_id },
+          data: { booking_status: 1 } // 1 = booking exists but not confirmed
+        });
+        console.log(`✅ Driver ${newBooking.drivers_id} booking_status set to 1 (unconfirmed)`);
+      } catch (driverUpdateError) {
+        console.error("Error updating driver booking_status:", driverUpdateError);
+        // Don't fail the booking creation if driver status update fails
+      }
+
+      // Send driver assignment notification (SMS only)
+      if (newBooking.driver) {
+        try {
+          console.log('📱 Sending driver assignment notification...');
+          await sendDriverAssignedNotification(
+            newBooking,
+            {
+              drivers_id: newBooking.driver.drivers_id,
+              first_name: newBooking.driver.first_name,
+              last_name: newBooking.driver.last_name,
+              contact_no: newBooking.driver.contact_no
+            },
+            {
+              first_name: newBooking.customer.first_name,
+              last_name: newBooking.customer.last_name,
+              contact_no: newBooking.customer.contact_no
+            },
+            {
+              make: newBooking.car.make,
+              model: newBooking.car.model,
+              year: newBooking.car.year,
+              license_plate: newBooking.car.license_plate
+            }
+          );
+          console.log('✅ Driver assignment notification sent');
+        } catch (driverNotificationError) {
+          console.error("Error sending driver notification:", driverNotificationError);
+          // Don't fail the booking creation if driver notification fails
+        }
+      }
     }
 
     // Send booking success notification to customer
@@ -938,6 +984,20 @@ export const confirmCancellationRequest = async (req, res) => {
         }
       },
     });
+
+    // Update driver booking_status if driver was assigned
+    if (updatedBooking.drivers_id) {
+      try {
+        await prisma.driver.update({
+          where: { drivers_id: updatedBooking.drivers_id },
+          data: { booking_status: 0 } // 0 = no active booking
+        });
+        console.log(`✅ Driver ${updatedBooking.drivers_id} booking_status set to 0 (cancelled)`);
+      } catch (driverUpdateError) {
+        console.error("Error updating driver booking_status:", driverUpdateError);
+        // Don't fail the cancellation if driver status update fails
+      }
+    }
 
     // Send cancellation approved notification to customer
     try {
@@ -1670,6 +1730,14 @@ export const confirmBooking = async (req, res) => {
             year: true, 
             license_plate: true 
           } 
+        },
+        driver: {
+          select: {
+            drivers_id: true,
+            first_name: true,
+            last_name: true,
+            contact_no: true
+          }
         }
       }
     });
@@ -1764,6 +1832,51 @@ export const confirmBooking = async (req, res) => {
       newStatus: updatedBooking.booking_status,
       newIsPay: updatedBooking.isPay
     });
+
+    // Update driver booking_status if driver is assigned and booking was confirmed
+    if (booking.drivers_id && updatedBooking.booking_status === 'Confirmed') {
+      try {
+        await prisma.driver.update({
+          where: { drivers_id: booking.drivers_id },
+          data: { booking_status: 2 } // 2 = booking confirmed but not released
+        });
+        console.log(`✅ Driver ${booking.drivers_id} booking_status set to 2 (confirmed)`);
+      } catch (driverUpdateError) {
+        console.error("Error updating driver booking_status:", driverUpdateError);
+        // Don't fail the confirmation if driver status update fails
+      }
+
+      // Send driver booking confirmed notification (SMS only)
+      if (booking.driver) {
+        try {
+          console.log('📱 Sending driver booking confirmed notification...');
+          await sendDriverBookingConfirmedNotification(
+            updatedBooking,
+            {
+              drivers_id: booking.driver.drivers_id,
+              first_name: booking.driver.first_name,
+              last_name: booking.driver.last_name,
+              contact_no: booking.driver.contact_no
+            },
+            {
+              first_name: booking.customer.first_name,
+              last_name: booking.customer.last_name,
+              contact_no: booking.customer.contact_no
+            },
+            {
+              make: booking.car.make,
+              model: booking.car.model,
+              year: booking.car.year,
+              license_plate: booking.car.license_plate
+            }
+          );
+          console.log('✅ Driver booking confirmed notification sent');
+        } catch (driverNotificationError) {
+          console.error("Error sending driver confirmation notification:", driverNotificationError);
+          // Don't fail the confirmation if driver notification fails
+        }
+      }
+    }
 
     // Send payment received notification (for GCash approval)
     // This happens when admin approves a GCash payment request

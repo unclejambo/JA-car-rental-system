@@ -16,8 +16,23 @@ async function getSignedLicenseUrl(dl_img_url) {
     let path = dl_img_url;
     if (dl_img_url.includes('/licenses/')) {
       path = dl_img_url.split('/licenses/')[1];
+      // Remove query parameters if present
+      path = path.split('?')[0];
       // Decode any URL-encoded characters
       path = decodeURIComponent(path);
+    }
+    
+    // First check if the file exists before creating signed URL
+    const { data: fileData, error: listError } = await supabase.storage
+      .from('licenses')
+      .list('', {
+        search: path
+      });
+    
+    // If file doesn't exist, return original URL (might be a new upload)
+    if (listError || !fileData || fileData.length === 0) {
+      console.log('File not found in storage, returning original URL:', path);
+      return dl_img_url;
     }
     
     const { data, error } = await supabase.storage

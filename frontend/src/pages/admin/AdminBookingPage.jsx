@@ -35,6 +35,35 @@ export default function AdminBookingPage() {
     setSelectedBooking(null);
   };
 
+  // Calculate counts for each tab (without search filter)
+  const getTabCounts = () => {
+    if (!rows || rows.length === 0)
+      return { BOOKINGS: 0, CANCELLATION: 0, EXTENSION: 0 };
+
+    // Count all bookings in the rows array
+    const bookingsCount = rows.length;
+
+    const cancellationCount = rows.filter(
+      (row) =>
+        row.isCancel === true ||
+        row.isCancel === 'true' ||
+        row.isCancel === 'TRUE'
+    ).length;
+
+    const extensionCount = rows.filter(
+      (row) =>
+        row.isExtend === true ||
+        row.isExtend === 'true' ||
+        row.isExtend === 'TRUE'
+    ).length;
+
+    return {
+      BOOKINGS: bookingsCount,
+      CANCELLATION: cancellationCount,
+      EXTENSION: extensionCount,
+    };
+  };
+
   const getFilteredRows = () => {
     if (!rows || rows.length === 0) return [];
 
@@ -129,8 +158,10 @@ export default function AdminBookingPage() {
         };
 
         // Handle paginated response - extract data array
-        const bookingsData = Array.isArray(response) ? response : (response.data || []);
-        
+        const bookingsData = Array.isArray(response)
+          ? response
+          : response.data || [];
+
         let formattedData = bookingsData.map((item, index) => ({
           ...item,
           id: item.customerId || item.reservationId || `row-${index}`, // Add unique id property
@@ -261,6 +292,7 @@ export default function AdminBookingPage() {
           <ManageBookingsHeader
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            counts={getTabCounts()}
           />
           <Box
             sx={{

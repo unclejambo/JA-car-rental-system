@@ -13,7 +13,13 @@ export const getBookings = async (req, res) => {
     const search = getSearchParam(req);
     
     // Build where clause for filtering
-    const where = {};
+    const where = {
+      // Filter to show only Pending, Confirmed, and In Progress bookings
+      // Exclude Completed and Cancelled bookings
+      booking_status: {
+        in: ['Pending', 'Confirmed', 'In Progress']
+      }
+    };
     
     // Search filter (customer name or car model)
     if (search) {
@@ -25,7 +31,7 @@ export const getBookings = async (req, res) => {
       ];
     }
     
-    // Status filter
+    // Status filter (if provided, it will override the default filter)
     if (req.query.status) {
       where.booking_status = req.query.status;
     }

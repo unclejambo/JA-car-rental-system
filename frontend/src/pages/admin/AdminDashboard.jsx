@@ -104,7 +104,7 @@ function AdminDashboard() {
         authFetch(`${API_BASE}/schedules`).then(async (r) => {
           if (!r.ok) return [];
           const data = await r.json();
-          return Array.isArray(data) ? data : (data.data || []);
+          return Array.isArray(data) ? data : data.data || [];
         }),
         authFetch(`${API_BASE}/cars/available`).then((r) =>
           r.ok ? r.json() : []
@@ -112,26 +112,19 @@ function AdminDashboard() {
         authFetch(`${API_BASE}/bookings`).then(async (r) => {
           if (!r.ok) return [];
           const data = await r.json();
-          return Array.isArray(data) ? data : (data.data || []);
+          return Array.isArray(data) ? data : data.data || [];
         }),
       ]);
 
-      // Get this week's date range (today + 7 days)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const nextWeek = new Date(today);
-      nextWeek.setDate(nextWeek.getDate() + 7);
-
-      // Filter this week's schedules
+      // Filter schedules with 'Confirmed' and 'In Progress' statuses
       const weekSchedules = Array.isArray(schedules)
         ? schedules
             .filter((schedule) => {
-              const scheduleDate = new Date(schedule.schedule_date);
-              return scheduleDate >= today && scheduleDate < nextWeek;
+              const status = schedule.booking_status?.toLowerCase();
+              return status === 'confirmed' || status === 'in progress';
             })
-            .sort(
-              (a, b) => new Date(a.schedule_date) - new Date(b.schedule_date)
-            )
+            .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
+            .slice(0, 10) // Limit to 10 most recent schedules
         : [];
 
       // Filter booking requests (pending status)
@@ -652,11 +645,11 @@ function AdminDashboard() {
                         fontSize: { xs: '1rem', md: '1.25rem' },
                       }}
                     >
-                      SCHEDULE
+                      ACTIVE BOOKINGS
                     </Typography>
                   </Box>
                   <Chip
-                    label="THIS WEEK"
+                    label={`${dashboardData.weekSchedules.length} Active`}
                     sx={{
                       bgcolor: '#c10007',
                       color: 'white',
@@ -688,14 +681,6 @@ function AdminDashboard() {
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
                             }}
                           >
-                            When
-                          </TableCell>
-                          <TableCell
-                            sx={{
-                              fontWeight: 'bold',
-                              fontSize: { xs: '0.75rem', md: '0.875rem' },
-                            }}
-                          >
                             Customer
                           </TableCell>
                           <TableCell
@@ -712,50 +697,35 @@ function AdminDashboard() {
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
                             }}
                           >
-                            Type
+                            Status
                           </TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
                         {dashboardData.weekSchedules.map((schedule) => {
                           const relativeDate = getRelativeDateLabel(
-                            schedule.schedule_date
+                            schedule.start_date
                           );
                           const isToday = relativeDate === 'Today';
                           const isTomorrow = relativeDate === 'Tomorrow';
+                          const isInProgress =
+                            schedule.booking_status?.toLowerCase() ===
+                            'in progress';
 
                           return (
                             <TableRow
-                              key={schedule.schedule_id}
+                              key={schedule.booking_id}
                               sx={{
                                 '&:hover': { bgcolor: '#f5f5f5' },
-                                bgcolor: isToday
-                                  ? '#fff5f5'
-                                  : isTomorrow
-                                    ? '#fffbf0'
-                                    : 'inherit',
+                                bgcolor: isInProgress
+                                  ? '#e8f5e9'
+                                  : isToday
+                                    ? '#fff5f5'
+                                    : isTomorrow
+                                      ? '#fffbf0'
+                                      : 'inherit',
                               }}
                             >
-                              <TableCell
-                                sx={{
-                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
-                                }}
-                              >
-                                <Chip
-                                  label={relativeDate}
-                                  size="small"
-                                  sx={{
-                                    bgcolor: isToday
-                                      ? '#c10007'
-                                      : isTomorrow
-                                        ? '#ff9800'
-                                        : '#666',
-                                    color: 'white',
-                                    fontWeight: 'bold',
-                                    fontSize: { xs: '0.65rem', md: '0.75rem' },
-                                  }}
-                                />
-                              </TableCell>
                               <TableCell
                                 sx={{
                                   fontSize: { xs: '0.75rem', md: '0.875rem' },
@@ -775,7 +745,18 @@ function AdminDashboard() {
                                   fontSize: { xs: '0.75rem', md: '0.875rem' },
                                 }}
                               >
-                                {schedule.schedule_type || 'N/A'}
+                                <Chip
+                                  label={schedule.booking_status || 'N/A'}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: isInProgress
+                                      ? '#4caf50'
+                                      : '#2196f3',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    fontSize: { xs: '0.65rem', md: '0.75rem' },
+                                  }}
+                                />
                               </TableCell>
                             </TableRow>
                           );

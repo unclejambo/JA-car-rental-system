@@ -289,6 +289,37 @@ function CustomerBookings() {
     }
   };
 
+  // Cancel extension request
+  const handleCancelExtension = async (booking) => {
+    if (!confirm('Are you sure you want to cancel your extension request? Your booking will continue with the original end date.')) {
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const response = await authenticatedFetch(
+        `${API_BASE}/bookings/${booking.booking_id}/cancel-extension`,
+        {
+          method: 'POST',
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`✅ Extension request cancelled successfully!\n📅 Your booking continues until: ${formatPhilippineDate(result.booking.end_date)}`);
+        fetchBookings(); // Refresh the list
+      } else {
+        const errorData = await response.json();
+        alert(`❌ ${errorData.error || 'Failed to cancel extension request'}`);
+      }
+    } catch (error) {
+      console.error('Error cancelling extension:', error);
+      alert('❌ Failed to cancel extension request. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Get minimum extend date (current end date + 1)
   const getMinExtendDate = () => {
     if (!selectedBooking) return '';
@@ -881,6 +912,47 @@ function CustomerBookings() {
 
                           <Divider sx={{ mb: 2 }} />
 
+                          {/* Extension Request Alert */}
+                          {booking.isExtend && booking.new_end_date && (
+                            <Alert 
+                              severity="warning" 
+                              sx={{ 
+                                mb: 2,
+                                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                              }}
+                            >
+                              <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                  fontWeight: 'bold',
+                                  mb: 0.5,
+                                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                                }}
+                              >
+                                ⏳ Extension Request Pending
+                              </Typography>
+                              <Typography 
+                                variant="body2"
+                                sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' } }}
+                              >
+                                New End Date: {formatPhilippineDate(booking.new_end_date)}
+                              </Typography>
+                              {booking.extension_payment_deadline && (
+                                <Typography 
+                                  variant="body2"
+                                  sx={{ 
+                                    fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                                    color: '#d32f2f',
+                                    fontWeight: 'bold',
+                                    mt: 0.5
+                                  }}
+                                >
+                                  💰 Payment Due: {formatPhilippineDateTime(booking.extension_payment_deadline)}
+                                </Typography>
+                              )}
+                            </Alert>
+                          )}
+
                           {/* Action Buttons */}
                           <Box
                             sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}
@@ -971,6 +1043,30 @@ function CustomerBookings() {
                                   Extend
                                 </Button>
                               )}
+
+                            {/* Cancel Extension Button - For bookings with pending extension */}
+                            {booking.isExtend && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<HiX size={16} />}
+                                sx={{
+                                  borderColor: '#ff9800',
+                                  color: '#ff9800',
+                                  fontSize: {
+                                    xs: '0.75rem',
+                                    sm: '0.875rem',
+                                  },
+                                  '&:hover': {
+                                    backgroundColor: '#fff3e0',
+                                  },
+                                }}
+                                onClick={() => handleCancelExtension(booking)}
+                                disabled={actionLoading}
+                              >
+                                Cancel Extension
+                              </Button>
+                            )}
                           </Box>
                         </CardContent>
                       </Box>

@@ -1332,13 +1332,27 @@ export const confirmExtensionRequest = async (req, res) => {
       return res.status(400).json({ error: "No new end date found for extension" });
     }
 
-    // Calculate additional days and cost for notification
+    // Calculate additional days and cost
     const originalEndDate = new Date(booking.end_date);
     const newEndDate = new Date(booking.new_end_date);
     const additionalDays = Math.ceil(
       (newEndDate - originalEndDate) / (1000 * 60 * 60 * 24)
     );
     const additionalCost = additionalDays * (booking.car.rent_price || 0);
+
+    console.log('💰 Extension approval - Cost calculation:', {
+      originalEndDate: booking.end_date,
+      newEndDate: booking.new_end_date,
+      additionalDays,
+      rentPrice: booking.car.rent_price,
+      additionalCost,
+      currentTotalAmount: booking.total_amount,
+      currentBalance: booking.balance
+    });
+
+    // Calculate new total amount and balance
+    const newTotalAmount = (booking.total_amount || 0) + additionalCost;
+    const newBalance = (booking.balance || 0) + additionalCost;
 
     // Get Philippine timezone date
     const now = new Date();
@@ -1373,6 +1387,7 @@ export const confirmExtensionRequest = async (req, res) => {
     }
 
     // Update booking: replace end_date with new_end_date, clear new_end_date, set isExtend to false
+    // IMPORTANT: Update total_amount and balance to include extension cost
     const updatedBooking = await prisma.booking.update({
       where: { booking_id: bookingId },
       data: {
@@ -1380,8 +1395,19 @@ export const confirmExtensionRequest = async (req, res) => {
         dropoff_time: newDropoffTime, // Update dropoff_time to match new end date
         new_end_date: null, // Clear new_end_date
         isExtend: false, // Clear extension flag
-        payment_status: 'Unpaid', // Ensure payment status is Unpaid due to new balance
+        total_amount: newTotalAmount, // Add extension cost to total
+        balance: newBalance, // Add extension cost to balance
+        payment_status: 'Unpaid', // Set to Unpaid since customer needs to pay extension
+        extension_payment_deadline: null, // Clear extension payment deadline after approval
       },
+    });
+
+    console.log('✅ Extension approved:', {
+      bookingId,
+      newTotalAmount,
+      newBalance,
+      newEndDate: updatedBooking.end_date,
+      isExtend: updatedBooking.isExtend
     });
 
     // Send customer notification for extension approval
@@ -1390,8 +1416,8 @@ export const confirmExtensionRequest = async (req, res) => {
       await sendExtensionApprovedNotification(
         {
           ...updatedBooking,
-          total_amount: booking.total_amount,
-          balance: booking.balance
+          total_amount: newTotalAmount,
+          balance: newBalance
         },
         {
           customer_id: booking.customer.customer_id,
@@ -1420,6 +1446,9 @@ export const confirmExtensionRequest = async (req, res) => {
       success: true,
       message: "Extension request confirmed successfully",
       booking: updatedBooking,
+      additional_cost: additionalCost,
+      new_total_amount: newTotalAmount,
+      new_balance: newBalance
     });
   } catch (error) {
     console.error("Error confirming extension:", error);

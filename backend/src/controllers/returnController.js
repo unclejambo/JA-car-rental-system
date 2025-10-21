@@ -390,6 +390,20 @@ export const submitReturn = async (req, res) => {
         }
       });
 
+      // Update driver booking_status if driver was assigned
+      if (booking.drivers_id) {
+        try {
+          await tx.driver.update({
+            where: { drivers_id: booking.drivers_id },
+            data: { booking_status: 0 } // 0 = no active booking (completed)
+          });
+          console.log(`✅ Driver ${booking.drivers_id} booking_status set to 0 (completed)`);
+        } catch (driverUpdateError) {
+          console.error("Error updating driver booking_status:", driverUpdateError);
+          // Don't fail the return if driver status update fails
+        }
+      }
+
       // If payment data is provided, create payment record
       if (paymentData) {
         await tx.payment.create({

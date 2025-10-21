@@ -1,4 +1,5 @@
 import prisma from "../config/prisma.js";
+import { getPaginationParams, getSortingParams, buildPaginationResponse, getSearchParam } from '../utils/pagination.js';
 
 // Shape transaction records for frontend DataGrid
 function shapeTransaction(t) {
@@ -24,18 +25,46 @@ function shapeTransaction(t) {
   };
 }
 
+// @desc    Get all transactions with pagination (Admin)
+// @route   GET /transactions?page=1&pageSize=10&sortBy=transaction_id&sortOrder=desc&search=john
+// @access  Private/Admin
 export const getTransactions = async (req, res) => {
   try {
+    // Get pagination parameters
+    const { page, pageSize, skip } = getPaginationParams(req);
+    const { sortBy, sortOrder } = getSortingParams(req, 'transaction_id', 'desc');
+    const search = getSearchParam(req);
+    
+    // Build where clause
+    const where = {};
+    
+    // Search filter (customer name or car model)
+    if (search) {
+      where.OR = [
+        { customer: { first_name: { contains: search, mode: 'insensitive' } } },
+        { customer: { last_name: { contains: search, mode: 'insensitive' } } },
+        { car: { make: { contains: search, mode: 'insensitive' } } },
+        { car: { model: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    // Get total count
+    const total = await prisma.transaction.count({ where });
+
+    // Get paginated transactions
     const transactions = await prisma.transaction.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { [sortBy]: sortOrder },
       include: {
         booking: { select: { booking_date: true } },
         customer: { select: { first_name: true, last_name: true } },
         car: { select: { make: true, model: true } },
       },
-      orderBy: { transaction_id: "desc" },
     });
 
-    res.json(transactions.map(shapeTransaction));
+    res.json(buildPaginationResponse(transactions.map(shapeTransaction), total, page, pageSize));
   } catch (error) {
     console.error("Error fetching transactions:", error);
     res.status(500).json({ error: "Failed to fetch transactions" });

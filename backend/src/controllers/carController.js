@@ -1,6 +1,7 @@
 import prisma from '../config/prisma.js';
 import { createClient } from '@supabase/supabase-js';
 import { notifyWaitlistOnCarAvailable } from './waitlistController.js';
+import { getPaginationParams, getSortingParams, buildPaginationResponse, getSearchParam } from '../utils/pagination.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -106,9 +107,48 @@ const deleteImageFromStorage = async (imageUrl) => {
 // @desc    Get all cars
 // @route   GET /cars
 // @access  Public
+// @desc    Get all cars with pagination (Admin)
+// @route   GET /cars?page=1&pageSize=10&sortBy=car_id&sortOrder=asc&search=toyota&status=Available
+// @access  Private/Admin
 export const getCars = async (req, res) => {
   try {
-    const cars = await prisma.car.findMany();
+    // Get pagination parameters
+    const { page, pageSize, skip } = getPaginationParams(req);
+    const { sortBy, sortOrder } = getSortingParams(req, 'car_id', 'asc');
+    const search = getSearchParam(req);
+    
+    // Build where clause
+    const where = {};
+    
+    // Search filter (make or model)
+    if (search) {
+      where.OR = [
+        { make: { contains: search, mode: 'insensitive' } },
+        { model: { contains: search, mode: 'insensitive' } },
+        { license_plate: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    
+    // Status filter
+    if (req.query.status) {
+      where.car_status = req.query.status;
+    }
+    
+    // Car type filter
+    if (req.query.car_type) {
+      where.car_type = req.query.car_type;
+    }
+
+    // Get total count
+    const total = await prisma.car.count({ where });
+
+    // Get paginated cars
+    const cars = await prisma.car.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { [sortBy]: sortOrder },
+    });
     
     // Refresh signed URLs for car images
     const carsWithFreshUrls = await Promise.all(
@@ -120,7 +160,7 @@ export const getCars = async (req, res) => {
       })
     );
     
-    res.json(carsWithFreshUrls);
+    res.json(buildPaginationResponse(carsWithFreshUrls, total, page, pageSize));
   } catch (error) {
     console.error('Error fetching cars:', error);
     res.status(500).json({ error: 'Failed to fetch cars' });

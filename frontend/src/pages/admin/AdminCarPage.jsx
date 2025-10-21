@@ -84,7 +84,9 @@ export default function AdminCarPage() {
           // Fetch cars once per dependency change
           const response = await authenticatedFetch(`${API_BASE}/cars`);
           if (response.ok) {
-            const data = await response.json();
+            const response_data = await response.json();
+            // Handle paginated response - extract data array
+            const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
             setCars(data || []);
           } else {
             const errorText = await response.text();
@@ -99,7 +101,9 @@ export default function AdminCarPage() {
         } else if (activeTab === 'MAINTENANCE') {
           const response = await authenticatedFetch(`${API_BASE}/cars`);
           if (response.ok) {
-            const carsData = await response.json();
+            const response_data = await response.json();
+            // Handle paginated response - extract data array
+            const carsData = Array.isArray(response_data) ? response_data : (response_data.data || []);
 
             // Only include cars currently set to Maintenance
             const maintenanceCars = carsData.filter((c) => {
@@ -321,7 +325,9 @@ export default function AdminCarPage() {
         // Refresh cars and remove this car from maintenance list
         try {
           const carsResponse = await authenticatedFetch(`${API_BASE}/cars`);
-          const carsData = await carsResponse.json();
+          const response_data = await carsResponse.json();
+          // Handle paginated response - extract data array
+          const carsData = Array.isArray(response_data) ? response_data : (response_data.data || []);
           setCars(carsData || []);
         } catch {
           /* ignore */
@@ -401,8 +407,11 @@ export default function AdminCarPage() {
   };
 
   const formattedData = useMemo(
-    () =>
-      (cars || []).map((item) => {
+    () => {
+      // Handle paginated response - extract data array
+      const carsData = Array.isArray(cars) ? cars : (cars?.data || []);
+      
+      return carsData.map((item) => {
         const rawStatus = String(
           item.car_status ?? item.status ?? ''
         ).toLowerCase();
@@ -440,7 +449,8 @@ export default function AdminCarPage() {
           status,
           raw: item,
         };
-      }),
+      });
+    },
     [cars]
   );
 

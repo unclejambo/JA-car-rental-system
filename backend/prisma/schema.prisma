@@ -69,6 +69,7 @@ model Driver {
   status            String?
   profile_img_url   String?
   phone_verified    Boolean?      @default(false)
+  booking_status    Int?          @db.SmallInt
   bookings          Booking[]
   driver_license    DriverLicense @relation(fields: [driver_license_no], references: [driver_license_no])
   releases          Release[]

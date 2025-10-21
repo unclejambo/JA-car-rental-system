@@ -1,6 +1,170 @@
 import prisma from "../config/prisma.js";
 
 /**
+ * Auto-cancel (reject) extensions that have passed their payment deadline
+ * Runs before checking for expired bookings
+ * Only rejects the extension, keeps the original booking active
+ */
+export const autoCancelExpiredExtensions = async () => {
+  try {
+    console.log('🔍 Checking for expired extension payment deadlines...');
+    
+    const now = new Date();
+    
+    // Find bookings with expired extension payment deadline
+    const expiredExtensions = await prisma.booking.findMany({
+      where: {
+        isExtend: true, // Has pending extension
+        extension_payment_deadline: { 
+          lte: now  // Deadline has passed
+        },
+        booking_status: 'In Progress' // Still active booking
+      },
+      include: {
+        customer: {
+          select: {
+            customer_id: true,
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true,
+            isRecUpdate: true
+          }
+        },
+        car: {
+          select: {
+            car_id: true,
+            make: true,
+            model: true,
+            year: true,
+            license_plate: true,
+            rent_price: true
+          }
+        },
+        extensions: {
+          where: {
+            approve_time: null // Pending extension
+          },
+          orderBy: { extension_id: 'desc' },
+          take: 1
+        }
+      }
+    });
+
+    if (expiredExtensions.length === 0) {
+      console.log('✅ No expired extension payment deadlines found.');
+      return { cancelled: 0, message: 'No expired extensions found' };
+    }
+
+    console.log(`⚠️ Found ${expiredExtensions.length} extension(s) with expired payment deadline. Auto-rejecting...`);
+
+    let cancelledCount = 0;
+    const results = [];
+
+    for (const booking of expiredExtensions) {
+      try {
+        const pendingExtension = booking.extensions[0];
+        
+        if (!pendingExtension) {
+          console.log(`⚠️ No pending extension found for booking ${booking.booking_id}, skipping...`);
+          continue;
+        }
+
+        // Calculate amounts to revert
+        const originalEndDate = new Date(booking.end_date);
+        const newEndDate = new Date(booking.new_end_date);
+        const additionalDays = Math.ceil(
+          (newEndDate - originalEndDate) / (1000 * 60 * 60 * 24)
+        );
+        const additionalCost = additionalDays * (booking.car.rent_price || 0);
+        const restoredTotalAmount = (booking.total_amount || 0) - additionalCost;
+        const restoredBalance = (booking.balance || 0) - additionalCost;
+        const paymentStatus = restoredBalance <= 0 ? 'Paid' : 'Unpaid';
+
+        console.log(`🚫 Auto-cancelling extension for booking ${booking.booking_id}`);
+        console.log(`   Original end date: ${booking.end_date}`);
+        console.log(`   Requested new end date: ${booking.new_end_date}`);
+        console.log(`   Payment deadline expired: ${booking.extension_payment_deadline}`);
+        console.log(`   Additional cost: ₱${additionalCost}`);
+
+        // 1. Update Extension record
+        await prisma.extension.update({
+          where: { extension_id: pendingExtension.extension_id },
+          data: {
+            extension_status: 'Auto-Cancelled',
+            rejection_reason: `Payment deadline expired (${booking.extension_payment_deadline?.toLocaleString('en-US', { 
+              month: 'short', 
+              day: 'numeric', 
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true 
+            })})`
+          }
+        });
+
+        // 2. Revert Booking to original state
+        await prisma.booking.update({
+          where: { booking_id: booking.booking_id },
+          data: {
+            new_end_date: null,
+            isExtend: false,
+            total_amount: restoredTotalAmount,
+            balance: restoredBalance,
+            payment_status: paymentStatus,
+            extension_payment_deadline: null,
+            // Keep original end_date - booking continues until original date
+          }
+        });
+
+        // 3. TODO: Send notification to customer
+        // Could use sendExtensionRejectedNotification here with auto-cancel reason
+        console.log(`📧 TODO: Send auto-cancel notification to customer ${booking.customer.email}`);
+
+        // 4. TODO: Send notification to admin
+        console.log(`📧 TODO: Send auto-cancel notification to admin`);
+
+        console.log(`✅ Extension auto-cancelled for booking ${booking.booking_id}`);
+        console.log(`   Booking continues until: ${booking.end_date}`);
+
+        cancelledCount++;
+        results.push({
+          booking_id: booking.booking_id,
+          customer: `${booking.customer.first_name} ${booking.customer.last_name}`,
+          car: `${booking.car.make} ${booking.car.model}`,
+          original_end_date: booking.end_date,
+          requested_end_date: booking.new_end_date,
+          status: 'extension_auto_cancelled'
+        });
+
+      } catch (error) {
+        console.error(`❌ Error auto-cancelling extension for booking ${booking.booking_id}:`, error);
+        results.push({
+          booking_id: booking.booking_id,
+          status: 'error',
+          error: error.message
+        });
+      }
+    }
+
+    console.log(`✅ Auto-cancel extensions completed: ${cancelledCount} extension(s) cancelled`);
+    
+    return {
+      cancelled: cancelledCount,
+      total: expiredExtensions.length,
+      results: results
+    };
+
+  } catch (error) {
+    console.error('❌ Error in auto-cancel extensions process:', error);
+    return {
+      cancelled: 0,
+      error: error.message
+    };
+  }
+};
+
+/**
  * Auto-cancel bookings that have passed their payment deadline
  * Runs as a scheduled task to check for expired unpaid bookings
  * 
@@ -180,14 +344,27 @@ export const autoCancelExpiredBookings = async () => {
 
 /**
  * Manual trigger for auto-cancel (for testing or admin use)
+ * Checks both extensions and bookings
  */
 export const manualTriggerAutoCancel = async (req, res) => {
   try {
-    const result = await autoCancelExpiredBookings();
+    console.log('🤖 Running manual auto-cancel check...');
+    
+    // 1. Check for expired EXTENSION payment deadlines first
+    const extensionResult = await autoCancelExpiredExtensions();
+    
+    // 2. Check for expired BOOKING payment deadlines
+    const bookingResult = await autoCancelExpiredBookings();
+    
     res.json({
       success: true,
       message: 'Auto-cancel process completed',
-      ...result
+      extensions: extensionResult,
+      bookings: bookingResult,
+      summary: {
+        total_extensions_cancelled: extensionResult.cancelled || 0,
+        total_bookings_cancelled: bookingResult.cancelled || 0
+      }
     });
   } catch (error) {
     console.error('Error in manual auto-cancel trigger:', error);

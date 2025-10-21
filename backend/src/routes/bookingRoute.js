@@ -14,6 +14,7 @@ import {
   extendMyBooking,
   confirmExtensionRequest,
   rejectExtensionRequest,
+  cancelExtensionRequest,
   updateMyBooking,
   createMissingPaymentRecords,
   confirmBooking,
@@ -44,6 +45,7 @@ router.put("/:id/confirm-cancellation", verifyToken, adminOrStaff, confirmCancel
 router.put("/:id/reject-cancellation", verifyToken, adminOrStaff, rejectCancellationRequest); // Reject cancellation request
 router.put("/:id/confirm-extension", verifyToken, adminOrStaff, confirmExtensionRequest); // Confirm extension request
 router.put("/:id/reject-extension", verifyToken, adminOrStaff, rejectExtensionRequest); // Reject extension request
+router.post("/:id/cancel-extension", verifyToken, requireCustomer, cancelExtensionRequest); // Customer cancels own extension request
 router.put("/:id/cancel", verifyToken, requireCustomer, cancelMyBooking); // Customer cancels own booking
 router.put("/:id/extend", verifyToken, requireCustomer, extendMyBooking); // Customer extends own booking
 router.put("/:id/update", verifyToken, requireCustomer, updateMyBooking); // Customer updates own booking

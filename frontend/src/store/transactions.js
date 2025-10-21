@@ -21,7 +21,10 @@ export const useTransactionStore = create((set, get) => ({
         const errorText = await resp.text().catch(() => 'Unknown error');
         throw new Error(`${tab} request failed: ${resp.status} ${errorText}`);
       }
-      const data = await resp.json();
+      const response_data = await resp.json();
+      // Handle paginated response - extract data array
+      const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
+      
       if (tab === 'TRANSACTIONS') set({ transactions: data });
       if (tab === 'PAYMENT') set({ payments: data });
       if (tab === 'REFUND') set({ refunds: data });

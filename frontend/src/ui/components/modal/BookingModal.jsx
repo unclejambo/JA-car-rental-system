@@ -169,9 +169,14 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       console.log('Drivers response status:', response.status);
       
       if (response.ok) {
-        const data = await response.json();
-        console.log('Drivers data received:', data);
-        setDrivers(data);
+        const response_data = await response.json();
+        console.log('Drivers data received:', response_data);
+        // Handle paginated response - extract data array
+        const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
+        // Filter out driver ID 1 (DEFAULT FOR SELFDRIVE) from customer-facing list
+        const filteredDrivers = data.filter(driver => driver.drivers_id !== 1 && driver.driver_id !== 1);
+        console.log('Filtered drivers (excluding DEFAULT FOR SELFDRIVE):', filteredDrivers.length);
+        setDrivers(filteredDrivers);
       } else {
         const errorText = await response.text();
         console.error('Failed to fetch drivers:', response.status, errorText);

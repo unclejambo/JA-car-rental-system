@@ -30,7 +30,7 @@ import returnRoutes from "./routes/returnRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import autoCancelRoutes from "./routes/autoCancelRoutes.js";
 import phoneVerificationRoutes from "./routes/phoneVerificationRoutes.js";
-import { autoCancelExpiredBookings } from "./utils/autoCancel.js";
+import { autoCancelExpiredBookings, autoCancelExpiredExtensions } from "./utils/autoCancel.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -108,22 +108,30 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   
   // Setup auto-cancel scheduler
-  // Runs every hour to check for expired bookings
+  // Runs every hour to check for expired bookings AND extensions
   const AUTO_CANCEL_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
   
   console.log('🕐 Setting up auto-cancel scheduler (runs every hour)...');
   
   // Run immediately on startup (after 30 seconds to let server initialize)
-  setTimeout(() => {
+  setTimeout(async () => {
     console.log('Running initial auto-cancel check...');
-    autoCancelExpiredBookings();
+    console.log('📋 Step 1: Checking expired extensions...');
+    await autoCancelExpiredExtensions();
+    console.log('📋 Step 2: Checking expired bookings...');
+    await autoCancelExpiredBookings();
+    console.log('✅ Initial auto-cancel check completed');
   }, 30000);
   
   // Then run every hour
-  setInterval(() => {
+  setInterval(async () => {
     console.log('Running scheduled auto-cancel check...');
-    autoCancelExpiredBookings();
+    console.log('📋 Step 1: Checking expired extensions...');
+    await autoCancelExpiredExtensions();
+    console.log('📋 Step 2: Checking expired bookings...');
+    await autoCancelExpiredBookings();
+    console.log('✅ Scheduled auto-cancel check completed');
   }, AUTO_CANCEL_INTERVAL);
   
-  console.log('✅ Auto-cancel scheduler initialized');
+  console.log('✅ Auto-cancel scheduler initialized (checks extensions + bookings)');
 });

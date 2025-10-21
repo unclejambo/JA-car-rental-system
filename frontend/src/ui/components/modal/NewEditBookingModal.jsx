@@ -143,8 +143,12 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
     try {
       const response = await authenticatedFetch(`${API_BASE}/drivers`);
       if (response.ok) {
-        const data = await response.json();
-        setDrivers(data || []);
+        const response_data = await response.json();
+        // Handle paginated response - extract data array
+        const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
+        // Filter out driver ID 1 (DEFAULT FOR SELFDRIVE) from customer-facing list
+        const filteredDrivers = data.filter(driver => driver.drivers_id !== 1 && driver.driver_id !== 1);
+        setDrivers(filteredDrivers || []);
       }
     } catch (error) {
       console.error('Error fetching drivers:', error);

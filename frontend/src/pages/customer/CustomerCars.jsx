@@ -90,8 +90,14 @@ function CustomerCars() {
         const response = await authenticatedFetch(`${API_BASE}/cars`);
 
         if (response.ok) {
-          const data = await response.json();
-          console.log('Cars data received:', data);
+          const response_data = await response.json();
+          console.log('Cars data received:', response_data);
+
+          // Handle paginated response - extract data array
+          const data = Array.isArray(response_data)
+            ? response_data
+            : response_data.data || [];
+
           // Filter to only show cars that are not deleted/inactive
           const activeCars = data.filter(
             (car) =>
@@ -567,9 +573,18 @@ function CustomerCars() {
                   color="text.secondary"
                   sx={{ fontSize: { xs: '0.75rem', sm: '1rem' }, mt: 0.5 }}
                 >
-                  {filteredCars.filter(car => car.car_status?.toLowerCase() === 'available').length} car
-                  {filteredCars.filter(car => car.car_status?.toLowerCase() === 'available').length !== 1 ? 's' : ''} available and ready for
-                  rental
+                  {
+                    filteredCars.filter(
+                      (car) => car.car_status?.toLowerCase() === 'available'
+                    ).length
+                  }{' '}
+                  car
+                  {filteredCars.filter(
+                    (car) => car.car_status?.toLowerCase() === 'available'
+                  ).length !== 1
+                    ? 's'
+                    : ''}{' '}
+                  available and ready for rental
                 </Typography>
               </Box>
 

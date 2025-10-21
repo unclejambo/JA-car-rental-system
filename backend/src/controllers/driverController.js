@@ -1,50 +1,59 @@
-// @desc    Get all drivers
-// @route   GET /drivers
-// @access  Public (adjust later if auth needed)
-export const getDrivers = async (_req, res) => {
-  try {
-    const drivers = await prisma.driver.findMany({
-      include: { driver_license: true },
-    });
-    // map to plain object with expected frontend fields
-    const sanitized = drivers.map((d) => ({
-      ...d,
-      driver_id: d.drivers_id, // Frontend expects driver_id
-      id: d.drivers_id, // DataGrid convenience if reused
-      license_number: d.driver_license_no, // Frontend expects license_number
-      rating: 4.5, // Default rating since not in schema yet
-      password: undefined,
-      restriction: d.driver_license?.restrictions || null,
-      expiryDate: d.driver_license?.expiry_date || null,
-    }));
-    res.json(sanitized);
-  } catch (error) {
-    console.error("Error fetching drivers:", error);
-    res.status(500).json({ error: "Failed to fetch drivers" });
-  }
-};
 import prisma from "../config/prisma.js";
+import { getPaginationParams, getSortingParams, buildPaginationResponse, getSearchParam } from '../utils/pagination.js';
 
-// @desc    Get all drivers
-// @route   GET /drivers
-// @access  Public (adjust later if auth needed)
-export const getMyDriverSchedules = async (_req, res) => {
+// @desc    Get all drivers with pagination (Admin)
+// @route   GET /drivers?page=1&pageSize=10&sortBy=drivers_id&sortOrder=desc&search=john&status=active
+// @access  Private/Admin
+export const getDrivers = async (req, res) => {
   try {
+    // Get pagination parameters
+    const { page, pageSize, skip } = getPaginationParams(req);
+    const { sortBy, sortOrder } = getSortingParams(req, 'drivers_id', 'desc');
+    const search = getSearchParam(req);
+    
+    // Build where clause
+    const where = {};
+    
+    // Search filter (name, email, or username)
+    if (search) {
+      where.OR = [
+        { first_name: { contains: search, mode: 'insensitive' } },
+        { last_name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { username: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    
+    // Status filter
+    if (req.query.status) {
+      where.status = req.query.status;
+    }
+
+    // Get total count
+    const total = await prisma.driver.count({ where });
+
+    // Get paginated drivers
     const drivers = await prisma.driver.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { [sortBy]: sortOrder },
       include: { driver_license: true },
     });
-    // map to plain object with expected frontend fields
+    
+    // Map to plain object with expected frontend fields
     const sanitized = drivers.map((d) => ({
       ...d,
-      driver_id: d.drivers_id, // Frontend expects driver_id
-      id: d.drivers_id, // DataGrid convenience if reused
-      license_number: d.driver_license_no, // Frontend expects license_number
-      rating: 4.5, // Default rating since not in schema yet
+      driver_id: d.drivers_id,
+      id: d.drivers_id,
+      license_number: d.driver_license_no,
+      rating: 4.5,
       password: undefined,
       restriction: d.driver_license?.restrictions || null,
       expiryDate: d.driver_license?.expiry_date || null,
     }));
-    res.json(sanitized);
+    
+    res.json(buildPaginationResponse(sanitized, total, page, pageSize));
   } catch (error) {
     console.error("Error fetching drivers:", error);
     res.status(500).json({ error: "Failed to fetch drivers" });

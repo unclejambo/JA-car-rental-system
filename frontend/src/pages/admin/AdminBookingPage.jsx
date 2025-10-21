@@ -119,7 +119,7 @@ export default function AdminBookingPage() {
         }
         return response.json();
       })
-      .then((data) => {
+      .then((response) => {
         // Helper to convert a datetime to YYYY-MM-DD (safe)
         const formatDateOnly = (value) => {
           if (!value) return '';
@@ -128,7 +128,10 @@ export default function AdminBookingPage() {
           return d.toISOString().split('T')[0];
         };
 
-        let formattedData = data.map((item, index) => ({
+        // Handle paginated response - extract data array
+        const bookingsData = Array.isArray(response) ? response : (response.data || []);
+        
+        let formattedData = bookingsData.map((item, index) => ({
           ...item,
           id: item.customerId || item.reservationId || `row-${index}`, // Add unique id property
           status: item.status ? 'Active' : 'Inactive',

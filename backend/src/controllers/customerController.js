@@ -1,6 +1,7 @@
 import prisma from "../config/prisma.js";
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
+import { getPaginationParams, getSortingParams, buildPaginationResponse, getSearchParam } from '../utils/pagination.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -37,17 +38,50 @@ async function getSignedLicenseUrl(dl_img_url) {
   }
 }
 
-// @desc    Get all customers
-// @route   GET /customers
-// @access  Public
+// @desc    Get all customers with pagination (Admin)
+// @route   GET /api/customers?page=1&pageSize=10&sortBy=customer_id&sortOrder=desc&search=john&status=active
+// @access  Private/Admin
 export const getCustomers = async (req, res) => {
   try {
+    // Get pagination parameters
+    const { page, pageSize, skip } = getPaginationParams(req);
+    const { sortBy, sortOrder } = getSortingParams(req, 'customer_id', 'desc');
+    const search = getSearchParam(req);
+    
+    // Build where clause
+    const where = {};
+    
+    // Search filter (name, email, or username)
+    if (search) {
+      where.OR = [
+        { first_name: { contains: search, mode: 'insensitive' } },
+        { last_name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { username: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    
+    // Status filter
+    if (req.query.status) {
+      where.status = req.query.status;
+    }
+
+    // Get total count
+    const total = await prisma.customer.count({ where });
+
+    // Get paginated customers
     const users = await prisma.customer.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { [sortBy]: sortOrder },
       include: {
-        driver_license: true, // ✅ include relation
+        driver_license: true,
       },
     });
-    res.json(users);
+    
+    res.json(buildPaginationResponse(users, total, page, pageSize));
+
   } catch (error) {
     console.error("Error fetching users:", error);
     res.status(500).json({ error: "Failed to fetch users" });

@@ -246,7 +246,11 @@ export default function AddPaymentModal({ show, onClose }) {
           throw new Error('Failed to fetch data - authentication required');
         }
 
-        const [cData, bData] = await Promise.all([cRes.json(), bRes.json()]);
+        const [cData_raw, bData_raw] = await Promise.all([cRes.json(), bRes.json()]);
+        // Handle paginated responses - extract data arrays
+        const cData = Array.isArray(cData_raw) ? cData_raw : (cData_raw?.data || []);
+        const bData = Array.isArray(bData_raw) ? bData_raw : (bData_raw?.data || []);
+        
         if (!cancel) {
           console.log('🏪 Loaded customers:', cData?.length || 0);
           console.log('📋 Loaded bookings:', bData?.length || 0);

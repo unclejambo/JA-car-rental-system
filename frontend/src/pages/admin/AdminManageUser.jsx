@@ -76,7 +76,10 @@ export default function AdminManageUser() {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const data = await response.json();
+        const response_data = await response.json();
+        
+        // Handle paginated response - extract data array
+        const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
 
         let formattedData = [];
 

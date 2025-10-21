@@ -101,11 +101,19 @@ function AdminDashboard() {
         authFetch(`${API_BASE}/analytics/customers/top?period=30`).then((r) =>
           r.ok ? r.json() : []
         ),
-        authFetch(`${API_BASE}/schedules`).then((r) => (r.ok ? r.json() : [])),
+        authFetch(`${API_BASE}/schedules`).then(async (r) => {
+          if (!r.ok) return [];
+          const data = await r.json();
+          return Array.isArray(data) ? data : (data.data || []);
+        }),
         authFetch(`${API_BASE}/cars/available`).then((r) =>
           r.ok ? r.json() : []
         ),
-        authFetch(`${API_BASE}/bookings`).then((r) => (r.ok ? r.json() : [])),
+        authFetch(`${API_BASE}/bookings`).then(async (r) => {
+          if (!r.ok) return [];
+          const data = await r.json();
+          return Array.isArray(data) ? data : (data.data || []);
+        }),
       ]);
 
       // Get this week's date range (today + 7 days)

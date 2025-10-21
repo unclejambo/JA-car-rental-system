@@ -131,11 +131,17 @@ function CustomerBookingHistory() {
       const responseBookings = await resBookings.json();
       const responsePayments = await resPayments.json();
       const responseTransactions = await resTransactions.json();
-      
+
       // Handle paginated responses - extract data arrays
-      const dataBookings = Array.isArray(responseBookings) ? responseBookings : (responseBookings.data || []);
-      const dataPayments = Array.isArray(responsePayments) ? responsePayments : (responsePayments.data || []);
-      const dataTransactions = Array.isArray(responseTransactions) ? responseTransactions : (responseTransactions.data || []);
+      const dataBookings = Array.isArray(responseBookings)
+        ? responseBookings
+        : responseBookings.data || [];
+      const dataPayments = Array.isArray(responsePayments)
+        ? responsePayments
+        : responsePayments.data || [];
+      const dataTransactions = Array.isArray(responseTransactions)
+        ? responseTransactions
+        : responseTransactions.data || [];
 
       // Create a map of transactions by booking_id for easy lookup
       const transactionMap = {};
@@ -230,8 +236,10 @@ function CustomerBookingHistory() {
       if (response.ok) {
         const response_data = await response.json();
         // Handle paginated response - extract data array
-        const allBookings = Array.isArray(response_data) ? response_data : (response_data.data || []);
-        
+        const allBookings = Array.isArray(response_data)
+          ? response_data
+          : response_data.data || [];
+
         const fullBooking = allBookings.find(
           (b) => b.booking_id === bookingRow.booking_id
         );
@@ -416,12 +424,12 @@ function CustomerBookingHistory() {
                 }}
               >
                 <Tab
-                  label={`Bookings History (${bookings?.length || 0})`}
+                  label={`Bookings (${bookings?.length || 0})`}
                   icon={<HiOutlineClipboardDocumentCheck />}
                   iconPosition="start"
                 />
                 <Tab
-                  label={`Payments History (${payments?.length || 0})`}
+                  label={`Payments (${payments?.length || 0})`}
                   icon={<HiCreditCard />}
                   iconPosition="start"
                 />

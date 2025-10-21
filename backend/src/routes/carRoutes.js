@@ -4,6 +4,7 @@ import {
   getCars,
   getAvailableCars,
   getCarGps,
+  getCarUnavailablePeriods,
   createCar,
   updateCar,
   deleteCar,
@@ -16,6 +17,7 @@ const upload = multer(); // memory storage for file uploads
 router.get('/', getCars);
 router.get('/available', getAvailableCars);
 router.get('/:id/gps', getCarGps);
+router.get('/:id/unavailable-periods', getCarUnavailablePeriods);
 
 // Protected routes (add authentication middleware later)
 router.post('/', upload.single('image'), createCar);    // use "cars/"  -> POST

@@ -20,6 +20,10 @@ import {
   buildPaginationResponse,
   getSearchParam,
 } from "../utils/pagination.js";
+import {
+  validateBookingDates,
+  getUnavailablePeriods
+} from "../utils/bookingUtils.js";
 
 // @desc    Get all bookings with pagination (Admin)
 // @route   GET /bookings?page=1&pageSize=10&sortBy=booking_date&sortOrder=desc&search=john&status=Pending
@@ -415,6 +419,48 @@ export const createBooking = async (req, res) => {
       });
     }
 
+    // ✨ NEW: Check for date conflicts with existing bookings + maintenance periods
+    console.log(`🔍 Checking date conflicts for car ${car_id}...`);
+    console.log(`📅 Requested: ${startDateTime.toISOString()} - ${endDateTime.toISOString()}`);
+    
+    const existingBookings = await prisma.booking.findMany({
+      where: {
+        car_id: parseInt(car_id),
+        booking_status: {
+          in: ['Pending', 'Confirmed', 'In Progress']
+        },
+        isCancel: false
+      },
+      select: {
+        booking_id: true,
+        start_date: true,
+        end_date: true,
+        booking_status: true,
+        payment_status: true
+      }
+    });
+
+    console.log(`📋 Found ${existingBookings.length} existing active bookings for this car`);
+
+    const dateValidation = validateBookingDates(startDateTime, endDateTime, existingBookings, 1);
+    
+    if (!dateValidation.isValid) {
+      console.log(`❌ Date conflict detected: ${dateValidation.message}`);
+      return res.status(409).json({
+        error: "Date conflict",
+        message: dateValidation.message,
+        conflicts: dateValidation.conflicts.map(c => ({
+          start_date: c.start_date,
+          end_date: c.end_date,
+          reason: c.reason,
+          booking_id: c.booking_id
+        })),
+        suggestion: "Please choose different dates that don't overlap with existing bookings or maintenance periods."
+      });
+    }
+
+    console.log(`✅ No date conflicts - booking can proceed`);
+
     // Validate driver if specified
     if (finalDriverId) {
       const driverExists = await prisma.driver.findUnique({
@@ -454,17 +500,27 @@ export const createBooking = async (req, res) => {
       },
     });
 
-    // Update car status to 'Rented' immediately to prevent double booking
-    // This happens regardless of payment status
-    try {
-      await prisma.car.update({
-        where: { car_id: parseInt(car_id) },
-        data: { car_status: "Rented" },
-      });
-      console.log(`Car ${car_id} status updated to 'Rented'`);
-    } catch (carUpdateError) {
-      console.error("Error updating car status:", carUpdateError);
-      // Don't fail the booking creation if car status update fails
+    // ✨ UPDATED: Only update car status to 'Rented' if booking starts today or is in the past
+    // This allows advance bookings to coexist without blocking the car immediately
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const bookingStart = new Date(startDateTime);
+    bookingStart.setHours(0, 0, 0, 0);
+    
+    if (bookingStart <= today) {
+      // Booking starts today or earlier - mark car as rented immediately
+      try {
+        await prisma.car.update({
+          where: { car_id: parseInt(car_id) },
+          data: { car_status: "Rented" },
+        });
+        console.log(`🚗 Car ${car_id} status updated to 'Rented' (booking starts today)`);
+      } catch (carUpdateError) {
+        console.error("Error updating car status:", carUpdateError);
+        // Don't fail the booking creation if car status update fails
+      }
+    } else {
+      console.log(`📅 Car ${car_id} status NOT changed - advance booking for ${bookingStart.toDateString()}`);
     }
 
     // Create an initial payment record for the booking

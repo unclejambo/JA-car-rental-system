@@ -48,6 +48,8 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
   const [isSelfService, setIsSelfService] = useState(true);
   const [missingFields, setMissingFields] = useState([]);
   const [availableDates, setAvailableDates] = useState(null);
+  const [unavailablePeriods, setUnavailablePeriods] = useState([]);
+  const [hasDateConflict, setHasDateConflict] = useState(false);
   
   // Fee management state
   const [fees, setFees] = useState({
@@ -65,7 +67,6 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
   // Payment deadline state
   const [paymentDeadline, setPaymentDeadline] = useState(null);
   const [paymentDeadlineHours, setPaymentDeadlineHours] = useState(null);
-  const [isWaitlist, setIsWaitlist] = useState(false);
   const [formData, setFormData] = useState({
     purpose: '',
     customPurpose: '',
@@ -93,15 +94,9 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
 
   const steps = ['Service Type', 'Booking Details', 'Confirmation'];
 
-  // Get today's date or next available date for minimum date validation
+  // Get today's date for minimum date validation
   const getMinimumDate = () => {
     const today = new Date().toISOString().split('T')[0];
-    
-    if (isWaitlist && availableDates?.next_available_date) {
-      const nextDate = new Date(availableDates.next_available_date).toISOString().split('T')[0];
-      return nextDate > today ? nextDate : today;
-    }
-    
     return today;
   };
 
@@ -109,13 +104,8 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
   useEffect(() => {
     if (open && car) {
       fetchDrivers();
-      fetchAvailableDates();
+      fetchUnavailablePeriods(); // Fetch blocked periods
       fetchFees(); // Fetch current fee structure
-      
-      // Determine if this is a waitlist booking (car is rented)
-      const carStatus = String(car.car_status || '').toLowerCase();
-      const isRented = carStatus.includes('rent') || carStatus === 'rented';
-      setIsWaitlist(isRented);
       
       // Reset form when modal opens
       setFormData({
@@ -134,6 +124,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       setIsSelfService(true);
       setActiveTab(0);
       setActiveStep(0);
+      setHasDateConflict(false);
     }
   }, [open, car]);
 
@@ -159,6 +150,27 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       }
     } catch (error) {
       console.error('Error fetching available dates:', error);
+    }
+  };
+
+  const fetchUnavailablePeriods = async () => {
+    if (!car?.car_id) return;
+    
+    try {
+      console.log('🔍 Fetching unavailable periods for car:', car.car_id);
+      const response = await fetch(`${API_BASE}/cars/${car.car_id}/unavailable-periods`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📅 Unavailable periods data:', data);
+        setUnavailablePeriods(data.unavailable_periods || []);
+      } else {
+        console.error('❌ Failed to fetch unavailable periods:', response.status);
+        setUnavailablePeriods([]);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching unavailable periods:', error);
+      setUnavailablePeriods([]);
     }
   };
 
@@ -299,10 +311,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
     const minDate = new Date(getMinimumDate());
 
     if (startDate < minDate) {
-      const errorMsg = isWaitlist 
-        ? `Start date cannot be before ${minDate.toLocaleDateString()} (next available date)`
-        : 'Start date cannot be in the past';
-      setError(errorMsg);
+      setError('Start date cannot be in the past');
       setMissingFields(['startDate']);
       if (fieldRefs.startDate.current) {
         fieldRefs.startDate.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -517,77 +526,27 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         booking_status: 'Pending' // Customer can still edit/cancel
       };
 
-      if (isWaitlist) {
-        // Join waitlist instead of creating booking
-        const waitlistData = {
-          requested_start_date: formData.startDate,
-          requested_end_date: formData.endDate,
-          purpose: finalPurpose,
-          pickup_time: formData.pickupTime,
-          dropoff_time: formData.dropoffTime,
-          pickup_location: activeTab === 0 ? formData.deliveryLocation : 'JA Car Rental Office - 123 Main Street, Business District, City',
-          dropoff_location: activeTab === 0 ? formData.dropoffLocation : 'JA Car Rental Office - 123 Main Street, Business District, City',
-          delivery_type: activeTab === 0 ? 'delivery' : 'pickup',
-          is_self_drive: isSelfService,
-          selected_driver_id: isSelfService ? null : formData.selectedDriver,
-          total_cost: calculateTotalCost()
-        };
-
-        const response = await authenticatedFetch(`${API_BASE}/api/cars/${car.car_id}/waitlist`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(waitlistData)
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          
-          // Create a more detailed success message
-          const successMessage = `🎉 Successfully joined waitlist!\n\n` +
-            `📍 Queue Position: #${result.waitlist_entry.position}\n` +
-            `🚗 Vehicle: ${car.make} ${car.model}\n` +
-            `📅 Requested Dates: ${formData.startDate} to ${formData.endDate}\n` +
-            `💰 Total Cost: ₱${calculateTotalCost().toLocaleString()}\n` +
-            `⏰ Next Available: ${availableDates?.next_available_date ? new Date(availableDates.next_available_date).toLocaleDateString() : 'TBD'}\n\n` +
-            `🏦 PAYMENT REQUIRED: To secure your dates, payment must be completed.\n` +
-            `⏰ Payment Deadline: ${paymentDeadline ? paymentDeadline.toLocaleString() : 'TBD'}\n` +
-            `💡 Once paid, your requested dates will be reserved and unavailable to other customers.\n\n` +
-            `✅ You'll be notified when the car becomes available for your requested dates!`;
-          
-          alert(successMessage);
-          onClose();
-          
-          // Call onBookingSuccess if provided to refresh the parent component
-          if (onBookingSuccess) {
-            onBookingSuccess({ type: 'waitlist', data: result.waitlist_entry });
-          }
-        } else {
-          const errorData = await response.json();
-          setError(errorData.error || 'Failed to join waitlist. Please try again.');
-        }
-      } else {
-        // Regular booking
-        if (onBookingSuccess) {
-          await onBookingSuccess(bookingData);
-        }
-        
-        // Show success message with payment information
-        const deadlineInfo = formatPaymentDeadline();
-        const successMessage = `🎉 Booking created successfully!\n\n` +
-          `🚗 Vehicle: ${car.make} ${car.model}\n` +
-          `📅 Rental Period: ${formData.startDate} to ${formData.endDate}\n` +
-          `💰 Total Amount: ₱${calculateTotalCost().toLocaleString()}\n\n` +
-          `⚠️ IMPORTANT PAYMENT INFORMATION:\n` +
-          `${deadlineInfo.message}\n` +
-          `⏰ Payment Deadline: ${deadlineInfo.deadline}\n\n` +
-          `💡 Your booking is confirmed but requires payment to secure the vehicle.\n` +
-          `📱 You can make payment through the booking details in your dashboard.`;
-        
-        alert(successMessage);
-        onClose();
+      // Regular booking - always create booking (no more waitlist)
+      if (onBookingSuccess) {
+        await onBookingSuccess(bookingData);
       }
+      
+      // Show success message with payment information
+      const deadlineInfo = formatPaymentDeadline();
+      const successMessage = `🎉 Booking created successfully!\n\n` +
+        `🚗 Vehicle: ${car.make} ${car.model}\n` +
+        `📅 Rental Period: ${formData.startDate} to ${formData.endDate}\n` +
+        `💰 Total Amount: ₱${calculateTotalCost().toLocaleString()}\n\n` +
+        `⚠️ IMPORTANT PAYMENT INFORMATION:\n` +
+        `${deadlineInfo.message}\n` +
+        `⏰ Payment Deadline: ${deadlineInfo.deadline}\n\n` +
+        `💡 Your booking is confirmed but requires payment to secure the vehicle.\n` +
+        `📱 You can make payment through the booking details in your dashboard.`;
+      
+      alert(successMessage);
+      onClose();
     } catch (error) {
-      setError(isWaitlist ? 'Failed to join waitlist. Please try again.' : 'Failed to submit booking. Please try again.');
+      setError('Failed to submit booking. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -638,7 +597,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
             pr: 1,
           }}
         >
-          {isWaitlist ? 'Join Waitlist for' : 'Book'} {car.make} {car.model}
+          Book {car.make} {car.model}
         </Typography>
         <IconButton onClick={onClose} size="small">
           <HiX />
@@ -733,47 +692,104 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                       size="small"
                       sx={{ fontWeight: 'bold' }}
                     />
-                    {isWaitlist && (
-                      <Chip 
-                        label="Join Waitlist" 
-                        color="info" 
-                        size="small"
-                        sx={{ fontWeight: 'bold' }}
-                      />
-                    )}
                   </Box>
                 </Box>
               </Box>
             </Box>
 
-            {/* Availability Information */}
+            {/* Availability Information - REMOVED WAITLIST */}
             {availableDates && (
-              <Box sx={{ mb: 3, p: 3, backgroundColor: isWaitlist ? '#fff5f5' : '#f0f8ff', borderRadius: 2, border: `2px solid ${isWaitlist ? '#c10007' : '#2196f3'}` }}>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: isWaitlist ? '#c10007' : '#2196f3' }}>
-                  {isWaitlist ? '⏰ Waitlist Information' : '✅ Availability Information'}
+              <Box sx={{ mb: 3, p: 3, backgroundColor: '#f0f8ff', borderRadius: 2, border: '2px solid #2196f3' }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#2196f3' }}>
+                  ✅ Car Booking
                 </Typography>
                 
-                {isWaitlist ? (
-                  <Box>
-                    <Typography variant="body1" sx={{ mb: 1 }}>
-                      This car is currently rented. You can join the waitlist for future availability.
-                    </Typography>
-                    {availableDates.next_available_date && (
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>Next Available Date:</strong> {new Date(availableDates.next_available_date).toLocaleDateString()}
-                      </Typography>
-                    )}
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
-                      Note: This date includes a 1-day maintenance period after the current rental.
-                    </Typography>
-                  </Box>
-                ) : (
-                  <Box>
-                    <Typography variant="body1" color="success.main">
-                      This car is available for immediate booking.
-                    </Typography>
-                  </Box>
-                )}
+                <Box>
+                  <Typography variant="body1" color="success.main">
+                    You can book this car for dates that don't conflict with existing bookings.
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+
+            {/* Unavailable Periods Warning - NEW FEATURE */}
+            {unavailablePeriods && unavailablePeriods.length > 0 && (
+              <Box sx={{ mb: 3, p: 3, backgroundColor: '#fff9e6', borderRadius: 2, border: '2px solid #ff9800' }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#f57c00', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <HiExclamationCircle size={24} />
+                  ⚠️ Unavailable Periods for This Car
+                </Typography>
+                
+                <Typography variant="body2" sx={{ mb: 2 }}>
+                  This car has existing bookings or scheduled maintenance. You can still book this car, but <strong>not during these periods</strong>:
+                </Typography>
+                
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {unavailablePeriods.map((period, index) => {
+                    const startDate = new Date(period.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    const endDate = new Date(period.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    
+                    // Determine card styling based on period type
+                    let cardBgColor = '#e3f2fd'; // Default blue for future bookings
+                    let cardBorderColor = '#42a5f5';
+                    let chipLabel = 'Booked';
+                    let chipColor = 'primary';
+                    let titleColor = '#1565c0';
+                    let icon = '📅';
+                    
+                    if (period.is_maintenance) {
+                      // Maintenance periods
+                      cardBgColor = '#ffebee';
+                      cardBorderColor = '#ef5350';
+                      chipLabel = 'Maintenance';
+                      chipColor = 'error';
+                      titleColor = '#c62828';
+                      icon = '🔧';
+                    } else if (period.is_currently_rented) {
+                      // Currently rented (active rental)
+                      cardBgColor = '#fff3e0';
+                      cardBorderColor = '#ff9800';
+                      chipLabel = 'Currently Rented';
+                      chipColor = 'warning';
+                      titleColor = '#e65100';
+                      icon = '🚗';
+                    }
+                    
+                    return (
+                      <Card key={index} sx={{ backgroundColor: cardBgColor, border: `1px solid ${cardBorderColor}` }}>
+                        <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 'bold', color: titleColor }}>
+                                {icon} {startDate} - {endDate}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {period.reason}
+                              </Typography>
+                              {period.is_currently_rented && (
+                                <Typography variant="caption" sx={{ display: 'block', color: '#e65100', fontWeight: 'medium', mt: 0.5 }}>
+                                  🔴 This car is currently out on rental
+                                </Typography>
+                              )}
+                            </Box>
+                            <Chip 
+                              label={chipLabel} 
+                              size="small"
+                              color={chipColor}
+                              sx={{ fontWeight: 'bold' }}
+                            />
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </Box>
+                
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  <Typography variant="body2">
+                    <strong>💡 Tip:</strong> Choose dates that don't overlap with the periods above. The system will notify you if there's a conflict.
+                  </Typography>
+                </Alert>
               </Box>
             )}
 
@@ -1592,7 +1608,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                 },
               }}
             >
-              {loading ? 'Submitting...' : isWaitlist ? 'Join Waitlist' : 'Confirm Booking'}
+              {loading ? 'Submitting...' : 'Confirm Booking'}
             </Button>
           </>
         )}

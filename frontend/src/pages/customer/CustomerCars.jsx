@@ -44,8 +44,6 @@ function CustomerCars() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successBookingData, setSuccessBookingData] = useState(null);
-  const [waitlistEntries, setWaitlistEntries] = useState([]);
-  const [showWaitlistInfo, setShowWaitlistInfo] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [customerNotificationSetting, setCustomerNotificationSetting] =
     useState(0);
@@ -66,20 +64,6 @@ function CustomerCars() {
     () => createAuthenticatedFetch(logout),
     [logout]
   );
-
-  const fetchWaitlistEntries = async () => {
-    try {
-      const response = await authenticatedFetch(
-        `${API_BASE}/api/customers/me/waitlist`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setWaitlistEntries(data);
-      }
-    } catch (error) {
-      console.error('Error fetching waitlist entries:', error);
-    }
-  };
 
   // Load cars from database
   useEffect(() => {
@@ -128,7 +112,6 @@ function CustomerCars() {
     };
 
     loadCars();
-    fetchWaitlistEntries();
   }, []); // Remove dependencies that cause re-renders
 
   // Filter cars based on selected filters
@@ -168,91 +151,12 @@ function CustomerCars() {
     setPriceRange(newValue);
   };
 
-  // Handle booking button click - now handles both regular booking and waitlist
-  const handleBookNow = async (car) => {
-    const isRented = car.car_status?.toLowerCase().includes('rent');
-
-    if (isRented) {
-      // This is a waitlist request - fetch customer settings first
-      try {
-        const response = await authenticatedFetch(
-          `${API_BASE}/api/customers/me`
-        );
-        if (response.ok) {
-          const customerData = await response.json();
-          const notificationSetting = customerData.isRecUpdate || 0;
-          setCustomerNotificationSetting(notificationSetting);
-          setSelectedCar(car);
-
-          // Check if notifications are disabled (0)
-          if (notificationSetting === 0) {
-            setSnackbarMessage(
-              'Please enable notification settings in your account settings to join the waitlist.'
-            );
-            setSnackbarOpen(true);
-            // Redirect to settings page after a delay only when isRecUpdate is 0
-            setTimeout(() => {
-              window.location.href = '/customer-account';
-            }, 3000);
-          } else {
-            // Notifications are enabled (1=SMS, 2=Email, 3=Both), join waitlist directly
-            await joinWaitlist(car);
-          }
-        } else {
-          const errorData = await response.json().catch(() => ({}));
-          console.error(
-            'Failed to fetch customer settings:',
-            response.status,
-            errorData
-          );
-          setSnackbarMessage(
-            errorData.error ||
-              'Failed to load notification settings. Please try again.'
-          );
-          setSnackbarOpen(true);
-        }
-      } catch (error) {
-        console.error('Error fetching customer settings:', error);
-        setSnackbarMessage('Error loading settings. Please try again.');
-        setSnackbarOpen(true);
-      }
-    } else {
-      // Regular booking flow
+  // Handle car click to open booking modal
+  const handleCarClick = (car) => {
+    const isUnderMaintenance = car.car_status?.toLowerCase().includes('maint');
+    if (!isUnderMaintenance) {
       setSelectedCar(car);
       setShowBookingModal(true);
-    }
-  };
-
-  // Join waitlist function
-  const joinWaitlist = async (car) => {
-    try {
-      const response = await authenticatedFetch(
-        `${API_BASE}/api/cars/${car.car_id}/waitlist`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            notification_preference: customerNotificationSetting,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        await response.json(); // Consume response
-        setSnackbarMessage(
-          `You'll be notified when the ${car.make} ${car.model} becomes available!`
-        );
-        setSnackbarOpen(true);
-        fetchWaitlistEntries(); // Refresh waitlist entries
-      } else {
-        const errorData = await response.json();
-        setSnackbarMessage(errorData.error || 'Failed to join waitlist');
-        setSnackbarOpen(true);
-      }
-    } catch (error) {
-      console.error('Error joining waitlist:', error);
-      setSnackbarMessage('Error joining waitlist. Please try again.');
-      setSnackbarOpen(true);
     }
   };
 
@@ -271,11 +175,6 @@ function CustomerCars() {
       if (response.ok) {
         setCustomerNotificationSetting(newSetting);
         setShowNotificationModal(false);
-
-        // Now join the waitlist
-        if (selectedCar) {
-          await joinWaitlist(selectedCar);
-        }
       } else {
         throw new Error('Failed to update settings');
       }
@@ -830,62 +729,6 @@ function CustomerCars() {
               </Box>
             )}
 
-            {/* Waitlist Information */}
-            {waitlistEntries.length > 0 && (
-              <Box
-                sx={{
-                  mb: 3,
-                  p: 2,
-                  backgroundColor: '#fff5f5',
-                  borderRadius: 2,
-                  border: '2px solid #ff9800',
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 'bold', color: '#c10007', mb: 1 }}
-                >
-                  📋 Your Waitlist Entries ({waitlistEntries.length})
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  You are on the waitlist for {waitlistEntries.length} car
-                  {waitlistEntries.length !== 1 ? 's' : ''}. You'll be notified
-                  when they become available.
-                </Typography>
-                <Button
-                  size="small"
-                  onClick={() => setShowWaitlistInfo(!showWaitlistInfo)}
-                  sx={{ mt: 1, color: '#c10007' }}
-                >
-                  {showWaitlistInfo ? 'Hide Details' : 'Show Details'}
-                </Button>
-                {showWaitlistInfo && (
-                  <Box sx={{ mt: 2 }}>
-                    {waitlistEntries.map((entry) => (
-                      <Box
-                        key={entry.waitlist_id}
-                        sx={{
-                          mb: 2,
-                          p: 2,
-                          backgroundColor: 'white',
-                          borderRadius: 1,
-                          border: '1px solid #e0e0e0',
-                        }}
-                      >
-                        <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                          {entry.Car.make} {entry.Car.model} ({entry.Car.year})
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Status: {entry.Car.car_status} • Joined:{' '}
-                          {new Date(entry.created_at).toLocaleDateString()}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                )}
-              </Box>
-            )}
-
             {/* Cars Results */}
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -970,9 +813,7 @@ function CustomerCars() {
                               opacity: isUnderMaintenance ? 0.7 : 1,
                               backgroundColor: '#fff',
                             }}
-                            onClick={() =>
-                              !isUnderMaintenance && handleBookNow(car)
-                            }
+                            onClick={() => handleCarClick(car)}
                           >
                             <Box
                               sx={{
@@ -1075,7 +916,7 @@ function CustomerCars() {
                                   fullWidth
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleBookNow(car);
+                                    handleCarClick(car);
                                   }}
                                   disabled={car.car_status
                                     ?.toLowerCase()
@@ -1111,7 +952,7 @@ function CustomerCars() {
                                     : car.car_status
                                           ?.toLowerCase()
                                           .includes('rent')
-                                      ? 'Notify me when available'
+                                      ? 'Book Now (View Availability)'
                                       : 'Book Now'}
                                 </Button>
                               </Box>

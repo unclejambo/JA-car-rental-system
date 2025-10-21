@@ -73,12 +73,21 @@ export const getBookings = async (req, res) => {
         customer: { select: { first_name: true, last_name: true } },
         car: { select: { make: true, model: true, year: true } },
         payments: { select: { amount: true } },
+        extensions: {
+          orderBy: { extension_id: "desc" },
+          take: 1, // Get the latest extension only
+          select: {
+            extension_id: true,
+            extension_status: true,
+            approve_time: true,
+          },
+        },
       },
     });
 
     // Update balances in database and shape response
     const shaped = await Promise.all(
-      bookings.map(async ({ customer, car, payments, ...rest }) => {
+      bookings.map(async ({ customer, car, payments, extensions, ...rest }) => {
         const totalPaid =
           payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) ||
           0;
@@ -92,6 +101,9 @@ export const getBookings = async (req, res) => {
           });
         }
 
+        // Get latest extension info
+        const latestExtension = extensions?.[0] || null;
+
         return {
           ...rest,
           balance: remainingBalance,
@@ -101,6 +113,7 @@ export const getBookings = async (req, res) => {
           car_model: [car?.make, car?.model].filter(Boolean).join(" "),
           total_paid: totalPaid,
           remaining_balance: remainingBalance,
+          latest_extension: latestExtension, // Include extension info
         };
       })
     );
@@ -1404,6 +1417,18 @@ export const extendMyBooking = async (req, res) => {
         .json({ error: "Extension request already pending admin approval" });
     }
 
+    // Clean up any old approved but unpaid extensions before creating new request
+    await prisma.extension.updateMany({
+      where: {
+        booking_id: bookingId,
+        extension_status: "approved",
+      },
+      data: {
+        extension_status: "Cancelled by Customer",
+        rejection_reason: "Customer submitted a new extension request",
+      },
+    });
+
     // Calculate additional cost
     const originalEndDate = new Date(booking.end_date);
     const newEndDate = new Date(new_end_date);
@@ -1444,6 +1469,17 @@ export const extendMyBooking = async (req, res) => {
             contact_no: true,
           },
         },
+      },
+    });
+
+    // Create Extension record when customer requests extension
+    await prisma.extension.create({
+      data: {
+        booking_id: bookingId,
+        old_end_date: booking.end_date,
+        new_end_date: newEndDate,
+        approve_time: null, // Not yet approved
+        extension_status: null, // Pending admin approval
       },
     });
 
@@ -1498,7 +1534,7 @@ export const confirmExtensionRequest = async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
 
-    // Find the booking
+    // Find the booking with pending extension
     const booking = await prisma.booking.findUnique({
       where: { booking_id: bookingId },
       include: {
@@ -1521,6 +1557,13 @@ export const confirmExtensionRequest = async (req, res) => {
             isRecUpdate: true,
           },
         },
+        extensions: {
+          where: {
+            approve_time: null, // Find pending (unapproved) extension
+          },
+          orderBy: { extension_id: "desc" },
+          take: 1,
+        },
       },
     });
 
@@ -1538,6 +1581,29 @@ export const confirmExtensionRequest = async (req, res) => {
       return res
         .status(400)
         .json({ error: "No new end date found for extension" });
+    }
+
+    // Find the pending extension record
+    const pendingExtension = booking.extensions[0];
+    if (!pendingExtension) {
+      // No pending extension found - check if already approved
+      const alreadyApproved = await prisma.extension.findFirst({
+        where: {
+          booking_id: bookingId,
+          extension_status: "approved",
+        },
+        orderBy: { extension_id: "desc" },
+      });
+      
+      if (alreadyApproved) {
+        return res.status(400).json({ 
+          error: "Extension already approved. Waiting for customer payment." 
+        });
+      }
+      
+      return res
+        .status(404)
+        .json({ error: "Pending extension record not found" });
     }
 
     // Calculate additional days and cost
@@ -1566,47 +1632,30 @@ export const confirmExtensionRequest = async (req, res) => {
     const now = new Date();
     const phTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
 
-    // Create extension record with old and new end dates and approval timestamp
-    await prisma.extension.create({
+    // UPDATE the existing extension record (don't create a new one!)
+    await prisma.extension.update({
+      where: { extension_id: pendingExtension.extension_id },
       data: {
-        booking_id: bookingId,
-        old_end_date: booking.end_date,
-        new_end_date: booking.new_end_date,
         approve_time: phTime, // Timestamp when admin approved the extension
+        extension_status: "approved", // Mark as approved, pending payment
       },
     });
 
-    // Calculate new dropoff_time by preserving the time from old dropoff but using the new date
-    let newDropoffTime = null;
-    if (booking.dropoff_time) {
-      const oldDropoff = new Date(booking.dropoff_time);
-      const newEndDate = new Date(booking.new_end_date);
-
-      // Create new dropoff time: new end date + old dropoff time
-      newDropoffTime = new Date(
-        newEndDate.getFullYear(),
-        newEndDate.getMonth(),
-        newEndDate.getDate(),
-        oldDropoff.getHours(),
-        oldDropoff.getMinutes(),
-        oldDropoff.getSeconds(),
-        oldDropoff.getMilliseconds()
-      );
-    }
-
-    // Update booking: replace end_date with new_end_date, clear new_end_date, set isExtend to false
-    // IMPORTANT: Update total_amount and balance to include extension cost
+    // IMPORTANT: Keep isExtend=true so booking stays in EXTENSION tab
+    // DO NOT update end_date yet - only update after payment is confirmed
+    // Update total_amount and balance to include extension cost
     const updatedBooking = await prisma.booking.update({
       where: { booking_id: bookingId },
       data: {
-        end_date: booking.new_end_date, // Replace end_date with new_end_date
-        dropoff_time: newDropoffTime, // Update dropoff_time to match new end date
-        new_end_date: null, // Clear new_end_date
-        isExtend: false, // Clear extension flag
+        // DO NOT UPDATE end_date or dropoff_time yet - wait for payment confirmation
+        // end_date: stays as original
+        // new_end_date: stays as proposed new date
+        isExtend: true, // KEEP TRUE so it stays in EXTENSION tab
         total_amount: newTotalAmount, // Add extension cost to total
         balance: newBalance, // Add extension cost to balance
         payment_status: "Unpaid", // Set to Unpaid since customer needs to pay extension
         extension_payment_deadline: null, // Clear extension payment deadline after approval
+        isPay: false, // Reset isPay since customer hasn't paid extension fee yet
       },
     });
 
@@ -1846,7 +1895,10 @@ export const cancelExtensionRequest = async (req, res) => {
         },
         extensions: {
           where: {
-            approve_time: null, // Only pending extensions
+            OR: [
+              { approve_time: null }, // Unapproved extensions
+              { extension_status: "approved" }, // Approved but unpaid extensions
+            ],
           },
           orderBy: { extension_id: "desc" },
           take: 1,
@@ -2263,13 +2315,54 @@ export const confirmBooking = async (req, res) => {
         isPay: updatedBooking.isPay,
       });
     }
-    // CASE C: isPay is TRUE and status is In Progress - Extension payment
+    // CASE C: isPay is TRUE and status is In Progress - Extension payment confirmation
     else if (booking.isPay === true && normalizedStatus === "in progress") {
-      console.log("📅 Extension payment approved...");
+      console.log("📅 CASE C: Extension payment confirmed - Applying new end date...");
+      console.log("📊 Current booking state:", {
+        bookingId,
+        isExtend: booking.isExtend,
+        isPay: booking.isPay,
+        new_end_date: booking.new_end_date,
+        end_date: booking.end_date,
+        balance: booking.balance,
+      });
+
+      // Check if there's a pending extension (isExtend=true and new_end_date exists)
+      if (!booking.isExtend || !booking.new_end_date) {
+        console.log("❌ No pending extension found:", {
+          isExtend: booking.isExtend,
+          new_end_date: booking.new_end_date,
+        });
+        return res.status(400).json({
+          error: "No pending extension found for this booking",
+        });
+      }
+
+      // Calculate new dropoff_time by preserving the time from old dropoff but using the new date
+      let newDropoffTime = null;
+      if (booking.dropoff_time) {
+        const oldDropoff = new Date(booking.dropoff_time);
+        const newEndDate = new Date(booking.new_end_date);
+
+        // Create new dropoff time: new end date + old dropoff time
+        newDropoffTime = new Date(
+          newEndDate.getFullYear(),
+          newEndDate.getMonth(),
+          newEndDate.getDate(),
+          oldDropoff.getHours(),
+          oldDropoff.getMinutes(),
+          oldDropoff.getSeconds(),
+          oldDropoff.getMilliseconds()
+        );
+      }
 
       let updateData = {
         isPay: false, // Clear payment flag
+        isExtend: false, // Clear extension flag - extension is now complete
         isExtended: true, // Mark as extended
+        end_date: booking.new_end_date, // Apply new end date
+        dropoff_time: newDropoffTime, // Update dropoff time
+        new_end_date: null, // Clear new_end_date
       };
 
       // Check if balance is 0 or less and update payment_status to Paid
@@ -2278,15 +2371,57 @@ export const confirmBooking = async (req, res) => {
         console.log("Balance is 0 or less - Setting payment_status to Paid");
       }
 
+      // Update extension record to mark as completed (find the latest approved extension)
+      const approvedExtension = await prisma.extension.findFirst({
+        where: {
+          booking_id: bookingId,
+          extension_status: "approved",
+        },
+        orderBy: { extension_id: "desc" },
+      });
+
+      console.log("🔍 Found approved extension:", approvedExtension);
+
+      if (approvedExtension) {
+        await prisma.extension.update({
+          where: { extension_id: approvedExtension.extension_id },
+          data: {
+            extension_status: "completed",
+          },
+        });
+        console.log(`✅ Marked extension #${approvedExtension.extension_id} as completed`);
+      } else {
+        console.log("⚠️ No approved extension found to mark as completed");
+      }
+
+      // Also mark any OTHER approved extensions as "completed" (cleanup duplicates)
+      const otherApprovedExtensions = await prisma.extension.updateMany({
+        where: {
+          booking_id: bookingId,
+          extension_status: "approved",
+        },
+        data: {
+          extension_status: "completed",
+        },
+      });
+      
+      if (otherApprovedExtensions.count > 0) {
+        console.log(`✅ Marked ${otherApprovedExtensions.count} additional approved extension(s) as completed`);
+      }
+
       updatedBooking = await prisma.booking.update({
         where: { booking_id: bookingId },
         data: updateData,
       });
 
-      console.log("Extension payment approved:", {
+      console.log("✅ Extension payment confirmed and applied:", {
         bookingId,
+        oldEndDate: booking.end_date,
+        newEndDate: updatedBooking.end_date,
         status: updatedBooking.booking_status,
+        isExtend: updatedBooking.isExtend,
         isExtended: updatedBooking.isExtended,
+        isPay: updatedBooking.isPay,
       });
     }
     // CASE D: Invalid state

@@ -152,18 +152,20 @@ export default function PaymentModal({ open, onClose, booking, onPaymentSuccess 
       if (response.ok) {
         const result = await response.json();
         
-        // Show appropriate message based on payment type and confirmation status
+        // Prepare success message based on payment type and confirmation status
+        let successMessage = result.message || 'Payment processed successfully!';
+        
         if (result.pending_admin_confirmation) {
-          const message = result.is_cash_payment
-            ? `✅ ${result.message}\n\n📍 Please visit our office to complete your cash payment.\n\n⏳ Your booking status will remain pending until payment is verified by our staff.`
-            : `✅ ${result.message}\n\n⏳ Your booking status will remain pending until payment is verified by our staff.`;
-          alert(message);
-        } else {
-          alert(`✅ ${result.message}`);
+          if (result.is_cash_payment) {
+            successMessage += ' Please visit our office to complete your cash payment. Your booking status will remain pending until payment is verified.';
+          } else {
+            successMessage += ' Your booking status will remain pending until payment is verified by our staff.';
+          }
         }
         
+        // Pass result with message to parent component
         if (onPaymentSuccess) {
-          onPaymentSuccess(result);
+          onPaymentSuccess({ ...result, successMessage });
         }
         handleClose();
       } else {

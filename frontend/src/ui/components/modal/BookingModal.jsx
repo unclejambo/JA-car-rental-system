@@ -352,20 +352,29 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       }
     }
 
-    // Validate dropoff time is after pickup time
+    // Validate dropoff time is after pickup time (only for same-day bookings)
     if (formData.pickupTime && formData.dropoffTime) {
-      const [pickupHour, pickupMinute] = formData.pickupTime.split(':').map(Number);
-      const [dropoffHour, dropoffMinute] = formData.dropoffTime.split(':').map(Number);
-      const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
-      const dropoffTimeInMinutes = dropoffHour * 60 + dropoffMinute;
+      // Check if start date and end date are the same
+      const startDateOnly = new Date(formData.startDate);
+      startDateOnly.setHours(0, 0, 0, 0);
+      const endDateOnly = new Date(formData.endDate);
+      endDateOnly.setHours(0, 0, 0, 0);
 
-      if (dropoffTimeInMinutes <= pickupTimeInMinutes) {
-        setError('Drop-off time must be after pickup time');
-        setMissingFields(['dropoffTime']);
-        if (fieldRefs.dropoffTime.current) {
-          fieldRefs.dropoffTime.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Only validate time order if it's a same-day booking
+      if (startDateOnly.getTime() === endDateOnly.getTime()) {
+        const [pickupHour, pickupMinute] = formData.pickupTime.split(':').map(Number);
+        const [dropoffHour, dropoffMinute] = formData.dropoffTime.split(':').map(Number);
+        const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
+        const dropoffTimeInMinutes = dropoffHour * 60 + dropoffMinute;
+
+        if (dropoffTimeInMinutes <= pickupTimeInMinutes) {
+          setError('Drop-off time must be after pickup time for same-day bookings');
+          setMissingFields(['dropoffTime']);
+          if (fieldRefs.dropoffTime.current) {
+            fieldRefs.dropoffTime.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          return false;
         }
-        return false;
       }
     }
 
@@ -602,6 +611,9 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
           maxHeight: '90vh',
           minHeight: '60vh',
+          margin: { xs: 1, sm: 2 },
+          width: { xs: 'calc(100% - 16px)', sm: 'calc(100% - 64px)' },
+          maxWidth: { xs: '100%', sm: 'md' },
         },
       }}
     >
@@ -611,10 +623,21 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
           justifyContent: 'space-between',
           alignItems: 'center',
           pb: 2,
+          px: { xs: 2, sm: 3 },
+          pt: { xs: 2, sm: 3 },
           borderBottom: '1px solid #e0e0e0',
         }}
       >
-        <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#c10007' }}>
+        <Typography 
+          variant="h5" 
+          sx={{ 
+            fontWeight: 'bold', 
+            color: '#c10007',
+            fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+            wordBreak: 'break-word',
+            pr: 1,
+          }}
+        >
           {isWaitlist ? 'Join Waitlist for' : 'Book'} {car.make} {car.model}
         </Typography>
         <IconButton onClick={onClose} size="small">
@@ -622,19 +645,35 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0, overflowY: 'auto' }}>
+      <DialogContent sx={{ p: 0, overflowY: 'auto', overflowX: 'hidden' }}>
         {error && (
-          <Alert severity="error" sx={{ m: 3, mb: 2 }}>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              m: { xs: 2, sm: 3 }, 
+              mb: 2,
+              fontSize: { xs: '0.85rem', sm: '0.875rem' },
+              wordBreak: 'break-word',
+            }}
+          >
             {error}
           </Alert>
         )}
 
         {/* Stepper */}
-        <Box sx={{ px: 3, py: 2 }}>
+        <Box sx={{ px: { xs: 2, sm: 3 }, py: 2 }}>
           <Stepper activeStep={activeStep}>
             {steps.map((label) => (
               <Step key={label}>
-                <StepLabel>{label}</StepLabel>
+                <StepLabel 
+                  sx={{
+                    '& .MuiStepLabel-label': {
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    },
+                  }}
+                >
+                  {label}
+                </StepLabel>
               </Step>
             ))}
           </Stepper>
@@ -642,10 +681,10 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
 
         {/* Step 0: Service Type Selection */}
         {activeStep === 0 && (
-          <Box sx={{ px: 3, pb: 3 }}>
+          <Box sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 } }}>
             {/* Car Details with Image */}
-            <Box sx={{ mb: 3, p: 3, backgroundColor: '#f8f9fa', borderRadius: 2 }}>
-              <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
+            <Box sx={{ mb: { xs: 2, sm: 3 }, p: { xs: 2, sm: 3 }, backgroundColor: '#f8f9fa', borderRadius: 2 }}>
+              <Box sx={{ display: 'flex', gap: { xs: 2, sm: 3 }, flexDirection: { xs: 'column', md: 'row' } }}>
                 {/* Car Image */}
                 <Box sx={{ flex: { xs: 'none', md: '0 0 200px' } }}>
                   <Box
@@ -757,14 +796,25 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                   }}
                   onClick={() => setActiveTab(0)}
                 >
-                  <CardContent sx={{ p: 3 }}>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box sx={{ fontSize: '2rem' }}>🚚</Box>
+                      <Box sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>🚚</Box>
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        <Typography 
+                          variant="h6" 
+                          sx={{ 
+                            fontWeight: 'bold', 
+                            mb: 1,
+                            fontSize: { xs: '1rem', sm: '1.25rem' },
+                          }}
+                        >
                           Delivery Service
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography 
+                          variant="body2" 
+                          color="text.secondary"
+                          sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+                        >
                           We'll deliver the car to your location and pick it up when you're done
                         </Typography>
                       </Box>
@@ -785,14 +835,25 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                   }}
                   onClick={() => setActiveTab(1)}
                 >
-                  <CardContent sx={{ p: 3 }}>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box sx={{ fontSize: '2rem' }}>📍</Box>
+                      <Box sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>📍</Box>
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        <Typography 
+                          variant="h6" 
+                          sx={{ 
+                            fontWeight: 'bold', 
+                            mb: 1,
+                            fontSize: { xs: '1rem', sm: '1.25rem' },
+                          }}
+                        >
                           Pickup Service
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography 
+                          variant="body2" 
+                          color="text.secondary"
+                          sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+                        >
                           Pick up the car from our office and return it when you're done
                         </Typography>
                       </Box>
@@ -807,7 +868,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
 
         {/* Step 1: Booking Details */}
         {activeStep === 1 && (
-          <Box sx={{ px: 3 }}>
+          <Box sx={{ px: { xs: 2, sm: 3 } }}>
             {/* Form Fields */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {/* Date Range Split */}
@@ -1155,16 +1216,32 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
 
         {/* Step 2: Confirmation Step */}
         {activeStep === 2 && (
-          <Box sx={{ px: 3 }}>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', color: '#c10007' }}>
+          <Box sx={{ px: { xs: 2, sm: 3 } }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: { xs: 2, sm: 3 }, 
+                fontWeight: 'bold', 
+                color: '#c10007',
+                fontSize: { xs: '1rem', sm: '1.25rem' },
+              }}
+            >
               Please confirm your booking details:
             </Typography>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, sm: 3 } }}>
               {/* Car Summary */}
               <Card sx={{ border: '2px solid #c10007' }}>
-                <CardContent>
-                  <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#c10007' }}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      mb: 2, 
+                      fontWeight: 'bold', 
+                      color: '#c10007',
+                      fontSize: { xs: '1rem', sm: '1.25rem' },
+                    }}
+                  >
                     🚗 Vehicle Details
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
@@ -1426,7 +1503,18 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         )}
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, borderTop: '1px solid #e0e0e0', gap: 2 }}>
+      <DialogActions 
+        sx={{ 
+          p: { xs: 2, sm: 3 }, 
+          borderTop: '1px solid #e0e0e0', 
+          gap: { xs: 1, sm: 2 },
+          flexDirection: { xs: 'column', sm: 'row' },
+          '& > button': {
+            width: { xs: '100%', sm: 'auto' },
+            fontSize: { xs: '0.85rem', sm: '0.875rem' },
+          },
+        }}
+      >
         {activeStep === 0 ? (
           <>
             <Button

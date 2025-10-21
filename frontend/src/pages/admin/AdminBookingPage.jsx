@@ -109,6 +109,7 @@ export default function AdminBookingPage() {
     switch (activeTab) {
       case 'BOOKINGS':
         // Show all confirmed, pending, and in progress bookings
+        // Extension bookings (isExtend=true) will also appear here
         return filteredData;
       case 'CANCELLATION':
         // Only show bookings where isCancel === 'TRUE'

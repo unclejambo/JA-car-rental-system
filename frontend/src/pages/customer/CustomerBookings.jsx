@@ -21,12 +21,14 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
   TextField,
   Divider,
   Avatar,
   IconButton,
   Tooltip,
+  Snackbar,
 } from '@mui/material';
 import {
   HiCalendar,
@@ -74,11 +76,19 @@ function CustomerBookings() {
   const [error, setError] = useState('');
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showCancelExtensionDialog, setShowCancelExtensionDialog] = useState(false);
   const [showExtendDialog, setShowExtendDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [extendDate, setExtendDate] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Snackbar state for notifications
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
   // Search states
   const [bookingSearchQuery, setBookingSearchQuery] = useState('');
@@ -90,6 +100,20 @@ function CustomerBookings() {
     () => createAuthenticatedFetch(logout),
     [logout]
   );
+
+  // Show snackbar message
+  const showMessage = (message, severity = 'success') => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
+  // Close snackbar
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
 
   // Fetch customer's bookings and payments
   const fetchBookings = async () => {
@@ -255,11 +279,18 @@ function CustomerBookings() {
   };
 
   // Handle successful payment
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (result) => {
     fetchBookings();
     fetchPayments();
     setShowPaymentDialog(false);
     setSelectedBooking(null);
+    
+    // Show success message via snackbar if provided
+    if (result?.successMessage) {
+      showMessage(result.successMessage, 'success');
+    } else {
+      showMessage('Payment processed successfully!', 'success');
+    }
   };
 
   // Extend booking
@@ -279,20 +310,24 @@ function CustomerBookings() {
 
       if (response.ok) {
         const result = await response.json();
-        alert(
-          `✅ ${result.message}\n💰 Additional cost: ₱${result.additional_cost?.toLocaleString()}\n📊 New total: ₱${result.new_total?.toLocaleString()}`
+        
+        // Show success message with booking details
+        showMessage(
+          `Extension request submitted successfully! Additional cost: ₱${result.additional_cost?.toLocaleString()} | New total: ₱${result.new_total?.toLocaleString()}`,
+          'success'
         );
+        
         fetchBookings(); // Refresh the list
         setShowExtendDialog(false);
         setSelectedBooking(null);
         setExtendDate('');
       } else {
         const errorData = await response.json();
-        alert(`❌ ${errorData.error}`);
+        showMessage(errorData.error || 'Failed to extend booking', 'error');
       }
     } catch (error) {
       console.error('Error extending booking:', error);
-      alert('❌ Failed to extend booking. Please try again.');
+      showMessage('Failed to extend booking. Please try again.', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -300,18 +335,21 @@ function CustomerBookings() {
 
   // Cancel extension request
   const handleCancelExtension = async (booking) => {
-    if (
-      !confirm(
-        'Are you sure you want to cancel your extension request? Your booking will continue with the original end date.'
-      )
-    ) {
-      return;
-    }
+    // Set selected booking and show confirmation dialog
+    setSelectedBooking(booking);
+    setShowCancelExtensionDialog(true);
+  };
+
+  // Confirm cancel extension
+  const confirmCancelExtension = async () => {
+    if (!selectedBooking) return;
 
     try {
       setActionLoading(true);
+      setShowCancelExtensionDialog(false);
+      
       const response = await authenticatedFetch(
-        `${API_BASE}/bookings/${booking.booking_id}/cancel-extension`,
+        `${API_BASE}/bookings/${selectedBooking.booking_id}/cancel-extension`,
         {
           method: 'POST',
         }
@@ -319,19 +357,21 @@ function CustomerBookings() {
 
       if (response.ok) {
         const result = await response.json();
-        alert(
-          `✅ Extension request cancelled successfully!\n📅 Your booking continues until: ${formatPhilippineDate(result.booking.end_date)}`
+        showMessage(
+          `Extension request cancelled successfully! Your booking continues until: ${formatPhilippineDate(result.booking.end_date)}`,
+          'success'
         );
         fetchBookings(); // Refresh the list
       } else {
         const errorData = await response.json();
-        alert(`❌ ${errorData.error || 'Failed to cancel extension request'}`);
+        showMessage(errorData.error || 'Failed to cancel extension request', 'error');
       }
     } catch (error) {
       console.error('Error cancelling extension:', error);
-      alert('❌ Failed to cancel extension request. Please try again.');
+      showMessage('Failed to cancel extension request. Please try again.', 'error');
     } finally {
       setActionLoading(false);
+      setSelectedBooking(null);
     }
   };
 
@@ -1048,7 +1088,10 @@ function CustomerBookings() {
                             {/* Extend Button - For In Progress bookings without pending extension */}
                             {booking.booking_status?.toLowerCase() ===
                               'in progress' &&
-                              !booking.isExtend && (
+                              !booking.isExtend &&
+                              booking.isExtend !== true &&
+                              booking.isExtend !== 'true' &&
+                              booking.isExtend !== 'TRUE' && (
                                 <Button
                                   size="small"
                                   variant="outlined"
@@ -1074,7 +1117,9 @@ function CustomerBookings() {
                               )}
 
                             {/* Cancel Extension Button - For bookings with pending extension */}
-                            {booking.isExtend && (
+                            {(booking.isExtend === true ||
+                              booking.isExtend === 'true' ||
+                              booking.isExtend === 'TRUE') && (
                               <Button
                                 size="small"
                                 variant="outlined"
@@ -1578,6 +1623,77 @@ function CustomerBookings() {
         booking={selectedBooking}
         onPaymentSuccess={handlePaymentSuccess}
       />
+
+      {/* Cancel Extension Confirmation Dialog */}
+      <Dialog
+        open={showCancelExtensionDialog}
+        onClose={() => setShowCancelExtensionDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 'bold', color: '#c10007' }}>
+          Cancel Extension Request?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to cancel your extension request? Your booking
+            will continue with the original end date.
+          </DialogContentText>
+          {selectedBooking && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                <strong>Booking ID:</strong> {selectedBooking.booking_id}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                <strong>Current End Date:</strong>{' '}
+                {formatPhilippineDate(selectedBooking.end_date)}
+              </Typography>
+              {selectedBooking.new_end_date && (
+                <Typography variant="body2" sx={{ color: '#d32f2f' }}>
+                  <strong>Requested End Date (will be cancelled):</strong>{' '}
+                  {formatPhilippineDate(selectedBooking.new_end_date)}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setShowCancelExtensionDialog(false)}
+            disabled={actionLoading}
+          >
+            No, Keep It
+          </Button>
+          <Button
+            onClick={confirmCancelExtension}
+            color="error"
+            variant="contained"
+            disabled={actionLoading}
+            sx={{
+              backgroundColor: '#c10007',
+              '&:hover': { backgroundColor: '#a50006' },
+            }}
+          >
+            {actionLoading ? <CircularProgress size={20} /> : 'Yes, Cancel Extension'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

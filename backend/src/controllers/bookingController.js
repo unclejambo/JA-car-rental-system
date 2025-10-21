@@ -1,6 +1,25 @@
 import prisma from "../config/prisma.js";
-import { sendBookingSuccessNotification, sendBookingConfirmationNotification, sendPaymentReceivedNotification, sendCancellationApprovedNotification, sendAdminNewBookingNotification, sendAdminCancellationRequestNotification, sendCancellationDeniedNotification, sendAdminPaymentCompletedNotification, sendAdminExtensionRequestNotification, sendExtensionApprovedNotification, sendExtensionRejectedNotification, sendDriverAssignedNotification, sendDriverBookingConfirmedNotification } from "../utils/notificationService.js";
-import { getPaginationParams, getSortingParams, buildPaginationResponse, getSearchParam } from "../utils/pagination.js";
+import {
+  sendBookingSuccessNotification,
+  sendBookingConfirmationNotification,
+  sendPaymentReceivedNotification,
+  sendCancellationApprovedNotification,
+  sendAdminNewBookingNotification,
+  sendAdminCancellationRequestNotification,
+  sendCancellationDeniedNotification,
+  sendAdminPaymentCompletedNotification,
+  sendAdminExtensionRequestNotification,
+  sendExtensionApprovedNotification,
+  sendExtensionRejectedNotification,
+  sendDriverAssignedNotification,
+  sendDriverBookingConfirmedNotification,
+} from "../utils/notificationService.js";
+import {
+  getPaginationParams,
+  getSortingParams,
+  buildPaginationResponse,
+  getSearchParam,
+} from "../utils/pagination.js";
 
 // @desc    Get all bookings with pagination (Admin)
 // @route   GET /bookings?page=1&pageSize=10&sortBy=booking_date&sortOrder=desc&search=john&status=Pending
@@ -9,9 +28,9 @@ export const getBookings = async (req, res) => {
   try {
     // Get pagination parameters
     const { page, pageSize, skip } = getPaginationParams(req);
-    const { sortBy, sortOrder } = getSortingParams(req, 'booking_id', 'desc');
+    const { sortBy, sortOrder } = getSortingParams(req, "booking_id", "desc");
     const search = getSearchParam(req);
-    
+
     // Build where clause for filtering
     const where = {
       // Filter to show only Pending, Confirmed, and In Progress bookings
@@ -24,10 +43,10 @@ export const getBookings = async (req, res) => {
     // Search filter (customer name or car model)
     if (search) {
       where.OR = [
-        { customer: { first_name: { contains: search, mode: 'insensitive' } } },
-        { customer: { last_name: { contains: search, mode: 'insensitive' } } },
-        { car: { make: { contains: search, mode: 'insensitive' } } },
-        { car: { model: { contains: search, mode: 'insensitive' } } },
+        { customer: { first_name: { contains: search, mode: "insensitive" } } },
+        { customer: { last_name: { contains: search, mode: "insensitive" } } },
+        { car: { make: { contains: search, mode: "insensitive" } } },
+        { car: { model: { contains: search, mode: "insensitive" } } },
       ];
     }
     
@@ -35,7 +54,7 @@ export const getBookings = async (req, res) => {
     if (req.query.status) {
       where.booking_status = req.query.status;
     }
-    
+
     // Payment status filter
     if (req.query.payment_status) {
       where.payment_status = req.query.payment_status;
@@ -400,9 +419,25 @@ export const createBooking = async (req, res) => {
     const newBooking = await prisma.booking.create({
       data: bookingData,
       include: {
-        customer: { select: { first_name: true, last_name: true, email: true, contact_no: true } },
-        car: { select: { make: true, model: true, year: true, license_plate: true } },
-        driver: { select: { drivers_id: true, first_name: true, last_name: true, contact_no: true } },
+        customer: {
+          select: {
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true,
+          },
+        },
+        car: {
+          select: { make: true, model: true, year: true, license_plate: true },
+        },
+        driver: {
+          select: {
+            drivers_id: true,
+            first_name: true,
+            last_name: true,
+            contact_no: true,
+          },
+        },
       },
     });
 
@@ -411,7 +446,7 @@ export const createBooking = async (req, res) => {
     try {
       await prisma.car.update({
         where: { car_id: parseInt(car_id) },
-        data: { car_status: 'Rented' }
+        data: { car_status: "Rented" },
       });
       console.log(`Car ${car_id} status updated to 'Rented'`);
     } catch (carUpdateError) {
@@ -444,41 +479,49 @@ export const createBooking = async (req, res) => {
       try {
         await prisma.driver.update({
           where: { drivers_id: newBooking.drivers_id },
-          data: { booking_status: 1 } // 1 = booking exists but not confirmed
+          data: { booking_status: 1 }, // 1 = booking exists but not confirmed
         });
-        console.log(`✅ Driver ${newBooking.drivers_id} booking_status set to 1 (unconfirmed)`);
+        console.log(
+          `✅ Driver ${newBooking.drivers_id} booking_status set to 1 (unconfirmed)`
+        );
       } catch (driverUpdateError) {
-        console.error("Error updating driver booking_status:", driverUpdateError);
+        console.error(
+          "Error updating driver booking_status:",
+          driverUpdateError
+        );
         // Don't fail the booking creation if driver status update fails
       }
 
       // Send driver assignment notification (SMS only)
       if (newBooking.driver) {
         try {
-          console.log('📱 Sending driver assignment notification...');
+          console.log("📱 Sending driver assignment notification...");
           await sendDriverAssignedNotification(
             newBooking,
             {
               drivers_id: newBooking.driver.drivers_id,
               first_name: newBooking.driver.first_name,
               last_name: newBooking.driver.last_name,
-              contact_no: newBooking.driver.contact_no
+              contact_no: newBooking.driver.contact_no,
             },
             {
               first_name: newBooking.customer.first_name,
               last_name: newBooking.customer.last_name,
-              contact_no: newBooking.customer.contact_no
+              contact_no: newBooking.customer.contact_no,
             },
             {
               make: newBooking.car.make,
               model: newBooking.car.model,
               year: newBooking.car.year,
-              license_plate: newBooking.car.license_plate
+              license_plate: newBooking.car.license_plate,
             }
           );
-          console.log('✅ Driver assignment notification sent');
+          console.log("✅ Driver assignment notification sent");
         } catch (driverNotificationError) {
-          console.error("Error sending driver notification:", driverNotificationError);
+          console.error(
+            "Error sending driver notification:",
+            driverNotificationError
+          );
           // Don't fail the booking creation if driver notification fails
         }
       }
@@ -486,7 +529,7 @@ export const createBooking = async (req, res) => {
 
     // Send booking success notification to customer
     try {
-      console.log('📧 Sending booking success notification...');
+      console.log("📧 Sending booking success notification...");
       await sendBookingSuccessNotification(
         newBooking,
         {
@@ -494,16 +537,16 @@ export const createBooking = async (req, res) => {
           first_name: newBooking.customer.first_name,
           last_name: newBooking.customer.last_name,
           email: newBooking.customer.email,
-          contact_no: newBooking.customer.contact_no
+          contact_no: newBooking.customer.contact_no,
         },
         {
           make: newBooking.car.make,
           model: newBooking.car.model,
           year: newBooking.car.year,
-          license_plate: newBooking.car.license_plate
+          license_plate: newBooking.car.license_plate,
         }
       );
-      console.log('✅ Booking success notification sent');
+      console.log("✅ Booking success notification sent");
     } catch (notificationError) {
       console.error("Error sending booking notification:", notificationError);
       // Don't fail the booking creation if notification fails
@@ -511,7 +554,7 @@ export const createBooking = async (req, res) => {
 
     // Send new booking notification to admin/staff
     try {
-      console.log('📢 Sending new booking notification to admin...');
+      console.log("📢 Sending new booking notification to admin...");
       await sendAdminNewBookingNotification(
         newBooking,
         {
@@ -519,18 +562,21 @@ export const createBooking = async (req, res) => {
           first_name: newBooking.customer.first_name,
           last_name: newBooking.customer.last_name,
           email: newBooking.customer.email,
-          contact_no: newBooking.customer.contact_no
+          contact_no: newBooking.customer.contact_no,
         },
         {
           make: newBooking.car.make,
           model: newBooking.car.model,
           year: newBooking.car.year,
-          license_plate: newBooking.car.license_plate
+          license_plate: newBooking.car.license_plate,
         }
       );
-      console.log('✅ Admin new booking notification sent');
+      console.log("✅ Admin new booking notification sent");
     } catch (adminNotificationError) {
-      console.error("Error sending admin booking notification:", adminNotificationError);
+      console.error(
+        "Error sending admin booking notification:",
+        adminNotificationError
+      );
       // Don't fail the booking creation if notification fails
     }
 
@@ -648,29 +694,34 @@ export const updateBooking = async (req, res) => {
 export const deleteBooking = async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
-    
+
     // Get the booking to find the car_id before deleting
     const booking = await prisma.booking.findUnique({
       where: { booking_id: bookingId },
-      select: { car_id: true }
+      select: { car_id: true },
     });
-    
+
     // Delete the booking
     await prisma.booking.delete({ where: { booking_id: bookingId } });
-    
+
     // Update car status back to 'Available' after booking is deleted
     if (booking?.car_id) {
       try {
         await prisma.car.update({
           where: { car_id: booking.car_id },
-          data: { car_status: 'Available' }
+          data: { car_status: "Available" },
         });
-        console.log(`Car ${booking.car_id} status updated to 'Available' after booking deletion`);
+        console.log(
+          `Car ${booking.car_id} status updated to 'Available' after booking deletion`
+        );
       } catch (carUpdateError) {
-        console.error("Error updating car status after deletion:", carUpdateError);
+        console.error(
+          "Error updating car status after deletion:",
+          carUpdateError
+        );
       }
     }
-    
+
     res.status(204).send();
   } catch (error) {
     console.error("Error deleting booking:", error);
@@ -696,16 +747,16 @@ export const getMyBookings = async (req, res) => {
 
     // Get pagination parameters
     const { page, pageSize, skip } = getPaginationParams(req);
-    const { sortBy, sortOrder } = getSortingParams(req, 'booking_date', 'desc');
+    const { sortBy, sortOrder } = getSortingParams(req, "booking_date", "desc");
 
     // Build where clause
     const where = { customer_id: parseInt(customerId) };
-    
+
     // Status filter
     if (req.query.status) {
       where.booking_status = req.query.status;
     }
-    
+
     // Payment status filter
     if (req.query.payment_status) {
       where.payment_status = req.query.payment_status;
@@ -836,10 +887,15 @@ export const cancelMyBooking = async (req, res) => {
     }
 
     if (booking.isCancel) {
-      return res.status(400).json({ error: "Cancellation request already pending admin approval" });
+      return res
+        .status(400)
+        .json({ error: "Cancellation request already pending admin approval" });
     }
 
-    if (booking.booking_status === "ongoing" || booking.booking_status === "in progress") {
+    if (
+      booking.booking_status === "ongoing" ||
+      booking.booking_status === "in progress"
+    ) {
       return res
         .status(400)
         .json({ error: "Cannot cancel an ongoing booking" });
@@ -860,14 +916,23 @@ export const cancelMyBooking = async (req, res) => {
         // booking_status remains unchanged until admin confirms
       },
       include: {
-        car: { select: { make: true, model: true, year: true, license_plate: true } },
-        customer: { select: { first_name: true, last_name: true, email: true, contact_no: true } },
+        car: {
+          select: { make: true, model: true, year: true, license_plate: true },
+        },
+        customer: {
+          select: {
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true,
+          },
+        },
       },
     });
 
     // Send cancellation request notification to admin/staff
     try {
-      console.log('🚫 Sending cancellation request notification to admin...');
+      console.log("🚫 Sending cancellation request notification to admin...");
       await sendAdminCancellationRequestNotification(
         updatedBooking,
         {
@@ -875,18 +940,21 @@ export const cancelMyBooking = async (req, res) => {
           first_name: updatedBooking.customer.first_name,
           last_name: updatedBooking.customer.last_name,
           email: updatedBooking.customer.email,
-          contact_no: updatedBooking.customer.contact_no
+          contact_no: updatedBooking.customer.contact_no,
         },
         {
           make: updatedBooking.car.make,
           model: updatedBooking.car.model,
           year: updatedBooking.car.year,
-          license_plate: updatedBooking.car.license_plate
+          license_plate: updatedBooking.car.license_plate,
         }
       );
-      console.log('✅ Admin cancellation request notification sent');
+      console.log("✅ Admin cancellation request notification sent");
     } catch (adminNotificationError) {
-      console.error("Error sending admin cancellation notification:", adminNotificationError);
+      console.error(
+        "Error sending admin cancellation notification:",
+        adminNotificationError
+      );
       // Don't fail the request if notification fails
     }
 
@@ -910,10 +978,10 @@ export const adminCancelBooking = async (req, res) => {
     const bookingId = parseInt(req.params.id);
     const adminId = req.user?.sub || req.user?.admin_id || req.user?.id;
 
-    console.log('Admin cancelling booking:', {
+    console.log("Admin cancelling booking:", {
       bookingId,
       adminId,
-      userRole: req.user?.role
+      userRole: req.user?.role,
     });
 
     // Find the booking with all necessary details
@@ -921,7 +989,9 @@ export const adminCancelBooking = async (req, res) => {
       where: { booking_id: bookingId },
       include: {
         car: { select: { car_id: true, make: true, model: true, year: true } },
-        customer: { select: { customer_id: true, first_name: true, last_name: true } }
+        customer: {
+          select: { customer_id: true, first_name: true, last_name: true },
+        },
       },
     });
 
@@ -935,13 +1005,16 @@ export const adminCancelBooking = async (req, res) => {
     }
 
     if (booking.booking_status === "In Progress") {
-      return res.status(400).json({ 
-        error: "Cannot cancel an in-progress booking. Please return the vehicle first." 
+      return res.status(400).json({
+        error:
+          "Cannot cancel an in-progress booking. Please return the vehicle first.",
       });
     }
 
     if (booking.booking_status === "Completed") {
-      return res.status(400).json({ error: "Cannot cancel a completed booking" });
+      return res
+        .status(400)
+        .json({ error: "Cannot cancel a completed booking" });
     }
 
     // Update booking status to Cancelled
@@ -953,7 +1026,7 @@ export const adminCancelBooking = async (req, res) => {
       },
       include: {
         car: { select: { make: true, model: true, year: true } },
-        customer: { select: { first_name: true, last_name: true } }
+        customer: { select: { first_name: true, last_name: true } },
       },
     });
 
@@ -961,11 +1034,16 @@ export const adminCancelBooking = async (req, res) => {
     try {
       await prisma.car.update({
         where: { car_id: booking.car.car_id },
-        data: { car_status: 'Available' }
+        data: { car_status: "Available" },
       });
-      console.log(`Car ${booking.car.car_id} status updated to 'Available' after cancellation`);
+      console.log(
+        `Car ${booking.car.car_id} status updated to 'Available' after cancellation`
+      );
     } catch (carUpdateError) {
-      console.error("Error updating car status after cancellation:", carUpdateError);
+      console.error(
+        "Error updating car status after cancellation:",
+        carUpdateError
+      );
     }
 
     // Create a transaction record for the cancellation
@@ -979,9 +1057,11 @@ export const adminCancelBooking = async (req, res) => {
           cancellation_date: new Date(),
         },
       });
-      console.log(`Transaction record created for cancelled booking ${bookingId}`);
+      console.log(
+        `Transaction record created for cancelled booking ${bookingId}`
+      );
     } catch (transactionError) {
-      console.error('Error creating transaction record:', transactionError);
+      console.error("Error creating transaction record:", transactionError);
       // Don't fail the cancellation if transaction record creation fails
     }
 
@@ -992,9 +1072,9 @@ export const adminCancelBooking = async (req, res) => {
     });
   } catch (error) {
     console.error("Error cancelling booking:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to cancel booking",
-      details: error.message 
+      details: error.message,
     });
   }
 };
@@ -1007,10 +1087,10 @@ export const confirmCancellationRequest = async (req, res) => {
     const bookingId = parseInt(req.params.id);
     const adminId = req.user?.sub || req.user?.admin_id || req.user?.id;
 
-    console.log('Confirming cancellation request:', {
+    console.log("Confirming cancellation request:", {
       bookingId,
       adminId,
-      userRole: req.user?.role
+      userRole: req.user?.role,
     });
 
     // Find the booking with all necessary details
@@ -1018,7 +1098,9 @@ export const confirmCancellationRequest = async (req, res) => {
       where: { booking_id: bookingId },
       include: {
         car: { select: { car_id: true, make: true, model: true, year: true } },
-        customer: { select: { customer_id: true, first_name: true, last_name: true } }
+        customer: {
+          select: { customer_id: true, first_name: true, last_name: true },
+        },
       },
     });
 
@@ -1028,7 +1110,9 @@ export const confirmCancellationRequest = async (req, res) => {
 
     // Check if booking has cancellation request
     if (!booking.isCancel) {
-      return res.status(400).json({ error: "No cancellation request found for this booking" });
+      return res
+        .status(400)
+        .json({ error: "No cancellation request found for this booking" });
     }
 
     // Check if booking is already cancelled
@@ -1044,16 +1128,18 @@ export const confirmCancellationRequest = async (req, res) => {
         isCancel: false,
       },
       include: {
-        car: { select: { make: true, model: true, year: true, license_plate: true } },
-        customer: { 
-          select: { 
+        car: {
+          select: { make: true, model: true, year: true, license_plate: true },
+        },
+        customer: {
+          select: {
             customer_id: true,
-            first_name: true, 
+            first_name: true,
             last_name: true,
             email: true,
-            contact_no: true
-          } 
-        }
+            contact_no: true,
+          },
+        },
       },
     });
 
@@ -1062,18 +1148,23 @@ export const confirmCancellationRequest = async (req, res) => {
       try {
         await prisma.driver.update({
           where: { drivers_id: updatedBooking.drivers_id },
-          data: { booking_status: 0 } // 0 = no active booking
+          data: { booking_status: 0 }, // 0 = no active booking
         });
-        console.log(`✅ Driver ${updatedBooking.drivers_id} booking_status set to 0 (cancelled)`);
+        console.log(
+          `✅ Driver ${updatedBooking.drivers_id} booking_status set to 0 (cancelled)`
+        );
       } catch (driverUpdateError) {
-        console.error("Error updating driver booking_status:", driverUpdateError);
+        console.error(
+          "Error updating driver booking_status:",
+          driverUpdateError
+        );
         // Don't fail the cancellation if driver status update fails
       }
     }
 
     // Send cancellation approved notification to customer
     try {
-      console.log('🚫 Sending cancellation approved notification...');
+      console.log("🚫 Sending cancellation approved notification...");
       await sendCancellationApprovedNotification(
         updatedBooking,
         {
@@ -1081,18 +1172,21 @@ export const confirmCancellationRequest = async (req, res) => {
           first_name: updatedBooking.customer.first_name,
           last_name: updatedBooking.customer.last_name,
           email: updatedBooking.customer.email,
-          contact_no: updatedBooking.customer.contact_no
+          contact_no: updatedBooking.customer.contact_no,
         },
         {
           make: updatedBooking.car.make,
           model: updatedBooking.car.model,
           year: updatedBooking.car.year,
-          license_plate: updatedBooking.car.license_plate
+          license_plate: updatedBooking.car.license_plate,
         }
       );
-      console.log('✅ Cancellation approved notification sent');
+      console.log("✅ Cancellation approved notification sent");
     } catch (notificationError) {
-      console.error("Error sending cancellation notification:", notificationError);
+      console.error(
+        "Error sending cancellation notification:",
+        notificationError
+      );
       // Don't fail the cancellation if notification fails
     }
 
@@ -1100,8 +1194,8 @@ export const confirmCancellationRequest = async (req, res) => {
     try {
       // Get current time in PH timezone (UTC+8)
       const now = new Date();
-      const phDate = new Date(now.getTime() + (8 * 60 * 60 * 1000));
-      
+      const phDate = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+
       await prisma.transaction.create({
         data: {
           booking_id: bookingId,
@@ -1111,9 +1205,11 @@ export const confirmCancellationRequest = async (req, res) => {
           cancellation_date: phDate,
         },
       });
-      console.log(`Transaction record created for cancelled booking ${bookingId} with PH timezone`);
+      console.log(
+        `Transaction record created for cancelled booking ${bookingId} with PH timezone`
+      );
     } catch (transactionError) {
-      console.error('Error creating transaction record:', transactionError);
+      console.error("Error creating transaction record:", transactionError);
       // Don't fail the cancellation if transaction record creation fails
     }
 
@@ -1124,9 +1220,9 @@ export const confirmCancellationRequest = async (req, res) => {
     });
   } catch (error) {
     console.error("Error confirming cancellation:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to confirm cancellation",
-      details: error.message 
+      details: error.message,
     });
   }
 };
@@ -1139,10 +1235,10 @@ export const rejectCancellationRequest = async (req, res) => {
     const bookingId = parseInt(req.params.id);
     const adminId = req.user?.sub || req.user?.admin_id || req.user?.id;
 
-    console.log('Rejecting cancellation request:', {
+    console.log("Rejecting cancellation request:", {
       bookingId,
       adminId,
-      userRole: req.user?.role
+      userRole: req.user?.role,
     });
 
     // Find the booking
@@ -1150,7 +1246,7 @@ export const rejectCancellationRequest = async (req, res) => {
       where: { booking_id: bookingId },
       include: {
         car: { select: { make: true, model: true, year: true } },
-        customer: { select: { first_name: true, last_name: true } }
+        customer: { select: { first_name: true, last_name: true } },
       },
     });
 
@@ -1160,7 +1256,9 @@ export const rejectCancellationRequest = async (req, res) => {
 
     // Check if booking has cancellation request
     if (!booking.isCancel) {
-      return res.status(400).json({ error: "No cancellation request found for this booking" });
+      return res
+        .status(400)
+        .json({ error: "No cancellation request found for this booking" });
     }
 
     // Set isCancel to false to reject the request
@@ -1170,14 +1268,24 @@ export const rejectCancellationRequest = async (req, res) => {
         isCancel: false,
       },
       include: {
-        car: { select: { make: true, model: true, year: true, license_plate: true } },
-        customer: { select: { first_name: true, last_name: true, email: true, contact_no: true, isRecUpdate: true } }
+        car: {
+          select: { make: true, model: true, year: true, license_plate: true },
+        },
+        customer: {
+          select: {
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true,
+            isRecUpdate: true,
+          },
+        },
       },
     });
 
     // Send cancellation denied notification to customer
     try {
-      console.log('❌ Sending cancellation denied notification to customer...');
+      console.log("❌ Sending cancellation denied notification to customer...");
       await sendCancellationDeniedNotification(
         updatedBooking,
         {
@@ -1186,18 +1294,21 @@ export const rejectCancellationRequest = async (req, res) => {
           last_name: updatedBooking.customer.last_name,
           email: updatedBooking.customer.email,
           contact_no: updatedBooking.customer.contact_no,
-          isRecUpdate: updatedBooking.customer.isRecUpdate
+          isRecUpdate: updatedBooking.customer.isRecUpdate,
         },
         {
           make: updatedBooking.car.make,
           model: updatedBooking.car.model,
           year: updatedBooking.car.year,
-          license_plate: updatedBooking.car.license_plate
+          license_plate: updatedBooking.car.license_plate,
         }
       );
-      console.log('✅ Cancellation denied notification sent');
+      console.log("✅ Cancellation denied notification sent");
     } catch (notificationError) {
-      console.error("Error sending cancellation denied notification:", notificationError);
+      console.error(
+        "Error sending cancellation denied notification:",
+        notificationError
+      );
       // Don't fail the rejection if notification fails
     }
 
@@ -1208,9 +1319,9 @@ export const rejectCancellationRequest = async (req, res) => {
     });
   } catch (error) {
     console.error("Error rejecting cancellation:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to reject cancellation",
-      details: error.message 
+      details: error.message,
     });
   }
 };
@@ -1260,7 +1371,10 @@ export const extendMyBooking = async (req, res) => {
     }
 
     // Check if booking can be extended (must be ongoing or in progress)
-    if (booking.booking_status !== "ongoing" && booking.booking_status?.toLowerCase() !== "in progress") {
+    if (
+      booking.booking_status !== "ongoing" &&
+      booking.booking_status?.toLowerCase() !== "in progress"
+    ) {
       return res.status(400).json({
         error: "Only ongoing/in progress bookings can be extended",
         current_status: booking.booking_status,
@@ -1268,7 +1382,9 @@ export const extendMyBooking = async (req, res) => {
     }
 
     if (booking.isExtend) {
-      return res.status(400).json({ error: "Extension request already pending admin approval" });
+      return res
+        .status(400)
+        .json({ error: "Extension request already pending admin approval" });
     }
 
     // Calculate additional cost
@@ -1296,25 +1412,27 @@ export const extendMyBooking = async (req, res) => {
         new_end_date: newEndDate, // Store requested new end date
         total_amount: newTotalAmount, // Add additional cost to total amount
         balance: newBalance, // Add additional cost to balance
-        payment_status: 'Unpaid', // Set to Unpaid since there's new balance
+        payment_status: "Unpaid", // Set to Unpaid since there's new balance
       },
       include: {
-        car: { select: { make: true, model: true, year: true, license_plate: true } },
-        customer: { 
-          select: { 
+        car: {
+          select: { make: true, model: true, year: true, license_plate: true },
+        },
+        customer: {
+          select: {
             customer_id: true,
-            first_name: true, 
+            first_name: true,
             last_name: true,
             email: true,
-            contact_no: true
-          } 
+            contact_no: true,
+          },
         },
       },
     });
 
     // Send admin notification for extension request
     try {
-      console.log('📅 Sending extension request notification to admin...');
+      console.log("📅 Sending extension request notification to admin...");
       await sendAdminExtensionRequestNotification(
         updatedBooking,
         {
@@ -1322,20 +1440,23 @@ export const extendMyBooking = async (req, res) => {
           first_name: updatedBooking.customer.first_name,
           last_name: updatedBooking.customer.last_name,
           email: updatedBooking.customer.email,
-          contact_no: updatedBooking.customer.contact_no
+          contact_no: updatedBooking.customer.contact_no,
         },
         {
           make: updatedBooking.car.make,
           model: updatedBooking.car.model,
           year: updatedBooking.car.year,
-          license_plate: updatedBooking.car.license_plate
+          license_plate: updatedBooking.car.license_plate,
         },
         additionalDays,
         additionalCost
       );
-      console.log('✅ Admin extension request notification sent');
+      console.log("✅ Admin extension request notification sent");
     } catch (notificationError) {
-      console.error("Error sending extension request notification:", notificationError);
+      console.error(
+        "Error sending extension request notification:",
+        notificationError
+      );
       // Don't fail the extension request if notification fails
     }
 
@@ -1370,8 +1491,8 @@ export const confirmExtensionRequest = async (req, res) => {
             model: true,
             year: true,
             license_plate: true,
-            rent_price: true
-          }
+            rent_price: true,
+          },
         },
         customer: {
           select: {
@@ -1380,10 +1501,10 @@ export const confirmExtensionRequest = async (req, res) => {
             last_name: true,
             email: true,
             contact_no: true,
-            isRecUpdate: true
-          }
-        }
-      }
+            isRecUpdate: true,
+          },
+        },
+      },
     });
 
     if (!booking) {
@@ -1391,11 +1512,15 @@ export const confirmExtensionRequest = async (req, res) => {
     }
 
     if (!booking.isExtend) {
-      return res.status(400).json({ error: "No pending extension request for this booking" });
+      return res
+        .status(400)
+        .json({ error: "No pending extension request for this booking" });
     }
 
     if (!booking.new_end_date) {
-      return res.status(400).json({ error: "No new end date found for extension" });
+      return res
+        .status(400)
+        .json({ error: "No new end date found for extension" });
     }
 
     // Calculate additional days and cost
@@ -1406,14 +1531,14 @@ export const confirmExtensionRequest = async (req, res) => {
     );
     const additionalCost = additionalDays * (booking.car.rent_price || 0);
 
-    console.log('💰 Extension approval - Cost calculation:', {
+    console.log("💰 Extension approval - Cost calculation:", {
       originalEndDate: booking.end_date,
       newEndDate: booking.new_end_date,
       additionalDays,
       rentPrice: booking.car.rent_price,
       additionalCost,
       currentTotalAmount: booking.total_amount,
-      currentBalance: booking.balance
+      currentBalance: booking.balance,
     });
 
     // Calculate new total amount and balance
@@ -1422,7 +1547,7 @@ export const confirmExtensionRequest = async (req, res) => {
 
     // Get Philippine timezone date
     const now = new Date();
-    const phTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    const phTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
 
     // Create extension record with old and new end dates and approval timestamp
     await prisma.extension.create({
@@ -1439,7 +1564,7 @@ export const confirmExtensionRequest = async (req, res) => {
     if (booking.dropoff_time) {
       const oldDropoff = new Date(booking.dropoff_time);
       const newEndDate = new Date(booking.new_end_date);
-      
+
       // Create new dropoff time: new end date + old dropoff time
       newDropoffTime = new Date(
         newEndDate.getFullYear(),
@@ -1463,27 +1588,27 @@ export const confirmExtensionRequest = async (req, res) => {
         isExtend: false, // Clear extension flag
         total_amount: newTotalAmount, // Add extension cost to total
         balance: newBalance, // Add extension cost to balance
-        payment_status: 'Unpaid', // Set to Unpaid since customer needs to pay extension
+        payment_status: "Unpaid", // Set to Unpaid since customer needs to pay extension
         extension_payment_deadline: null, // Clear extension payment deadline after approval
       },
     });
 
-    console.log('✅ Extension approved:', {
+    console.log("✅ Extension approved:", {
       bookingId,
       newTotalAmount,
       newBalance,
       newEndDate: updatedBooking.end_date,
-      isExtend: updatedBooking.isExtend
+      isExtend: updatedBooking.isExtend,
     });
 
     // Send customer notification for extension approval
     try {
-      console.log('✅ Sending extension approved notification to customer...');
+      console.log("✅ Sending extension approved notification to customer...");
       await sendExtensionApprovedNotification(
         {
           ...updatedBooking,
           total_amount: newTotalAmount,
-          balance: newBalance
+          balance: newBalance,
         },
         {
           customer_id: booking.customer.customer_id,
@@ -1491,20 +1616,23 @@ export const confirmExtensionRequest = async (req, res) => {
           last_name: booking.customer.last_name,
           email: booking.customer.email,
           contact_no: booking.customer.contact_no,
-          isRecUpdate: booking.customer.isRecUpdate
+          isRecUpdate: booking.customer.isRecUpdate,
         },
         {
           make: booking.car.make,
           model: booking.car.model,
           year: booking.car.year,
-          license_plate: booking.car.license_plate
+          license_plate: booking.car.license_plate,
         },
         additionalDays,
         additionalCost
       );
-      console.log('✅ Extension approved notification sent');
+      console.log("✅ Extension approved notification sent");
     } catch (notificationError) {
-      console.error("Error sending extension approved notification:", notificationError);
+      console.error(
+        "Error sending extension approved notification:",
+        notificationError
+      );
       // Don't fail the confirmation if notification fails
     }
 
@@ -1514,7 +1642,7 @@ export const confirmExtensionRequest = async (req, res) => {
       booking: updatedBooking,
       additional_cost: additionalCost,
       new_total_amount: newTotalAmount,
-      new_balance: newBalance
+      new_balance: newBalance,
     });
   } catch (error) {
     console.error("Error confirming extension:", error);
@@ -1539,8 +1667,8 @@ export const rejectExtensionRequest = async (req, res) => {
             model: true,
             year: true,
             license_plate: true,
-            rent_price: true
-          }
+            rent_price: true,
+          },
         },
         customer: {
           select: {
@@ -1549,16 +1677,16 @@ export const rejectExtensionRequest = async (req, res) => {
             last_name: true,
             email: true,
             contact_no: true,
-            isRecUpdate: true
-          }
+            isRecUpdate: true,
+          },
         },
         extensions: {
           where: {
-            approve_time: null // Only pending extensions
+            approve_time: null, // Only pending extensions
           },
-          orderBy: { extension_id: 'desc' },
-          take: 1
-        }
+          orderBy: { extension_id: "desc" },
+          take: 1,
+        },
       },
     });
 
@@ -1567,11 +1695,15 @@ export const rejectExtensionRequest = async (req, res) => {
     }
 
     if (!booking.isExtend) {
-      return res.status(400).json({ error: "No pending extension request for this booking" });
+      return res
+        .status(400)
+        .json({ error: "No pending extension request for this booking" });
     }
 
     if (!booking.new_end_date) {
-      return res.status(400).json({ error: "No new end date found for extension" });
+      return res
+        .status(400)
+        .json({ error: "No new end date found for extension" });
     }
 
     // Calculate the additional cost that was added
@@ -1587,7 +1719,7 @@ export const rejectExtensionRequest = async (req, res) => {
     const restoredBalance = (booking.balance || 0) - additionalCost;
 
     // Determine payment status based on restored balance
-    const paymentStatus = restoredBalance <= 0 ? 'Paid' : 'Unpaid';
+    const paymentStatus = restoredBalance <= 0 ? "Paid" : "Unpaid";
 
     // Update Extension record (mark as rejected)
     const pendingExtension = booking.extensions[0];
@@ -1595,9 +1727,10 @@ export const rejectExtensionRequest = async (req, res) => {
       await prisma.extension.update({
         where: { extension_id: pendingExtension.extension_id },
         data: {
-          extension_status: 'Rejected',
-          rejection_reason: req.body.reason || 'Extension request rejected by admin'
-        }
+          extension_status: "Rejected",
+          rejection_reason:
+            req.body.reason || "Extension request rejected by admin",
+        },
       });
     }
 
@@ -1616,7 +1749,7 @@ export const rejectExtensionRequest = async (req, res) => {
 
     // Send customer notification for extension rejection
     try {
-      console.log('❌ Sending extension rejected notification to customer...');
+      console.log("❌ Sending extension rejected notification to customer...");
       await sendExtensionRejectedNotification(
         updatedBooking,
         {
@@ -1625,20 +1758,23 @@ export const rejectExtensionRequest = async (req, res) => {
           last_name: booking.customer.last_name,
           email: booking.customer.email,
           contact_no: booking.customer.contact_no,
-          isRecUpdate: booking.customer.isRecUpdate
+          isRecUpdate: booking.customer.isRecUpdate,
         },
         {
           make: booking.car.make,
           model: booking.car.model,
           year: booking.car.year,
-          license_plate: booking.car.license_plate
+          license_plate: booking.car.license_plate,
         },
         additionalDays,
         additionalCost
       );
-      console.log('✅ Extension rejected notification sent');
+      console.log("✅ Extension rejected notification sent");
     } catch (notificationError) {
-      console.error("Error sending extension rejected notification:", notificationError);
+      console.error(
+        "Error sending extension rejected notification:",
+        notificationError
+      );
       // Don't fail the rejection if notification fails
     }
 
@@ -1663,7 +1799,9 @@ export const cancelExtensionRequest = async (req, res) => {
     const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
 
     if (!customerId) {
-      return res.status(401).json({ error: 'Customer authentication required' });
+      return res
+        .status(401)
+        .json({ error: "Customer authentication required" });
     }
 
     // Find the booking with pending extension
@@ -1676,8 +1814,8 @@ export const cancelExtensionRequest = async (req, res) => {
             model: true,
             year: true,
             license_plate: true,
-            rent_price: true
-          }
+            rent_price: true,
+          },
         },
         customer: {
           select: {
@@ -1686,40 +1824,46 @@ export const cancelExtensionRequest = async (req, res) => {
             last_name: true,
             email: true,
             contact_no: true,
-            isRecUpdate: true
-          }
+            isRecUpdate: true,
+          },
         },
         extensions: {
           where: {
-            approve_time: null // Only pending extensions
+            approve_time: null, // Only pending extensions
           },
-          orderBy: { extension_id: 'desc' },
-          take: 1
-        }
-      }
+          orderBy: { extension_id: "desc" },
+          take: 1,
+        },
+      },
     });
 
     if (!booking) {
-      return res.status(404).json({ error: 'Booking not found' });
+      return res.status(404).json({ error: "Booking not found" });
     }
 
     // Verify customer owns this booking
     if (booking.customer_id !== parseInt(customerId)) {
-      return res.status(403).json({ error: 'Not authorized to cancel this extension' });
+      return res
+        .status(403)
+        .json({ error: "Not authorized to cancel this extension" });
     }
 
     // Check if there's a pending extension
     if (!booking.isExtend) {
-      return res.status(400).json({ error: 'No pending extension request to cancel' });
+      return res
+        .status(400)
+        .json({ error: "No pending extension request to cancel" });
     }
 
     if (!booking.new_end_date) {
-      return res.status(400).json({ error: 'No pending extension found' });
+      return res.status(400).json({ error: "No pending extension found" });
     }
 
     const pendingExtension = booking.extensions[0];
     if (!pendingExtension) {
-      return res.status(404).json({ error: 'Pending extension record not found' });
+      return res
+        .status(404)
+        .json({ error: "Pending extension record not found" });
     }
 
     // Calculate the additional cost to revert
@@ -1733,15 +1877,15 @@ export const cancelExtensionRequest = async (req, res) => {
     // Restore original amounts
     const restoredTotalAmount = (booking.total_amount || 0) - additionalCost;
     const restoredBalance = (booking.balance || 0) - additionalCost;
-    const paymentStatus = restoredBalance <= 0 ? 'Paid' : 'Unpaid';
+    const paymentStatus = restoredBalance <= 0 ? "Paid" : "Unpaid";
 
     // Update Extension record (mark as cancelled by customer)
     await prisma.extension.update({
       where: { extension_id: pendingExtension.extension_id },
       data: {
-        extension_status: 'Cancelled by Customer',
-        rejection_reason: 'Customer cancelled the extension request'
-      }
+        extension_status: "Cancelled by Customer",
+        rejection_reason: "Customer cancelled the extension request",
+      },
     });
 
     // Revert Booking to original state
@@ -1754,26 +1898,25 @@ export const cancelExtensionRequest = async (req, res) => {
         balance: restoredBalance,
         payment_status: paymentStatus,
         extension_payment_deadline: null,
-      }
+      },
     });
 
     console.log(`✅ Customer cancelled extension for booking #${bookingId}`);
 
     res.json({
       success: true,
-      message: 'Extension request cancelled successfully',
+      message: "Extension request cancelled successfully",
       booking: {
         booking_id: updatedBooking.booking_id,
         end_date: updatedBooking.end_date,
         total_amount: restoredTotalAmount,
         balance: restoredBalance,
-        payment_status: paymentStatus
-      }
+        payment_status: paymentStatus,
+      },
     });
-
   } catch (error) {
-    console.error('Error cancelling extension request:', error);
-    res.status(500).json({ error: 'Failed to cancel extension request' });
+    console.error("Error cancelling extension request:", error);
+    res.status(500).json({ error: "Failed to cancel extension request" });
   }
 };
 
@@ -1836,31 +1979,55 @@ export const updateMyBooking = async (req, res) => {
         start_date: start_date ? new Date(start_date) : undefined,
         end_date: end_date ? new Date(end_date) : undefined,
         // ✅ FIX: Store times with Philippine timezone context using ISO string
-        pickup_time: pickup_time && start_date
-          ? (() => {
-              const [hours, minutes] = pickup_time.split(':').map(Number);
-              // Get just the date part (YYYY-MM-DD) from start_date
-              const dateStr = start_date.split('T')[0]; // Handles both "2025-10-17" and "2025-10-17T00:00:00"
-              // Create ISO string with Philippine timezone offset (+08:00)
-              // This explicitly states: "This time is in Philippine timezone"
-              const isoString = `${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000+08:00`;
-              const result = new Date(isoString);
-              console.log('🕐 Storing pickup_time:', pickup_time, 'PH on date:', dateStr, '→', result.toISOString(), '(UTC)');
-              return result;
-            })()
-          : undefined,
-        dropoff_time: dropoff_time && end_date
-          ? (() => {
-              const [hours, minutes] = dropoff_time.split(':').map(Number);
-              // Get just the date part (YYYY-MM-DD) from end_date
-              const dateStr = end_date.split('T')[0]; // Handles both "2025-10-20" and "2025-10-20T00:00:00"
-              // Create ISO string with Philippine timezone offset (+08:00)
-              const isoString = `${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000+08:00`;
-              const result = new Date(isoString);
-              console.log('🕐 Storing dropoff_time:', dropoff_time, 'PH on date:', dateStr, '→', result.toISOString(), '(UTC)');
-              return result;
-            })()
-          : undefined,
+        pickup_time:
+          pickup_time && start_date
+            ? (() => {
+                const [hours, minutes] = pickup_time.split(":").map(Number);
+                // Get just the date part (YYYY-MM-DD) from start_date
+                const dateStr = start_date.split("T")[0]; // Handles both "2025-10-17" and "2025-10-17T00:00:00"
+                // Create ISO string with Philippine timezone offset (+08:00)
+                // This explicitly states: "This time is in Philippine timezone"
+                const isoString = `${dateStr}T${String(hours).padStart(
+                  2,
+                  "0"
+                )}:${String(minutes).padStart(2, "0")}:00.000+08:00`;
+                const result = new Date(isoString);
+                console.log(
+                  "🕐 Storing pickup_time:",
+                  pickup_time,
+                  "PH on date:",
+                  dateStr,
+                  "→",
+                  result.toISOString(),
+                  "(UTC)"
+                );
+                return result;
+              })()
+            : undefined,
+        dropoff_time:
+          dropoff_time && end_date
+            ? (() => {
+                const [hours, minutes] = dropoff_time.split(":").map(Number);
+                // Get just the date part (YYYY-MM-DD) from end_date
+                const dateStr = end_date.split("T")[0]; // Handles both "2025-10-20" and "2025-10-20T00:00:00"
+                // Create ISO string with Philippine timezone offset (+08:00)
+                const isoString = `${dateStr}T${String(hours).padStart(
+                  2,
+                  "0"
+                )}:${String(minutes).padStart(2, "0")}:00.000+08:00`;
+                const result = new Date(isoString);
+                console.log(
+                  "🕐 Storing dropoff_time:",
+                  dropoff_time,
+                  "PH on date:",
+                  dateStr,
+                  "→",
+                  result.toISOString(),
+                  "(UTC)"
+                );
+                return result;
+              })()
+            : undefined,
         pickup_loc,
         dropoff_loc,
         isSelfDriver: isSelfDriver ?? booking.isSelfDriver,
@@ -1955,168 +2122,214 @@ export const confirmBooking = async (req, res) => {
       where: { booking_id: bookingId },
       include: {
         payments: {
-          select: { amount: true }
+          select: { amount: true },
         },
-        customer: { 
-          select: { 
+        customer: {
+          select: {
             customer_id: true,
-            first_name: true, 
-            last_name: true, 
-            email: true, 
-            contact_no: true 
-          } 
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true,
+          },
         },
-        car: { 
-          select: { 
+        car: {
+          select: {
             car_id: true,
-            make: true, 
-            model: true, 
-            year: true, 
-            license_plate: true 
-          } 
+            make: true,
+            model: true,
+            year: true,
+            license_plate: true,
+          },
         },
         driver: {
           select: {
             drivers_id: true,
             first_name: true,
             last_name: true,
-            contact_no: true
-          }
-        }
-      }
+            contact_no: true,
+          },
+        },
+      },
     });
 
     if (!booking) {
-      return res.status(404).json({ error: 'Booking not found' });
+      return res.status(404).json({ error: "Booking not found" });
     }
 
     // Calculate total amount paid
-    const totalPaid = booking.payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+    const totalPaid =
+      booking.payments?.reduce(
+        (sum, payment) => sum + (payment.amount || 0),
+        0
+      ) || 0;
 
     // Log current booking state for debugging
-    console.log('Confirming booking:', {
+    console.log("Confirming booking:", {
       bookingId,
       currentStatus: booking.booking_status,
       currentIsPay: booking.isPay,
       isPay_type: typeof booking.isPay,
       totalPaid,
-      totalAmount: booking.total_amount
+      totalAmount: booking.total_amount,
     });
 
     // Normalize booking status comparison (case-insensitive)
     const normalizedStatus = booking.booking_status?.toLowerCase();
-    
-    // Check if isPay is TRUE (required for both cases)
-    if (booking.isPay !== true) {
-      return res.status(400).json({ 
-        error: 'Cannot confirm booking',
-        message: 'isPay must be TRUE to confirm booking',
-        currentIsPay: booking.isPay
-      });
-    }
 
-    // Validate booking status first
-    if (normalizedStatus !== 'pending' && normalizedStatus !== 'confirmed' && normalizedStatus !== 'in progress') {
-      console.log('Invalid status for confirmation:', {
-        normalizedStatus,
-        isPay: booking.isPay
-      });
-      return res.status(400).json({ 
-        error: 'Invalid booking state for confirmation',
-        message: `Cannot confirm booking with status "${booking.booking_status}". Expected status "Pending", "Confirmed", or "In Progress" with isPay TRUE.`,
-        currentStatus: booking.booking_status,
-        currentIsPay: booking.isPay
-      });
-    }
-
-    let updateData = {
-      isPay: false  // Always set isPay to false
-    };
-    
+    let updatedBooking;
     let shouldSendConfirmation = false;
-    
-    // Determine booking status based on total paid amount
-    // Case 1: isPay is TRUE and status is Pending
-    if (normalizedStatus === 'pending') {
-      // If totalPaid >= 1000, confirm the booking
-      // If totalPaid < 1000, keep it Pending
-      if (totalPaid >= 1000) {
-        updateData.booking_status = 'Confirmed';
-        shouldSendConfirmation = true; // Send confirmation notification
-        console.log('Action: Pending -> Confirmed (totalPaid >= 1000), isPay -> false');
-      } else {
-        updateData.booking_status = 'Pending';
-        console.log('Action: Status remains Pending (totalPaid < 1000), isPay -> false');
+
+    // Verify minimum payment has been made (≥1000)
+    if (totalPaid < 1000) {
+      return res.status(400).json({
+        error: "Cannot confirm booking",
+        message: "Minimum payment of ₱1,000 required before confirming booking",
+        totalPaid,
+        required: 1000,
+      });
+    }
+
+    // CASE A: isPay is TRUE and status is Pending - Single-click confirmation
+    if (booking.isPay === true && normalizedStatus === "pending") {
+      console.log(
+        "✅ Single-click booking confirmation (isPay=TRUE, Pending → Confirmed)..."
+      );
+
+      let updateData = {
+        isPay: false, // Clear payment flag after confirmation
+        booking_status: "Confirmed", // Confirm booking immediately
+      };
+
+      // Check if balance is 0 or less and update payment_status to Paid
+      if (booking.balance <= 0) {
+        updateData.payment_status = "Paid";
+        console.log("Balance is 0 or less - Setting payment_status to Paid");
       }
-    } 
-    // Case 2: isPay is TRUE and status is Confirmed -> Just set isPay to FALSE
-    else if (normalizedStatus === 'confirmed') {
-      console.log('Action: isPay -> false (status remains Confirmed)');
-    }
-    // Case 3: isPay is TRUE and status is In Progress -> Set isPay to FALSE and isExtended to TRUE
-    else if (normalizedStatus === 'in progress') {
-      updateData.booking_status = 'In Progress';
-      updateData.isExtended = true; // Mark as extended booking
-      console.log('Action: isPay -> false, isExtended -> true (status remains In Progress)');
-    }
 
-    // Check if balance is 0 or less and update payment_status to Paid
-    if (booking.balance <= 0) {
-      updateData.payment_status = 'Paid';
-      console.log('Balance is 0 or less - Setting payment_status to Paid');
+      updatedBooking = await prisma.booking.update({
+        where: { booking_id: bookingId },
+        data: updateData,
+      });
+
+      console.log("Booking confirmed successfully:", {
+        bookingId,
+        oldStatus: "Pending",
+        newStatus: updatedBooking.booking_status,
+        isPay: updatedBooking.isPay,
+      });
+
+      shouldSendConfirmation = true; // Send booking confirmation notification
     }
+    // CASE B: isPay is TRUE and status is Confirmed - Additional payment on confirmed booking
+    else if (booking.isPay === true && normalizedStatus === "confirmed") {
+      console.log("💰 Additional payment on confirmed booking...");
 
-    const updatedBooking = await prisma.booking.update({
-      where: { booking_id: bookingId },
-      data: updateData
-    });
+      let updateData = {
+        isPay: false, // Clear payment flag after processing
+      };
 
-    console.log('Booking confirmed successfully:', {
-      bookingId,
-      newStatus: updatedBooking.booking_status,
-      newIsPay: updatedBooking.isPay
-    });
+      // Check if balance is 0 or less and update payment_status to Paid
+      if (booking.balance <= 0) {
+        updateData.payment_status = "Paid";
+        console.log("Balance is 0 or less - Setting payment_status to Paid");
+      }
+
+      updatedBooking = await prisma.booking.update({
+        where: { booking_id: bookingId },
+        data: updateData,
+      });
+
+      console.log("Additional payment processed:", {
+        bookingId,
+        status: updatedBooking.booking_status,
+        isPay: updatedBooking.isPay,
+      });
+    }
+    // CASE C: isPay is TRUE and status is In Progress - Extension payment
+    else if (booking.isPay === true && normalizedStatus === "in progress") {
+      console.log("📅 Extension payment approved...");
+
+      let updateData = {
+        isPay: false, // Clear payment flag
+        isExtended: true, // Mark as extended
+      };
+
+      // Check if balance is 0 or less and update payment_status to Paid
+      if (booking.balance <= 0) {
+        updateData.payment_status = "Paid";
+        console.log("Balance is 0 or less - Setting payment_status to Paid");
+      }
+
+      updatedBooking = await prisma.booking.update({
+        where: { booking_id: bookingId },
+        data: updateData,
+      });
+
+      console.log("Extension payment approved:", {
+        bookingId,
+        status: updatedBooking.booking_status,
+        isExtended: updatedBooking.isExtended,
+      });
+    }
+    // CASE D: Invalid state
+    else {
+      return res.status(400).json({
+        error: "Invalid booking state",
+        message: `Cannot process this booking. Status: ${booking.booking_status}, isPay: ${booking.isPay}`,
+        currentStatus: booking.booking_status,
+        currentIsPay: booking.isPay,
+      });
+    }
 
     // Update driver booking_status if driver is assigned and booking was confirmed
-    if (booking.drivers_id && updatedBooking.booking_status === 'Confirmed') {
+    if (booking.drivers_id && updatedBooking.booking_status === "Confirmed") {
       try {
         await prisma.driver.update({
           where: { drivers_id: booking.drivers_id },
-          data: { booking_status: 2 } // 2 = booking confirmed but not released
+          data: { booking_status: 2 }, // 2 = booking confirmed but not released
         });
-        console.log(`✅ Driver ${booking.drivers_id} booking_status set to 2 (confirmed)`);
+        console.log(
+          `✅ Driver ${booking.drivers_id} booking_status set to 2 (confirmed)`
+        );
       } catch (driverUpdateError) {
-        console.error("Error updating driver booking_status:", driverUpdateError);
+        console.error(
+          "Error updating driver booking_status:",
+          driverUpdateError
+        );
         // Don't fail the confirmation if driver status update fails
       }
 
       // Send driver booking confirmed notification (SMS only)
       if (booking.driver) {
         try {
-          console.log('📱 Sending driver booking confirmed notification...');
+          console.log("📱 Sending driver booking confirmed notification...");
           await sendDriverBookingConfirmedNotification(
             updatedBooking,
             {
               drivers_id: booking.driver.drivers_id,
               first_name: booking.driver.first_name,
               last_name: booking.driver.last_name,
-              contact_no: booking.driver.contact_no
+              contact_no: booking.driver.contact_no,
             },
             {
               first_name: booking.customer.first_name,
               last_name: booking.customer.last_name,
-              contact_no: booking.customer.contact_no
+              contact_no: booking.customer.contact_no,
             },
             {
               make: booking.car.make,
               model: booking.car.model,
               year: booking.car.year,
-              license_plate: booking.car.license_plate
+              license_plate: booking.car.license_plate,
             }
           );
-          console.log('✅ Driver booking confirmed notification sent');
+          console.log("✅ Driver booking confirmed notification sent");
         } catch (driverNotificationError) {
-          console.error("Error sending driver confirmation notification:", driverNotificationError);
+          console.error(
+            "Error sending driver confirmation notification:",
+            driverNotificationError
+          );
           // Don't fail the confirmation if driver notification fails
         }
       }
@@ -2128,11 +2341,13 @@ export const confirmBooking = async (req, res) => {
       // Get the latest payment for this booking
       const latestPayment = await prisma.payment.findFirst({
         where: { booking_id: bookingId },
-        orderBy: { paid_date: 'desc' }
+        orderBy: { paid_date: "desc" },
       });
 
-      if (latestPayment && latestPayment.payment_method === 'GCash') {
-        console.log('💰 Sending payment received notification for GCash approval...');
+      if (latestPayment && latestPayment.payment_method === "GCash") {
+        console.log(
+          "💰 Sending payment received notification for GCash approval..."
+        );
         await sendPaymentReceivedNotification(
           latestPayment,
           {
@@ -2140,21 +2355,23 @@ export const confirmBooking = async (req, res) => {
             first_name: booking.customer.first_name,
             last_name: booking.customer.last_name,
             email: booking.customer.email,
-            contact_no: booking.customer.contact_no
+            contact_no: booking.customer.contact_no,
           },
           {
             make: booking.car.make,
             model: booking.car.model,
             year: booking.car.year,
-            license_plate: booking.car.license_plate
+            license_plate: booking.car.license_plate,
           },
           { ...booking, balance: updatedBooking.balance },
-          'gcash'
+          "gcash"
         );
-        console.log('✅ GCash payment received notification sent');
+        console.log("✅ GCash payment received notification sent");
 
         // Send admin notification for GCash payment approval
-        console.log('💰 Sending admin notification for GCash payment approval...');
+        console.log(
+          "💰 Sending admin notification for GCash payment approval..."
+        );
         await sendAdminPaymentCompletedNotification(
           latestPayment,
           {
@@ -2162,24 +2379,24 @@ export const confirmBooking = async (req, res) => {
             first_name: booking.customer.first_name,
             last_name: booking.customer.last_name,
             email: booking.customer.email,
-            contact_no: booking.customer.contact_no
+            contact_no: booking.customer.contact_no,
           },
-          { 
+          {
             booking_id: booking.booking_id,
             start_date: booking.start_date,
             end_date: booking.end_date,
             total_amount: booking.total_amount,
-            balance: updatedBooking.balance
+            balance: updatedBooking.balance,
           },
           {
             make: booking.car.make,
             model: booking.car.model,
             year: booking.car.year,
-            license_plate: booking.car.license_plate
+            license_plate: booking.car.license_plate,
           },
-          'gcash'
+          "gcash"
         );
-        console.log('✅ Admin GCash payment approval notification sent');
+        console.log("✅ Admin GCash payment approval notification sent");
       }
     } catch (notificationError) {
       console.error("Error sending payment notification:", notificationError);
@@ -2189,7 +2406,7 @@ export const confirmBooking = async (req, res) => {
     // Send booking confirmation notification if booking was just confirmed
     if (shouldSendConfirmation) {
       try {
-        console.log('📧 Sending booking confirmation notification...');
+        console.log("📧 Sending booking confirmation notification...");
         await sendBookingConfirmationNotification(
           { ...booking, ...updateData }, // Merge updated data with booking
           {
@@ -2197,31 +2414,34 @@ export const confirmBooking = async (req, res) => {
             first_name: booking.customer.first_name,
             last_name: booking.customer.last_name,
             email: booking.customer.email,
-            contact_no: booking.customer.contact_no
+            contact_no: booking.customer.contact_no,
           },
           {
             make: booking.car.make,
             model: booking.car.model,
             year: booking.car.year,
-            license_plate: booking.car.license_plate
+            license_plate: booking.car.license_plate,
           }
         );
-        console.log('✅ Booking confirmation notification sent');
+        console.log("✅ Booking confirmation notification sent");
       } catch (notificationError) {
-        console.error("Error sending confirmation notification:", notificationError);
+        console.error(
+          "Error sending confirmation notification:",
+          notificationError
+        );
         // Don't fail the confirmation if notification fails
       }
     }
 
     res.json({
-      message: 'Booking confirmed successfully',
-      booking: updatedBooking
+      message: "Booking confirmed successfully",
+      booking: updatedBooking,
     });
   } catch (error) {
-    console.error('Error confirming booking:', error);
-    res.status(500).json({ 
-      error: 'Failed to confirm booking',
-      details: error.message 
+    console.error("Error confirming booking:", error);
+    res.status(500).json({
+      error: "Failed to confirm booking",
+      details: error.message,
     });
   }
 };
@@ -2232,21 +2452,21 @@ export const updateIsPayStatus = async (req, res) => {
     const bookingId = parseInt(req.params.id);
     const { isPay } = req.body;
 
-    if (typeof isPay !== 'boolean') {
-      return res.status(400).json({ error: 'isPay must be a boolean value' });
+    if (typeof isPay !== "boolean") {
+      return res.status(400).json({ error: "isPay must be a boolean value" });
     }
 
     const updatedBooking = await prisma.booking.update({
       where: { booking_id: bookingId },
-      data: { isPay }
+      data: { isPay },
     });
 
     res.json({
-      message: 'isPay status updated successfully',
-      booking: updatedBooking
+      message: "isPay status updated successfully",
+      booking: updatedBooking,
     });
   } catch (error) {
-    console.error('Error updating isPay status:', error);
-    res.status(500).json({ error: 'Failed to update isPay status' });
+    console.error("Error updating isPay status:", error);
+    res.status(500).json({ error: "Failed to update isPay status" });
   }
 };

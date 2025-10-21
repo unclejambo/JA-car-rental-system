@@ -997,7 +997,7 @@ export default function DriverSettings() {
           width: `calc(100% - 18.7dvw)`,
           ml: { xs: '0px', sm: '0px', md: '18.7dvw', lg: '18.7dvw' },
           '@media (max-width: 1024px)': { ml: '0px' },
-          mt: { xs: '74px', sm: '74px', md: '64px', lg: '64px' },
+          mt: { xs: '70px', sm: '70px', md: '56px', lg: '56px' },
           height: '100%',
           overflow: 'auto',
           display: 'flex',
@@ -1037,7 +1037,7 @@ export default function DriverSettings() {
                 }}
               >
                 <Typography
-                  variant="h6"
+                  variant="h4"
                   sx={{
                     fontWeight: 'bold',
                     color: '#c10007',
@@ -1100,10 +1100,13 @@ export default function DriverSettings() {
                   display: 'flex',
                   flexDirection: 'column',
                   overflow: 'hidden',
+                  mt: 2,
                 }}
               >
                 <Box
                   sx={{
+                    width: '100%',
+                    minWidth: '100%',
                     maxWidth: 900,
                     bgcolor: '#ffffff',
                     borderRadius: 2,

@@ -192,10 +192,10 @@ function LoginPage() {
               'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(242,242,242,0.98) 100%)',
             backdropFilter: 'blur(10px)',
             borderRadius: { xs: '15px', sm: '20px' },
-            p: { xs: 3, sm: 4, md: 4.5 },
+            p: { xs: 2.5, sm: 3, md: 3.5 },
             width: '100%',
-            maxWidth: { xs: '340px', sm: '420px', md: '460px' },
-            minHeight: { xs: 'auto', sm: 450 },
+            maxWidth: { xs: '300px', sm: '340px', md: '360px' },
+            minHeight: { xs: 'auto', sm: 400 },
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -215,11 +215,11 @@ function LoginPage() {
             src="https://www.gravatar.com/avatar/?d=mp"
             alt="Default Avatar"
             sx={{
-              width: { xs: 100, sm: 130, md: 140 },
-              height: { xs: 100, sm: 130, md: 140 },
+              width: { xs: 80, sm: 100, md: 110 },
+              height: { xs: 80, sm: 100, md: 110 },
               position: 'absolute',
-              top: { xs: -50, sm: -65, md: -70 },
-              border: { xs: '4px solid white', sm: '6px solid white' },
+              top: { xs: -40, sm: -50, md: -55 },
+              border: { xs: '4px solid white', sm: '5px solid white' },
               boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               transition: 'transform 0.3s ease',
               '&:hover': {
@@ -236,7 +236,7 @@ function LoginPage() {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              pt: { xs: 6, sm: 8, md: 9 },
+              pt: { xs: 5, sm: 6, md: 7 },
               px: 0,
               pb: 0,
             }}
@@ -245,9 +245,9 @@ function LoginPage() {
               variant="h3"
               sx={{
                 fontFamily: '"Pathway Gothic One", sans-serif',
-                fontSize: { xs: '32px', sm: '38px', md: '42px' },
+                fontSize: { xs: '28px', sm: '32px', md: '36px' },
                 fontWeight: 'bold',
-                mb: 3,
+                mb: 2.5,
                 background: 'linear-gradient(135deg, #3F86F1 0%, #2B6FCF 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
@@ -290,12 +290,12 @@ function LoginPage() {
               disabled={isLoading}
               inputProps={{ maxLength: 100 }}
               sx={{
-                mb: { xs: 2, sm: 2.5 },
+                mb: { xs: 1.5, sm: 2 },
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: 'white',
                   borderRadius: '12px',
                   fontFamily: '"Pathway Gothic One", sans-serif',
-                  fontSize: { xs: '16px', sm: '18px' },
+                  fontSize: { xs: '15px', sm: '16px' },
                   transition: 'all 0.3s ease',
                   '& fieldset': {
                     borderColor: 'rgba(0, 0, 0, 0.1)',
@@ -311,13 +311,13 @@ function LoginPage() {
                 },
                 '& .MuiInputLabel-root': {
                   fontFamily: '"Pathway Gothic One", sans-serif',
-                  fontSize: { xs: '14px', sm: '16px' },
+                  fontSize: { xs: '13px', sm: '14px' },
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
                   color: '#3F86F1',
                 },
                 '& .MuiInputBase-input': {
-                  padding: { xs: '12px', sm: '14px' },
+                  padding: { xs: '10px', sm: '12px' },
                 },
               }}
             />
@@ -353,12 +353,12 @@ function LoginPage() {
                 ),
               }}
               sx={{
-                mb: { xs: 2, sm: 2.5 },
+                mb: { xs: 1.5, sm: 2 },
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: 'white',
                   borderRadius: '12px',
                   fontFamily: '"Pathway Gothic One", sans-serif',
-                  fontSize: { xs: '16px', sm: '18px' },
+                  fontSize: { xs: '15px', sm: '16px' },
                   transition: 'all 0.3s ease',
                   '& fieldset': {
                     borderColor: 'rgba(0, 0, 0, 0.1)',
@@ -374,13 +374,13 @@ function LoginPage() {
                 },
                 '& .MuiInputLabel-root': {
                   fontFamily: '"Pathway Gothic One", sans-serif',
-                  fontSize: { xs: '14px', sm: '16px' },
+                  fontSize: { xs: '13px', sm: '14px' },
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
                   color: '#3F86F1',
                 },
                 '& .MuiInputBase-input': {
-                  padding: { xs: '12px', sm: '14px' },
+                  padding: { xs: '10px', sm: '12px' },
                 },
               }}
             />
@@ -393,11 +393,11 @@ function LoginPage() {
               sx={{
                 background: 'linear-gradient(135deg, #3F86F1 0%, #2B6FCF 100%)',
                 fontFamily: '"Pathway Gothic One", sans-serif',
-                fontSize: { xs: '18px', sm: '20px' },
+                fontSize: { xs: '16px', sm: '18px' },
                 fontWeight: 'bold',
                 borderRadius: '12px',
-                padding: { xs: '12px', sm: '14px' },
-                mb: { xs: 1.5, sm: 2 },
+                padding: { xs: '10px', sm: '12px' },
+                mb: { xs: 1.5, sm: 1.5 },
                 textTransform: 'none',
                 letterSpacing: '1px',
                 boxShadow: '0 4px 15px rgba(63, 134, 241, 0.4)',
@@ -418,7 +418,7 @@ function LoginPage() {
               {isLoading ? (
                 <>
                   <CircularProgress
-                    size={24}
+                    size={20}
                     sx={{ mr: 1.5, color: 'white' }}
                   />
                   Logging in...
@@ -435,8 +435,8 @@ function LoginPage() {
                 textDecoration: 'none',
                 color: '#3F86F1',
                 textTransform: 'none',
-                mb: { xs: 1.5, sm: 2 },
-                fontSize: { xs: '14px', sm: '15px' },
+                mb: { xs: 1.5, sm: 1.5 },
+                fontSize: { xs: '13px', sm: '14px' },
                 transition: 'all 0.2s ease',
                 '&:hover': {
                   color: '#2B6FCF',
@@ -453,7 +453,7 @@ function LoginPage() {
                 display: 'flex',
                 alignItems: 'center',
                 width: '100%',
-                mb: { xs: 1.5, sm: 2 },
+                mb: { xs: 1.5, sm: 1.5 },
               }}
             >
               <Box
@@ -488,11 +488,11 @@ function LoginPage() {
               variant="outlined"
               sx={{
                 fontFamily: '"Pathway Gothic One", sans-serif',
-                fontSize: { xs: '16px', sm: '18px' },
+                fontSize: { xs: '15px', sm: '16px' },
                 fontWeight: 'bold',
                 borderRadius: '12px',
-                padding: { xs: '10px', sm: '12px' },
-                mb: { xs: 1.5, sm: 2 },
+                padding: { xs: '9px', sm: '10px' },
+                mb: { xs: 1, sm: 1 },
                 textTransform: 'none',
                 letterSpacing: '1px',
                 borderWidth: '2px',

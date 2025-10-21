@@ -1,6 +1,10 @@
-import { Box, Button } from '@mui/material';
+import { Box, Button, Chip } from '@mui/material';
 
-const ManageBookingsHeader = ({ activeTab = 'BOOKINGS', onTabChange }) => {
+const ManageBookingsHeader = ({
+  activeTab = 'BOOKINGS',
+  onTabChange,
+  counts = {},
+}) => {
   const tabs = ['BOOKINGS', 'CANCELLATION', 'EXTENSION'];
 
   return (
@@ -41,6 +45,10 @@ const ManageBookingsHeader = ({ activeTab = 'BOOKINGS', onTabChange }) => {
             textTransform: 'none',
             fontWeight: activeTab === tab ? 600 : 400,
             cursor: activeTab === tab ? 'default' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1,
             '&:hover': {
               backgroundColor: activeTab === tab ? '#c10007' : '#4a4a4a',
               borderColor: activeTab === tab ? '#4a4a4a' : '#999',
@@ -64,6 +72,22 @@ const ManageBookingsHeader = ({ activeTab = 'BOOKINGS', onTabChange }) => {
           }}
         >
           {tab}
+          {counts[tab] > 0 && (
+            <Chip
+              label={counts[tab]}
+              size="small"
+              sx={{
+                height: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 'bold',
+                backgroundColor: '#fff',
+                color: '#c10007',
+                '& .MuiChip-label': {
+                  px: 1,
+                },
+              }}
+            />
+          )}
         </Button>
       ))}
     </Box>

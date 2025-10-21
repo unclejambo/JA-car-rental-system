@@ -117,7 +117,7 @@ function CustomerDashboard() {
         ? customerSchedules
         : [];
 
-      // Get today's schedules
+      // Get today's schedules (only Confirmed and In Progress bookings)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
@@ -125,7 +125,13 @@ function CustomerDashboard() {
 
       const todaySchedule = schedules.filter((schedule) => {
         const scheduleDate = new Date(schedule.start_date);
-        return scheduleDate >= today && scheduleDate < tomorrow;
+        const status = schedule.booking_status?.toLowerCase();
+        // Only show Confirmed and In Progress bookings, exclude Cancelled
+        return (
+          scheduleDate >= today &&
+          scheduleDate < tomorrow &&
+          (status === 'confirmed' || status === 'in progress')
+        );
       });
 
       // Get unpaid settlements (bookings with unpaid or pending payment status)

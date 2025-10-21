@@ -57,6 +57,10 @@ export default function DriverSettings() {
   // Success snackbar
   const [successMessage, setSuccessMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  
+  // Error snackbar
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showError, setShowError] = useState(false);
 
   // Info tab states
   const [isEditing, setIsEditing] = useState(false);
@@ -506,6 +510,7 @@ export default function DriverSettings() {
 
   const handleLicenseSaveConfirm = async () => {
     setSavingLicense(true);
+    setError(null); // Clear any previous errors
 
     try {
       // Upload license image first if there's a new image
@@ -518,7 +523,8 @@ export default function DriverSettings() {
           }
         } catch (uploadError) {
           console.error('❌ License image upload failed:', uploadError);
-          setError('Failed to upload license image. Please try again.');
+          setErrorMessage('Failed to upload license image. Please try again.');
+          setShowError(true);
           setSavingLicense(false);
           return;
         }
@@ -565,13 +571,16 @@ export default function DriverSettings() {
         // ✅ Show success
         setSuccessMessage('License information updated successfully!');
         setShowSuccess(true);
+        setError(null); // Clear any errors
       } else {
         console.error('❌ Failed to update license:', result);
-        setError(result.error || 'Failed to update license');
+        setErrorMessage(result.error || 'Failed to update license');
+        setShowError(true);
       }
     } catch (error) {
       console.error('❌ Error updating license:', error);
-      setError('Unexpected error updating license');
+      setErrorMessage('Unexpected error updating license');
+      setShowError(true);
     } finally {
       setSavingLicense(false);
     }
@@ -589,7 +598,8 @@ export default function DriverSettings() {
 
   const handleRemoveLicenseImage = async () => {
     if (!licenseNumber) {
-      setError('License number not found');
+      setErrorMessage('License number not found');
+      setShowError(true);
       return;
     }
 
@@ -633,7 +643,8 @@ export default function DriverSettings() {
       }
     } catch (error) {
       console.error('❌ Error deleting license image:', error);
-      setError(error.message || 'Failed to delete license image');
+      setErrorMessage(error.message || 'Failed to delete license image');
+      setShowError(true);
     } finally {
       setLicenseImageUploading(false);
     }
@@ -670,7 +681,7 @@ export default function DriverSettings() {
     }
   };
 
-  const handlePhoneVerificationSuccess = async (data) => {
+  const handlePhoneVerificationSuccess = async (_data) => {
     try {
       setSaving(true);
 
@@ -681,7 +692,6 @@ export default function DriverSettings() {
       const {
         updateData,
         profileImage: pendingImage,
-        driverId,
       } = pendingProfileChanges;
 
       // Upload profile image first if changed
@@ -987,7 +997,7 @@ export default function DriverSettings() {
           width: `calc(100% - 18.7dvw)`,
           ml: { xs: '0px', sm: '0px', md: '18.7dvw', lg: '18.7dvw' },
           '@media (max-width: 1024px)': { ml: '0px' },
-          mt: { xs: '74px', sm: '74px', md: '64px', lg: '64px' },
+          mt: { xs: '70px', sm: '70px', md: '56px', lg: '56px' },
           height: '100%',
           overflow: 'auto',
           display: 'flex',
@@ -1027,7 +1037,7 @@ export default function DriverSettings() {
                 }}
               >
                 <Typography
-                  variant="h6"
+                  variant="h4"
                   sx={{
                     fontWeight: 'bold',
                     color: '#c10007',
@@ -1090,10 +1100,13 @@ export default function DriverSettings() {
                   display: 'flex',
                   flexDirection: 'column',
                   overflow: 'hidden',
+                  mt: 2,
                 }}
               >
                 <Box
                   sx={{
+                    width: '100%',
+                    minWidth: '100%',
                     maxWidth: 900,
                     bgcolor: '#ffffff',
                     borderRadius: 2,
@@ -2014,6 +2027,22 @@ export default function DriverSettings() {
           sx={{ width: '100%' }}
         >
           {successMessage}
+        </Alert>
+      </Snackbar>
+
+      {/* Error snackbar */}
+      <Snackbar
+        open={showError}
+        autoHideDuration={6000}
+        onClose={() => setShowError(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setShowError(false)}
+          severity="error"
+          sx={{ width: '100%' }}
+        >
+          {errorMessage}
         </Alert>
       </Snackbar>
 

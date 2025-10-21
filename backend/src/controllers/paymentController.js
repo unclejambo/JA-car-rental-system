@@ -1,6 +1,16 @@
 import prisma from "../config/prisma.js";
-import { sendBookingConfirmationNotification, sendPaymentReceivedNotification, sendAdminPaymentRequestNotification, sendAdminPaymentCompletedNotification } from "../utils/notificationService.js";
-import { getPaginationParams, getSortingParams, buildPaginationResponse, getSearchParam } from '../utils/pagination.js';
+import {
+  sendBookingConfirmationNotification,
+  sendPaymentReceivedNotification,
+  sendAdminPaymentRequestNotification,
+  sendAdminPaymentCompletedNotification,
+} from "../utils/notificationService.js";
+import {
+  getPaginationParams,
+  getSortingParams,
+  buildPaginationResponse,
+  getSearchParam,
+} from "../utils/pagination.js";
 
 function shapePayment(p) {
   const { booking, customer, ...rest } = p;
@@ -74,21 +84,23 @@ export const recalculatePaymentBalances = async (bookingId) => {
 // Utility function to determine appropriate booking status based on payments
 const determineBookingStatus = (totalPaid, totalAmount, currentStatus) => {
   // If current status is 'In Progress', preserve it regardless of payment status
-  if (currentStatus === 'In Progress') {
-    return 'In Progress';
+  if (currentStatus === "In Progress") {
+    return "In Progress";
   }
-  
+
   if (totalPaid <= 0) {
     // No payments made - should be Pending (capitalized)
-    return 'Pending';
+    return "Pending";
   } else if (totalPaid >= totalAmount) {
-    // Fully paid - should be confirmed or maintain current status if already progressed
-    return ['Confirmed', 'Completed', 'Returned'].includes(currentStatus) 
-      ? currentStatus 
-      : 'Confirmed';
+    // Fully paid - maintain current status (don't auto-confirm, wait for admin)
+    // Only progress if already Confirmed or beyond
+    return ["Confirmed", "Completed", "Returned"].includes(currentStatus)
+      ? currentStatus
+      : currentStatus; // Keep current status (usually Pending)
   } else {
-    // Partially paid - should be confirmed
-    return 'Confirmed';
+    // Partially paid - keep current status, don't auto-confirm
+    // Admin must manually confirm via confirmBooking endpoint
+    return currentStatus;
   }
 };
 
@@ -103,7 +115,7 @@ export const createPayment = async (req, res) => {
       reference_no,
       amount,
       paid_date,
-      update_status
+      update_status,
     } = req.body;
 
     if (!booking_id || !customer_id || amount == null) {
@@ -132,14 +144,15 @@ export const createPayment = async (req, res) => {
         (sum, payment) => sum + (payment.amount || 0),
         0
       ) || 0;
-    
+
     const paymentAmount = Number(amount);
     const totalAmount = booking.total_amount || 0;
     const remainingBalance = totalAmount - currentTotalPaid;
-    
+
     // Special handling for security deposit fee
-    const isSecurityDeposit = description && description.toLowerCase().includes('security deposit');
-    
+    const isSecurityDeposit =
+      description && description.toLowerCase().includes("security deposit");
+
     // Validation logic
     if (!isSecurityDeposit) {
       // For regular payments, validate against remaining balance
@@ -150,8 +163,8 @@ export const createPayment = async (req, res) => {
             bookingTotal: totalAmount,
             amountPaid: currentTotalPaid,
             remainingBalance: remainingBalance,
-            attemptedPayment: paymentAmount
-          }
+            attemptedPayment: paymentAmount,
+          },
         });
       }
     } else {
@@ -161,8 +174,8 @@ export const createPayment = async (req, res) => {
         await prisma.booking.update({
           where: { booking_id: Number(booking_id) },
           data: {
-            total_amount: totalAmount + paymentAmount
-          }
+            total_amount: totalAmount + paymentAmount,
+          },
         });
         // Refresh booking data
         const updatedBooking = await prisma.booking.findUnique({
@@ -171,7 +184,7 @@ export const createPayment = async (req, res) => {
         booking.total_amount = updatedBooking.total_amount;
       }
     }
-    
+
     const runningBalance =
       (booking.total_amount || 0) - (currentTotalPaid + paymentAmount);
 
@@ -198,17 +211,22 @@ export const createPayment = async (req, res) => {
     const finalBalance = (booking.total_amount || 0) - newTotalPaid;
 
     // Determine appropriate booking status
-    const newBookingStatus = determineBookingStatus(newTotalPaid, booking.total_amount, booking.booking_status);
-    
+    const newBookingStatus = determineBookingStatus(
+      newTotalPaid,
+      booking.total_amount,
+      booking.booking_status
+    );
+
     // Track if status is changing from Pending to Confirmed (for notification)
-    const isNewlyConfirmed = booking.booking_status === 'Pending' && newBookingStatus === 'Confirmed';
-    
+    const isNewlyConfirmed =
+      booking.booking_status === "Pending" && newBookingStatus === "Confirmed";
+
     // Prepare booking update data
-    const bookingUpdateData = { 
+    const bookingUpdateData = {
       balance: finalBalance,
-      payment_status: finalBalance <= 0 ? 'Paid' : 'Unpaid'
+      payment_status: finalBalance <= 0 ? "Paid" : "Unpaid",
     };
-    
+
     // Update booking status based on payment state or explicit flag
     if (update_status || newBookingStatus !== booking.booking_status) {
       bookingUpdateData.booking_status = newBookingStatus;
@@ -224,25 +242,27 @@ export const createPayment = async (req, res) => {
             first_name: true,
             last_name: true,
             email: true,
-            contact_no: true
-          }
+            contact_no: true,
+          },
         },
         car: {
           select: {
             make: true,
             model: true,
             year: true,
-            license_plate: true
-          }
-        }
-      }
+            license_plate: true,
+          },
+        },
+      },
     });
 
     // Send payment received notification for Cash payments
     // For GCash, notification is sent when admin approves via confirmBooking
-    if (payment_method === 'Cash') {
+    if (payment_method === "Cash") {
       try {
-        console.log('💰 Sending payment received notification for Cash payment...');
+        console.log(
+          "💰 Sending payment received notification for Cash payment..."
+        );
         await sendPaymentReceivedNotification(
           created,
           {
@@ -250,18 +270,18 @@ export const createPayment = async (req, res) => {
             first_name: updatedBooking.customer.first_name,
             last_name: updatedBooking.customer.last_name,
             email: updatedBooking.customer.email,
-            contact_no: updatedBooking.customer.contact_no
+            contact_no: updatedBooking.customer.contact_no,
           },
           {
             make: updatedBooking.car.make,
             model: updatedBooking.car.model,
             year: updatedBooking.car.year,
-            license_plate: updatedBooking.car.license_plate
+            license_plate: updatedBooking.car.license_plate,
           },
           updatedBooking,
-          'cash'
+          "cash"
         );
-        console.log('✅ Cash payment received notification sent');
+        console.log("✅ Cash payment received notification sent");
       } catch (notificationError) {
         console.error("Error sending payment notification:", notificationError);
         // Don't fail the payment creation if notification fails
@@ -269,7 +289,7 @@ export const createPayment = async (req, res) => {
 
       // Send admin notification for cash payment recorded
       try {
-        console.log('💰 Sending admin notification for Cash payment...');
+        console.log("💰 Sending admin notification for Cash payment...");
         await sendAdminPaymentCompletedNotification(
           created,
           {
@@ -277,26 +297,29 @@ export const createPayment = async (req, res) => {
             first_name: updatedBooking.customer.first_name,
             last_name: updatedBooking.customer.last_name,
             email: updatedBooking.customer.email,
-            contact_no: updatedBooking.customer.contact_no
+            contact_no: updatedBooking.customer.contact_no,
           },
           {
             booking_id: updatedBooking.booking_id,
             start_date: updatedBooking.start_date,
             end_date: updatedBooking.end_date,
             total_amount: updatedBooking.total_amount,
-            balance: finalBalance
+            balance: finalBalance,
           },
           {
             make: updatedBooking.car.make,
             model: updatedBooking.car.model,
             year: updatedBooking.car.year,
-            license_plate: updatedBooking.car.license_plate
+            license_plate: updatedBooking.car.license_plate,
           },
-          'cash'
+          "cash"
         );
-        console.log('✅ Admin cash payment notification sent');
+        console.log("✅ Admin cash payment notification sent");
       } catch (adminNotificationError) {
-        console.error("Error sending admin cash payment notification:", adminNotificationError);
+        console.error(
+          "Error sending admin cash payment notification:",
+          adminNotificationError
+        );
         // Don't fail the payment creation if notification fails
       }
     }
@@ -304,7 +327,9 @@ export const createPayment = async (req, res) => {
     // Send booking confirmation notification if booking was just confirmed
     if (isNewlyConfirmed) {
       try {
-        console.log('📧 Payment received! Sending booking confirmation notification...');
+        console.log(
+          "📧 Payment received! Sending booking confirmation notification..."
+        );
         await sendBookingConfirmationNotification(
           updatedBooking,
           {
@@ -312,18 +337,21 @@ export const createPayment = async (req, res) => {
             first_name: updatedBooking.customer.first_name,
             last_name: updatedBooking.customer.last_name,
             email: updatedBooking.customer.email,
-            contact_no: updatedBooking.customer.contact_no
+            contact_no: updatedBooking.customer.contact_no,
           },
           {
             make: updatedBooking.car.make,
             model: updatedBooking.car.model,
             year: updatedBooking.car.year,
-            license_plate: updatedBooking.car.license_plate
+            license_plate: updatedBooking.car.license_plate,
           }
         );
-        console.log('✅ Booking confirmation notification sent after payment');
+        console.log("✅ Booking confirmation notification sent after payment");
       } catch (notificationError) {
-        console.error("Error sending confirmation notification:", notificationError);
+        console.error(
+          "Error sending confirmation notification:",
+          notificationError
+        );
         // Don't fail the payment creation if notification fails
       }
     }
@@ -338,43 +366,43 @@ export const createPayment = async (req, res) => {
 export const deletePayment = async (req, res) => {
   try {
     const paymentId = parseInt(req.params.id);
-    
+
     // First, get the payment details to know which booking to update
     const payment = await prisma.payment.findUnique({
       where: { payment_id: paymentId },
       include: {
         booking: {
           include: {
-            payments: { select: { amount: true, payment_id: true } }
-          }
-        }
+            payments: { select: { amount: true, payment_id: true } },
+          },
+        },
       },
     });
 
     if (!payment) {
-      return res.status(404).json({ error: 'Payment not found' });
+      return res.status(404).json({ error: "Payment not found" });
     }
 
     const booking = payment.booking;
     if (!booking) {
-      return res.status(404).json({ error: 'Associated booking not found' });
+      return res.status(404).json({ error: "Associated booking not found" });
     }
 
     // Calculate total paid after removing this payment
     const totalPaidAfterDeletion = booking.payments
-      .filter(p => p.payment_id !== paymentId)
+      .filter((p) => p.payment_id !== paymentId)
       .reduce((sum, p) => sum + (p.amount || 0), 0);
-    
+
     // Calculate new balance
     const newBalance = (booking.total_amount || 0) - totalPaidAfterDeletion;
-    
+
     // Determine new booking status based on remaining payments
     const newBookingStatus = determineBookingStatus(
-      totalPaidAfterDeletion, 
-      booking.total_amount, 
+      totalPaidAfterDeletion,
+      booking.total_amount,
       booking.booking_status
     );
-    
+
     // Delete the payment
     await prisma.payment.delete({
       where: { payment_id: paymentId },
@@ -385,7 +413,7 @@ export const deletePayment = async (req, res) => {
       where: { booking_id: booking.booking_id },
       data: {
         balance: newBalance,
-        payment_status: newBalance <= 0 ? 'Paid' : 'Unpaid',
+        payment_status: newBalance <= 0 ? "Paid" : "Unpaid",
         booking_status: newBookingStatus,
       },
     });
@@ -394,18 +422,18 @@ export const deletePayment = async (req, res) => {
     await recalculatePaymentBalances(booking.booking_id);
 
     res.status(200).json({
-      message: 'Payment deleted successfully',
+      message: "Payment deleted successfully",
       booking_update: {
         booking_id: booking.booking_id,
         new_balance: newBalance,
-        new_payment_status: newBalance <= 0 ? 'Paid' : 'Unpaid',
+        new_payment_status: newBalance <= 0 ? "Paid" : "Unpaid",
         new_booking_status: newBookingStatus,
         total_paid: totalPaidAfterDeletion,
       },
     });
   } catch (error) {
-    console.error('Error deleting payment:', error);
-    res.status(500).json({ error: 'Failed to delete payment' });
+    console.error("Error deleting payment:", error);
+    res.status(500).json({ error: "Failed to delete payment" });
   }
 };
 
@@ -413,120 +441,149 @@ export const deletePayment = async (req, res) => {
 export const deletePaymentByBookingId = async (req, res) => {
   try {
     const bookingId = parseInt(req.params.bookingId);
-    
+
     // Get the booking with all its payments
     const booking = await prisma.booking.findUnique({
       where: { booking_id: bookingId },
       include: {
         payments: {
-          orderBy: { paid_date: 'desc' } // Get latest payment first
-        }
-      }
+          orderBy: { paid_date: "desc" }, // Get latest payment first
+        },
+      },
     });
 
     if (!booking) {
-      return res.status(404).json({ error: 'Booking not found' });
+      return res.status(404).json({ error: "Booking not found" });
     }
 
     if (!booking.payments || booking.payments.length === 0) {
-      return res.status(404).json({ error: 'No payments found for this booking' });
+      return res
+        .status(404)
+        .json({ error: "No payments found for this booking" });
     }
 
     // Get the latest payment
     const latestPayment = booking.payments[0];
 
-    console.log('Deleting payment:', {
+    console.log("Deleting payment:", {
       bookingId,
       paymentId: latestPayment.payment_id,
-      amount: latestPayment.amount
+      amount: latestPayment.amount,
     });
 
     // Calculate total paid after removing this payment
     const totalPaidAfterDeletion = booking.payments
-      .filter(p => p.payment_id !== latestPayment.payment_id)
+      .filter((p) => p.payment_id !== latestPayment.payment_id)
       .reduce((sum, p) => sum + (p.amount || 0), 0);
-    
-    // Calculate new balance
+
+    // Calculate new balance - this will be the balance before the rejected payment was made
     const newBalance = (booking.total_amount || 0) - totalPaidAfterDeletion;
-    
+
     // Delete the payment
     await prisma.payment.delete({
       where: { payment_id: latestPayment.payment_id },
     });
 
-    // When canceling/rejecting payment, booking should remain in Pending status with Unpaid payment_status
+    // Determine correct booking status after payment deletion
+    // If there are still enough payments (>= 1000 or >= total_amount), keep status as Confirmed
+    // Otherwise, set to Pending
+    let newBookingStatus = "Pending";
+    let newPaymentStatus = "Unpaid";
+
+    if (
+      totalPaidAfterDeletion >= 1000 ||
+      totalPaidAfterDeletion >= (booking.total_amount || 0)
+    ) {
+      // Customer has already paid enough - keep confirmed status
+      newBookingStatus = "Confirmed";
+      newPaymentStatus = newBalance <= 0 ? "Paid" : "Unpaid";
+    } else if (totalPaidAfterDeletion > 0) {
+      // Partial payment exists - keep current status unless it was only pending
+      newBookingStatus =
+        booking.booking_status === "Pending"
+          ? "Pending"
+          : booking.booking_status;
+      newPaymentStatus = "Unpaid";
+    }
+
+    // When canceling/rejecting payment, determine status based on remaining payments
+    // Balance is correctly reverted to what it was before the rejected payment
     // Note: isPay is already set to false by the updateIsPayStatus call from frontend
     await prisma.booking.update({
       where: { booking_id: bookingId },
       data: {
-        balance: newBalance,
-        payment_status: 'Unpaid', // Always set to Unpaid when payment is cancelled/rejected
-        booking_status: 'Pending', // Keep booking in Pending status when payment is rejected
+        balance: newBalance, // Balance reverts to before the rejected payment
+        payment_status: newPaymentStatus,
+        booking_status: newBookingStatus,
       },
     });
 
     // Recalculate balances for remaining payments
     await recalculatePaymentBalances(bookingId);
 
-    console.log('Payment deleted successfully:', {
+    console.log("Payment deleted successfully:", {
       bookingId,
       deletedPaymentId: latestPayment.payment_id,
       newBalance,
-      newPaymentStatus: 'Unpaid',
-      newBookingStatus: 'Pending'
+      totalPaidAfterDeletion,
+      newPaymentStatus,
+      newBookingStatus,
     });
 
     res.status(200).json({
-      message: 'Payment deleted successfully',
+      message: "Payment deleted successfully",
       deleted_payment: latestPayment,
       booking_update: {
         booking_id: bookingId,
         new_balance: newBalance,
-        new_payment_status: 'Unpaid',
-        new_booking_status: 'Pending',
+        new_payment_status: newPaymentStatus,
+        new_booking_status: newBookingStatus,
         total_paid: totalPaidAfterDeletion,
       },
     });
   } catch (error) {
-    console.error('Error deleting payment by booking ID:', error);
-    res.status(500).json({ error: 'Failed to delete payment' });
+    console.error("Error deleting payment by booking ID:", error);
+    res.status(500).json({ error: "Failed to delete payment" });
   }
 };
 
 // Utility function to fix all booking status inconsistencies
 export const fixAllBookingStatusInconsistencies = async (req, res) => {
   try {
-    console.log('🔄 Starting booking status consistency check...');
-    
+    console.log("🔄 Starting booking status consistency check...");
+
     // Get all bookings with their payments
     const bookings = await prisma.booking.findMany({
       include: {
-        payments: { select: { amount: true } }
-      }
+        payments: { select: { amount: true } },
+      },
     });
-    
+
     let updatedCount = 0;
     const results = [];
-    
+
     for (const booking of bookings) {
-      const totalPaid = booking.payments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+      const totalPaid =
+        booking.payments?.reduce(
+          (sum, payment) => sum + (payment.amount || 0),
+          0
+        ) || 0;
       const newBalance = (booking.total_amount || 0) - totalPaid;
-      
+
       // Determine correct status based on actual payments
       const correctBookingStatus = determineBookingStatus(
-        totalPaid, 
-        booking.total_amount, 
+        totalPaid,
+        booking.total_amount,
         booking.booking_status
       );
-      const correctPaymentStatus = newBalance <= 0 ? 'Paid' : 'Unpaid';
-      
+      const correctPaymentStatus = newBalance <= 0 ? "Paid" : "Unpaid";
+
       // Check if update is needed
-      const needsUpdate = (
+      const needsUpdate =
         booking.booking_status !== correctBookingStatus ||
         booking.payment_status !== correctPaymentStatus ||
-        booking.balance !== newBalance
-      );
-      
+        booking.balance !== newBalance;
+
       if (needsUpdate) {
         await prisma.booking.update({
           where: { booking_id: booking.booking_id },
@@ -536,7 +593,7 @@ export const fixAllBookingStatusInconsistencies = async (req, res) => {
             balance: newBalance,
           },
         });
-        
+
         updatedCount++;
         results.push({
           booking_id: booking.booking_id,
@@ -551,9 +608,9 @@ export const fixAllBookingStatusInconsistencies = async (req, res) => {
         });
       }
     }
-    
+
     console.log(`✅ Fixed ${updatedCount} booking status inconsistencies`);
-    
+
     res.status(200).json({
       message: `Fixed ${updatedCount} booking status inconsistencies`,
       updated_count: updatedCount,
@@ -561,8 +618,10 @@ export const fixAllBookingStatusInconsistencies = async (req, res) => {
       updates: results,
     });
   } catch (error) {
-    console.error('Error fixing booking status inconsistencies:', error);
-    res.status(500).json({ error: 'Failed to fix booking status inconsistencies' });
+    console.error("Error fixing booking status inconsistencies:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to fix booking status inconsistencies" });
   }
 };
 
@@ -592,8 +651,17 @@ export const processBookingPayment = async (req, res) => {
     const booking = await prisma.booking.findUnique({
       where: { booking_id: parseInt(booking_id) },
       include: {
-        car: { select: { make: true, model: true, year: true, license_plate: true } },
-        customer: { select: { first_name: true, last_name: true, email: true, contact_no: true } },
+        car: {
+          select: { make: true, model: true, year: true, license_plate: true },
+        },
+        customer: {
+          select: {
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true,
+          },
+        },
       },
     });
 
@@ -621,7 +689,14 @@ export const processBookingPayment = async (req, res) => {
         balance: Math.max(0, (booking.total_amount || 0) - parseInt(amount)),
       },
       include: {
-        customer: { select: { first_name: true, last_name: true, email: true, contact_no: true } },
+        customer: {
+          select: {
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true,
+          },
+        },
         booking: {
           select: {
             booking_id: true,
@@ -634,37 +709,50 @@ export const processBookingPayment = async (req, res) => {
     });
 
     // Calculate total amount paid so far (including this payment)
-    const totalPaid = parseInt(amount);
-    
-    // Determine if booking should be auto-confirmed
-    // If payment is >= 1000, automatically confirm the booking
-    // Otherwise, booking stays in Pending status and requires admin confirmation
+    // Need to fetch all payments for this booking to calculate accurate total
+    const allPayments = await prisma.payment.findMany({
+      where: { booking_id: parseInt(booking_id) },
+      select: { amount: true },
+    });
+
+    const totalPaid = allPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const newBalance = (booking.total_amount || 0) - totalPaid;
+
+    console.log("💰 Payment calculation:", {
+      booking_id,
+      total_amount: booking.total_amount,
+      totalPaid,
+      newBalance,
+      payment_status: newBalance <= 0 ? "Paid" : "Unpaid",
+    });
+
+    // Don't auto-confirm booking - admin must manually confirm via confirmBooking endpoint
+    // Payment sets isPay=true to signal admin that payment needs approval
     // IMPORTANT: Never change status if booking is 'In Progress' (customer is using the car)
     let bookingStatus = booking.booking_status;
-    
-    // Only update status if current status is NOT 'In Progress'
-    if (booking.booking_status !== 'In Progress') {
-      if (totalPaid >= 1000) {
-        bookingStatus = 'Confirmed';
-      } else if (totalPaid < 1000) {
-        bookingStatus = 'Pending';
-      }
-    }
 
-    // Update booking isPay flag and booking status
+    // Keep current status - don't auto-confirm even if payment >= 1000
+    // Admin will manually confirm through the single-click approval process
+    // Status only changes when admin clicks the ✓ button (confirmBooking endpoint)
+
+    // Update booking with new balance, payment_status, and isPay flag
     await prisma.booking.update({
       where: { booking_id: parseInt(booking_id) },
-      data: { 
+      data: {
         isPay: true, // Set to true whenever customer makes payment
-        booking_status: bookingStatus, // Auto-confirm if payment >= 1000, preserve 'In Progress'
+        booking_status: bookingStatus, // Keep current status
+        balance: newBalance, // Update balance based on total paid
+        payment_status: newBalance <= 0 ? "Paid" : "Unpaid", // Update payment status
       },
     });
 
     // Send payment request notification to admin/staff (GCash only - customer submitted proof)
     // Cash payments are recorded by admin/staff, so no request notification needed
-    if (payment_method === 'GCash') {
+    if (payment_method === "GCash") {
       try {
-        console.log('💳 Sending GCash payment request notification to admin...');
+        console.log(
+          "💳 Sending GCash payment request notification to admin..."
+        );
         await sendAdminPaymentRequestNotification(
           {
             payment_id: payment.payment_id,
@@ -672,40 +760,44 @@ export const processBookingPayment = async (req, res) => {
             gcash_no,
             reference_no,
             amount: parseInt(amount),
-            description: payment.description
+            description: payment.description,
           },
           {
             customer_id: parseInt(customerId),
             first_name: booking.customer.first_name,
             last_name: booking.customer.last_name,
             email: booking.customer.email,
-            contact_no: booking.customer.contact_no
+            contact_no: booking.customer.contact_no,
           },
           {
             booking_id: booking.booking_id,
             start_date: booking.start_date,
             end_date: booking.end_date,
-            total_amount: booking.total_amount
+            total_amount: booking.total_amount,
           },
           {
             make: booking.car.make,
             model: booking.car.model,
             year: booking.car.year,
-            license_plate: booking.car.license_plate
+            license_plate: booking.car.license_plate,
           }
         );
-        console.log('✅ Admin GCash payment request notification sent');
+        console.log("✅ Admin GCash payment request notification sent");
       } catch (adminNotificationError) {
-        console.error("Error sending admin payment notification:", adminNotificationError);
+        console.error(
+          "Error sending admin payment notification:",
+          adminNotificationError
+        );
         // Don't fail the payment request if notification fails
       }
     }
 
     res.status(201).json({
       success: true,
-      message: totalPaid >= 1000 
-        ? "Payment completed successfully! Your booking has been confirmed." 
-        : "Payment submitted successfully! Waiting for admin confirmation.",
+      message:
+        totalPaid >= 1000
+          ? "Payment completed successfully! Your booking has been confirmed."
+          : "Payment submitted successfully! Waiting for admin confirmation.",
       payment: shapePayment(payment),
       remaining_balance: payment.balance,
       booking_status: bookingStatus,
@@ -734,11 +826,11 @@ export const getMyPayments = async (req, res) => {
 
     // Get pagination parameters
     const { page, pageSize, skip } = getPaginationParams(req);
-    const { sortBy, sortOrder } = getSortingParams(req, 'paid_date', 'desc');
-    
+    const { sortBy, sortOrder } = getSortingParams(req, "paid_date", "desc");
+
     // Build where clause
     const where = { customer_id: parseInt(customerId) };
-    
+
     // Payment method filter
     if (req.query.payment_method) {
       where.payment_method = req.query.payment_method;

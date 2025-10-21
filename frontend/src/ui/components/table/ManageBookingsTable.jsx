@@ -164,18 +164,26 @@ const ManageBookingsTable = ({
         bookingId,
         currentStatus: row.booking_status,
         isExtend: row.isExtend,
+        isPay: row.isPay,
         newEndDate: row.new_end_date,
       });
 
-      // Call the confirm extension API
-      const result = await bookingAPI.confirmExtensionRequest(
-        bookingId,
-        logout
-      );
-
-      console.log('Confirm extension result:', result);
-
-      showMessage('Extension request confirmed successfully!', 'success');
+      // Check if this is payment confirmation or extension approval
+      const isPaid = row.isPay === true || row.isPay === 'true' || row.isPay === 'TRUE';
+      
+      if (isPaid) {
+        // Customer has paid - confirm the PAYMENT (not the extension request)
+        console.log('🟢 Confirming extension PAYMENT...');
+        const result = await bookingAPI.confirmBooking(bookingId, logout);
+        console.log('✅ Extension payment confirmed:', result);
+        showMessage('Extension payment confirmed! End date has been updated.', 'success');
+      } else {
+        // Customer hasn't paid yet - approve the extension REQUEST
+        console.log('🔵 Approving extension REQUEST...');
+        const result = await bookingAPI.confirmExtensionRequest(bookingId, logout);
+        console.log('✅ Extension request approved:', result);
+        showMessage('Extension request approved! Waiting for customer payment.', 'success');
+      }
 
       // Refresh data if callback provided
       if (onDataChange && typeof onDataChange === 'function') {
@@ -436,6 +444,80 @@ const ManageBookingsTable = ({
           return formatDateString(params.value);
         },
       },
+      {
+        field: 'request_type',
+        headerName: 'Request Type',
+        flex: 2,
+        minWidth: 200,
+        resizable: true,
+        renderCell: (params) => {
+          const isPaid = params.row.isPay === true || 
+                        params.row.isPay === 'true' || 
+                        params.row.isPay === 'TRUE';
+          const bookingStatus = params.row.booking_status?.toLowerCase();
+          const latestExtension = params.row.latest_extension;
+          
+          // Check if extension has been approved by admin
+          const isExtensionApproved = latestExtension && 
+                                      (latestExtension.extension_status === 'approved' || 
+                                       latestExtension.approve_time !== null);
+          
+          // Status = "In Progress" + isPay = true → Extension paid, awaiting admin confirmation
+          if (bookingStatus === 'in progress' && isPaid) {
+            return (
+              <Box
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
+                  color: '#2e7d32',
+                  fontWeight: 500,
+                  lineHeight: 1.3,
+                  wordBreak: 'break-word',
+                  whiteSpace: 'normal',
+                  py: 0.5,
+                }}
+              >
+                ✅ Extension paid - Confirm to apply new date
+              </Box>
+            );
+          }
+          
+          // Status = "In Progress" + Extension approved by admin → Awaiting customer payment
+          if (bookingStatus === 'in progress' && isExtensionApproved) {
+            return (
+              <Box
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
+                  color: '#ed6c02',
+                  fontWeight: 500,
+                  lineHeight: 1.3,
+                  wordBreak: 'break-word',
+                  whiteSpace: 'normal',
+                  py: 0.5,
+                }}
+              >
+                💰 Extension approved - Awaiting customer payment
+              </Box>
+            );
+          }
+
+          // Otherwise, it's a new extension request (status=Pending or other) - not yet approved
+          return (
+            <Box
+              sx={{
+                fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
+                color: '#1976d2',
+                fontWeight: 500,
+                lineHeight: 1.3,
+                wordBreak: 'break-word',
+                whiteSpace: 'normal',
+                py: 0.5,
+              }}
+            >
+              📅 New extension request - Review & approve/reject
+            </Box>
+          );
+        },
+      },
     ],
   };
 
@@ -546,38 +628,93 @@ const ManageBookingsTable = ({
           )}
 
           {/* EXTENSION TAB - Confirm and reject buttons */}
-          {activeTab === 'EXTENSION' && (
-            <>
-              <IconButton
-                size="small"
-                color="success"
-                aria-label="confirm extension"
-                onClick={() => handleConfirmExtension(params.row)}
-                disabled={processing}
-                sx={{
-                  '&:hover': {
-                    backgroundColor: 'rgba(46, 125, 50, 0.08)',
-                  },
-                }}
-              >
-                <CheckCircleIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                color="error"
-                aria-label="reject extension"
-                onClick={() => handleRejectExtension(params.row)}
-                disabled={processing}
-                sx={{
-                  '&:hover': {
-                    backgroundColor: 'rgba(211, 47, 47, 0.08)',
-                  },
-                }}
-              >
-                <CancelIcon fontSize="small" />
-              </IconButton>
-            </>
-          )}
+          {activeTab === 'EXTENSION' && (() => {
+            const latestExtension = params.row.latest_extension;
+            const isExtensionApproved = latestExtension && 
+                                        (latestExtension.extension_status === 'approved' || 
+                                         latestExtension.approve_time !== null);
+            const isPaid = params.row.isPay === true || 
+                          params.row.isPay === 'true' || 
+                          params.row.isPay === 'TRUE';
+            
+            // Show buttons based on state:
+            // 1. New request (not approved) → Approve + Reject
+            // 2. Approved, awaiting payment → No buttons (admin waits)
+            // 3. Customer paid → Confirm + Reject (admin can reject payment if invalid)
+            
+            if (isPaid) {
+              // State 3: Customer paid, show confirm AND reject buttons
+              return (
+                <>
+                  <IconButton
+                    size="small"
+                    color="success"
+                    aria-label="confirm extension payment"
+                    onClick={() => handleConfirmExtension(params.row)}
+                    disabled={processing}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                      },
+                    }}
+                  >
+                    <CheckCircleIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    aria-label="reject extension payment"
+                    onClick={() => handleRejectExtension(params.row)}
+                    disabled={processing}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'rgba(211, 47, 47, 0.08)',
+                      },
+                    }}
+                  >
+                    <CancelIcon fontSize="small" />
+                  </IconButton>
+                </>
+              );
+            } else if (isExtensionApproved) {
+              // State 2: Approved, awaiting payment - NO buttons (admin just waits)
+              return null;
+            } else {
+              // State 1: New request - show approve/reject buttons
+              return (
+                <>
+                  <IconButton
+                    size="small"
+                    color="success"
+                    aria-label="approve extension"
+                    onClick={() => handleConfirmExtension(params.row)}
+                    disabled={processing}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                      },
+                    }}
+                  >
+                    <CheckCircleIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    aria-label="reject extension"
+                    onClick={() => handleRejectExtension(params.row)}
+                    disabled={processing}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'rgba(211, 47, 47, 0.08)',
+                      },
+                    }}
+                  >
+                    <CancelIcon fontSize="small" />
+                  </IconButton>
+                </>
+              );
+            }
+          })()}
         </Box>
       );
     },

@@ -12,8 +12,14 @@ export const getSchedules = async (req, res) => {
     const { sortBy, sortOrder } = getSortingParams(req, 'start_date', 'desc');
     const search = getSearchParam(req);
     
-    // Build where clause
-    const where = {};
+    // Build where clause for filtering
+    const where = {
+      // Filter to show only Confirmed and In Progress bookings
+      // Exclude Pending, Completed, and Cancelled bookings
+      booking_status: {
+        in: ['Confirmed', 'In Progress']
+      }
+    };
     
     // Search filter (customer name or car model)
     if (search) {
@@ -25,11 +31,10 @@ export const getSchedules = async (req, res) => {
       ];
     }
     
-    // Status filter - include all statuses including 'In Progress' and bookings with unpaid status
+    // Status filter (if provided, it will override the default filter)
     if (req.query.status) {
       where.booking_status = req.query.status;
     }
-    // No default filter - show all bookings regardless of payment_status or booking_status
 
     // Get total count
     const total = await prisma.booking.count({ where });

@@ -20,7 +20,13 @@ const refundSchema = z
     customerId: z.number().positive().optional(),
     bookingId: z.coerce.number().int().gt(0, 'Select a booking'),
     description: z.enum(
-      ['50% Refund', '75% Refund', '100% Refund', 'Security Deposit'],
+      [
+        '50% Refund',
+        '75% Refund',
+        '100% Refund',
+        'Total Refund',
+        'Security Deposit',
+      ],
       {
         errorMap: () => ({ message: 'Select a refund type' }),
       }
@@ -90,7 +96,7 @@ export default function AddRefundModal({ show, onClose }) {
 
   // Calculate refund amount based on description and selected booking
   const calculateRefundAmount = (description, booking) => {
-    if (!description || !booking || !booking.total_amount) return 0;
+    if (!description || !booking) return 0;
 
     switch (description) {
       case '50% Refund':
@@ -101,6 +107,11 @@ export default function AddRefundModal({ show, onClose }) {
         return Math.round((booking.total_amount - 1000) * 1.0);
       case 'Security Deposit':
         return securityDepositFee;
+      case 'Total Refund': {
+        // Calculate total paid from payments
+        const totalPaid = booking.total_paid || 0;
+        return totalPaid;
+      }
       default:
         return 0;
     }
@@ -134,14 +145,14 @@ export default function AddRefundModal({ show, onClose }) {
       setFormData((fd) => ({ ...fd, bookingId: '' }));
       return;
     }
-    // Filter bookings by customer_id AND payment_status = 'Paid'
+    // Filter bookings by customer_id, exclude 'Pending' status
     const list = bookings.filter(
-      (b) => b.customer_id === custId && b.payment_status === 'Paid'
+      (b) => b.customer_id === custId && b.booking_status !== 'Pending'
     );
     console.log(
       '[AddRefundModal] Filtered bookings for customer:',
       custId,
-      'Paid bookings:',
+      'Non-pending bookings:',
       list
     );
     setBookingOptions(list);
@@ -267,9 +278,13 @@ export default function AddRefundModal({ show, onClose }) {
           fRes.json(),
         ]);
         // Handle paginated responses - extract data arrays
-        const cData = Array.isArray(cData_raw) ? cData_raw : (cData_raw?.data || []);
-        const bData = Array.isArray(bData_raw) ? bData_raw : (bData_raw?.data || []);
-        
+        const cData = Array.isArray(cData_raw)
+          ? cData_raw
+          : cData_raw?.data || [];
+        const bData = Array.isArray(bData_raw)
+          ? bData_raw
+          : bData_raw?.data || [];
+
         if (!cancel) {
           setCustomers(Array.isArray(cData) ? cData : []);
           setBookings(Array.isArray(bData) ? bData : []);
@@ -351,7 +366,9 @@ export default function AddRefundModal({ show, onClose }) {
                 errors.bookingId ||
                 (formData.customerId && bookingOptions.length === 0
                   ? 'No bookings for this customer'
-                  : '')
+                  : selectedBooking && selectedBooking.payment_status !== 'Paid'
+                    ? `⚠️ This booking is ${selectedBooking.payment_status}. Refund can only be issued for Paid bookings.`
+                    : '')
               }
               fullWidth
             >
@@ -360,9 +377,18 @@ export default function AddRefundModal({ show, onClose }) {
                 const dateStr = isNaN(d.getTime())
                   ? b.booking_date
                   : d.toISOString().split('T')[0];
+                const isPaid = b.payment_status === 'Paid';
                 return (
-                  <MenuItem key={b.booking_id} value={b.booking_id}>
-                    (ID #{b.booking_id}) - {dateStr} - {b.booking_status}
+                  <MenuItem
+                    key={b.booking_id}
+                    value={b.booking_id}
+                    sx={{
+                      color: isPaid ? 'inherit' : 'warning.main',
+                      fontStyle: isPaid ? 'normal' : 'italic',
+                    }}
+                  >
+                    (ID #{b.booking_id}) - {dateStr} - {b.booking_status} -{' '}
+                    {b.payment_status}
                   </MenuItem>
                 );
               })}
@@ -382,6 +408,7 @@ export default function AddRefundModal({ show, onClose }) {
               <MenuItem value="50% Refund">50% Refund</MenuItem>
               <MenuItem value="75% Refund">75% Refund</MenuItem>
               <MenuItem value="100% Refund">100% Refund</MenuItem>
+              <MenuItem value="Total Refund">Total Refund</MenuItem>
               <MenuItem value="Security Deposit">Security Deposit</MenuItem>
             </TextField>
 
@@ -470,7 +497,16 @@ export default function AddRefundModal({ show, onClose }) {
             form="addRefundForm"
             variant="contained"
             color="success"
-            disabled={submitting || loadingData}
+            disabled={
+              submitting ||
+              loadingData ||
+              (selectedBooking && selectedBooking.payment_status !== 'Paid')
+            }
+            title={
+              selectedBooking && selectedBooking.payment_status !== 'Paid'
+                ? 'Refund can only be issued for paid bookings'
+                : ''
+            }
           >
             {submitting ? 'Saving...' : 'Add'}
           </Button>

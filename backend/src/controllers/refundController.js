@@ -89,10 +89,11 @@ export const createRefund = async (req, res) => {
 		const availableForRefund = totalPaid - totalRefunded;
 		const refundAmountNum = Number(refund_amount);
 
-		// Special handling for security deposit fee
+		// Special handling for security deposit fee and total refund
 		const isSecurityDeposit = description && description.toLowerCase().includes('security deposit');
+		const isTotalRefund = description && description.toLowerCase() === 'total refund';
 
-		if (!isSecurityDeposit) {
+		if (!isSecurityDeposit && !isTotalRefund) {
 			// For regular refunds, validate against available amount
 			if (refundAmountNum > availableForRefund) {
 				return res.status(400).json({
@@ -105,7 +106,7 @@ export const createRefund = async (req, res) => {
 					}
 				});
 			}
-		} else {
+		} else if (isSecurityDeposit) {
 			// For security deposit refund, deduct from booking total_amount
 			await prisma.booking.update({
 				where: { booking_id: Number(booking_id) },
@@ -113,6 +114,17 @@ export const createRefund = async (req, res) => {
 					total_amount: booking.total_amount - refundAmountNum
 				}
 			});
+		} else if (isTotalRefund) {
+			// For total refund, validate that refund amount matches total paid
+			if (refundAmountNum > totalPaid) {
+				return res.status(400).json({
+					error: 'Total refund amount cannot exceed total paid amount',
+					details: {
+						totalPaid: totalPaid,
+						attemptedRefund: refundAmountNum
+					}
+				});
+			}
 		}
 
 		const created = await prisma.refund.create({

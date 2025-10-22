@@ -51,6 +51,7 @@ export const getRefunds = async (req, res) => {
 export const createRefund = async (req, res) => {
 	try {
 		const { booking_id, customer_id, refund_method, gcash_no, reference_no, refund_amount, refund_date, description } = req.body;
+		const isTotalRefund = description && description.toLowerCase() === 'total refund';
 
 		if (!booking_id || !customer_id || refund_amount == null) {
 			return res.status(400).json({ error: 'booking_id, customer_id and refund_amount are required' });
@@ -73,8 +74,8 @@ export const createRefund = async (req, res) => {
 			return res.status(404).json({ error: 'Booking not found' });
 		}
 
-		// Check if booking has paid status
-		if (booking.payment_status !== 'Paid') {
+		// Check if booking has paid status (except for Total Refund)
+		if (booking.payment_status !== 'Paid' && !isTotalRefund) {
 			return res.status(400).json({
 				error: 'Refund can only be issued for paid bookings',
 				details: {
@@ -91,7 +92,6 @@ export const createRefund = async (req, res) => {
 
 		// Special handling for security deposit fee and total refund
 		const isSecurityDeposit = description && description.toLowerCase().includes('security deposit');
-		const isTotalRefund = description && description.toLowerCase() === 'total refund';
 
 		if (!isSecurityDeposit && !isTotalRefund) {
 			// For regular refunds, validate against available amount

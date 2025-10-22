@@ -500,10 +500,14 @@ export default function AddRefundModal({ show, onClose }) {
             disabled={
               submitting ||
               loadingData ||
-              (selectedBooking && selectedBooking.payment_status !== 'Paid')
+              (selectedBooking &&
+                selectedBooking.payment_status !== 'Paid' &&
+                formData.description !== 'Total Refund')
             }
             title={
-              selectedBooking && selectedBooking.payment_status !== 'Paid'
+              selectedBooking &&
+              selectedBooking.payment_status !== 'Paid' &&
+              formData.description !== 'Total Refund'
                 ? 'Refund can only be issued for paid bookings'
                 : ''
             }

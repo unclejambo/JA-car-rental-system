@@ -6,6 +6,10 @@ import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
+import FormControl from '@mui/material/FormControl';
+import FormLabel from '@mui/material/FormLabel';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Header from '../ui/components/Header';
 import carImage from '/carImage.png';
@@ -54,6 +58,7 @@ const RegisterPage = () => {
     address: '',
     contactNumber: '',
     fb_link: '',
+    hasDriverLicense: '', // 'yes' or 'no'
     licenseNumber: '',
     licenseExpiry: '',
     restrictions: '',
@@ -132,6 +137,7 @@ const RegisterPage = () => {
         address,
         contactNumber,
         fb_link,
+        hasDriverLicense,
         licenseNumber,
         licenseExpiry,
         restrictions,
@@ -150,12 +156,17 @@ const RegisterPage = () => {
         !address?.trim() ||
         !contactNumber?.trim() ||
         !fb_link?.trim() ||
-        !licenseNumber?.trim() ||
-        !licenseExpiry?.trim() ||
-        !licenseFile ||
+        !hasDriverLicense ||
         !agreeTerms
       ) {
         throw new Error('All required fields must be provided');
+      }
+
+      // Validate license fields only if user has a license
+      if (hasDriverLicense === 'yes') {
+        if (!licenseNumber?.trim() || !licenseExpiry?.trim() || !licenseFile) {
+          throw new Error('Please provide driver license number, expiry date, and image');
+        }
       }
 
       if (password !== confirmPassword) {
@@ -164,44 +175,48 @@ const RegisterPage = () => {
 
       setLoading(true);
 
-      // 1) Upload license image first
       const BASE = (
         import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL
       ).replace(/\/+$/, '');
 
-      const uploadUrl = new URL('/api/storage/licenses', BASE).toString();
-      const uploadFd = new FormData();
-      uploadFd.append('file', licenseFile);
-      uploadFd.append('licenseNumber', licenseNumber.trim());
-      uploadFd.append('username', username.trim());
+      // 1) Upload license image only if user has a license
+      let dl_img_url = null;
+      
+      if (hasDriverLicense === 'yes') {
+        const uploadUrl = new URL('/api/storage/licenses', BASE).toString();
+        const uploadFd = new FormData();
+        uploadFd.append('file', licenseFile);
+        uploadFd.append('licenseNumber', licenseNumber.trim());
+        uploadFd.append('username', username.trim());
 
-      console.log('Uploading file to:', uploadUrl);
+        console.log('Uploading file to:', uploadUrl);
 
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'POST',
-        body: uploadFd,
-      });
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'POST',
+          body: uploadFd,
+        });
 
-      const uploadJson = await uploadRes.json();
-      console.log('Upload response:', uploadJson);
+        const uploadJson = await uploadRes.json();
+        console.log('Upload response:', uploadJson);
 
-      if (!uploadRes.ok) {
-        throw new Error(
-          uploadJson?.message || uploadJson?.error || 'File upload failed'
-        );
-      }
+        if (!uploadRes.ok) {
+          throw new Error(
+            uploadJson?.message || uploadJson?.error || 'File upload failed'
+          );
+        }
 
-      // Extract the URL from response
-      const dl_img_url =
-        uploadJson.filePath ||
-        uploadJson.path ||
-        uploadJson.url ||
-        uploadJson.publicUrl;
-      console.log('Extracted dl_img_url:', dl_img_url);
+        // Extract the URL from response
+        dl_img_url =
+          uploadJson.filePath ||
+          uploadJson.path ||
+          uploadJson.url ||
+          uploadJson.publicUrl;
+        console.log('Extracted dl_img_url:', dl_img_url);
 
-      if (!dl_img_url) {
-        console.error('No URL found in response:', uploadJson);
-        throw new Error('File upload succeeded but no URL returned');
+        if (!dl_img_url) {
+          console.error('No URL found in response:', uploadJson);
+          throw new Error('File upload succeeded but no URL returned');
+        }
       }
 
       // 2) Send OTP to phone number for verification
@@ -235,9 +250,10 @@ const RegisterPage = () => {
         address: address.trim(),
         contactNumber: contactNumber.trim(),
         fb_link: fb_link.trim(),
-        licenseNumber: licenseNumber.trim(),
-        licenseExpiry: licenseExpiry.trim(),
-        restrictions: restrictions?.trim() || '',
+        hasDriverLicense: hasDriverLicense,
+        licenseNumber: hasDriverLicense === 'yes' ? licenseNumber.trim() : null,
+        licenseExpiry: hasDriverLicense === 'yes' ? licenseExpiry.trim() : null,
+        restrictions: hasDriverLicense === 'yes' ? (restrictions?.trim() || '') : null,
         dl_img_url: dl_img_url,
         agreeTerms: true,
       });
@@ -253,7 +269,7 @@ const RegisterPage = () => {
   };
 
   // Handle successful phone verification
-  const handlePhoneVerificationSuccess = async (verificationData) => {
+  const handlePhoneVerificationSuccess = async (_verificationData) => {
     try {
       setLoading(true);
       setShowPhoneVerification(false);
@@ -669,142 +685,220 @@ const RegisterPage = () => {
               />
             </Box>
 
-            {/* Driver's License Number */}
-            <Box sx={{ mb: 2 }}>
-              <TextField
-                id="licenseNumber"
-                name="licenseNumber"
-                label="DRIVER'S LICENSE NUMBER"
-                value={formData.licenseNumber}
-                onChange={onChange}
-                type="text"
-                placeholder="License number"
-                fullWidth
-                variant="outlined"
-                size="medium"
-                required
-                error={!!errors.licenseNumber}
-                helperText={errors.licenseNumber}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(156, 163, 175, 0.5)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(156, 163, 175, 0.8)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '0.875rem',
-                    fontWeight: '600',
-                  },
-                }}
-              />
-            </Box>
-
-            {/* Driver's License Expiry Date */}
-            <Box sx={{ mb: 2 }}>
-              <TextField
-                id="licenseExpiry"
-                name="licenseExpiry"
-                label="DRIVER'S LICENSE EXPIRY DATE"
-                value={formData.licenseExpiry}
-                onChange={onChange}
-                type="date"
-                fullWidth
-                variant="outlined"
-                size="medium"
-                required
-                error={!!errors.licenseExpiry}
-                helperText={errors.licenseExpiry}
-                InputLabelProps={{
-                  shrink: true,
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(156, 163, 175, 0.5)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(156, 163, 175, 0.8)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '0.875rem',
-                    fontWeight: '600',
-                  },
-                }}
-              />
-            </Box>
-
-            {/* Restrictions */}
-            <Box sx={{ mb: 2 }}>
-              <TextField
-                id="restrictions"
-                name="restrictions"
-                label="RESTRICTIONS"
-                value={formData.restrictions}
-                onChange={onChange}
-                type="text"
-                placeholder="CODE (optional)"
-                fullWidth
-                variant="outlined"
-                size="medium"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(156, 163, 175, 0.5)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(156, 163, 175, 0.8)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '0.875rem',
-                    fontWeight: '600',
-                  },
-                }}
-              />
-            </Box>
-
-            {/* License Image Upload */}
+            {/* Driver's License Question */}
             <Box sx={{ mb: 3 }}>
-              <Typography
-                variant="body2"
-                sx={{ fontSize: '0.875rem', fontWeight: '600', mb: 1 }}
-              >
-                LICENSE IMAGE
-              </Typography>
-              <Box>
-                <input
-                  ref={fileInputRef}
-                  id="licenseUpload"
-                  name="file"
-                  type="file"
-                  onChange={handleFileChange}
-                  accept={ALLOWED_FILE_TYPES.join(',')}
-                  style={{ display: 'none' }}
-                />
-                <Button
-                  variant="outlined"
-                  component="label"
-                  htmlFor="licenseUpload"
-                  startIcon={<FaUpload />}
-                  size="medium"
+              <FormControl component="fieldset" required error={!!errors.hasDriverLicense}>
+                <FormLabel 
+                  component="legend"
                   sx={{
-                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
-                    borderColor: 'rgba(156, 163, 175, 0.5)',
-                    color: 'rgba(75, 85, 99, 1)',
-                    '&:hover': {
-                      backgroundColor: 'rgba(209, 213, 219, 0.8)',
-                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                    color: 'rgba(55, 65, 81, 1)',
+                    mb: 1,
+                    '&.Mui-focused': {
+                      color: 'rgba(55, 65, 81, 1)',
                     },
                   }}
                 >
-                  {formData.licenseFile ? 'Change file' : 'Upload License ID'}
+                  DO YOU HAVE AN ACTIVE DRIVER'S LICENSE? *
+                </FormLabel>
+                <RadioGroup
+                  aria-label="has-driver-license"
+                  name="hasDriverLicense"
+                  value={formData.hasDriverLicense}
+                  onChange={onChange}
+                  row
+                  sx={{
+                    '& .MuiFormControlLabel-label': {
+                      fontSize: '0.95rem',
+                      fontWeight: '500',
+                    },
+                  }}
+                >
+                  <FormControlLabel
+                    value="yes"
+                    control={
+                      <Radio
+                        sx={{
+                          color: 'rgba(156, 163, 175, 0.8)',
+                          '&.Mui-checked': {
+                            color: '#2563eb',
+                          },
+                        }}
+                      />
+                    }
+                    label="Yes, I have a license"
+                    sx={{ mr: 3 }}
+                  />
+                  <FormControlLabel
+                    value="no"
+                    control={
+                      <Radio
+                        sx={{
+                          color: 'rgba(156, 163, 175, 0.8)',
+                          '&.Mui-checked': {
+                            color: '#2563eb',
+                          },
+                        }}
+                      />
+                    }
+                    label="No, I don't have a license"
+                  />
+                </RadioGroup>
+                {errors.hasDriverLicense && (
+                  <Typography
+                    variant="caption"
+                    sx={{ color: '#DC2626', fontSize: '0.75rem', mt: 0.5 }}
+                  >
+                    {errors.hasDriverLicense}
+                  </Typography>
+                )}
+              </FormControl>
+            </Box>
+
+            {/* Driver's License Number - Conditional */}
+            {formData.hasDriverLicense === 'yes' && (
+              <Box sx={{ mb: 2 }}>
+                <TextField
+                  id="licenseNumber"
+                  name="licenseNumber"
+                  label="DRIVER'S LICENSE NUMBER"
+                  value={formData.licenseNumber}
+                  onChange={onChange}
+                  type="text"
+                  placeholder="License number"
+                  fullWidth
+                  variant="outlined"
+                  size="medium"
+                  required
+                  error={!!errors.licenseNumber}
+                  helperText={errors.licenseNumber}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                      '& fieldset': {
+                        borderColor: 'rgba(156, 163, 175, 0.5)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(156, 163, 175, 0.8)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                    },
+                  }}
+                />
+              </Box>
+            )}
+
+            {/* Driver's License Expiry Date - Conditional */}
+            {formData.hasDriverLicense === 'yes' && (
+              <Box sx={{ mb: 2 }}>
+                <TextField
+                  id="licenseExpiry"
+                  name="licenseExpiry"
+                  label="DRIVER'S LICENSE EXPIRY DATE"
+                  value={formData.licenseExpiry}
+                  onChange={onChange}
+                  type="date"
+                  fullWidth
+                  variant="outlined"
+                  size="medium"
+                  required
+                  error={!!errors.licenseExpiry}
+                  helperText={errors.licenseExpiry}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                      '& fieldset': {
+                        borderColor: 'rgba(156, 163, 175, 0.5)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(156, 163, 175, 0.8)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                    },
+                  }}
+                />
+              </Box>
+            )}
+
+            {/* Restrictions - Conditional */}
+            {formData.hasDriverLicense === 'yes' && (
+              <Box sx={{ mb: 2 }}>
+                <TextField
+                  id="restrictions"
+                  name="restrictions"
+                  label="RESTRICTIONS"
+                  value={formData.restrictions}
+                  onChange={onChange}
+                  type="text"
+                  placeholder="CODE (optional)"
+                  fullWidth
+                  variant="outlined"
+                  size="medium"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                      '& fieldset': {
+                        borderColor: 'rgba(156, 163, 175, 0.5)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(156, 163, 175, 0.8)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                    },
+                  }}
+                />
+              </Box>
+            )}
+
+            {/* License Image Upload - Conditional */}
+            {formData.hasDriverLicense === 'yes' && (
+              <Box sx={{ mb: 3 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontSize: '0.875rem', fontWeight: '600', mb: 1 }}
+                >
+                  LICENSE IMAGE
+                </Typography>
+                <Box>
+                  <input
+                    ref={fileInputRef}
+                    id="licenseUpload"
+                    name="file"
+                    type="file"
+                    onChange={handleFileChange}
+                    accept={ALLOWED_FILE_TYPES.join(',')}
+                    style={{ display: 'none' }}
+                  />
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    htmlFor="licenseUpload"
+                    startIcon={<FaUpload />}
+                    size="medium"
+                    sx={{
+                      backgroundColor: 'rgba(229, 231, 235, 0.8)',
+                      borderColor: 'rgba(156, 163, 175, 0.5)',
+                      color: 'rgba(75, 85, 99, 1)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(209, 213, 219, 0.8)',
+                        borderColor: 'rgba(156, 163, 175, 0.8)',
+                      },
+                    }}
+                  >
+                    {formData.licenseFile ? 'Change file' : 'Upload License ID'}
 
                   {formData.licenseFile && (
                     <Box
@@ -852,7 +946,8 @@ const RegisterPage = () => {
                   {errors.licenseFile}
                 </Typography>
               )}
-            </Box>
+              </Box>
+            )}
 
             {/* Terms and Conditions */}
             <Box

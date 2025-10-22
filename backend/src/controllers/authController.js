@@ -204,6 +204,7 @@ async function register(req, res, next) {
       address,
       contactNumber,
       fb_link,
+      hasDriverLicense,
       licenseNumber: licenseNumberBody,
       licenseExpiry,
       restrictions,
@@ -214,9 +215,10 @@ async function register(req, res, next) {
     const licenseNumber =
       licenseNumberBody || req.body.license_number || req.body.driver_license_no;
 
+    console.log('Has driver license:', hasDriverLicense);
     console.log('Extracted dl_img_url:', dl_img_url);
 
-    // Basic validation
+    // Basic validation (license fields are optional)
     if (
       !email ||
       !username ||
@@ -225,9 +227,6 @@ async function register(req, res, next) {
       !lastName ||
       !address ||
       !contactNumber ||
-      !licenseNumber ||
-      !licenseExpiry ||
-      !dl_img_url || // Require the image URL
       !agreeTerms
     ) {
       return res.status(400).json({ 
@@ -241,12 +240,24 @@ async function register(req, res, next) {
           lastName: !lastName,
           address: !address,
           contactNumber: !contactNumber,
-          licenseNumber: !licenseNumber,
-          licenseExpiry: !licenseExpiry,
-          dl_img_url: !dl_img_url,
           agreeTerms: !agreeTerms
         }
       });
+    }
+
+    // If user has a license, validate license fields
+    if (hasDriverLicense === 'yes') {
+      if (!licenseNumber || !licenseExpiry || !dl_img_url) {
+        return res.status(400).json({
+          ok: false,
+          message: 'Driver license information is incomplete',
+          missing: {
+            licenseNumber: !licenseNumber,
+            licenseExpiry: !licenseExpiry,
+            dl_img_url: !dl_img_url
+          }
+        });
+      }
     }
 
     // Check existing
@@ -257,24 +268,29 @@ async function register(req, res, next) {
       return res.status(409).json({ ok: false, message: 'Account already exists' });
     }
 
-    const existingLicense = await prisma.driverLicense.findUnique({
-      where: { driver_license_no: licenseNumber },
-    });
-    if (existingLicense) {
-      return res.status(409).json({ ok: false, message: 'Driver license already registered' });
+    // Only check license if user has one
+    if (licenseNumber) {
+      const existingLicense = await prisma.driverLicense.findUnique({
+        where: { driver_license_no: licenseNumber },
+      });
+      if (existingLicense) {
+        return res.status(409).json({ ok: false, message: 'Driver license already registered' });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create driverLicense record with the uploaded image URL
-    await prisma.driverLicense.create({
-      data: {
-        driver_license_no: licenseNumber,
-        expiry_date: new Date(licenseExpiry),
-        restrictions: restrictions || 'None',
-        dl_img_url: dl_img_url, // Store the Supabase URL
-      },
-    });
+    // Create driverLicense record only if user has a license
+    if (licenseNumber && licenseExpiry && dl_img_url) {
+      await prisma.driverLicense.create({
+        data: {
+          driver_license_no: licenseNumber,
+          expiry_date: new Date(licenseExpiry),
+          restrictions: restrictions || 'None',
+          dl_img_url: dl_img_url, // Store the Supabase URL
+        },
+      });
+    }
 
     // Create customer
     const customer = await prisma.customer.create({
@@ -288,7 +304,7 @@ async function register(req, res, next) {
         password: hashedPassword,
         fb_link: fb_link || null,
         status: 'active',
-        driver_license_no: licenseNumber,
+        driver_license_no: licenseNumber || null, // NULL if no license
         date_created: new Date(),
         isRecUpdate: 3, // Enable both SMS and Email notifications by default
       },

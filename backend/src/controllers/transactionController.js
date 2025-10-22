@@ -51,11 +51,9 @@ export const getTransactions = async (req, res) => {
     // Get total count
     const total = await prisma.transaction.count({ where });
 
-    // Get paginated transactions
+    // Get all transactions (no pagination limits)
     const transactions = await prisma.transaction.findMany({
       where,
-      skip,
-      take: pageSize,
       orderBy: { [sortBy]: sortOrder },
       include: {
         booking: { select: { booking_date: true } },
@@ -64,7 +62,8 @@ export const getTransactions = async (req, res) => {
       },
     });
 
-    res.json(buildPaginationResponse(transactions.map(shapeTransaction), total, page, pageSize));
+    // Return all transactions with pagination structure maintained
+    res.json(buildPaginationResponse(transactions.map(shapeTransaction), total, 1, total));
   } catch (error) {
     console.error("Error fetching transactions:", error);
     res.status(500).json({ error: "Failed to fetch transactions" });

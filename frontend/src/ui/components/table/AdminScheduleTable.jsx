@@ -17,6 +17,11 @@ import { useState } from 'react';
 import { useScheduleStore } from '../../../store/useScheduleStore';
 import { bookingAPI } from '../../../utils/api';
 import { useNavigate } from 'react-router-dom';
+import {
+  formatDateForInput,
+  formatPhilippineTime,
+  toPhilippineTime,
+} from '../../../utils/dateTime';
 
 const AdminScheduleTable = ({
   rows,
@@ -109,40 +114,28 @@ const AdminScheduleTable = ({
 
   const formatDate = (iso) => {
     if (!iso) return '';
-    // If the incoming value is an ISO datetime string, return only the date part (YYYY-MM-DD)
-    if (typeof iso === 'string' && iso.includes('T')) {
-      return iso.split('T')[0];
+    // Convert to Philippine time and format as YYYY-MM-DD
+    try {
+      const phDate = toPhilippineTime(iso);
+      const year = phDate.getFullYear();
+      const month = String(phDate.getMonth() + 1).padStart(2, '0');
+      const day = String(phDate.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return String(iso);
     }
-    const d = new Date(iso);
-    if (isNaN(d)) return String(iso);
-    return d.toISOString().split('T')[0];
   };
 
   const formatTime = (iso) => {
     if (!iso) return '';
-    // handle ISO datetime strings like "2025-08-21T23:28:18.025Z"
-    if (typeof iso === 'string' && iso.includes('T')) {
-      try {
-        const t = new Date(iso);
-        if (!isNaN(t)) {
-          // show only time in local HH:MM:SS (or HH:MM) format
-          return t.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: undefined,
-          });
-        }
-      } catch {
-        // fall through
-      }
+    // Convert to Philippine time and format as 12-hour time
+    try {
+      return formatPhilippineTime(iso);
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return String(iso);
     }
-    const d = new Date(iso);
-    if (isNaN(d)) return String(iso);
-    return d.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: undefined,
-    });
   };
   // Normalize incoming rows so the DataGrid and renderCell logic can rely on consistent keys
   const normalizedRows = Array.isArray(rows)
@@ -284,16 +277,26 @@ const AdminScheduleTable = ({
     headerAlign: 'left',
     align: 'left',
     renderCell: (params) => {
-      // compare only date parts
-      const today = new Date().toISOString().split('T')[0];
+      // Get current date in Philippine timezone
+      const now = toPhilippineTime(new Date());
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+      // Get start and end dates in Philippine timezone
       const startIso = params.row.start_date ?? params.row.startDate ?? '';
       const endIso = params.row.end_date ?? params.row.endDate ?? '';
-      const startDate = startIso
-        ? new Date(startIso).toISOString().split('T')[0]
-        : null;
-      const endDate = endIso
-        ? new Date(endIso).toISOString().split('T')[0]
-        : null;
+
+      let startDate = null;
+      let endDate = null;
+
+      if (startIso) {
+        const phStart = toPhilippineTime(startIso);
+        startDate = `${phStart.getFullYear()}-${String(phStart.getMonth() + 1).padStart(2, '0')}-${String(phStart.getDate()).padStart(2, '0')}`;
+      }
+
+      if (endIso) {
+        const phEnd = toPhilippineTime(endIso);
+        endDate = `${phEnd.getFullYear()}-${String(phEnd.getMonth() + 1).padStart(2, '0')}-${String(phEnd.getDate()).padStart(2, '0')}`;
+      }
 
       const handleAction = async (actionType) => {
         try {

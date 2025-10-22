@@ -1020,35 +1020,35 @@ export default function ReturnModal({ show, onClose, bookingId }) {
               }
               sx={{ display: 'flex', gap: 1 }}
             >
-              <FormControlLabel value="Cash" control={<Radio />}>
+              <FormControlLabel
+                value="Cash"
+                control={<Radio />}
+                label="Cash"
+                sx={{
+                  '& .MuiFormControlLabel-label': {
+                    userSelect: 'none',
+                    pointerEvents: 'none',
+                  },
+                }}
+              />
+              <FormControlLabel
+                value="GCash"
+                control={<Radio />}
+                label="GCash"
+                sx={{
+                  '& .MuiFormControlLabel-label': {
+                    userSelect: 'none',
+                    pointerEvents: 'none',
+                  },
+                }}
+              />
+              {/* <FormControlLabel value="Cash" control={<Radio />}>
                 Cash
               </FormControlLabel>
               <FormControlLabel value="GCash" control={<Radio />}>
                 GCash
-              </FormControlLabel>
+              </FormControlLabel> */}
             </RadioGroup>
-            <FormControlLabel
-              value="Cash"
-              control={<Radio />}
-              label="Cash"
-              sx={{
-                '& .MuiFormControlLabel-label': {
-                  userSelect: 'none',
-                  pointerEvents: 'none',
-                },
-              }}
-            />
-            <FormControlLabel
-              value="GCash"
-              control={<Radio />}
-              label="GCash"
-              sx={{
-                '& .MuiFormControlLabel-label': {
-                  userSelect: 'none',
-                  pointerEvents: 'none',
-                },
-              }}
-            />
 
             {paymentData.payment_method === 'GCash' && (
               <>

@@ -50,6 +50,8 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
   const [availableDates, setAvailableDates] = useState(null);
   const [unavailablePeriods, setUnavailablePeriods] = useState([]);
   const [hasDateConflict, setHasDateConflict] = useState(false);
+  const [customerData, setCustomerData] = useState(null);
+  const [hasDriverLicense, setHasDriverLicense] = useState(true);
   
   // Fee management state
   const [fees, setFees] = useState({
@@ -106,6 +108,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       fetchDrivers();
       fetchUnavailablePeriods(); // Fetch blocked periods
       fetchFees(); // Fetch current fee structure
+      fetchCustomerData(); // Fetch customer data to check license
       
       // Reset form when modal opens
       setFormData({
@@ -121,7 +124,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         selectedDriver: '',
       });
       setError('');
-      setIsSelfService(true);
+      // Don't auto-set isSelfService here - let fetchCustomerData handle it
       setActiveTab(0);
       setActiveStep(0);
       setHasDateConflict(false);
@@ -188,7 +191,15 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         // Filter out driver ID 1 (DEFAULT FOR SELFDRIVE) from customer-facing list
         const filteredDrivers = data.filter(driver => driver.drivers_id !== 1 && driver.driver_id !== 1);
         console.log('Filtered drivers (excluding DEFAULT FOR SELFDRIVE):', filteredDrivers.length);
-        setDrivers(filteredDrivers);
+        
+        // Add availability status to each driver
+        const driversWithAvailability = filteredDrivers.map(driver => ({
+          ...driver,
+          isAvailable: true, // Default to available, will be checked when dates are selected
+          checkingAvailability: false
+        }));
+        
+        setDrivers(driversWithAvailability);
       } else {
         const errorText = await response.text();
         console.error('Failed to fetch drivers:', response.status, errorText);
@@ -198,6 +209,103 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       console.error('Error fetching drivers:', error);
       setError('Failed to load available drivers. Please try again.');
     }
+  };
+
+  const fetchCustomerData = async () => {
+    try {
+      console.log('Fetching customer data...');
+      const response = await authenticatedFetch(`${API_BASE}/api/customers/me`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Customer data received:', data);
+        setCustomerData(data);
+        
+        // Check if customer has driver license
+        const hasLicense = data.driver_license_no && data.driver_license_no.trim() !== '';
+        setHasDriverLicense(hasLicense);
+        console.log('Customer has driver license:', hasLicense);
+        
+        // If no license, disable self-drive by default
+        if (!hasLicense) {
+          setIsSelfService(false);
+        }
+      } else {
+        console.error('Failed to fetch customer data:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching customer data:', error);
+    }
+  };
+
+  const checkDriverAvailability = async (driverId, startDate, endDate) => {
+    try {
+      const response = await authenticatedFetch(
+        `${API_BASE}/drivers/${driverId}/availability?startDate=${startDate}&endDate=${endDate}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.available;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking driver availability:', error);
+      return false;
+    }
+  };
+
+  const updateDriversAvailability = async () => {
+    if (!formData.startDate || !formData.endDate || drivers.length === 0) {
+      return;
+    }
+
+    console.log('🔍 Checking driver availability for dates:', formData.startDate, '-', formData.endDate);
+
+    // Update each driver's availability
+    const updatedDrivers = await Promise.all(
+      drivers.map(async (driver) => {
+        const driverId = driver.drivers_id || driver.driver_id;
+        const isAvailable = await checkDriverAvailability(driverId, formData.startDate, formData.endDate);
+        
+        console.log(`Driver ${driver.first_name} ${driver.last_name} (ID: ${driverId}):`, isAvailable ? '✅ Available' : '❌ Unavailable');
+        
+        return {
+          ...driver,
+          isAvailable,
+          checkingAvailability: false
+        };
+      })
+    );
+
+    setDrivers(updatedDrivers);
+    
+    // If currently selected driver is no longer available, clear selection
+    if (formData.selectedDriver) {
+      const selectedDriverId = parseInt(formData.selectedDriver);
+      const selectedDriver = updatedDrivers.find(d => (d.drivers_id || d.driver_id) === selectedDriverId);
+      
+      if (selectedDriver && !selectedDriver.isAvailable) {
+        setFormData(prev => ({ ...prev, selectedDriver: '' }));
+        setError('⚠️ The previously selected driver is not available for the chosen dates. Please select another driver.');
+      }
+    }
+  };
+
+  // Check driver availability when dates change
+  useEffect(() => {
+    if (formData.startDate && formData.endDate && drivers.length > 0 && !isSelfService) {
+      updateDriversAvailability();
+    }
+  }, [formData.startDate, formData.endDate, isSelfService]);
+
+  const getAvailableDrivers = () => {
+    // Filter drivers based on date availability
+    if (!formData.startDate || !formData.endDate) {
+      return drivers;
+    }
+
+    return drivers.filter(driver => driver.isAvailable !== false);
   };
 
   const handleInputChange = (field, value) => {
@@ -218,6 +326,34 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
     if (field === 'customPurpose' && value?.trim()) {
       setMissingFields(prev => prev.filter(f => f !== 'customPurpose'));
       setError('');
+    }
+    
+    // Validate date selection against unavailable periods
+    if ((field === 'startDate' || field === 'endDate') && value) {
+      const dateToCheck = new Date(value);
+      dateToCheck.setHours(0, 0, 0, 0);
+      
+      // Check if selected date falls within any unavailable period
+      const conflictingPeriod = unavailablePeriods.find(period => {
+        const periodStart = new Date(period.start_date);
+        const periodEnd = new Date(period.end_date);
+        periodStart.setHours(0, 0, 0, 0);
+        periodEnd.setHours(0, 0, 0, 0);
+        
+        return dateToCheck >= periodStart && dateToCheck <= periodEnd;
+      });
+      
+      if (conflictingPeriod) {
+        const startDate = new Date(conflictingPeriod.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const endDate = new Date(conflictingPeriod.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        setError(`❌ The date you selected (${new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}) falls within an unavailable period (${startDate} - ${endDate}). ${conflictingPeriod.reason}. Please choose a different date.`);
+        setMissingFields([field]);
+        setHasDateConflict(true);
+        return;
+      } else {
+        setHasDateConflict(false);
+      }
     }
   };
 
@@ -328,31 +464,53 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       return false;
     }
 
-    // Validate pickup and dropoff times (must be between 7:00 AM - 7:00 PM)
-    if (formData.pickupTime) {
-      const [pickupHour, pickupMinute] = formData.pickupTime.split(':').map(Number);
-      const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
-      const minTime = 7 * 60; // 7:00 AM
-      const maxTime = 19 * 60; // 7:00 PM
+    // Validate booking dates don't conflict with unavailable periods
+    const bookingStartDate = new Date(formData.startDate);
+    const bookingEndDate = new Date(formData.endDate);
+    bookingStartDate.setHours(0, 0, 0, 0);
+    bookingEndDate.setHours(0, 0, 0, 0);
 
-      if (pickupTimeInMinutes < minTime || pickupTimeInMinutes > maxTime) {
-        setError('Pickup time must be between 7:00 AM and 7:00 PM (office hours)');
-        setMissingFields(['pickupTime']);
-        if (fieldRefs.pickupTime.current) {
-          fieldRefs.pickupTime.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    for (const period of unavailablePeriods) {
+      const periodStart = new Date(period.start_date);
+      const periodEnd = new Date(period.end_date);
+      periodStart.setHours(0, 0, 0, 0);
+      periodEnd.setHours(0, 0, 0, 0);
+
+      // Check if date ranges overlap
+      const hasOverlap = bookingStartDate <= periodEnd && bookingEndDate >= periodStart;
+
+      if (hasOverlap) {
+        const startDateStr = periodStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const endDateStr = periodEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        setError(`❌ Your booking dates conflict with an unavailable period: ${startDateStr} - ${endDateStr}. ${period.reason}. Please choose different dates that don't overlap with the blocked periods shown above.`);
+        setMissingFields(['startDate', 'endDate']);
+        setHasDateConflict(true);
+        
+        if (fieldRefs.startDate.current) {
+          fieldRefs.startDate.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
         return false;
       }
     }
 
+    setHasDateConflict(false);
+
+    // Validate pickup time (24/7 - no restrictions)
+    // Pickup time is always available, no validation needed
+    
+    // Validate dropoff time (must be between 7:00 AM - 12:00 AM / Midnight)
     if (formData.dropoffTime) {
       const [dropoffHour, dropoffMinute] = formData.dropoffTime.split(':').map(Number);
       const dropoffTimeInMinutes = dropoffHour * 60 + dropoffMinute;
       const minTime = 7 * 60; // 7:00 AM
-      const maxTime = 19 * 60; // 7:00 PM
+      const maxTime = 24 * 60; // 12:00 AM (Midnight) - 24:00 is same as 00:00
 
-      if (dropoffTimeInMinutes < minTime || dropoffTimeInMinutes > maxTime) {
-        setError('Drop-off time must be between 7:00 AM and 7:00 PM (office hours)');
+      // Allow 00:00 (midnight) as valid dropoff time
+      const isValidDropoffTime = (dropoffTimeInMinutes >= minTime && dropoffTimeInMinutes < maxTime) || dropoffTimeInMinutes === 0;
+
+      if (!isValidDropoffTime) {
+        setError('Drop-off time must be between 7:00 AM and 12:00 AM (Midnight)');
         setMissingFields(['dropoffTime']);
         if (fieldRefs.dropoffTime.current) {
           fieldRefs.dropoffTime.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -952,7 +1110,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                   <TextField
                     fullWidth
                     type="time"
-                    label="Pickup Time *"
+                    label="Pickup Time * (24/7 Available)"
                     value={formData.pickupTime}
                     onChange={(e) => handleInputChange('pickupTime', e.target.value)}
                     InputLabelProps={{ shrink: true }}
@@ -973,13 +1131,16 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                       <HiExclamationCircle size={20} />
                     </Box>
                   )}
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    ⏰ Pickup available anytime, 24 hours a day
+                  </Typography>
                 </Box>
 
                 <Box ref={fieldRefs.dropoffTime} sx={{ flex: 1, position: 'relative' }}>
                   <TextField
                     fullWidth
                     type="time"
-                    label="Drop-off Time *"
+                    label="Drop-off Time * (7 AM - 12 AM)"
                     value={formData.dropoffTime}
                     onChange={(e) => handleInputChange('dropoffTime', e.target.value)}
                     InputLabelProps={{ shrink: true }}
@@ -1000,6 +1161,9 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                       <HiExclamationCircle size={20} />
                     </Box>
                   )}
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    🕐 Drop-off hours: 7:00 AM - 12:00 AM (Midnight)
+                  </Typography>
                 </Box>
               </Box>
 
@@ -1143,8 +1307,16 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                   control={
                     <Switch
                       checked={isSelfService}
-                      onChange={(e) => setIsSelfService(e.target.checked)}
+                      onChange={(e) => {
+                        if (!hasDriverLicense && e.target.checked) {
+                          setError('You cannot select self-drive service because you do not have a driver license on file. Please add your driver license in your account settings or choose a driver.');
+                          return;
+                        }
+                        setIsSelfService(e.target.checked);
+                        setError('');
+                      }}
                       size="large"
+                      disabled={!hasDriverLicense}
                       sx={{
                         '& .MuiSwitch-switchBase.Mui-checked': {
                           color: '#c10007',
@@ -1158,10 +1330,15 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                   label={
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                        Self-Drive Service
+                        Self-Drive Service {!hasDriverLicense && '🔒'}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem' }}>
-                        {isSelfService ? 'You will drive the car yourself' : 'A professional driver will be assigned'}
+                        {!hasDriverLicense 
+                          ? '❌ Self-drive not available - No driver license on file'
+                          : isSelfService 
+                            ? 'You will drive the car yourself' 
+                            : 'A professional driver will be assigned'
+                        }
                       </Typography>
                     </Box>
                   }
@@ -1181,49 +1358,71 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                     )}
                   </Box>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {drivers.map((driver) => (
-                      <Card 
-                        key={driver.driver_id}
-                        sx={{ 
-                          cursor: 'pointer',
-                          border: formData.selectedDriver === driver.driver_id ? '2px solid #c10007' : 
-                                 missingFields.includes('selectedDriver') ? '2px solid #d32f2f' : '1px solid #e0e0e0',
-                          backgroundColor: formData.selectedDriver === driver.driver_id ? '#fff5f5' : 'white',
-                          '&:hover': {
-                            borderColor: '#c10007',
-                            backgroundColor: '#fff5f5',
-                          },
-                        }}
-                        onClick={() => handleInputChange('selectedDriver', driver.driver_id)}
-                      >
-                        <CardContent sx={{ py: 2 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Avatar sx={{ bgcolor: '#c10007', width: 48, height: 48 }}>
-                              {driver.first_name[0]}{driver.last_name[0]}
-                            </Avatar>
-                            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                              <Typography variant="body1" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
-                                {driver.first_name} {driver.last_name}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem' }}>
-                                License: {driver.license_number}
-                              </Typography>
+                    {getAvailableDrivers().map((driver) => {
+                      const driverId = driver.drivers_id || driver.driver_id;
+                      const isUnavailable = driver.isAvailable === false;
+                      
+                      return (
+                        <Card 
+                          key={driverId}
+                          sx={{ 
+                            cursor: isUnavailable ? 'not-allowed' : 'pointer',
+                            opacity: isUnavailable ? 0.6 : 1,
+                            border: formData.selectedDriver === String(driverId) ? '2px solid #c10007' : 
+                                   missingFields.includes('selectedDriver') ? '2px solid #d32f2f' : 
+                                   isUnavailable ? '2px solid #ff9800' : '1px solid #e0e0e0',
+                            backgroundColor: formData.selectedDriver === String(driverId) ? '#fff5f5' : 
+                                           isUnavailable ? '#fff3e0' : 'white',
+                            '&:hover': isUnavailable ? {} : {
+                              borderColor: '#c10007',
+                              backgroundColor: '#fff5f5',
+                            },
+                          }}
+                          onClick={() => {
+                            if (!isUnavailable) {
+                              handleInputChange('selectedDriver', String(driverId));
+                            }
+                          }}
+                        >
+                          <CardContent sx={{ py: 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Avatar sx={{ bgcolor: isUnavailable ? '#ff9800' : '#c10007', width: 48, height: 48 }}>
+                                {driver.first_name[0]}{driver.last_name[0]}
+                              </Avatar>
+                              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                                <Typography variant="body1" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
+                                  {driver.first_name} {driver.last_name}
+                                  {isUnavailable && <Chip label="Unavailable" size="small" color="warning" sx={{ ml: 1 }} />}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem' }}>
+                                  {isUnavailable 
+                                    ? '❌ Not available for selected dates'
+                                    : `License: ${driver.license_number || 'N/A'}`
+                                  }
+                                </Typography>
+                              </Box>
+                              {formData.selectedDriver === String(driverId) && !isUnavailable && (
+                                <HiCheck size={24} color="#c10007" />
+                              )}
                             </Box>
-                            {formData.selectedDriver === driver.driver_id && (
-                              <HiCheck size={24} color="#c10007" />
-                            )}
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </Box>
                 </Box>
               )}
 
               {/* No drivers available message */}
+              {!isSelfService && getAvailableDrivers().length === 0 && drivers.length > 0 && (
+                <Alert severity="warning">
+                  ⚠️ No drivers are available for the selected dates. All drivers have conflicting bookings. Please choose different dates or use self-drive service.
+                </Alert>
+              )}
+              
               {!isSelfService && drivers.length === 0 && (
                 <Alert severity="info">
-                  No drivers are currently available. Please try self-drive service or contact support.
+                  No drivers are currently registered in the system. Please try self-drive service or contact support.
                 </Alert>
               )}
             </Box>

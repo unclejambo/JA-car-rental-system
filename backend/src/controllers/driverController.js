@@ -367,3 +367,86 @@ export const deleteDriver = async (req, res) => {
     res.status(500).json({ error: "Failed to delete driver" });
   }
 };
+
+// @desc    Check driver availability for date range
+// @route   GET /drivers/:id/availability?startDate=2025-11-01&endDate=2025-11-05
+// @access  Public
+export const checkDriverAvailability = async (req, res) => {
+  try {
+    const driverId = parseInt(req.params.id);
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'Start date and end date are required' });
+    }
+
+    // Verify driver exists
+    const driver = await prisma.driver.findUnique({
+      where: { drivers_id: driverId },
+      select: { drivers_id: true, first_name: true, last_name: true, status: true }
+    });
+
+    if (!driver) {
+      return res.status(404).json({ error: 'Driver not found' });
+    }
+
+    // Check if driver has conflicting bookings
+    const conflictingBookings = await prisma.booking.findMany({
+      where: {
+        driver_id: driverId,
+        booking_status: {
+          in: ['Pending', 'Confirmed', 'In Progress']
+        },
+        isCancel: false,
+        OR: [
+          {
+            // Requested period starts during existing booking
+            AND: [
+              { start_date: { lte: new Date(startDate) } },
+              { end_date: { gte: new Date(startDate) } }
+            ]
+          },
+          {
+            // Requested period ends during existing booking
+            AND: [
+              { start_date: { lte: new Date(endDate) } },
+              { end_date: { gte: new Date(endDate) } }
+            ]
+          },
+          {
+            // Requested period completely contains existing booking
+            AND: [
+              { start_date: { gte: new Date(startDate) } },
+              { end_date: { lte: new Date(endDate) } }
+            ]
+          }
+        ]
+      },
+      select: {
+        booking_id: true,
+        start_date: true,
+        end_date: true,
+        booking_status: true
+      }
+    });
+
+    const isAvailable = conflictingBookings.length === 0;
+
+    res.json({
+      driver_id: driverId,
+      driver_name: `${driver.first_name} ${driver.last_name}`,
+      available: isAvailable,
+      status: driver.status,
+      conflicting_bookings: conflictingBookings.length,
+      conflicts: conflictingBookings.map(booking => ({
+        booking_id: booking.booking_id,
+        start_date: booking.start_date,
+        end_date: booking.end_date,
+        status: booking.booking_status
+      }))
+    });
+  } catch (error) {
+    console.error('Error checking driver availability:', error);
+    res.status(500).json({ error: 'Failed to check driver availability' });
+  }
+};

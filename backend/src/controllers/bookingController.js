@@ -22,7 +22,7 @@ import {
 } from "../utils/pagination.js";
 import {
   validateBookingDates,
-  getUnavailablePeriods
+  getUnavailablePeriods,
 } from "../utils/bookingUtils.js";
 
 // @desc    Get all bookings with pagination (Admin)
@@ -40,10 +40,10 @@ export const getBookings = async (req, res) => {
       // Filter to show only Pending, Confirmed, and In Progress bookings
       // Exclude Completed and Cancelled bookings
       booking_status: {
-        in: ['Pending', 'Confirmed', 'In Progress']
-      }
+        in: ["Pending", "Confirmed", "In Progress"],
+      },
     };
-    
+
     // Search filter (customer name or car model)
     if (search) {
       where.OR = [
@@ -53,7 +53,7 @@ export const getBookings = async (req, res) => {
         { car: { model: { contains: search, mode: "insensitive" } } },
       ];
     }
-    
+
     // Status filter (if provided, it will override the default filter)
     if (req.query.status) {
       where.booking_status = req.query.status;
@@ -421,41 +421,51 @@ export const createBooking = async (req, res) => {
 
     // ✨ NEW: Check for date conflicts with existing bookings + maintenance periods
     console.log(`🔍 Checking date conflicts for car ${car_id}...`);
-    console.log(`📅 Requested: ${startDateTime.toISOString()} - ${endDateTime.toISOString()}`);
-    
+    console.log(
+      `📅 Requested: ${startDateTime.toISOString()} - ${endDateTime.toISOString()}`
+    );
+
     const existingBookings = await prisma.booking.findMany({
       where: {
         car_id: parseInt(car_id),
         booking_status: {
-          in: ['Pending', 'Confirmed', 'In Progress']
+          in: ["Pending", "Confirmed", "In Progress"],
         },
-        isCancel: false
+        isCancel: false,
       },
       select: {
         booking_id: true,
         start_date: true,
         end_date: true,
         booking_status: true,
-        payment_status: true
-      }
+        payment_status: true,
+      },
     });
 
-    console.log(`📋 Found ${existingBookings.length} existing active bookings for this car`);
+    console.log(
+      `📋 Found ${existingBookings.length} existing active bookings for this car`
+    );
 
-    const dateValidation = validateBookingDates(startDateTime, endDateTime, existingBookings, 1);
-    
+    const dateValidation = validateBookingDates(
+      startDateTime,
+      endDateTime,
+      existingBookings,
+      1
+    );
+
     if (!dateValidation.isValid) {
       console.log(`❌ Date conflict detected: ${dateValidation.message}`);
       return res.status(409).json({
         error: "Date conflict",
         message: dateValidation.message,
-        conflicts: dateValidation.conflicts.map(c => ({
+        conflicts: dateValidation.conflicts.map((c) => ({
           start_date: c.start_date,
           end_date: c.end_date,
           reason: c.reason,
-          booking_id: c.booking_id
+          booking_id: c.booking_id,
         })),
-        suggestion: "Please choose different dates that don't overlap with existing bookings or maintenance periods."
+        suggestion:
+          "Please choose different dates that don't overlap with existing bookings or maintenance periods.",
       });
     }
 
@@ -506,7 +516,7 @@ export const createBooking = async (req, res) => {
     today.setHours(0, 0, 0, 0);
     const bookingStart = new Date(startDateTime);
     bookingStart.setHours(0, 0, 0, 0);
-    
+
     if (bookingStart <= today) {
       // Booking starts today or earlier - mark car as rented immediately
       try {
@@ -514,13 +524,17 @@ export const createBooking = async (req, res) => {
           where: { car_id: parseInt(car_id) },
           data: { car_status: "Rented" },
         });
-        console.log(`🚗 Car ${car_id} status updated to 'Rented' (booking starts today)`);
+        console.log(
+          `🚗 Car ${car_id} status updated to 'Rented' (booking starts today)`
+        );
       } catch (carUpdateError) {
         console.error("Error updating car status:", carUpdateError);
         // Don't fail the booking creation if car status update fails
       }
     } else {
-      console.log(`📅 Car ${car_id} status NOT changed - advance booking for ${bookingStart.toDateString()}`);
+      console.log(
+        `📅 Car ${car_id} status NOT changed - advance booking for ${bookingStart.toDateString()}`
+      );
     }
 
     // Create an initial payment record for the booking
@@ -1650,13 +1664,13 @@ export const confirmExtensionRequest = async (req, res) => {
         },
         orderBy: { extension_id: "desc" },
       });
-      
+
       if (alreadyApproved) {
-        return res.status(400).json({ 
-          error: "Extension already approved. Waiting for customer payment." 
+        return res.status(400).json({
+          error: "Extension already approved. Waiting for customer payment.",
         });
       }
-      
+
       return res
         .status(404)
         .json({ error: "Pending extension record not found" });
@@ -2305,26 +2319,27 @@ export const confirmBooking = async (req, res) => {
     let updatedBooking;
     let shouldSendConfirmation = false;
 
-    // Verify minimum payment has been made (≥1000)
-    if (totalPaid < 1000) {
-      return res.status(400).json({
-        error: "Cannot confirm booking",
-        message: "Minimum payment of ₱1,000 required before confirming booking",
-        totalPaid,
-        required: 1000,
-      });
-    }
-
     // CASE A: isPay is TRUE and status is Pending - Single-click confirmation
     if (booking.isPay === true && normalizedStatus === "pending") {
       console.log(
-        "✅ Single-click booking confirmation (isPay=TRUE, Pending → Confirmed)..."
+        "✅ Processing payment confirmation (isPay=TRUE, status=Pending)..."
       );
 
       let updateData = {
         isPay: false, // Clear payment flag after confirmation
-        booking_status: "Confirmed", // Confirm booking immediately
       };
+
+      // Only confirm booking if total paid >= 1000, otherwise keep as Pending
+      if (totalPaid >= 1000) {
+        updateData.booking_status = "Confirmed";
+        shouldSendConfirmation = true; // Send booking confirmation notification
+        console.log("Total paid >= 1000 - Confirming booking");
+      } else {
+        updateData.booking_status = "Pending"; // Keep as Pending
+        console.log(
+          `Total paid (${totalPaid}) < 1000 - Keeping status as Pending`
+        );
+      }
 
       // Check if balance is 0 or less and update payment_status to Paid
       if (booking.balance <= 0) {
@@ -2337,14 +2352,13 @@ export const confirmBooking = async (req, res) => {
         data: updateData,
       });
 
-      console.log("Booking confirmed successfully:", {
+      console.log("Payment processed successfully:", {
         bookingId,
         oldStatus: "Pending",
         newStatus: updatedBooking.booking_status,
         isPay: updatedBooking.isPay,
+        totalPaid,
       });
-
-      shouldSendConfirmation = true; // Send booking confirmation notification
     }
     // CASE B: isPay is TRUE and status is Confirmed - Additional payment on confirmed booking
     else if (booking.isPay === true && normalizedStatus === "confirmed") {
@@ -2373,7 +2387,9 @@ export const confirmBooking = async (req, res) => {
     }
     // CASE C: isPay is TRUE and status is In Progress - Extension payment confirmation
     else if (booking.isPay === true && normalizedStatus === "in progress") {
-      console.log("📅 CASE C: Extension payment confirmed - Applying new end date...");
+      console.log(
+        "📅 CASE C: Extension payment confirmed - Applying new end date..."
+      );
       console.log("📊 Current booking state:", {
         bookingId,
         isExtend: booking.isExtend,
@@ -2445,7 +2461,9 @@ export const confirmBooking = async (req, res) => {
             extension_status: "completed",
           },
         });
-        console.log(`✅ Marked extension #${approvedExtension.extension_id} as completed`);
+        console.log(
+          `✅ Marked extension #${approvedExtension.extension_id} as completed`
+        );
       } else {
         console.log("⚠️ No approved extension found to mark as completed");
       }
@@ -2460,9 +2478,11 @@ export const confirmBooking = async (req, res) => {
           extension_status: "completed",
         },
       });
-      
+
       if (otherApprovedExtensions.count > 0) {
-        console.log(`✅ Marked ${otherApprovedExtensions.count} additional approved extension(s) as completed`);
+        console.log(
+          `✅ Marked ${otherApprovedExtensions.count} additional approved extension(s) as completed`
+        );
       }
 
       updatedBooking = await prisma.booking.update({
@@ -2641,9 +2661,19 @@ export const confirmBooking = async (req, res) => {
       }
     }
 
+    // Determine the appropriate response message
+    let responseMessage = "Payment accepted successfully";
+    if (updatedBooking.booking_status === "Confirmed") {
+      responseMessage = "Booking confirmed successfully";
+    } else if (updatedBooking.booking_status === "Pending") {
+      responseMessage = "Payment accepted successfully";
+    }
+
     res.json({
-      message: "Booking confirmed successfully",
+      message: responseMessage,
       booking: updatedBooking,
+      totalPaid: totalPaid,
+      isConfirmed: updatedBooking.booking_status === "Confirmed",
     });
   } catch (error) {
     console.error("Error confirming booking:", error);

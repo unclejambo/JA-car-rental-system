@@ -393,7 +393,7 @@ export const checkDriverAvailability = async (req, res) => {
     // Check if driver has conflicting bookings
     const conflictingBookings = await prisma.booking.findMany({
       where: {
-        driver_id: driverId,
+        drivers_id: driverId,
         booking_status: {
           in: ['Pending', 'Confirmed', 'In Progress']
         },

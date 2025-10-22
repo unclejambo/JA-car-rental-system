@@ -329,30 +329,75 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
     }
     
     // Validate date selection against unavailable periods
+    // Check BOTH individual date AND date range conflicts
     if ((field === 'startDate' || field === 'endDate') && value) {
-      const dateToCheck = new Date(value);
-      dateToCheck.setHours(0, 0, 0, 0);
+      // Get the current booking date range
+      let bookingStartDate, bookingEndDate;
       
-      // Check if selected date falls within any unavailable period
-      const conflictingPeriod = unavailablePeriods.find(period => {
-        const periodStart = new Date(period.start_date);
-        const periodEnd = new Date(period.end_date);
-        periodStart.setHours(0, 0, 0, 0);
-        periodEnd.setHours(0, 0, 0, 0);
-        
-        return dateToCheck >= periodStart && dateToCheck <= periodEnd;
-      });
+      if (field === 'startDate') {
+        bookingStartDate = new Date(value);
+        bookingEndDate = formData.endDate ? new Date(formData.endDate) : null;
+      } else { // endDate
+        bookingStartDate = formData.startDate ? new Date(formData.startDate) : null;
+        bookingEndDate = new Date(value);
+      }
       
-      if (conflictingPeriod) {
-        const startDate = new Date(conflictingPeriod.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        const endDate = new Date(conflictingPeriod.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      // Only validate if we have both dates
+      if (bookingStartDate && bookingEndDate) {
+        bookingStartDate.setHours(0, 0, 0, 0);
+        bookingEndDate.setHours(0, 0, 0, 0);
         
-        setError(`❌ The date you selected (${new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}) falls within an unavailable period (${startDate} - ${endDate}). ${conflictingPeriod.reason}. Please choose a different date.`);
-        setMissingFields([field]);
-        setHasDateConflict(true);
+        // Check if the date range overlaps with any unavailable period
+        const conflictingPeriod = unavailablePeriods.find(period => {
+          const periodStart = new Date(period.start_date);
+          const periodEnd = new Date(period.end_date);
+          periodStart.setHours(0, 0, 0, 0);
+          periodEnd.setHours(0, 0, 0, 0);
+          
+          // Check for ANY overlap between the two date ranges
+          // Ranges overlap if: bookingStart <= periodEnd AND bookingEnd >= periodStart
+          return bookingStartDate <= periodEnd && bookingEndDate >= periodStart;
+        });
+        
+        if (conflictingPeriod) {
+          const startDateStr = new Date(conflictingPeriod.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          const endDateStr = new Date(conflictingPeriod.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          
+          setError(`❌ Your selected dates conflict with an unavailable period (${startDateStr} - ${endDateStr}). ${conflictingPeriod.reason}. Please choose dates that don't overlap with blocked periods.`);
+          setMissingFields(['startDate', 'endDate']);
+          setHasDateConflict(true);
+          return;
+        } else {
+          setHasDateConflict(false);
+          // Clear error if it was a date conflict error
+          if (error.includes('conflict') || error.includes('unavailable period')) {
+            setError('');
+            setMissingFields([]);
+          }
+        }
+      }
+    }
+    
+    // Validate dropoff time in real-time (7:00 AM - 12:00 AM / Midnight)
+    if (field === 'dropoffTime' && value) {
+      const [dropoffHour, dropoffMinute] = value.split(':').map(Number);
+      const dropoffTimeInMinutes = dropoffHour * 60 + dropoffMinute;
+      const minTime = 7 * 60; // 7:00 AM
+      const maxTime = 24 * 60; // 12:00 AM (Midnight)
+
+      // Allow 00:00 (midnight) as valid dropoff time
+      const isValidDropoffTime = (dropoffTimeInMinutes >= minTime && dropoffTimeInMinutes < maxTime) || dropoffTimeInMinutes === 0;
+
+      if (!isValidDropoffTime) {
+        setError('❌ Drop-off time must be between 7:00 AM and 12:00 AM (Midnight). Please select a valid time.');
+        setMissingFields(['dropoffTime']);
         return;
       } else {
-        setHasDateConflict(false);
+        // Clear error if it was a dropoff time error
+        if (error.includes('Drop-off time must be between')) {
+          setError('');
+          setMissingFields([]);
+        }
       }
     }
   };
@@ -601,7 +646,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
   // Fetch fees from backend
   const fetchFees = async () => {
     try {
-      const response = await authenticatedFetch(`${API_BASE}/api/manage-fees`);
+      const response = await authenticatedFetch(`${API_BASE}/manage-fees`);
       if (response.ok) {
         const feesData = await response.json();
         setFees(feesData);
@@ -745,8 +790,8 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
           borderBottom: '1px solid #e0e0e0',
         }}
       >
-        <Typography 
-          variant="h5" 
+        <Box 
+          component="span"
           sx={{ 
             fontWeight: 'bold', 
             color: '#c10007',
@@ -756,7 +801,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
           }}
         >
           Book {car.make} {car.model}
-        </Typography>
+        </Box>
         <IconButton onClick={onClose} size="small">
           <HiX />
         </IconButton>
@@ -1069,7 +1114,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                     }}
                   />
                   {missingFields.includes('startDate') && (
-                    <Box sx={{ position: 'absolute', top: 8, right: 8, color: 'error.main' }}>
+                    <Box sx={{ position: 'absolute', top: '50%', right: 40, transform: 'translateY(-50%)', color: 'error.main', pointerEvents: 'none' }}>
                       <HiExclamationCircle size={20} />
                     </Box>
                   )}
@@ -1097,7 +1142,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                     }}
                   />
                   {missingFields.includes('endDate') && (
-                    <Box sx={{ position: 'absolute', top: 8, right: 8, color: 'error.main' }}>
+                    <Box sx={{ position: 'absolute', top: '50%', right: 40, transform: 'translateY(-50%)', color: 'error.main', pointerEvents: 'none' }}>
                       <HiExclamationCircle size={20} />
                     </Box>
                   )}
@@ -1127,7 +1172,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                     }}
                   />
                   {missingFields.includes('pickupTime') && (
-                    <Box sx={{ position: 'absolute', top: 8, right: 8, color: 'error.main' }}>
+                    <Box sx={{ position: 'absolute', top: '50%', right: 40, transform: 'translateY(-50%)', color: 'error.main', pointerEvents: 'none' }}>
                       <HiExclamationCircle size={20} />
                     </Box>
                   )}
@@ -1157,7 +1202,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                     }}
                   />
                   {missingFields.includes('dropoffTime') && (
-                    <Box sx={{ position: 'absolute', top: 8, right: 8, color: 'error.main' }}>
+                    <Box sx={{ position: 'absolute', top: '50%', right: 40, transform: 'translateY(-50%)', color: 'error.main', pointerEvents: 'none' }}>
                       <HiExclamationCircle size={20} />
                     </Box>
                   )}

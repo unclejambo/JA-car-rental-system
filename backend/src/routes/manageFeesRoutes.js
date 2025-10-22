@@ -30,10 +30,10 @@ router.get('/test', async (req, res) => {
   }
 });
 
-// Get all fees
-router.get('/', verifyToken, adminOrStaff, getFees);
+// Get all fees (customers can read, but only admin/staff can update)
+router.get('/', verifyToken, getFees);
 
-// Update fees
+// Update fees (admin/staff only)
 router.put('/', verifyToken, adminOrStaff, updateFees);
 
 // Initialize default fees (for setup purposes)

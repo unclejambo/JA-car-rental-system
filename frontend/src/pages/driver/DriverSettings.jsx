@@ -57,7 +57,7 @@ export default function DriverSettings() {
   // Success snackbar
   const [successMessage, setSuccessMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
-  
+
   // Error snackbar
   const [errorMessage, setErrorMessage] = useState('');
   const [showError, setShowError] = useState(false);
@@ -689,10 +689,7 @@ export default function DriverSettings() {
         throw new Error('No pending changes found');
       }
 
-      const {
-        updateData,
-        profileImage: pendingImage,
-      } = pendingProfileChanges;
+      const { updateData, profileImage: pendingImage } = pendingProfileChanges;
 
       // Upload profile image first if changed
       let imageUrl = null;
@@ -1676,144 +1673,93 @@ export default function DriverSettings() {
                             !isEditingLicense && setOpenLicenseModal(true)
                           }
                         />
+                        {/* Upload/Change/Remove Buttons (Only in Edit Mode) */}
                         {isEditingLicense && (
                           <Box
                             sx={{
+                              mt: 2,
                               display: 'flex',
+                              gap: 1,
                               flexDirection: 'column',
                               alignItems: 'center',
-                              gap: 1,
-                              mt: 1,
                             }}
                           >
-                            <Button
-                              variant="contained"
-                              component="label"
-                              size="small"
-                              disabled={licenseImageUploading}
-                              startIcon={<PhotoCamera />}
-                              sx={{
-                                fontSize: '0.75rem',
-                                px: 1.5,
-                                minWidth: 'auto',
-                              }}
-                            >
-                              {previewLicenseImage
-                                ? 'Change Image'
-                                : 'Upload Image'}
-                              <input
-                                type="file"
-                                accept="image/jpeg,image/jpg,image/png,image/webp"
-                                hidden
-                                onChange={handleLicenseFileChange}
-                              />
-                            </Button>
-
-                            {previewLicenseImage && (
-                              <Button
-                                variant="outlined"
-                                size="small"
-                                color="error"
-                                onClick={() => {
-                                  setDraftLicenseImage(null);
-                                  setPreviewLicenseImage(null);
-                                }}
-                                disabled={licenseImageUploading}
-                                sx={{
-                                  fontSize: '0.75rem',
-                                  px: 1.5,
-                                  minWidth: 'auto',
-                                }}
-                              >
-                                Remove
-                              </Button>
-                            )}
-
-                            {licenseImageUploading && (
-                              <CircularProgress size={20} sx={{ mt: 1 }} />
+                            {licenseImageUploading ? (
+                              <CircularProgress size={24} />
+                            ) : (
+                              <>
+                                <Button
+                                  variant="contained"
+                                  component="label"
+                                  startIcon={<PhotoCamera />}
+                                  disabled={savingLicense}
+                                >
+                                  {previewLicenseImage
+                                    ? 'Change Image'
+                                    : 'Upload Image'}
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                                    hidden
+                                    onChange={handleLicenseFileChange}
+                                  />
+                                </Button>
+                                {previewLicenseImage && (
+                                  <Button
+                                    variant="outlined"
+                                    color="error"
+                                    size="small"
+                                    onClick={() => {
+                                      setDraftLicenseImage(null);
+                                      setPreviewLicenseImage(null);
+                                    }}
+                                    disabled={savingLicense}
+                                  >
+                                    Remove
+                                  </Button>
+                                )}
+                              </>
                             )}
                           </Box>
                         )}
-                        {!isEditingLicense &&
-                          licenseImage &&
-                          licenseImage !==
-                            'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' && (
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                gap: 1,
-                                mt: 1,
-                              }}
-                            >
-                              <Button
-                                variant="outlined"
-                                size="small"
-                                color="error"
-                                onClick={handleRemoveLicenseImage}
-                                disabled={licenseImageUploading}
-                                sx={{
-                                  fontSize: '0.75rem',
-                                  px: 1.5,
-                                  minWidth: 'auto',
-                                }}
-                              >
-                                Remove Image
-                              </Button>
-
-                              {licenseImageUploading && (
-                                <CircularProgress size={20} sx={{ mt: 1 }} />
-                              )}
-                            </Box>
-                          )}
                       </Box>
                     </Box>
-
+                    {/* Save / Cancel Buttons (centered at bottom) */}
                     {isEditingLicense && (
                       <Box
                         sx={{
                           position: { xs: 'static', md: 'absolute' },
-                          mt: { xs: 2, md: 0 },
-                          bottom: { md: 16 },
+                          mt: { xs: 3, md: 0 },
+                          bottom: { md: 10 },
                           left: { md: '50%' },
                           transform: { md: 'translateX(-50%)' },
                           display: 'flex',
-                          flexDirection: { xs: 'column', sm: 'row' }, // stack on xs, side by side on sm+
                           justifyContent: 'center',
-                          alignItems: 'center',
-                          gap: { xs: 1.5, md: 2 },
-                          width: { xs: '80%', sm: 'auto' },
-                          px: { xs: 2, sm: 0 },
+                          gap: 2,
+                          width: { xs: '100%', md: 'auto' },
                         }}
                       >
                         <Button
                           variant="contained"
                           color="primary"
-                          size="small"
                           startIcon={<SaveIcon />}
-                          onClick={() => setShowLicenseConfirmModal(true)} // open confirm modal
+                          onClick={() => setShowLicenseConfirmModal(true)}
                           disabled={savingLicense || licenseImageUploading}
-                          sx={{ width: { xs: '100%', md: '100%' } }}
                         >
-                          Save
+                          Save Changes
                         </Button>
-
                         <Button
                           variant="outlined"
                           color="inherit"
-                          size="small"
                           startIcon={<CloseIcon />}
                           onClick={() => setShowLicenseCancelModal(true)}
                           disabled={savingLicense || licenseImageUploading}
-                          sx={{ width: { xs: '100%', md: '100%' } }}
                         >
                           Cancel
                         </Button>
                       </Box>
                     )}
-
-                    {/* License full-size modal */}
+                    {/* MODAL FOR LICENSE IMAGE */}
                     <Modal
                       open={openLicenseModal}
                       onClose={() => setOpenLicenseModal(false)}

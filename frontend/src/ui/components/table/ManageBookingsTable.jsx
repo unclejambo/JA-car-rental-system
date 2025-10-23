@@ -413,17 +413,111 @@ const ManageBookingsTable = ({
         },
       },
       {
-        field: 'purpose',
-        headerName: 'Purpose',
-        flex: 1.2,
-        minWidth: 80,
-      },
-      {
-        field: 'booking_status',
-        headerName: 'Status',
-        flex: 1.2,
-        minWidth: 100,
+        field: 'request_type',
+        headerName: 'Request Type',
+        flex: 2,
+        minWidth: 200,
         resizable: true,
+        renderCell: (params) => {
+          const isPaid =
+            params.row.isPay === true ||
+            params.row.isPay === 'true' ||
+            params.row.isPay === 'TRUE';
+          const bookingStatus = params.row.booking_status?.toLowerCase();
+
+          // Payment submitted - awaiting admin confirmation
+          if (isPaid && (bookingStatus === 'pending' || bookingStatus === 'confirmed')) {
+            return (
+              <Box
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
+                  color: '#2e7d32',
+                  fontWeight: 500,
+                  lineHeight: 1.3,
+                  wordBreak: 'break-word',
+                  whiteSpace: 'normal',
+                  py: 0.5,
+                }}
+              >
+                ✅ Payment submitted - Confirm to activate booking
+              </Box>
+            );
+          }
+
+          // Confirmed booking - actively being used
+          if (bookingStatus === 'confirmed' && !isPaid) {
+            return (
+              <Box
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
+                  color: '#1976d2',
+                  fontWeight: 500,
+                  lineHeight: 1.3,
+                  wordBreak: 'break-word',
+                  whiteSpace: 'normal',
+                  py: 0.5,
+                }}
+              >
+                🚗 Active booking - Car currently rented
+              </Box>
+            );
+          }
+
+          // In Progress - ongoing rental
+          if (bookingStatus === 'in progress') {
+            return (
+              <Box
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
+                  color: '#9c27b0',
+                  fontWeight: 500,
+                  lineHeight: 1.3,
+                  wordBreak: 'break-word',
+                  whiteSpace: 'normal',
+                  py: 0.5,
+                }}
+              >
+                🔄 Ongoing rental - In use by customer
+              </Box>
+            );
+          }
+
+          // Pending - awaiting customer payment
+          if (bookingStatus === 'pending' && !isPaid) {
+            return (
+              <Box
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
+                  color: '#ed6c02',
+                  fontWeight: 500,
+                  lineHeight: 1.3,
+                  wordBreak: 'break-word',
+                  whiteSpace: 'normal',
+                  py: 0.5,
+                }}
+              >
+                💰 New booking - Awaiting customer payment
+              </Box>
+            );
+          }
+
+          // Default fallback
+          return (
+            <Box
+              sx={{
+                fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
+                color: '#757575',
+                fontWeight: 500,
+                lineHeight: 1.3,
+                wordBreak: 'break-word',
+                whiteSpace: 'normal',
+                py: 0.5,
+              }}
+            >
+              📋 {bookingStatus || 'Unknown status'}
+            </Box>
+          );
+        },
       },
     ],
     // CANCELLATION: [
@@ -778,6 +872,31 @@ const ManageBookingsTable = ({
             borderTop: '1px solid rgba(224, 224, 224, 1)',
             backgroundColor: '#fff',
           },
+          // Row color coding for BOOKINGS tab
+          '& .row-payment-submitted': {
+            backgroundColor: '#e8f5e9', // Light green - Payment submitted
+            '&:hover': {
+              backgroundColor: '#c8e6c9',
+            },
+          },
+          '& .row-active-booking': {
+            backgroundColor: '#e3f2fd', // Light blue - Active booking
+            '&:hover': {
+              backgroundColor: '#bbdefb',
+            },
+          },
+          '& .row-in-progress': {
+            backgroundColor: '#f3e5f5', // Light purple - In progress
+            '&:hover': {
+              backgroundColor: '#e1bee7',
+            },
+          },
+          '& .row-awaiting-payment': {
+            backgroundColor: '#fff3e0', // Light orange - Awaiting payment
+            '&:hover': {
+              backgroundColor: '#ffe0b2',
+            },
+          },
         },
       }}
     >
@@ -798,6 +917,37 @@ const ManageBookingsTable = ({
           pagination: {
             paginationModel: { pageSize: 10, page: 0 },
           },
+        }}
+        getRowClassName={(params) => {
+          if (activeTab !== 'BOOKINGS') return '';
+          
+          const isPaid =
+            params.row.isPay === true ||
+            params.row.isPay === 'true' ||
+            params.row.isPay === 'TRUE';
+          const bookingStatus = params.row.booking_status?.toLowerCase();
+
+          // Payment submitted - light green background
+          if (isPaid && (bookingStatus === 'pending' || bookingStatus === 'confirmed')) {
+            return 'row-payment-submitted';
+          }
+
+          // Confirmed booking - light blue background
+          if (bookingStatus === 'confirmed' && !isPaid) {
+            return 'row-active-booking';
+          }
+
+          // In Progress - light purple background
+          if (bookingStatus === 'in progress') {
+            return 'row-in-progress';
+          }
+
+          // Pending - light orange background
+          if (bookingStatus === 'pending' && !isPaid) {
+            return 'row-awaiting-payment';
+          }
+
+          return '';
         }}
         sx={{
           width: '100%',

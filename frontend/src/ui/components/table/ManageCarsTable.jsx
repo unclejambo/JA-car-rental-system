@@ -16,6 +16,15 @@ const ManageCarsTable = ({
 }) => {
   const commonColumns = [
     {
+      field: 'car_id',
+      headerName: 'Car ID',
+      flex: 1,
+      minWidth: 70,
+      editable: false,
+      headerAlign: 'center',
+      align: 'center',
+    },
+    {
       field: 'model',
       headerName: 'Model',
       flex: 1.5,
@@ -83,13 +92,6 @@ const ManageCarsTable = ({
         headerName: 'License Plate',
         flex: 1.5,
         minWidth: 100,
-        editable: false,
-      },
-      {
-        field: 'image',
-        headerName: 'Image',
-        flex: 1.5,
-        minWidth: 80,
         editable: false,
       },
       {

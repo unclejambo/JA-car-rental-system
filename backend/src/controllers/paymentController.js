@@ -794,10 +794,7 @@ export const processBookingPayment = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message:
-        totalPaid >= 1000
-          ? "Payment completed successfully! Your booking has been confirmed."
-          : "Payment submitted successfully! Waiting for admin confirmation.",
+      message: "Payment submitted successfully! Waiting for admin confirmation.",
       payment: shapePayment(payment),
       remaining_balance: payment.balance,
       booking_status: bookingStatus,

@@ -16,20 +16,36 @@
 }
 
 :root {
-  /* Color Palette */
-  --primary-color: #089eff;
-  --primary-hover: #088edf;
-  --secondary-color: #4a4a4a;
-  --accent-color: #ff0000;
+  /* Modern Color Palette */
+  --primary-color: #c10007;
+  --primary-hover: #9d0006;
+  --primary-light: #ff4444;
+  --secondary-color: #1a1a2e;
+  --secondary-light: #16213e;
+  --accent-color: #0f3460;
+  --accent-light: #533483;
+
   --background-light: #ffffff;
-  --background-dark: #f0f2f5;
-  --text-primary: #000000;
-  --text-secondary: #ffffff;
-  --border-color: #d9d9d9;
+  --background-dark: #f8f9fa;
+  --background-card: #ffffff;
+  --background-hover: #f1f3f5;
+
+  --text-primary: #1a1a1a;
+  --text-secondary: #6c757d;
+  --text-light: #ffffff;
+  --text-muted: #adb5bd;
+
+  --border-color: #e9ecef;
+  --border-dark: #dee2e6;
+
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.15);
 
   /* Typography */
-  --font-primary: 'Roboto', sans-serif;
-  --font-secondary: 'Pathway Gothic One', sans-serif;
+  --font-primary: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+  --font-secondary: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
   --font-display: 'Merriweather', serif;
 
   --fs-base: 1rem; /* 16px */
@@ -44,6 +60,17 @@
   --space-md: 1rem; /* 16px */
   --space-lg: 1.5rem; /* 24px */
   --space-xl: 2rem; /* 32px */
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.5s ease;
 }
 
 body {

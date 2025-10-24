@@ -4,31 +4,50 @@
   left: 0;
   height: stretch;
   width: 19vw;
-  background-color: #d9d9d9;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  padding: 20px 0;
+  padding: 24px 0;
   z-index: 1000;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
 }
 
 .admin-sidebar a {
   text-decoration: none;
-  transition: all 0.3s ease;
-  color: #000;
-  font-size: 18px;
-  padding: 8px 16px;
-  font-family: 'Pathway Gothic One', sans-serif;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #e0e0e0;
+  font-size: 15px;
+  padding: 12px 20px;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.3px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 20px;
-  line-height: 1.2;
+  gap: 14px;
+  min-height: 44px;
+  line-height: 1.4;
   position: relative;
-  margin: 2px 12px;
-  border-radius: 6px;
+  margin: 4px 16px;
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+}
+
+.admin-sidebar a svg {
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+.admin-sidebar a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  transform: translateX(6px);
+  box-shadow: 0 4px 12px rgba(193, 0, 7, 0.2);
+}
+
+.admin-sidebar a:hover svg {
+  transform: scale(1.1);
 }
 
 .admin-sidebar a:hover {
@@ -40,42 +59,71 @@
 .admin-sidebar .active,
 .admin-sidebar .active:hover {
   transform: none;
-  background-color: #c5c5c5;
-  color: #000;
+  background: linear-gradient(135deg, #c10007 0%, #8b0005 100%);
+  color: #ffffff;
   font-weight: 600;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 4px 16px rgba(193, 0, 7, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-left: 3px solid #ff4444;
+}
+
+.admin-sidebar .active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 60%;
+  background: linear-gradient(to bottom, transparent, #ff6b6b, transparent);
+  border-radius: 0 4px 4px 0;
 }
 
 .admin-sidebar .logout-item {
   text-decoration: none;
-  transition: all 0.3s ease;
-  color: #000;
-  font-size: 18px;
-  padding: 8px 16px;
-  font-family: 'Pathway Gothic One', sans-serif;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #ffcccb;
+  font-size: 15px;
+  padding: 12px 20px;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.3px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 20px;
-  line-height: 1.2;
+  gap: 14px;
+  min-height: 44px;
+  line-height: 1.4;
   position: relative;
-  margin: 2px 12px;
-  border-radius: 6px;
+  margin: 4px 16px;
+  border-radius: 10px;
   cursor: pointer;
+  margin-top: auto;
+}
+
+.admin-sidebar .logout-item svg {
+  font-size: 20px;
 }
 
 .admin-sidebar .logout-item:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  color: #333;
-  transform: translateX(4px);
+  background: rgba(255, 76, 76, 0.15);
+  color: #ff6b6b;
+  transform: translateX(6px);
+  box-shadow: 0 4px 12px rgba(255, 76, 76, 0.2);
 }
 
 hr {
   border: none;
   height: 1px;
-  background-color: rgba(0, 0, 0, 0.1);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1) 20%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.1) 80%,
+    transparent
+  );
   margin: 8px 24px;
-  box-shadow: 0 1px 1px rgba(255, 255, 255, 0.2);
 }
 
 /* Add a subtle border to the right of the sidebar */
@@ -89,11 +137,27 @@ hr {
   background: linear-gradient(
     to bottom,
     transparent,
-    rgba(0, 0, 0, 0.1) 20%,
-    rgba(0, 0, 0, 0.2) 50%,
-    rgba(0, 0, 0, 0.1) 80%,
+    rgba(193, 0, 7, 0.3) 20%,
+    rgba(193, 0, 7, 0.5) 50%,
+    rgba(193, 0, 7, 0.3) 80%,
     transparent
   );
+}
+
+/* Add subtle glow effect */
+.admin-sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: radial-gradient(
+    ellipse at top,
+    rgba(193, 0, 7, 0.15),
+    transparent 70%
+  );
+  pointer-events: none;
 }
 
 /* Make the sidebar content fit the mobile Drawer nicely */

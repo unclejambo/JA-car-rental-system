@@ -62,47 +62,95 @@
   flex-direction: column;
   justify-content: center;
   text-decoration: none;
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(193, 0, 7, 0.2);
+  transition: all 0.3s ease;
+}
+
+.logo-link:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(193, 0, 7, 0.4);
+  transform: translateY(-1px);
 }
 
 .logo-main-text {
   font-family: 'Merriweather', serif;
-  font-size: 1.875rem; /* 30px */
+  font-size: 2rem; /* 32px - slightly larger */
   color: #c10007;
   font-style: italic;
   font-weight: bolder;
   text-shadow:
-    0 0 20px rgba(193, 0, 7, 0.5),
-    0.125rem 0.125rem 0 rgba(255, 255, 255, 0.85);
+    /* Multiple white strokes for outline effect */
+    -2px -2px 0 #fff,
+    2px -2px 0 #fff,
+    -2px 2px 0 #fff,
+    2px 2px 0 #fff,
+    -2px 0 0 #fff,
+    2px 0 0 #fff,
+    0 -2px 0 #fff,
+    0 2px 0 #fff,
+    /* Dark shadow for depth */ 0 4px 8px rgba(0, 0, 0, 0.8),
+    /* Red glow */ 0 0 20px rgba(193, 0, 7, 0.5);
   line-height: 1;
   transition: all 0.3s ease;
+  letter-spacing: 0.5px;
 }
 
 .logo-link:hover .logo-main-text {
   color: #ff0000;
   text-shadow:
-    0 0 30px rgba(255, 0, 0, 0.8),
-    0.125rem 0.125rem 0 rgba(255, 255, 255, 0.95);
+    -2px -2px 0 #fff,
+    2px -2px 0 #fff,
+    -2px 2px 0 #fff,
+    2px 2px 0 #fff,
+    -2px 0 0 #fff,
+    2px 0 0 #fff,
+    0 -2px 0 #fff,
+    0 2px 0 #fff,
+    0 4px 8px rgba(0, 0, 0, 0.9),
+    0 0 30px rgba(255, 0, 0, 0.8);
 }
 
 .logo-sub-text {
   font-family: 'Merriweather', serif;
-  font-size: 1.125rem; /* 18px */
+  font-size: 1.25rem; /* 20px - slightly larger */
   color: #c10007;
   font-style: italic;
   font-weight: bolder;
   text-shadow:
-    0 0 15px rgba(193, 0, 7, 0.4),
-    0.125rem 0.125rem 0 rgba(255, 255, 255, 0.85);
+    /* White strokes for outline */
+    -1.5px -1.5px 0 #fff,
+    1.5px -1.5px 0 #fff,
+    -1.5px 1.5px 0 #fff,
+    1.5px 1.5px 0 #fff,
+    -1.5px 0 0 #fff,
+    1.5px 0 0 #fff,
+    0 -1.5px 0 #fff,
+    0 1.5px 0 #fff,
+    /* Dark shadow */ 0 3px 6px rgba(0, 0, 0, 0.8),
+    /* Red glow */ 0 0 15px rgba(193, 0, 7, 0.4);
   line-height: 1;
   margin-top: -0.25rem; /* -4px */
   transition: all 0.3s ease;
+  letter-spacing: 1px;
 }
 
 .logo-link:hover .logo-sub-text {
   color: #ff0000;
   text-shadow:
-    0 0 25px rgba(255, 0, 0, 0.7),
-    0.125rem 0.125rem 0 rgba(255, 255, 255, 0.95);
+    -1.5px -1.5px 0 #fff,
+    1.5px -1.5px 0 #fff,
+    -1.5px 1.5px 0 #fff,
+    1.5px 1.5px 0 #fff,
+    -1.5px 0 0 #fff,
+    1.5px 0 0 #fff,
+    0 -1.5px 0 #fff,
+    0 1.5px 0 #fff,
+    0 3px 6px rgba(0, 0, 0, 0.9),
+    0 0 25px rgba(255, 0, 0, 0.7);
 }
 
 /* --- User Profile Panel Styles --- */

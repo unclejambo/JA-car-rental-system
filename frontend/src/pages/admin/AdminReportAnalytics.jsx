@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -69,6 +70,7 @@ const DEFAULT_MONTHS = [
 ];
 
 export default function AdminReportAnalytics() {
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -86,6 +88,17 @@ export default function AdminReportAnalytics() {
     () => createAuthenticatedFetch(logout),
     [logout]
   );
+
+  // Handle navigation state from other pages (e.g., AdminDashboard)
+  useEffect(() => {
+    if (location.state?.primaryView) {
+      setPrimaryView(location.state.primaryView);
+      // If navigating to topCustomers, also update the topCategory
+      if (location.state.primaryView === 'topCustomers') {
+        setTopCategory('customers');
+      }
+    }
+  }, [location.state]);
 
   // Fallback timeout to ensure loading doesn't stay true forever
   useEffect(() => {

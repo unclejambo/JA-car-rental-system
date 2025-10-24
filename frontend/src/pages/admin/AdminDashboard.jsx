@@ -565,7 +565,8 @@ function AdminDashboard() {
 
                 <Button
                   component={Link}
-                  to="/manage-user"
+                  to="/report-analytics"
+                  state={{ primaryView: 'topCustomers' }}
                   variant="outlined"
                   fullWidth
                   sx={{

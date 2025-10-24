@@ -142,7 +142,6 @@ export default function ManageFeesModal({ show, onClose }) {
       setSavedData(stringifiedFees);
       setFormData(stringifiedFees);
     } catch (error) {
-      console.error('Error fetching fees:', error);
       setFetchError('Failed to load fees. Please try again.');
     } finally {
       setLoading(false);
@@ -249,7 +248,6 @@ export default function ManageFeesModal({ show, onClose }) {
       setIsEditing(false);
       setFetchError(null);
     } catch (error) {
-      console.error('Error updating fees:', error);
       setFetchError('Failed to save fees. Please try again.');
     } finally {
       setSaving(false);

@@ -168,7 +168,6 @@ export default function AdminTransactionPage() {
       setSelectedBooking(mapped);
       setShowBookingDetailsModal(true);
     } catch (e) {
-      console.error(e);
     }
   };
 
@@ -176,8 +175,6 @@ export default function AdminTransactionPage() {
     setShowBookingDetailsModal(false);
     setSelectedBooking(null);
   };
-
-  // console.log('AdminTransactionPage - Rows:', rows);
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
   const openAddPaymentModal = () => setShowAddPaymentModal(true);
   const closeAddPaymentModal = () => setShowAddPaymentModal(false);
@@ -220,7 +217,6 @@ export default function AdminTransactionPage() {
         if (activeTab === 'REFUND' && !loaded.REFUND) await loadRefunds();
         setLoading(false);
       } catch (e) {
-        console.error(e);
         setError('Failed to load data. Please try again later.');
         setLoading(false);
       }

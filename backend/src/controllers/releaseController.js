@@ -3,9 +3,6 @@ import { uploadBufferToSupabase } from './storageController.js';
 
 export const createRelease = async (req, res) => {
   try {
-    console.log('--- CREATE RELEASE REQUEST ---');
-    console.log('Request body:', req.body);
-    
     const { 
       booking_id, 
       drivers_id, 
@@ -16,7 +13,6 @@ export const createRelease = async (req, res) => {
     } = req.body;
 
     if (!booking_id || !drivers_id) {
-      console.log('Missing required fields:', { booking_id, drivers_id });
       return res.status(400).json({ 
         error: 'booking_id and drivers_id are required' 
       });
@@ -94,20 +90,10 @@ export const createRelease = async (req, res) => {
           where: { drivers_id: updatedBooking.drivers_id },
           data: { booking_status: 3 } // 3 = booking released and in progress
         });
-        console.log(`✅ Driver ${updatedBooking.drivers_id} booking_status set to 3 (in progress)`);
       } catch (driverUpdateError) {
-        console.error("Error updating driver booking_status:", driverUpdateError);
         // Don't fail the release if driver status update fails
       }
     }
-
-    console.log('Release created and booking updated:', {
-      release_id: release.release_id,
-      booking_id: release.booking_id,
-      isRelease: true,
-      booking_status: 'In Progress'
-    });
-
     res.status(201).json({
       success: true,
       message: 'Release created successfully',
@@ -125,7 +111,6 @@ export const createRelease = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error creating release:', error);
     res.status(500).json({ 
       error: 'Failed to create release',
       details: error.message 
@@ -178,17 +163,13 @@ export const uploadReleaseImages = async (req, res) => {
 
     // Sanitize customer first name for filename (remove special characters)
     const sanitizedCustomerName = customer_first_name.replace(/[^a-zA-Z0-9]/g, '') || 'customer';
-    
+
     if (sanitizedCustomerName.length === 0) {
       throw new Error('Customer first name cannot be empty after sanitization');
     }
 
     const formattedDate = formatDate(start_date);
     const filename = `${formattedDate}_${image_type}_${sanitizedCustomerName}.jpg`;
-
-    console.log('Generated filename:', filename);
-    console.log('Full path will be:', `licenses/release_images/${filename}`);
-
     // Upload to Supabase
     const bucket = 'licenses';
     const path = `release_images/${filename}`;
@@ -242,7 +223,6 @@ export const uploadReleaseImages = async (req, res) => {
       });
 
     } catch (uploadError) {
-      console.error('Error uploading to Supabase:', uploadError);
       res.status(500).json({ 
         error: 'Failed to upload image to storage',
         details: uploadError.message 
@@ -250,7 +230,6 @@ export const uploadReleaseImages = async (req, res) => {
     }
 
   } catch (error) {
-    console.error('Error uploading release image:', error);
     res.status(500).json({ 
       error: 'Failed to upload release image',
       details: error.message 
@@ -302,7 +281,6 @@ export const getReleases = async (req, res) => {
 
     res.json(formattedReleases);
   } catch (error) {
-    console.error('Error fetching releases:', error);
     res.status(500).json({ 
       error: 'Failed to fetch releases',
       details: error.message 
@@ -360,7 +338,6 @@ export const getReleaseById = async (req, res) => {
 
     res.json(formattedRelease);
   } catch (error) {
-    console.error('Error fetching release:', error);
     res.status(500).json({ 
       error: 'Failed to fetch release',
       details: error.message 

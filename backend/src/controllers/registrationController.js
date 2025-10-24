@@ -80,25 +80,25 @@ export const registerUser = async (req, res) => {
 
     // Validation
     const errors = {};
-    
+
     if (!email) errors.email = 'Email is required';
     else if (!validateEmail(email)) errors.email = 'Invalid email address';
-    
+
     if (!username) errors.username = 'Username is required';
     if (!password) errors.password = 'Password is required';
     else if (!validatePassword(password)) errors.password = 'Password must be at least 6 characters';
-    
+
     if (!firstName) errors.firstName = 'First name is required';
     if (!lastName) errors.lastName = 'Last name is required';
     if (!address) errors.address = 'Address is required';
-    
+
     if (!contactNumber) errors.contactNumber = 'Contact number is required';
     else if (!validatePhone(contactNumber)) errors.contactNumber = 'Invalid contact number';
-    
+
     if (!licenseNumber) errors.licenseNumber = 'License number is required';
     if (!licenseExpiry) errors.licenseExpiry = 'License expiry date is required';
     else if (!validateExpiryDate(licenseExpiry)) errors.licenseExpiry = 'License expiry date must be in the future';
-    
+
     if (!req.file) errors.licenseFile = 'License image is required';
 
     if (Object.keys(errors).length > 0) {
@@ -173,7 +173,6 @@ export const registerUser = async (req, res) => {
 
         licenseImageUrl = uploadResult.publicUrl;
       } catch (uploadErr) {
-        console.error('Supabase upload failed for registration license:', uploadErr);
         // Clean up local file and fail registration
         if (req.file) {
           fs.unlink(req.file.path, () => {});
@@ -232,8 +231,6 @@ export const registerUser = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Registration error:', error);
-    
     // Clean up uploaded file on error
     if (req.file) {
       fs.unlink(req.file.path, () => {});
@@ -286,7 +283,6 @@ export const getTermsAndConditions = async (req, res) => {
       data: { terms }
     });
   } catch (error) {
-    console.error('Error fetching terms:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch terms and conditions'

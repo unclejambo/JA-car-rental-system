@@ -188,7 +188,6 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
 
           const json = await response.json().catch(() => null);
           if (!response.ok) {
-            console.error('Update failed:', response.status, json);
             throw new Error(
               json?.error || json?.message || 'Failed to update status'
             );
@@ -197,7 +196,6 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
           // update only the status cell in the grid with the display label
           params.api.updateRows([{ id: params.id, status: newStatusLabel }]);
         } catch (error) {
-          console.error('Error updating status:', error);
         }
       };
 

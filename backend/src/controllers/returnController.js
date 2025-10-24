@@ -17,7 +17,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  */
 async function getSignedReleaseImageUrl(imageUrl) {
   if (!imageUrl) return null;
-  
+
   try {
     // Extract the path from the URL if it's already a full URL
     let path = imageUrl;
@@ -26,19 +26,17 @@ async function getSignedReleaseImageUrl(imageUrl) {
       // Decode any URL-encoded characters
       path = decodeURIComponent(path);
     }
-    
+
     const { data, error } = await supabase.storage
       .from('licenses')
       .createSignedUrl(`release_images/${path}`, 60 * 60 * 24 * 365); // 1 year
-    
+
     if (error) {
-      console.error('Error generating signed URL for:', path, error);
       return imageUrl; // Return original URL as fallback
     }
-    
+
     return data.signedUrl;
   } catch (err) {
-    console.error('Exception generating signed URL:', err);
     return imageUrl; // Return original URL as fallback
   }
 }
@@ -47,7 +45,7 @@ async function getSignedReleaseImageUrl(imageUrl) {
 export const getReturnData = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    
+
     // Get booking with release data
     const booking = await prisma.booking.findUnique({
       where: { booking_id: parseInt(bookingId) },
@@ -77,14 +75,7 @@ export const getReturnData = async (req, res) => {
     }
 
     // Debug: Log release image data
-    console.log('Return data - booking.releases:', booking.releases);
     if (booking.releases && booking.releases.length > 0) {
-      console.log('First release images (before signed URLs):', {
-        front_img: booking.releases[0].front_img,
-        back_img: booking.releases[0].back_img,
-        right_img: booking.releases[0].right_img,
-        left_img: booking.releases[0].left_img
-      });
     }
 
     // Generate signed URLs for release images
@@ -113,13 +104,6 @@ export const getReturnData = async (req, res) => {
       );
 
       booking.releases = releasesWithSignedUrls;
-
-      console.log('First release images (after signed URLs):', {
-        front_img: booking.releases[0].front_img,
-        back_img: booking.releases[0].back_img,
-        right_img: booking.releases[0].right_img,
-        left_img: booking.releases[0].left_img
-      });
     }
 
     // Generate signed URLs for return damage images
@@ -127,7 +111,7 @@ export const getReturnData = async (req, res) => {
       const returnsWithSignedUrls = await Promise.all(
         booking.Return.map(async (returnData) => {
           const damage_img = await getSignedReleaseImageUrl(returnData.damage_img);
-          
+
           return {
             ...returnData,
             // Convert BigInt fields to strings for JSON serialization
@@ -139,8 +123,6 @@ export const getReturnData = async (req, res) => {
       );
 
       booking.Return = returnsWithSignedUrls;
-      
-      console.log('Return data with signed URLs:', booking.Return[0]);
     }
 
     // Get fees from ManageFees
@@ -155,7 +137,6 @@ export const getReturnData = async (req, res) => {
       fees: feesObject
     });
   } catch (error) {
-    console.error('Error fetching return data:', error);
     res.status(500).json({ error: 'Failed to fetch return data' });
   }
 };
@@ -177,20 +158,6 @@ export const submitReturn = async (req, res) => {
       damageImageUrl, // Add this to receive the uploaded image URL
       overdueHours
     } = req.body;
-
-    console.log('📝 Submitting return for booking:', bookingId);
-    console.log('Return data:', {
-      gasLevel,
-      odometer,
-      damageStatus,
-      equipmentStatus,
-      equip_others,
-      isClean,
-      hasStain,
-      damageImageUrl,
-      overdueHours
-    });
-
     // Start transaction
     const result = await prisma.$transaction(async (tx) => {
       // Get booking with release data and car info
@@ -237,7 +204,7 @@ export const submitReturn = async (req, res) => {
       const gasLevelMap = { 'High': 3, 'Mid': 2, 'Low': 1 };
       const releaseGasLevel = gasLevelMap[release.gas_level] || 0;
       const returnGasLevel = gasLevelMap[gasLevel] || 0;
-      
+
       if (releaseGasLevel > returnGasLevel) {
         const gasLevelDiff = releaseGasLevel - returnGasLevel;
         calculatedFees += gasLevelDiff * (feesObject.gas_level_fee || 0);
@@ -251,14 +218,6 @@ export const submitReturn = async (req, res) => {
         // All items in return equip_others are damaged/missing since release was complete
         const returnEquip = equip_others.split(',').map(item => item.trim().toLowerCase()).filter(item => item);
         const lostItemCount = returnEquip.length;
-        
-        console.log('Equipment check (submit - release was complete):', {
-          releaseEquipmentStatus: release.equipment,
-          returnEquipmentStatus: equipmentStatus,
-          damagedItems: returnEquip,
-          lostItemCount
-        });
-        
         calculatedFees += lostItemCount * (feesObject.equipment_loss_fee || 0);
         feesList.push('Equipment');
       } 
@@ -266,18 +225,10 @@ export const submitReturn = async (req, res) => {
       else if (release.equipment !== 'complete' && equipmentStatus === 'no' && equip_others && release.equip_others) {
         const releaseEquip = release.equip_others.split(',').map(item => item.trim().toLowerCase()).filter(item => item);
         const returnEquip = equip_others.split(',').map(item => item.trim().toLowerCase()).filter(item => item);
-        
+
         // Find NEW items that are in return but NOT in release (newly damaged/missing items)
         const newItems = returnEquip.filter(item => !releaseEquip.includes(item));
         const lostItemCount = newItems.length;
-        
-        console.log('Equipment check (submit - release had issues):', {
-          releaseEquip,
-          returnEquip,
-          newItems,
-          lostItemCount
-        });
-        
         calculatedFees += lostItemCount * (feesObject.equipment_loss_fee || 0);
         if (lostItemCount > 0) {
           feesList.push('Equipment');
@@ -309,7 +260,7 @@ export const submitReturn = async (req, res) => {
       if (overdueHours && overdueHours > 0) {
         const hoursToCharge = Math.min(overdueHours, 2); // Max 2 hours
         const overdueBaseFee = feesObject.overdue_fee || 0;
-        
+
         if (overdueHours <= 2) {
           // For 1-2 hours: charge overdue_fee per hour
           calculatedFees += hoursToCharge * overdueBaseFee;
@@ -318,21 +269,10 @@ export const submitReturn = async (req, res) => {
           calculatedFees += booking.car.rent_price || 0;
         }
         feesList.push('Overdue');
-        
-        console.log('Overdue fee calculation (submit):', {
-          overdueHours,
-          hoursToCharge,
-          overdueBaseFee,
-          carRentPrice: booking.car.rent_price,
-          overdueFeesAdded: overdueHours <= 2 ? (hoursToCharge * overdueBaseFee) : booking.car.rent_price
-        });
       }
 
       // Create fees_breakdown string (comma-separated)
       const feesBreakdown = feesList.join(', ') || null;
-
-      console.log('📋 Fees breakdown:', feesBreakdown);
-
       // Create return record
       const returnRecord = await tx.return.create({
         data: {
@@ -349,9 +289,6 @@ export const submitReturn = async (req, res) => {
           fees_breakdown: feesBreakdown
         }
       });
-
-      console.log('✅ Return record created:', returnRecord);
-
       // Update car mileage and set status to maintenance
       await tx.car.update({
         where: { car_id: booking.car_id },
@@ -373,9 +310,6 @@ export const submitReturn = async (req, res) => {
           maintenance_shop_name: null
         }
       });
-
-      console.log('✅ Car set to Maintenance status and maintenance record created');
-
       // Update booking
       const newBalance = paymentData ? 0 : ((booking.balance || 0) + calculatedFees);
       const updatedBooking = await tx.booking.update({
@@ -397,9 +331,7 @@ export const submitReturn = async (req, res) => {
             where: { drivers_id: booking.drivers_id },
             data: { booking_status: 0 } // 0 = no active booking (completed)
           });
-          console.log(`✅ Driver ${booking.drivers_id} booking_status set to 0 (completed)`);
         } catch (driverUpdateError) {
-          console.error("Error updating driver booking_status:", driverUpdateError);
           // Don't fail the return if driver status update fails
         }
       }
@@ -433,9 +365,6 @@ export const submitReturn = async (req, res) => {
           cancellation_date: null // This is a completion, not a cancellation
         }
       });
-
-      console.log('✅ Transaction record created for completed booking');
-
       return { returnRecord, updatedBooking, calculatedFees };
     });
 
@@ -455,7 +384,6 @@ export const submitReturn = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error submitting return:', error);
     res.status(500).json({ error: 'Failed to submit return' });
   }
 };
@@ -465,7 +393,7 @@ export const uploadDamageImage = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const { damageType } = req.body; // 'major' or 'minor'
-    
+
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' });
     }
@@ -496,9 +424,6 @@ export const uploadDamageImage = async (req, res) => {
     const customerFirstName = booking.customer.first_name.replace(/[^a-zA-Z0-9]/g, ''); // Sanitize
     const damageLevel = damageType.charAt(0).toUpperCase() + damageType.slice(1); // Capitalize
     const filename = `${today}_${bookingId}_${customerFirstName}_${damageLevel}_Damages.jpg`;
-
-    console.log('📸 Uploading damage image:', filename);
-
     // Upload to Supabase storage: licenses/return_images/
     const bucket = 'licenses';
     const storagePath = `return_images/${filename}`;
@@ -512,22 +437,17 @@ export const uploadDamageImage = async (req, res) => {
         });
 
       if (uploadError) {
-        console.error('❌ Supabase upload error:', uploadError);
         return res.status(500).json({ 
           error: 'Failed to upload image to storage',
           details: uploadError.message 
         });
       }
-
-      console.log('✅ Damage image uploaded to:', storagePath);
-
       // Generate a signed URL for the private bucket (1 year expiration)
       const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from(bucket)
         .createSignedUrl(storagePath, 60 * 60 * 24 * 365); // 1 year
 
       if (signedUrlError) {
-        console.error('❌ Error generating signed URL:', signedUrlError);
         // Still return success with the storage path
         return res.json({
           success: true,
@@ -536,9 +456,6 @@ export const uploadDamageImage = async (req, res) => {
           filename: filename
         });
       }
-
-      console.log('✅ Signed URL generated:', signedUrlData.signedUrl);
-
       res.json({
         success: true,
         message: 'Damage image uploaded successfully',
@@ -548,7 +465,6 @@ export const uploadDamageImage = async (req, res) => {
       });
 
     } catch (uploadError) {
-      console.error('❌ Error uploading to Supabase:', uploadError);
       return res.status(500).json({ 
         error: 'Failed to upload image to storage',
         details: uploadError.message 
@@ -556,7 +472,6 @@ export const uploadDamageImage = async (req, res) => {
     }
 
   } catch (error) {
-    console.error('❌ Error uploading damage image:', error);
     res.status(500).json({ error: 'Failed to upload damage image' });
   }
 };
@@ -576,18 +491,6 @@ export const calculateReturnFees = async (req, res) => {
     } = req.body;
 
     // Debug: Log the received values
-    console.log('Calculate fees - Received values:', {
-      gasLevel,
-      damageStatus,
-      equipmentStatus,
-      equip_others,
-      isClean: isClean,
-      isCleanType: typeof isClean,
-      hasStain: hasStain,
-      hasStainType: typeof hasStain,
-      overdueHours: overdueHours
-    });
-
     // Get booking with release data and car info
     const booking = await prisma.booking.findUnique({
       where: { booking_id: parseInt(bookingId) },
@@ -613,10 +516,8 @@ export const calculateReturnFees = async (req, res) => {
     fees.forEach(fee => {
       feesObject[fee.fee_type] = fee.amount;
     });
-    
-    // Debug: Log available fees
-    console.log('Available fees:', feesObject);
 
+    // Debug: Log available fees
     let calculatedFees = {
       gasLevelFee: 0,
       equipmentLossFee: 0,
@@ -631,7 +532,7 @@ export const calculateReturnFees = async (req, res) => {
     const gasLevelMap = { 'High': 3, 'Mid': 2, 'Low': 1 };
     const releaseGasLevel = gasLevelMap[release.gas_level] || 0;
     const returnGasLevel = gasLevelMap[gasLevel] || 0;
-    
+
     if (releaseGasLevel > returnGasLevel) {
       const gasLevelDiff = releaseGasLevel - returnGasLevel;
       calculatedFees.gasLevelFee = gasLevelDiff * (feesObject.gas_level_fee || 0);
@@ -644,32 +545,16 @@ export const calculateReturnFees = async (req, res) => {
       // All items in return equip_others are damaged/missing since release was complete
       const returnEquip = equip_others.split(',').map(item => item.trim().toLowerCase()).filter(item => item);
       const lostItemCount = returnEquip.length;
-      
-      console.log('Equipment check (release was complete):', {
-        releaseEquipmentStatus: release.equipment,
-        returnEquipmentStatus: equipmentStatus,
-        damagedItems: returnEquip,
-        lostItemCount
-      });
-      
       calculatedFees.equipmentLossFee = lostItemCount * (feesObject.equipment_loss_fee || 0);
     } 
     // If release already had issues, compare release equip_others with return equip_others
     else if (release.equipment !== 'complete' && equipmentStatus === 'no' && equip_others && release.equip_others) {
       const releaseEquip = release.equip_others.split(',').map(item => item.trim().toLowerCase()).filter(item => item);
       const returnEquip = equip_others.split(',').map(item => item.trim().toLowerCase()).filter(item => item);
-      
+
       // Find NEW items that are in return but NOT in release (newly damaged/missing items)
       const newItems = returnEquip.filter(item => !releaseEquip.includes(item));
       const lostItemCount = newItems.length;
-      
-      console.log('Equipment check (release had issues):', {
-        releaseEquip,
-        returnEquip,
-        newItems,
-        lostItemCount
-      });
-      
       calculatedFees.equipmentLossFee = lostItemCount * (feesObject.equipment_loss_fee || 0);
     }
 
@@ -684,16 +569,6 @@ export const calculateReturnFees = async (req, res) => {
     // Handle both boolean and string values for isClean
     const isNotClean = isClean === false || isClean === 'false';
     const hasStainValue = hasStain === true || hasStain === 'true';
-    
-    console.log('Cleaning fee calculation:', {
-      isClean,
-      isNotClean,
-      hasStain,
-      hasStainValue,
-      cleaning_fee: feesObject.cleaning_fee,
-      stain_removal_fee: feesObject.stain_removal_fee
-    });
-    
     if (isNotClean) {
       calculatedFees.cleaningFee = feesObject.cleaning_fee || 0;
       if (hasStainValue) {
@@ -705,7 +580,7 @@ export const calculateReturnFees = async (req, res) => {
     if (overdueHours && overdueHours > 0) {
       const hoursToCharge = Math.min(overdueHours, 2); // Max 2 hours
       const overdueBaseFee = feesObject.overdue_fee || 0;
-      
+
       if (overdueHours <= 2) {
         // For 1-2 hours: charge overdue_fee per hour
         calculatedFees.overdueFee = hoursToCharge * overdueBaseFee;
@@ -713,14 +588,6 @@ export const calculateReturnFees = async (req, res) => {
         // For more than 2 hours: charge the rent_price of the car
         calculatedFees.overdueFee = booking.car.rent_price || 0;
       }
-      
-      console.log('Overdue fee calculation:', {
-        overdueHours,
-        hoursToCharge,
-        overdueBaseFee,
-        carRentPrice: booking.car.rent_price,
-        calculatedOverdueFee: calculatedFees.overdueFee
-      });
     }
 
     // Calculate total
@@ -732,8 +599,6 @@ export const calculateReturnFees = async (req, res) => {
                           calculatedFees.overdueFee;
 
     // Debug: Log final calculated fees
-    console.log('Final calculated fees:', calculatedFees);
-
     res.json({
       fees: calculatedFees,
       releaseData: {
@@ -747,7 +612,6 @@ export const calculateReturnFees = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error calculating return fees:', error);
     res.status(500).json({ error: 'Failed to calculate return fees' });
   }
 };

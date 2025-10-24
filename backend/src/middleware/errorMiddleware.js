@@ -1,7 +1,5 @@
 // Error handling middleware
 export const errorHandler = (err, req, res, next) => {
-  console.error(err.stack);
-  
   // Handle Prisma errors
   if (err.code === 'P2002') {
     return res.status(400).json({

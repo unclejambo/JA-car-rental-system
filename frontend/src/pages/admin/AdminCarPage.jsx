@@ -90,12 +90,6 @@ export default function AdminCarPage() {
             setCars(data || []);
           } else {
             const errorText = await response.text();
-            console.error(
-              'Failed to load cars. Status:',
-              response.status,
-              'Error:',
-              errorText
-            );
             setError('Failed to load cars');
           }
         } else if (activeTab === 'MAINTENANCE') {
@@ -151,7 +145,6 @@ export default function AdminCarPage() {
           }
         }
       } catch (error) {
-        console.error('Failed to load data:', error);
         setError('Failed to load data');
       }
     };
@@ -241,10 +234,8 @@ export default function AdminCarPage() {
         setActiveTab('MAINTENANCE');
         setReloadTick((t) => t + 1);
       } else {
-        console.error('Failed to save maintenance data');
       }
     } catch (error) {
-      console.error('Failed to save maintenance data:', error);
     }
   };
 
@@ -301,10 +292,8 @@ export default function AdminCarPage() {
           )
         );
       } else {
-        console.error('Failed to extend maintenance');
       }
     } catch (error) {
-      console.error('Failed to extend maintenance:', error);
     }
   };
 
@@ -336,10 +325,8 @@ export default function AdminCarPage() {
           prev.filter((m) => m.car_id !== maintenance.car_id)
         );
       } else {
-        console.error('Failed to set car to available');
       }
     } catch (error) {
-      console.error('Failed to set car to available:', error);
     }
   };
 
@@ -353,10 +340,8 @@ export default function AdminCarPage() {
         if (response.ok) {
           setCars(cars.filter((car) => car.car_id !== carId));
         } else {
-          console.error('Failed to delete car');
         }
       } catch (error) {
-        console.error('Failed to delete car:', error);
       }
     }
   };
@@ -401,7 +386,6 @@ export default function AdminCarPage() {
         setMaintenanceData((prev) => prev.filter((m) => m.car_id !== carId));
       }
     } catch (e) {
-      console.error('Status update failed:', e);
       alert('Failed to update status. Please try again.');
     }
   };

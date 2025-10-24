@@ -157,14 +157,6 @@ export default function CustomerSettings() {
 
         if (notifChanged) {
           try {
-            console.log('🔔 Saving notification settings...');
-            console.log(
-              '📱 SMS:',
-              receiveUpdatesPhone,
-              '📧 Email:',
-              receiveUpdatesEmail
-            );
-
             const notificationResponse = await authenticatedFetch(
               `${API_BASE}/api/customers/me/notification-settings`,
               {
@@ -176,21 +168,14 @@ export default function CustomerSettings() {
 
             if (!notificationResponse.ok) {
               const errorData = await notificationResponse.json();
-              console.error(
-                'Failed to update notification settings:',
-                errorData
-              );
             } else {
               const result = await notificationResponse.json();
-              console.log('✅ Notification settings saved:', result);
 
               // Update initial values to reflect saved state
               setInitialReceiveUpdatesPhone(receiveUpdatesPhone);
               setInitialReceiveUpdatesEmail(receiveUpdatesEmail);
             }
-          } catch (notifError) {
-            console.error('Error updating notification settings:', notifError);
-          }
+          } catch (notifError) {}
         }
 
         setProfile({
@@ -234,9 +219,7 @@ export default function CustomerSettings() {
         setSuccessMessage('Profile updated successfully!');
         setShowSuccess(true);
       })
-      .catch((err) => {
-        console.error('Failed to update customer:', err);
-      })
+      .catch((err) => {})
       .finally(() => {
         setSaving(false);
       });
@@ -266,19 +249,16 @@ export default function CustomerSettings() {
       if (response.ok && data.success) {
         setShowPhoneVerification(true);
       } else {
-        console.error('Failed to send OTP:', data.message);
         alert('Failed to send verification code. Please try again.');
         setSaving(false);
       }
     } catch (error) {
-      console.error('Error sending OTP:', error);
       alert('Failed to send verification code. Please try again.');
       setSaving(false);
     }
   };
 
   const handlePhoneVerificationSuccess = async (data) => {
-    console.log('Phone verified successfully:', data);
     setShowPhoneVerification(false);
 
     // Now proceed with the profile update
@@ -330,12 +310,7 @@ export default function CustomerSettings() {
                 setInitialReceiveUpdatesPhone(receiveUpdatesPhone);
                 setInitialReceiveUpdatesEmail(receiveUpdatesEmail);
               }
-            } catch (notifError) {
-              console.error(
-                'Error updating notification settings:',
-                notifError
-              );
-            }
+            } catch (notifError) {}
           }
 
           // Update profile state
@@ -380,7 +355,6 @@ export default function CustomerSettings() {
           setShowSuccess(true);
         })
         .catch((err) => {
-          console.error('Failed to update customer:', err);
           alert('Failed to update profile. Please try again.');
         })
         .finally(() => {
@@ -390,7 +364,6 @@ export default function CustomerSettings() {
   };
 
   const handlePhoneVerificationError = (error) => {
-    console.error('Phone verification failed:', error);
     setPendingProfileChanges(null);
     setPendingPhoneNumber('');
     setShowPhoneVerification(false);
@@ -516,7 +489,6 @@ export default function CustomerSettings() {
           }));
         }
       } catch (err) {
-        console.error('Error loading customer:', err);
         _setError('Failed to load data. Please try again later.');
       } finally {
         _setLoading(false);
@@ -614,17 +586,14 @@ export default function CustomerSettings() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Upload failed:', errorData);
         return null;
       }
 
       const result = await response.json();
-      console.log('📦 Customer license upload response:', result);
 
       // Return the uploaded image URL (use filePath which contains the public URL)
       return result.filePath || result.url || result.publicUrl;
     } catch (error) {
-      console.error('Error uploading license image:', error);
       return null;
     } finally {
       setLicenseImageUploading(false);
@@ -655,8 +624,6 @@ export default function CustomerSettings() {
         dl_img_url: uploadedImageUrl || '',
       };
 
-      console.log('🚀 Sending to backend:', updateData);
-
       const response = await fetch(
         `http://localhost:3001/api/driver-license/${draftLicenseNo}`,
         {
@@ -672,7 +639,6 @@ export default function CustomerSettings() {
       const result = await response.json();
 
       if (response.ok) {
-        console.log('✅ License updated:', result);
         setLicenseRestrictions(updateData.restrictions);
         setLicenseExpiration(updateData.expiry_date);
         setLicenseImage(uploadedImageUrl);
@@ -684,12 +650,10 @@ export default function CustomerSettings() {
         setSuccessMessage('License information updated successfully!');
         setShowSuccess(true);
       } else {
-        console.error('❌ Failed to update license:', result);
         setSuccessMessage(result.error || 'Failed to update license');
         setShowSuccess(true);
       }
     } catch (error) {
-      console.error('❌ Error updating license:', error);
       setSuccessMessage('Error updating license');
       setShowSuccess(true);
     } finally {
@@ -781,7 +745,6 @@ export default function CustomerSettings() {
         setShowSuccess(true);
       }
     } catch (error) {
-      console.error('Error removing image:', error);
       setSuccessMessage('Failed to remove profile picture');
       setShowSuccess(true);
     } finally {
@@ -803,8 +766,6 @@ export default function CustomerSettings() {
       formData.append('userId', customerId || 'unknown');
       formData.append('userType', 'customer');
 
-      console.log('🚀 Uploading profile image...');
-
       const response = await authenticatedFetch(
         `${API_BASE}/api/storage/profile-images`,
         {
@@ -814,7 +775,6 @@ export default function CustomerSettings() {
       );
 
       const result = await response.json();
-      console.log('📦 Upload response:', result);
 
       if (!response.ok || (!result.ok && !result.success)) {
         throw new Error(result.message || 'Upload failed');
@@ -829,14 +789,11 @@ export default function CustomerSettings() {
         throw new Error('No image URL returned from upload');
       }
 
-      console.log('✅ Image uploaded successfully:', imageUrl);
-
       // Update the preview immediately
       setImagePreview(imageUrl);
 
       return imageUrl;
     } catch (error) {
-      console.error('Error uploading image:', error);
       setSuccessMessage('Failed to upload profile picture');
       setShowSuccess(true);
       return null;
@@ -844,29 +801,6 @@ export default function CustomerSettings() {
       setImageUploading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex' }}>
-        <Header onMenuClick={() => setMobileOpen(true)} />
-        <CustomerSideBar
-          mobileOpen={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-        />
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-          }}
-        >
-          <Loading />
-        </Box>
-      </Box>
-    );
-  }
 
   return (
     <>
@@ -922,837 +856,903 @@ export default function CustomerSettings() {
                 boxSizing: 'border-box',
               }}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                {/* Page Header */}
-                <Box sx={{ mb: 3 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      mb: 1,
-                    }}
-                  >
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
-                        fontWeight: 'bold',
-                        color: '#c10007',
-                      }}
-                    >
-                      <HiCog8Tooth
-                        style={{ verticalAlign: '-3px', marginRight: '8px' }}
-                      />
-                      Account Settings
-                    </Typography>
-                  </Box>
-                  <Typography variant="body1" color="text.secondary">
-                    Manage your profile and license information
-                  </Typography>
+              {/* Loading Indicator */}
+              {loading && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                  <CircularProgress sx={{ color: '#c10007' }} />
                 </Box>
-              </Box>
-              <Box
-                sx={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'hidden',
-                  mt: 2,
-                }}
-              >
-                {/* MUI Tabs (Info / License) */}
-                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    <Tabs
-                      value={activeTab}
-                      onChange={handleTabChange}
-                      sx={{
-                        '& .MuiTabs-flexContainer': {
-                          justifyContent: 'flex-start',
-                        },
-                        '& .MuiTab-root': {
-                          textTransform: 'none',
-                          fontWeight: 'bold',
-                          fontSize: '1rem',
-                          minWidth: 120,
-                        },
-                        '& .Mui-selected': {
-                          color: '#c10007 !important',
-                        },
-                        '& .MuiTabs-indicator': {
-                          backgroundColor: '#c10007',
-                        },
-                      }}
-                    >
-                      <Tab
-                        label={
-                          <span
-                            style={{ display: 'flex', alignItems: 'center' }}
-                          >
-                            <AccountCircleIcon style={{ marginRight: 8 }} />{' '}
-                            Info
-                          </span>
-                        }
-                      />
-                      <Tab
-                        label={
-                          <span
-                            style={{ display: 'flex', alignItems: 'center' }}
-                          >
-                            <BadgeIcon style={{ marginRight: 8 }} /> License
-                          </span>
-                        }
-                      />
-                    </Tabs>
-                  </Box>
-                </Box>
-                {/* Settings Card */}
-                <Box
-                  sx={{
-                    maxWidth: '100%',
-                    bgcolor: '#ffffff',
-                    borderRadius: 2,
-                    p: 2,
-                    pb: isEditing ? 1 : 2,
-                    boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
-                    border: '2px solid #e6e6e6',
-                    position: 'relative',
-                  }}
-                >
-                  {/* Info Tab */}
-                  {activeTab === 0 && (
-                    <Box
-                      sx={{
-                        borderRadius: '18px',
-                        p: 3,
-                        pb: isEditing ? 1.5 : 3,
-                        position: 'relative',
-                        overflow: 'hidden',
-                        bgcolor: 'transparent',
-                      }}
-                    >
-                      {/* Edit / Save controls */}
-                      <Box
-                        sx={{
-                          position: { xs: 'relative', md: 'relative' },
-                          top: { md: 12 },
-                          right: { md: 12 },
-                          zIndex: 30,
-                          display: 'flex',
-                          justifyContent: 'flex-end',
+              )}
 
-                          mb: { xs: 1, md: 0 },
-                        }}
-                      >
-                        {!isEditing && (
-                          <IconButton
-                            onClick={handleEditToggle}
-                            sx={{
-                              position: 'absolute',
-                              top: 10,
-                              right: 40,
-                              backgroundColor: '#fff',
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                              '&:hover': { backgroundColor: '#f5f5f5' },
-                            }}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        )}
-                      </Box>
+              {!loading && (
+                <>
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'space-between' }}
+                  >
+                    {/* Page Header */}
+                    <Box sx={{ mb: 3 }}>
                       <Box
                         sx={{
                           display: 'flex',
-                          alignItems: 'flex-start',
-                          flexDirection: { xs: 'column', md: 'row' },
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          mb: 1,
                         }}
                       >
-                        {/* Left: Avatar (stacked on mobile) */}
-                        <Box
+                        <Typography
+                          variant="h4"
                           sx={{
-                            width: { xs: '100%', md: 160 },
-                            position: 'relative',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: { xs: 'center', md: 'flex-start' },
-                            mb: { xs: 2, md: 0 },
+                            fontSize: {
+                              xs: '1.5rem',
+                              sm: '2rem',
+                              md: '2.125rem',
+                            },
+                            fontWeight: 'bold',
+                            color: '#c10007',
                           }}
                         >
-                          <Avatar
-                            src={
-                              imagePreview ||
-                              'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
-                            }
-                            onClick={() => setAvatarOpen(true)}
-                            sx={{
-                              width: { xs: 96, md: 120 },
-                              height: { xs: 96, md: 120 },
-                              position: { xs: 'static', md: 'absolute' },
-                              left: { md: 8 },
-                              top: { md: 25 },
-                              boxShadow: 2,
-                              cursor: 'pointer',
-                              transition: 'transform 0.2s ease',
-                              border: imagePreview
-                                ? '3px solid #e0e0e0'
-                                : 'none',
-                              '&:hover': {
-                                transform: 'scale(1.05)',
-                              },
+                          <HiCog8Tooth
+                            style={{
+                              verticalAlign: '-3px',
+                              marginRight: '8px',
                             }}
                           />
-
-                          {isEditing && (
-                            <Box
-                              sx={{
-                                mt: { xs: 2, md: 0 },
-                                position: { md: 'absolute' },
-                                top: { md: 155 },
-                                left: { md: 20 },
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 1,
-                                alignItems: 'center',
-                              }}
-                            >
-                              <Button
-                                variant="contained"
-                                component="label"
-                                size="small"
-                                startIcon={<PhotoCamera />}
-                                disabled={imageUploading}
-                                sx={{
-                                  fontSize: '0.75rem',
-                                  px: 1.5,
-                                  minWidth: 'auto',
+                          Account Settings
+                        </Typography>
+                      </Box>
+                      <Typography variant="body1" color="text.secondary">
+                        Manage your profile and license information
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Box
+                    sx={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      overflow: 'hidden',
+                      mt: 2,
+                    }}
+                  >
+                    {/* MUI Tabs (Info / License) */}
+                    <Box
+                      sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
+                    >
+                      <Box
+                        sx={{ display: 'flex', justifyContent: 'flex-start' }}
+                      >
+                        <Tabs
+                          value={activeTab}
+                          onChange={handleTabChange}
+                          sx={{
+                            '& .MuiTabs-flexContainer': {
+                              justifyContent: 'flex-start',
+                            },
+                            '& .MuiTab-root': {
+                              textTransform: 'none',
+                              fontWeight: 'bold',
+                              fontSize: '1rem',
+                              minWidth: 120,
+                            },
+                            '& .Mui-selected': {
+                              color: '#c10007 !important',
+                            },
+                            '& .MuiTabs-indicator': {
+                              backgroundColor: '#c10007',
+                            },
+                          }}
+                        >
+                          <Tab
+                            label={
+                              <span
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
                                 }}
                               >
-                                {imagePreview ? 'Change' : 'Upload'}
-                                <input
-                                  type="file"
-                                  hidden
-                                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                                  onChange={handleImageChange}
-                                />
-                              </Button>
-
-                              {imagePreview && (
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  color="error"
-                                  startIcon={<PhotoCamera />}
-                                  onClick={handleRemoveImage}
-                                  disabled={imageUploading}
-                                  sx={{
-                                    fontSize: '0.75rem',
-                                    px: 1.5,
-                                    minWidth: 'auto',
-                                  }}
-                                >
-                                  Remove
-                                </Button>
-                              )}
-
-                              {imageUploading && (
-                                <CircularProgress size={20} sx={{ mt: 1 }} />
-                              )}
-                            </Box>
-                          )}
-                        </Box>
-                        {/* Right: Details */}
+                                <AccountCircleIcon style={{ marginRight: 8 }} />{' '}
+                                Info
+                              </span>
+                            }
+                          />
+                          <Tab
+                            label={
+                              <span
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                }}
+                              >
+                                <BadgeIcon style={{ marginRight: 8 }} /> License
+                              </span>
+                            }
+                          />
+                        </Tabs>
+                      </Box>
+                    </Box>
+                    {/* Settings Card */}
+                    <Box
+                      sx={{
+                        maxWidth: '100%',
+                        bgcolor: '#ffffff',
+                        borderRadius: 2,
+                        p: 2,
+                        pb: isEditing ? 1 : 2,
+                        boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
+                        border: '2px solid #e6e6e6',
+                        position: 'relative',
+                      }}
+                    >
+                      {/* Info Tab */}
+                      {activeTab === 0 && (
                         <Box
-                          sx={{ flex: 1, pl: { xs: 0, md: 6 }, width: '100%' }}
+                          sx={{
+                            borderRadius: '18px',
+                            p: 3,
+                            pb: isEditing ? 1.5 : 3,
+                            position: 'relative',
+                            overflow: 'hidden',
+                            bgcolor: 'transparent',
+                          }}
                         >
+                          {/* Edit / Save controls */}
                           <Box
                             sx={{
-                              mb: 2,
+                              position: { xs: 'relative', md: 'relative' },
+                              top: { md: 12 },
+                              right: { md: 12 },
+                              zIndex: 30,
                               display: 'flex',
-                              flexDirection: 'column',
-                              gap: 1,
+                              justifyContent: 'flex-end',
+
+                              mb: { xs: 1, md: 0 },
                             }}
                           >
-                            {isEditing ? (
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  gap: 1,
-                                  flexDirection: { xs: 'column', md: 'row' },
-                                }}
-                              >
-                                <TextField
-                                  label="First Name"
-                                  name="firstName"
-                                  value={draft.firstName}
-                                  onChange={handleChange}
-                                  size="small"
-                                  fullWidth
-                                />
-                                <TextField
-                                  label="Last Name"
-                                  name="lastName"
-                                  value={draft.lastName}
-                                  onChange={handleChange}
-                                  size="small"
-                                  fullWidth
-                                />
-                              </Box>
-                            ) : (
-                              <Typography sx={{ fontWeight: 700 }}>
-                                First Name:{' '}
-                                <span style={{ fontWeight: 400 }}>
-                                  {profile.firstName}
-                                </span>
-                              </Typography>
-                            )}
                             {!isEditing && (
-                              <Typography sx={{ fontWeight: 700 }}>
-                                Last Name:{' '}
-                                <span style={{ fontWeight: 400 }}>
-                                  {profile.lastName}
-                                </span>
-                              </Typography>
-                            )}
-                            {isEditing ? (
-                              <TextField
-                                label="Address"
-                                name="address"
-                                value={draft.address}
-                                onChange={handleChange}
-                                size="small"
-                                fullWidth
-                              />
-                            ) : (
-                              <Typography sx={{ fontWeight: 700 }}>
-                                Address:{' '}
-                                <span style={{ fontWeight: 400 }}>
-                                  {profile.address}
-                                </span>
-                              </Typography>
-                            )}
-                            {isEditing ? (
-                              <Box
+                              <IconButton
+                                onClick={handleEditToggle}
                                 sx={{
-                                  display: 'flex',
-                                  gap: 1,
-                                  flexDirection: { xs: 'column', md: 'row' },
+                                  position: 'absolute',
+                                  top: 10,
+                                  right: 40,
+                                  backgroundColor: '#fff',
+                                  boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                                  '&:hover': { backgroundColor: '#f5f5f5' },
                                 }}
                               >
-                                <TextField
-                                  label="Email"
-                                  name="email"
-                                  value={draft.email}
-                                  onChange={handleChange}
-                                  size="small"
-                                  fullWidth
-                                />
-                                <TextField
-                                  label="Contact Number"
-                                  name="contactNumber"
-                                  value={draft.contactNumber}
-                                  onChange={handleChange}
-                                  size="small"
-                                  fullWidth
-                                />
-                              </Box>
-                            ) : (
-                              <>
-                                <Typography sx={{ fontWeight: 700 }}>
-                                  Email:{' '}
-                                  <span style={{ fontWeight: 400 }}>
-                                    {profile.email}
-                                  </span>
-                                </Typography>
-                                <Typography sx={{ fontWeight: 700 }}>
-                                  Contact Number:{' '}
-                                  <span style={{ fontWeight: 400 }}>
-                                    {profile.contactNumber}
-                                  </span>
-                                </Typography>
-                              </>
-                            )}
-                            {isEditing ? (
-                              <TextField
-                                label="Social Media Link"
-                                name="socialMediaLink"
-                                value={draft.socialMediaLink}
-                                onChange={handleChange}
-                                size="small"
-                                fullWidth
-                                placeholder="Facebook, Instagram, etc."
-                              />
-                            ) : (
-                              <Typography sx={{ fontWeight: 700 }}>
-                                Social Media Link:{' '}
-                                <span style={{ fontWeight: 400 }}>
-                                  {profile.socialMediaLink || 'Not provided'}
-                                </span>
-                              </Typography>
+                                <EditIcon />
+                              </IconButton>
                             )}
                           </Box>
                           <Box
                             sx={{
                               display: 'flex',
-                              flexDirection: 'column',
-                              gap: 2,
-                              width: { xs: '100%', md: '70%' },
+                              alignItems: 'flex-start',
+                              flexDirection: { xs: 'column', md: 'row' },
                             }}
                           >
+                            {/* Left: Avatar (stacked on mobile) */}
                             <Box
                               sx={{
+                                width: { xs: '100%', md: 160 },
+                                position: 'relative',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: 1,
+                                alignItems: { xs: 'center', md: 'flex-start' },
+                                mb: { xs: 2, md: 0 },
                               }}
                             >
-                              {/* Username */}
-                              <Typography sx={{ fontWeight: 700 }}>
-                                Username:
-                              </Typography>
-                              <Box
+                              <Avatar
+                                src={
+                                  imagePreview ||
+                                  'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+                                }
+                                onClick={() => setAvatarOpen(true)}
                                 sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  bgcolor: '#e9e9e9',
-                                  borderRadius: 4,
-                                  p: 1.2,
+                                  width: { xs: 96, md: 120 },
+                                  height: { xs: 96, md: 120 },
+                                  position: { xs: 'static', md: 'absolute' },
+                                  left: { md: 8 },
+                                  top: { md: 25 },
+                                  boxShadow: 2,
+                                  cursor: 'pointer',
+                                  transition: 'transform 0.2s ease',
+                                  border: imagePreview
+                                    ? '3px solid #e0e0e0'
+                                    : 'none',
+                                  '&:hover': {
+                                    transform: 'scale(1.05)',
+                                  },
                                 }}
-                              >
-                                {isEditing ? (
-                                  <TextField
-                                    name="username"
-                                    value={draft.username}
-                                    onChange={handleChange}
-                                    size="small"
-                                    sx={{ flex: 1, background: 'transparent' }}
-                                    fullWidth
-                                  />
-                                ) : (
-                                  <Typography sx={{ flex: 1, pl: 2 }}>
-                                    {profile.username}
-                                  </Typography>
-                                )}
-                              </Box>
+                              />
 
-                              {/* Password change area (only during edit) */}
                               {isEditing && (
                                 <Box
                                   sx={{
-                                    mt: 2,
-                                    p: 2,
-                                    bgcolor: '#f5f5f5',
-                                    borderRadius: 2,
+                                    mt: { xs: 2, md: 0 },
+                                    position: { md: 'absolute' },
+                                    top: { md: 155 },
+                                    left: { md: 20 },
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 1,
+                                    alignItems: 'center',
                                   }}
                                 >
-                                  <Typography
-                                    variant="subtitle2"
-                                    sx={{ mb: 2, fontWeight: 600 }}
-                                  >
-                                    Change Password (Optional)
-                                  </Typography>
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      gap: 2,
-                                    }}
-                                  >
-                                    <TextField
-                                      label="Current Password"
-                                      type="password"
-                                      name="currentPassword"
-                                      value={passwordData.currentPassword}
-                                      onChange={handlePasswordChange}
-                                      size="small"
-                                      fullWidth
-                                    />
-                                    <TextField
-                                      label="New Password"
-                                      type="password"
-                                      name="newPassword"
-                                      value={passwordData.newPassword}
-                                      onChange={handlePasswordChange}
-                                      size="small"
-                                      fullWidth
-                                      helperText="Leave blank to keep current password"
-                                    />
-                                    <TextField
-                                      label="Confirm New Password"
-                                      type="password"
-                                      name="confirmPassword"
-                                      value={passwordData.confirmPassword}
-                                      onChange={handlePasswordChange}
-                                      size="small"
-                                      fullWidth
-                                    />
-                                  </Box>
-                                </Box>
-                              )}
-                            </Box>
-                            {/* CheckBox */}
-                            <Box
-                              sx={{
-                                mt: 2,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 0,
-                              }}
-                            >
-                              <FormControlLabel
-                                control={
-                                  <Checkbox
-                                    checked={receiveUpdatesPhone}
-                                    onChange={(e) =>
-                                      setReceiveUpdatesPhone(e.target.checked)
-                                    }
-                                    color="primary"
-                                    disabled={!isEditing}
-                                  />
-                                }
-                                label="Receive updates via SMS"
-                              />
-                              <FormControlLabel
-                                control={
-                                  <Checkbox
-                                    checked={receiveUpdatesEmail}
-                                    onChange={(e) =>
-                                      setReceiveUpdatesEmail(e.target.checked)
-                                    }
-                                    color="primary"
-                                    disabled={!isEditing}
-                                  />
-                                }
-                                label="Receive updates via Email"
-                              />
-                            </Box>
-                            {isEditing && (
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  flexDirection: { xs: 'column', md: 'row' },
-                                  gap: 1,
-                                  width: '100%',
-                                  mt: 1,
-                                }}
-                              >
-                                <Button
-                                  variant="contained"
-                                  color="primary"
-                                  size="small"
-                                  startIcon={<SaveIcon />}
-                                  onClick={() => setShowConfirmModal(true)}
-                                >
-                                  Save Changes
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  color="inherit"
-                                  size="small"
-                                  startIcon={<CloseIcon />}
-                                  onClick={() => setOpenInfoCancelModal(true)}
-                                >
-                                  Cancel
-                                </Button>
-                              </Box>
-                            )}
-                          </Box>
-                        </Box>
-                      </Box>
-                    </Box>
-                  )}
-                  {/* License Tab */}
-                  {activeTab === 1 && (
-                    <Box
-                      sx={{
-                        borderRadius: '18px',
-                        p: 3,
-                        position: 'relative',
-                        overflow: 'hidden',
-                        bgcolor: 'transparent',
-                        display: 'flex',
-                        flexDirection: { xs: 'column', md: 'row' },
-                        gap: 4,
-                        minHeight: '230px',
-                      }}
-                    >
-                      {/* Top-right Edit Button */}
-                      {!isEditingLicense && (
-                        <IconButton
-                          onClick={() => {
-                            setDraftLicenseNo(licenseNo);
-                            setDraftLicenseRestrictions(licenseRestrictions);
-                            setDraftLicenseExpiration(licenseExpiration);
-                            setPreviewLicenseImage(null);
-                            setDraftLicenseImage(null);
-                            setIsEditingLicense(true);
-                          }}
-                          sx={{
-                            position: 'absolute',
-                            top: 12,
-                            right: 50,
-                            backgroundColor: '#fff',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                            '&:hover': { backgroundColor: '#f5f5f5' },
-                          }}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      )}
-                      {/* Left Side - License Details */}
-                      <Box
-                        sx={{
-                          flex: 1,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 2,
-                        }}
-                      >
-                        {isEditingLicense ? (
-                          <>
-                            <TextField
-                              label="License No"
-                              value={draftLicenseNo}
-                              fullWidth
-                              InputProps={{
-                                readOnly: true,
-                              }}
-                              sx={{
-                                '& .MuiInputBase-input.Mui-disabled': {
-                                  WebkitTextFillColor: '#000', // ensure black text color
-                                },
-                              }}
-                            />
-                            <TextField
-                              label="Restrictions"
-                              value={draftLicenseRestrictions}
-                              onChange={(e) =>
-                                setDraftLicenseRestrictions(e.target.value)
-                              }
-                              fullWidth
-                            />
-                            <TextField
-                              label="Expiration Date"
-                              value={draftLicenseExpiration}
-                              onChange={(e) =>
-                                setDraftLicenseExpiration(e.target.value)
-                              }
-                              type="date"
-                              InputLabelProps={{ shrink: true }}
-                              fullWidth
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <Typography sx={{ fontWeight: 700 }}>
-                              License No:{' '}
-                              <span style={{ fontWeight: 400 }}>
-                                {typeof licenseNo === 'string' ? licenseNo : ''}
-                              </span>
-                            </Typography>
-                            <Typography sx={{ fontWeight: 700 }}>
-                              Restrictions:{' '}
-                              <span style={{ fontWeight: 400 }}>
-                                {typeof licenseRestrictions === 'string'
-                                  ? licenseRestrictions
-                                  : ''}
-                              </span>
-                            </Typography>
-                            <Typography sx={{ fontWeight: 700 }}>
-                              Expiration Date:{' '}
-                              <span style={{ fontWeight: 400 }}>
-                                {licenseExpiration
-                                  ? new Date(licenseExpiration)
-                                      .toISOString()
-                                      .split('T')[0]
-                                  : 'N/A'}
-                              </span>
-                            </Typography>
-                          </>
-                        )}
-                      </Box>
-                      {/* Right Side - License Image */}
-                      <Box
-                        sx={{
-                          flex: 1,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: 2,
-                        }}
-                      >
-                        <Box sx={{ position: 'relative' }}>
-                          <img
-                            src={
-                              isEditingLicense && previewLicenseImage
-                                ? previewLicenseImage
-                                : licenseImage
-                            }
-                            alt="License"
-                            style={{
-                              maxWidth: '300px',
-                              maxHeight: '200px',
-                              borderRadius: '12px',
-                              boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                              objectFit: 'contain',
-                              cursor: isEditingLicense ? 'default' : 'pointer',
-                              transition: 'transform 0.2s ease',
-                              opacity: licenseImageUploading ? 0.5 : 1,
-                            }}
-                            onClick={() =>
-                              !isEditingLicense && setOpenLicenseModal(true)
-                            }
-                          />
-                          {/* Upload/Change/Remove Buttons (Only in Edit Mode) */}
-                          {isEditingLicense && (
-                            <Box
-                              sx={{
-                                mt: 2,
-                                display: 'flex',
-                                gap: 1,
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                              }}
-                            >
-                              {licenseImageUploading ? (
-                                <CircularProgress size={24} />
-                              ) : (
-                                <>
                                   <Button
                                     variant="contained"
                                     component="label"
+                                    size="small"
                                     startIcon={<PhotoCamera />}
-                                    disabled={savingLicense}
+                                    disabled={imageUploading}
+                                    sx={{
+                                      fontSize: '0.75rem',
+                                      px: 1.5,
+                                      minWidth: 'auto',
+                                    }}
                                   >
-                                    {previewLicenseImage
-                                      ? 'Change Image'
-                                      : 'Upload Image'}
+                                    {imagePreview ? 'Change' : 'Upload'}
                                     <input
                                       type="file"
-                                      accept="image/jpeg,image/jpg,image/png,image/webp"
                                       hidden
-                                      onChange={handleLicenseFileChange}
+                                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                                      onChange={handleImageChange}
                                     />
                                   </Button>
-                                  {previewLicenseImage && (
+
+                                  {imagePreview && (
                                     <Button
                                       variant="outlined"
-                                      color="error"
                                       size="small"
-                                      onClick={() => {
-                                        setDraftLicenseImage(null);
-                                        setPreviewLicenseImage(null);
+                                      color="error"
+                                      startIcon={<PhotoCamera />}
+                                      onClick={handleRemoveImage}
+                                      disabled={imageUploading}
+                                      sx={{
+                                        fontSize: '0.75rem',
+                                        px: 1.5,
+                                        minWidth: 'auto',
                                       }}
-                                      disabled={savingLicense}
                                     >
                                       Remove
                                     </Button>
                                   )}
-                                </>
+
+                                  {imageUploading && (
+                                    <CircularProgress
+                                      size={20}
+                                      sx={{ mt: 1 }}
+                                    />
+                                  )}
+                                </Box>
                               )}
                             </Box>
-                          )}
-                        </Box>
-                      </Box>
-                      {/* Save / Cancel Buttons (centered at bottom) */}
-                      {isEditingLicense && (
-                        <Box
-                          sx={{
-                            position: { xs: 'static', md: 'absolute' },
-                            mt: { xs: 3, md: 0 },
-                            bottom: { md: 10 },
-                            left: { md: '50%' },
-                            transform: { md: 'translateX(-50%)' },
-                            display: 'flex',
-                            justifyContent: 'center',
-                            gap: 2,
-                            width: { xs: '100%', md: 'auto' },
-                          }}
-                        >
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            startIcon={<SaveIcon />}
-                            onClick={() => setOpenLicenseSaveModal(true)}
-                            disabled={savingLicense || licenseImageUploading}
-                          >
-                            Save Changes
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            color="inherit"
-                            startIcon={<CloseIcon />}
-                            onClick={() => setOpenLicenseCancelModal(true)}
-                            disabled={savingLicense || licenseImageUploading}
-                          >
-                            Cancel
-                          </Button>
-                        </Box>
-                      )}
-                      {/* MODAL FOR LICENSE IMAGE */}
-                      <Modal
-                        open={openLicenseModal}
-                        onClose={() => setOpenLicenseModal(false)}
-                      >
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            position: 'fixed',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            bgcolor: 'rgba(0,0,0,0.8)',
-                            zIndex: 1300,
-                            p: 2,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              position: 'relative',
-                              maxWidth: '95vw',
-                              maxHeight: '95vh',
-                              display: 'flex',
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                            }}
-                          >
-                            <img
-                              src={licenseImage}
-                              alt="License Full Size"
-                              style={{
-                                maxWidth: '100%',
-                                maxHeight: '100%',
-                                borderRadius: '12px',
-                                objectFit: 'contain',
-                                boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-                              }}
-                            />
-                            {/* Close button (top right) */}
-                            <IconButton
-                              onClick={() => setOpenLicenseModal(false)}
+                            {/* Right: Details */}
+                            <Box
                               sx={{
-                                position: 'absolute',
-                                top: 8,
-                                right: 8,
-                                backgroundColor: 'rgba(0,0,0,0.6)',
-                                color: '#fff',
-                                '&:hover': {
-                                  backgroundColor: 'rgba(0,0,0,0.8)',
-                                },
+                                flex: 1,
+                                pl: { xs: 0, md: 6 },
+                                width: '100%',
                               }}
                             >
-                              <CloseIcon />
-                            </IconButton>
+                              <Box
+                                sx={{
+                                  mb: 2,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 1,
+                                }}
+                              >
+                                {isEditing ? (
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      gap: 1,
+                                      flexDirection: {
+                                        xs: 'column',
+                                        md: 'row',
+                                      },
+                                    }}
+                                  >
+                                    <TextField
+                                      label="First Name"
+                                      name="firstName"
+                                      value={draft.firstName}
+                                      onChange={handleChange}
+                                      size="small"
+                                      fullWidth
+                                    />
+                                    <TextField
+                                      label="Last Name"
+                                      name="lastName"
+                                      value={draft.lastName}
+                                      onChange={handleChange}
+                                      size="small"
+                                      fullWidth
+                                    />
+                                  </Box>
+                                ) : (
+                                  <Typography sx={{ fontWeight: 700 }}>
+                                    First Name:{' '}
+                                    <span style={{ fontWeight: 400 }}>
+                                      {profile.firstName}
+                                    </span>
+                                  </Typography>
+                                )}
+                                {!isEditing && (
+                                  <Typography sx={{ fontWeight: 700 }}>
+                                    Last Name:{' '}
+                                    <span style={{ fontWeight: 400 }}>
+                                      {profile.lastName}
+                                    </span>
+                                  </Typography>
+                                )}
+                                {isEditing ? (
+                                  <TextField
+                                    label="Address"
+                                    name="address"
+                                    value={draft.address}
+                                    onChange={handleChange}
+                                    size="small"
+                                    fullWidth
+                                  />
+                                ) : (
+                                  <Typography sx={{ fontWeight: 700 }}>
+                                    Address:{' '}
+                                    <span style={{ fontWeight: 400 }}>
+                                      {profile.address}
+                                    </span>
+                                  </Typography>
+                                )}
+                                {isEditing ? (
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      gap: 1,
+                                      flexDirection: {
+                                        xs: 'column',
+                                        md: 'row',
+                                      },
+                                    }}
+                                  >
+                                    <TextField
+                                      label="Email"
+                                      name="email"
+                                      value={draft.email}
+                                      onChange={handleChange}
+                                      size="small"
+                                      fullWidth
+                                    />
+                                    <TextField
+                                      label="Contact Number"
+                                      name="contactNumber"
+                                      value={draft.contactNumber}
+                                      onChange={handleChange}
+                                      size="small"
+                                      fullWidth
+                                    />
+                                  </Box>
+                                ) : (
+                                  <>
+                                    <Typography sx={{ fontWeight: 700 }}>
+                                      Email:{' '}
+                                      <span style={{ fontWeight: 400 }}>
+                                        {profile.email}
+                                      </span>
+                                    </Typography>
+                                    <Typography sx={{ fontWeight: 700 }}>
+                                      Contact Number:{' '}
+                                      <span style={{ fontWeight: 400 }}>
+                                        {profile.contactNumber}
+                                      </span>
+                                    </Typography>
+                                  </>
+                                )}
+                                {isEditing ? (
+                                  <TextField
+                                    label="Social Media Link"
+                                    name="socialMediaLink"
+                                    value={draft.socialMediaLink}
+                                    onChange={handleChange}
+                                    size="small"
+                                    fullWidth
+                                    placeholder="Facebook, Instagram, etc."
+                                  />
+                                ) : (
+                                  <Typography sx={{ fontWeight: 700 }}>
+                                    Social Media Link:{' '}
+                                    <span style={{ fontWeight: 400 }}>
+                                      {profile.socialMediaLink ||
+                                        'Not provided'}
+                                    </span>
+                                  </Typography>
+                                )}
+                              </Box>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 2,
+                                  width: { xs: '100%', md: '70%' },
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 1,
+                                  }}
+                                >
+                                  {/* Username */}
+                                  <Typography sx={{ fontWeight: 700 }}>
+                                    Username:
+                                  </Typography>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      bgcolor: '#e9e9e9',
+                                      borderRadius: 4,
+                                      p: 1.2,
+                                    }}
+                                  >
+                                    {isEditing ? (
+                                      <TextField
+                                        name="username"
+                                        value={draft.username}
+                                        onChange={handleChange}
+                                        size="small"
+                                        sx={{
+                                          flex: 1,
+                                          background: 'transparent',
+                                        }}
+                                        fullWidth
+                                      />
+                                    ) : (
+                                      <Typography sx={{ flex: 1, pl: 2 }}>
+                                        {profile.username}
+                                      </Typography>
+                                    )}
+                                  </Box>
+
+                                  {/* Password change area (only during edit) */}
+                                  {isEditing && (
+                                    <Box
+                                      sx={{
+                                        mt: 2,
+                                        p: 2,
+                                        bgcolor: '#f5f5f5',
+                                        borderRadius: 2,
+                                      }}
+                                    >
+                                      <Typography
+                                        variant="subtitle2"
+                                        sx={{ mb: 2, fontWeight: 600 }}
+                                      >
+                                        Change Password (Optional)
+                                      </Typography>
+                                      <Box
+                                        sx={{
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          gap: 2,
+                                        }}
+                                      >
+                                        <TextField
+                                          label="Current Password"
+                                          type="password"
+                                          name="currentPassword"
+                                          value={passwordData.currentPassword}
+                                          onChange={handlePasswordChange}
+                                          size="small"
+                                          fullWidth
+                                        />
+                                        <TextField
+                                          label="New Password"
+                                          type="password"
+                                          name="newPassword"
+                                          value={passwordData.newPassword}
+                                          onChange={handlePasswordChange}
+                                          size="small"
+                                          fullWidth
+                                          helperText="Leave blank to keep current password"
+                                        />
+                                        <TextField
+                                          label="Confirm New Password"
+                                          type="password"
+                                          name="confirmPassword"
+                                          value={passwordData.confirmPassword}
+                                          onChange={handlePasswordChange}
+                                          size="small"
+                                          fullWidth
+                                        />
+                                      </Box>
+                                    </Box>
+                                  )}
+                                </Box>
+                                {/* CheckBox */}
+                                <Box
+                                  sx={{
+                                    mt: 2,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 0,
+                                  }}
+                                >
+                                  <FormControlLabel
+                                    control={
+                                      <Checkbox
+                                        checked={receiveUpdatesPhone}
+                                        onChange={(e) =>
+                                          setReceiveUpdatesPhone(
+                                            e.target.checked
+                                          )
+                                        }
+                                        color="primary"
+                                        disabled={!isEditing}
+                                      />
+                                    }
+                                    label="Receive updates via SMS"
+                                  />
+                                  <FormControlLabel
+                                    control={
+                                      <Checkbox
+                                        checked={receiveUpdatesEmail}
+                                        onChange={(e) =>
+                                          setReceiveUpdatesEmail(
+                                            e.target.checked
+                                          )
+                                        }
+                                        color="primary"
+                                        disabled={!isEditing}
+                                      />
+                                    }
+                                    label="Receive updates via Email"
+                                  />
+                                </Box>
+                                {isEditing && (
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      flexDirection: {
+                                        xs: 'column',
+                                        md: 'row',
+                                      },
+                                      gap: 1,
+                                      width: '100%',
+                                      mt: 1,
+                                    }}
+                                  >
+                                    <Button
+                                      variant="contained"
+                                      color="primary"
+                                      size="small"
+                                      startIcon={<SaveIcon />}
+                                      onClick={() => setShowConfirmModal(true)}
+                                    >
+                                      Save Changes
+                                    </Button>
+                                    <Button
+                                      variant="outlined"
+                                      color="inherit"
+                                      size="small"
+                                      startIcon={<CloseIcon />}
+                                      onClick={() =>
+                                        setOpenInfoCancelModal(true)
+                                      }
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </Box>
+                                )}
+                              </Box>
+                            </Box>
                           </Box>
                         </Box>
-                      </Modal>
+                      )}
+                      {/* License Tab */}
+                      {activeTab === 1 && (
+                        <Box
+                          sx={{
+                            borderRadius: '18px',
+                            p: 3,
+                            position: 'relative',
+                            overflow: 'hidden',
+                            bgcolor: 'transparent',
+                            display: 'flex',
+                            flexDirection: { xs: 'column', md: 'row' },
+                            gap: 4,
+                            minHeight: '230px',
+                          }}
+                        >
+                          {/* Top-right Edit Button */}
+                          {!isEditingLicense && (
+                            <IconButton
+                              onClick={() => {
+                                setDraftLicenseNo(licenseNo);
+                                setDraftLicenseRestrictions(
+                                  licenseRestrictions
+                                );
+                                setDraftLicenseExpiration(licenseExpiration);
+                                setPreviewLicenseImage(null);
+                                setDraftLicenseImage(null);
+                                setIsEditingLicense(true);
+                              }}
+                              sx={{
+                                position: 'absolute',
+                                top: 12,
+                                right: 50,
+                                backgroundColor: '#fff',
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                                '&:hover': { backgroundColor: '#f5f5f5' },
+                              }}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          )}
+                          {/* Left Side - License Details */}
+                          <Box
+                            sx={{
+                              flex: 1,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 2,
+                            }}
+                          >
+                            {isEditingLicense ? (
+                              <>
+                                <TextField
+                                  label="License No"
+                                  value={draftLicenseNo}
+                                  fullWidth
+                                  InputProps={{
+                                    readOnly: true,
+                                  }}
+                                  sx={{
+                                    '& .MuiInputBase-input.Mui-disabled': {
+                                      WebkitTextFillColor: '#000', // ensure black text color
+                                    },
+                                  }}
+                                />
+                                <TextField
+                                  label="Restrictions"
+                                  value={draftLicenseRestrictions}
+                                  onChange={(e) =>
+                                    setDraftLicenseRestrictions(e.target.value)
+                                  }
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="Expiration Date"
+                                  value={draftLicenseExpiration}
+                                  onChange={(e) =>
+                                    setDraftLicenseExpiration(e.target.value)
+                                  }
+                                  type="date"
+                                  InputLabelProps={{ shrink: true }}
+                                  fullWidth
+                                />
+                              </>
+                            ) : (
+                              <>
+                                <Typography sx={{ fontWeight: 700 }}>
+                                  License No:{' '}
+                                  <span style={{ fontWeight: 400 }}>
+                                    {typeof licenseNo === 'string'
+                                      ? licenseNo
+                                      : ''}
+                                  </span>
+                                </Typography>
+                                <Typography sx={{ fontWeight: 700 }}>
+                                  Restrictions:{' '}
+                                  <span style={{ fontWeight: 400 }}>
+                                    {typeof licenseRestrictions === 'string'
+                                      ? licenseRestrictions
+                                      : ''}
+                                  </span>
+                                </Typography>
+                                <Typography sx={{ fontWeight: 700 }}>
+                                  Expiration Date:{' '}
+                                  <span style={{ fontWeight: 400 }}>
+                                    {licenseExpiration
+                                      ? new Date(licenseExpiration)
+                                          .toISOString()
+                                          .split('T')[0]
+                                      : 'N/A'}
+                                  </span>
+                                </Typography>
+                              </>
+                            )}
+                          </Box>
+                          {/* Right Side - License Image */}
+                          <Box
+                            sx={{
+                              flex: 1,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: 2,
+                            }}
+                          >
+                            <Box sx={{ position: 'relative' }}>
+                              <img
+                                src={
+                                  isEditingLicense && previewLicenseImage
+                                    ? previewLicenseImage
+                                    : licenseImage
+                                }
+                                alt="License"
+                                style={{
+                                  maxWidth: '300px',
+                                  maxHeight: '200px',
+                                  borderRadius: '12px',
+                                  boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                                  objectFit: 'contain',
+                                  cursor: isEditingLicense
+                                    ? 'default'
+                                    : 'pointer',
+                                  transition: 'transform 0.2s ease',
+                                  opacity: licenseImageUploading ? 0.5 : 1,
+                                }}
+                                onClick={() =>
+                                  !isEditingLicense && setOpenLicenseModal(true)
+                                }
+                              />
+                              {/* Upload/Change/Remove Buttons (Only in Edit Mode) */}
+                              {isEditingLicense && (
+                                <Box
+                                  sx={{
+                                    mt: 2,
+                                    display: 'flex',
+                                    gap: 1,
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                  }}
+                                >
+                                  {licenseImageUploading ? (
+                                    <CircularProgress size={24} />
+                                  ) : (
+                                    <>
+                                      <Button
+                                        variant="contained"
+                                        component="label"
+                                        startIcon={<PhotoCamera />}
+                                        disabled={savingLicense}
+                                      >
+                                        {previewLicenseImage
+                                          ? 'Change Image'
+                                          : 'Upload Image'}
+                                        <input
+                                          type="file"
+                                          accept="image/jpeg,image/jpg,image/png,image/webp"
+                                          hidden
+                                          onChange={handleLicenseFileChange}
+                                        />
+                                      </Button>
+                                      {previewLicenseImage && (
+                                        <Button
+                                          variant="outlined"
+                                          color="error"
+                                          size="small"
+                                          onClick={() => {
+                                            setDraftLicenseImage(null);
+                                            setPreviewLicenseImage(null);
+                                          }}
+                                          disabled={savingLicense}
+                                        >
+                                          Remove
+                                        </Button>
+                                      )}
+                                    </>
+                                  )}
+                                </Box>
+                              )}
+                            </Box>
+                          </Box>
+                          {/* Save / Cancel Buttons (centered at bottom) */}
+                          {isEditingLicense && (
+                            <Box
+                              sx={{
+                                position: { xs: 'static', md: 'absolute' },
+                                mt: { xs: 3, md: 0 },
+                                bottom: { md: 10 },
+                                left: { md: '50%' },
+                                transform: { md: 'translateX(-50%)' },
+                                display: 'flex',
+                                justifyContent: 'center',
+                                gap: 2,
+                                width: { xs: '100%', md: 'auto' },
+                              }}
+                            >
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                startIcon={<SaveIcon />}
+                                onClick={() => setOpenLicenseSaveModal(true)}
+                                disabled={
+                                  savingLicense || licenseImageUploading
+                                }
+                              >
+                                Save Changes
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                color="inherit"
+                                startIcon={<CloseIcon />}
+                                onClick={() => setOpenLicenseCancelModal(true)}
+                                disabled={
+                                  savingLicense || licenseImageUploading
+                                }
+                              >
+                                Cancel
+                              </Button>
+                            </Box>
+                          )}
+                          {/* MODAL FOR LICENSE IMAGE */}
+                          <Modal
+                            open={openLicenseModal}
+                            onClose={() => setOpenLicenseModal(false)}
+                          >
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                position: 'fixed',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                bgcolor: 'rgba(0,0,0,0.8)',
+                                zIndex: 1300,
+                                p: 2,
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  position: 'relative',
+                                  maxWidth: '95vw',
+                                  maxHeight: '95vh',
+                                  display: 'flex',
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                }}
+                              >
+                                <img
+                                  src={licenseImage}
+                                  alt="License Full Size"
+                                  style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '100%',
+                                    borderRadius: '12px',
+                                    objectFit: 'contain',
+                                    boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                                  }}
+                                />
+                                {/* Close button (top right) */}
+                                <IconButton
+                                  onClick={() => setOpenLicenseModal(false)}
+                                  sx={{
+                                    position: 'absolute',
+                                    top: 8,
+                                    right: 8,
+                                    backgroundColor: 'rgba(0,0,0,0.6)',
+                                    color: '#fff',
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(0,0,0,0.8)',
+                                    },
+                                  }}
+                                >
+                                  <CloseIcon />
+                                </IconButton>
+                              </Box>
+                            </Box>
+                          </Modal>
+                        </Box>
+                      )}
                     </Box>
-                  )}
-                </Box>
-              </Box>
+                  </Box>
+                </>
+              )}
             </Box>
           </Box>
         </Box>

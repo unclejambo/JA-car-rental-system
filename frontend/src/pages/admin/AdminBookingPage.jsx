@@ -164,8 +164,6 @@ export default function AdminBookingPage() {
           ? response
           : response.data || [];
 
-        console.log('📊 Raw bookings data from backend:', bookingsData);
-
         let formattedData = bookingsData.map((item, index) => ({
           ...item,
           id: item.customerId || item.reservationId || `row-${index}`, // Add unique id property
@@ -175,12 +173,6 @@ export default function AdminBookingPage() {
           endDate: formatDateOnly(item.endDate),
           bookingDate: formatDateOnly(item.bookingDate),
         }));
-
-        console.log('📋 All bookings before filtering:', formattedData.length);
-        console.log(
-          '📋 Booking statuses:',
-          formattedData.map((b) => b.booking_status)
-        );
 
         // Show all bookings including pending, confirmed, in progress, and ongoing status
         formattedData = formattedData.filter((b) => {
@@ -197,17 +189,10 @@ export default function AdminBookingPage() {
           );
         });
 
-        console.log('✅ Bookings after filtering:', formattedData.length);
-        console.log(
-          '✅ Filtered booking statuses:',
-          formattedData.map((b) => b.booking_status)
-        );
-
         setRows(formattedData);
         setError(null);
       })
       .catch((err) => {
-        console.error('Error fetching data:', err);
         setError('Failed to load data. Please try again later.');
       })
       .finally(() => {
@@ -230,7 +215,9 @@ export default function AdminBookingPage() {
         .then((updatedBooking) => {
           setSelectedBooking(updatedBooking);
         })
-        .catch((err) => console.error('Error refreshing booking:', err));
+        .catch((err) => {
+          // Error refreshing booking
+        });
     }
   };
 

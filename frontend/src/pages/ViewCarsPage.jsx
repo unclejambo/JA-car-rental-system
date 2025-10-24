@@ -30,12 +30,10 @@ function ViewCarsPage() {
     const loadCars = async () => {
       try {
         setLoading(true);
-        console.log('Fetching cars from:', `${API_BASE}/cars`);
         const response = await fetch(`${API_BASE}/cars`);
 
         if (response.ok) {
           const response_data = await response.json();
-          console.log('Cars data received:', response_data);
           // Handle paginated response - extract data array
           const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
           
@@ -47,11 +45,9 @@ function ViewCarsPage() {
           setCars(activeCars || []);
         } else {
           const errorText = await response.text();
-          console.error('Failed to load cars:', errorText);
           setError('Failed to load cars. Please try again.');
         }
       } catch (error) {
-        console.error('Error loading cars:', error);
         setError('Error connecting to server. Please try again.');
       } finally {
         setLoading(false);

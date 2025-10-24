@@ -56,9 +56,6 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
   // Initialize form with booking data
   useEffect(() => {
     if (booking && open) {
-      console.log('📝 Initializing Edit Booking Modal with data:', booking);
-      console.log('📅 Raw pickup_time from DB:', booking.pickup_time);
-      console.log('📅 Raw dropoff_time from DB:', booking.dropoff_time);
       
       const isDelivery = booking.deliver_loc && booking.deliver_loc.trim() !== '';
       
@@ -75,7 +72,6 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
       
       if (booking.pickup_time) {
         const pickupDate = new Date(booking.pickup_time);
-        console.log('🕐 Raw pickup_time from DB (UTC):', pickupDate.toISOString());
         
         // Convert UTC to Philippine time by adding 8 hours
         const utcHours = pickupDate.getUTCHours();
@@ -91,12 +87,10 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
         }
         
         pickupTimeFormatted = `${String(phHours).padStart(2, '0')}:${String(phMinutes).padStart(2, '0')}`;
-        console.log('✅ Converted to Philippine time:', pickupTimeFormatted);
       }
       
       if (booking.dropoff_time) {
         const dropoffDate = new Date(booking.dropoff_time);
-        console.log('🕐 Raw dropoff_time from DB (UTC):', dropoffDate.toISOString());
         
         // Convert UTC to Philippine time by adding 8 hours
         const utcHours = dropoffDate.getUTCHours();
@@ -112,7 +106,6 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
         }
         
         dropoffTimeFormatted = `${String(phHours).padStart(2, '0')}:${String(phMinutes).padStart(2, '0')}`;
-        console.log('✅ Converted to Philippine time:', dropoffTimeFormatted);
       }
       
       setFormData({
@@ -127,10 +120,6 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
         selectedDriver: booking.drivers_id ? booking.drivers_id.toString() : '',
       });
       
-      console.log('📋 Final formData set:', {
-        pickupTime: pickupTimeFormatted,
-        dropoffTime: dropoffTimeFormatted
-      });
       
       setServiceType(isDelivery ? 'delivery' : 'pickup');
       setIsSelfService(booking.isSelfDriver !== false);
@@ -151,7 +140,6 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
         setDrivers(filteredDrivers || []);
       }
     } catch (error) {
-      console.error('Error fetching drivers:', error);
       setDrivers([]);
     }
   };
@@ -276,8 +264,6 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
     setError('');
 
     try {
-      console.log('📤 Submitting booking update...');
-      console.log('📤 Current formData:', formData);
       
       // Send times in HH:MM format as expected by backend
       const updateData = {
@@ -293,8 +279,6 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
         drivers_id: isSelfService ? null : parseInt(formData.selectedDriver),
       };
       
-      console.log('📤 Update data being sent:', updateData);
-      console.log('📤 Times being sent - pickup:', updateData.pickup_time, 'dropoff:', updateData.dropoff_time);
 
       const response = await authenticatedFetch(`${API_BASE}/bookings/${booking.booking_id}/update`, {
         method: 'PUT',
@@ -308,7 +292,6 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
       }
 
       const result = await response.json();
-      console.log('✅ Booking updated successfully:', result);
       
       if (onBookingUpdated) {
         onBookingUpdated(result);
@@ -316,7 +299,6 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
       
       handleClose();
     } catch (error) {
-      console.error('❌ Update booking error:', error);
       setError(error.message || 'Failed to update booking. Please try again.');
     } finally {
       setLoading(false);

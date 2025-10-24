@@ -10,32 +10,30 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  */
 const refreshCarImageUrl = async (carImgUrl) => {
   if (!carImgUrl) return null;
-  
+
   try {
     // Extract the path from the existing URL
     // Format: https://...supabase.co/storage/v1/object/sign/licenses/car_img/filename?token=...
     const urlParts = carImgUrl.split('/');
     const bucketIndex = urlParts.findIndex(part => part === 'licenses');
-    
+
     if (bucketIndex === -1) return carImgUrl; // Return original if can't parse
-    
+
     const encodedPath = urlParts.slice(bucketIndex + 1).join('/').split('?')[0]; // Remove query params
-    
+
     // Decode URL encoding (e.g., %20 -> space)
     const path = decodeURIComponent(encodedPath);
-    
+
     const { data: signedUrlData, error } = await supabase.storage
       .from('licenses')
       .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year expiration
-    
+
     if (error) {
-      console.error('Error refreshing car image signed URL:', error);
       return carImgUrl; // Return original URL if refresh fails
     }
-    
+
     return signedUrlData.signedUrl;
   } catch (error) {
-    console.error('Error parsing car image URL:', error);
     return carImgUrl; // Return original URL if parsing fails
   }
 };
@@ -79,7 +77,6 @@ export const getDashboardStats = async (req, res) => {
       pendingBookings
     });
   } catch (error) {
-    console.error("Error fetching dashboard stats:", error);
     res.status(500).json({ error: "Failed to fetch dashboard statistics" });
   }
 };
@@ -122,7 +119,6 @@ export const getBookingAnalytics = async (req, res) => {
       daily: dailyBookings
     });
   } catch (error) {
-    console.error("Error fetching booking analytics:", error);
     res.status(500).json({ error: "Failed to fetch booking analytics" });
   }
 };
@@ -161,7 +157,7 @@ export const getRevenueAnalytics = async (req, res) => {
       startDate.setDate(startDate.getDate() - days);
       endDate = new Date();
     }
-    
+
     // Validate the dates
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       throw new Error('Invalid date calculation');
@@ -207,8 +203,6 @@ export const getRevenueAnalytics = async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Error fetching revenue analytics:", error);
-    
     // Send more detailed error information in development
     const isDev = process.env.NODE_ENV === 'development';
     res.status(500).json({ 
@@ -284,8 +278,6 @@ export const getTopCustomers = async (req, res) => {
 
     res.json(topCustomers);
   } catch (error) {
-    console.error("Error fetching top customers:", error);
-    
     // Send more detailed error information in development
     const isDev = process.env.NODE_ENV === 'development';
     res.status(500).json({ 
@@ -306,7 +298,7 @@ export const getCarUtilization = async (req, res) => {
       if (isNaN(selectedYear) || selectedYear < 2000 || selectedYear > 2100) {
         throw new Error('Invalid year parameter');
       }
-      
+
       if (month !== undefined) {
         // Specific month in year
         const selectedMonth = parseInt(month);
@@ -339,7 +331,7 @@ export const getCarUtilization = async (req, res) => {
       startDate.setDate(startDate.getDate() - days);
       endDate = new Date();
     }
-    
+
     // Validate calculated dates
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       throw new Error('Invalid date calculation');
@@ -374,7 +366,7 @@ export const getCarUtilization = async (req, res) => {
     const utilization = await Promise.all(carUsage.map(async (car) => {
       // Refresh signed URL if car image exists
       const refreshedImgUrl = car.car_img_url ? await refreshCarImageUrl(car.car_img_url) : null;
-      
+
       return {
         carId: car.car_id,
         make: car.make,
@@ -392,18 +384,10 @@ export const getCarUtilization = async (req, res) => {
 
     // Log the top car for debugging
     if (utilization.length > 0) {
-      console.log('📊 Top Car:', {
-        make: utilization[0].make,
-        model: utilization[0].model,
-        carImgUrl: utilization[0].carImgUrl ? 'URL refreshed' : 'No image',
-        hasImage: !!utilization[0].carImgUrl
-      });
     }
 
     res.json(utilization);
   } catch (error) {
-    console.error("Error fetching car utilization:", error);
-    
     // Send more detailed error information in development
     const isDev = process.env.NODE_ENV === 'development';
     res.status(500).json({ 
@@ -425,12 +409,12 @@ export const getAvailableYears = async (req, res) => {
         where: { paid_date: { not: null } },
         select: { paid_date: true }
       }),
-      
+
       // Booking dates (when bookings were made)
       prisma.booking.findMany({
         select: { booking_date: true, start_date: true, end_date: true }
       }),
-      
+
       // Future bookings that might have payments
       prisma.booking.findMany({
         where: {
@@ -442,21 +426,21 @@ export const getAvailableYears = async (req, res) => {
 
     // Extract unique years from all date sources
     const yearsSet = new Set();
-    
+
     // Add years from payment dates
     paymentDates.forEach(payment => {
       if (payment.paid_date) {
         yearsSet.add(new Date(payment.paid_date).getFullYear());
       }
     });
-    
+
     // Add years from booking dates and booking periods
     bookingDates.forEach(booking => {
       if (booking.booking_date) yearsSet.add(new Date(booking.booking_date).getFullYear());
       if (booking.start_date) yearsSet.add(new Date(booking.start_date).getFullYear());
       if (booking.end_date) yearsSet.add(new Date(booking.end_date).getFullYear());
     });
-    
+
     // Add years from future bookings
     futurBookings.forEach(booking => {
       if (booking.start_date) yearsSet.add(new Date(booking.start_date).getFullYear());
@@ -464,35 +448,29 @@ export const getAvailableYears = async (req, res) => {
     });
 
     const currentYear = new Date().getFullYear();
-    
+
     // Always include current year and next year for upcoming payments
     yearsSet.add(currentYear);
     yearsSet.add(currentYear + 1);
-    
+
     // Ensure we have a reasonable range
     const minYear = Math.min(...yearsSet, 2020);
     const maxYear = Math.max(...yearsSet, currentYear + 1);
-    
+
     // Generate complete year range
     const years = [];
     for (let year = minYear; year <= maxYear; year++) {
       years.push(year);
     }
-
-    console.log(`Available years calculated: ${years.length} years from ${minYear} to ${maxYear}`);
     res.json(years.sort((a, b) => b - a)); // Most recent first
-    
+
   } catch (error) {
-    console.error("Error fetching available years:", error);
-    
     // Robust fallback that extends into future
     const currentYear = new Date().getFullYear();
     const fallbackYears = [];
     for (let year = 2020; year <= currentYear + 2; year++) {
       fallbackYears.push(year);
     }
-    
-    console.log(`Using fallback years: ${fallbackYears.length} years`);
     res.json(fallbackYears.sort((a, b) => b - a));
   }
 };

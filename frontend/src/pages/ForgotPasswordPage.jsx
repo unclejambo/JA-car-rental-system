@@ -162,7 +162,6 @@ function ForgotPasswordPage() {
         setError(data.message || 'Failed to send verification code');
       }
     } catch (err) {
-      console.error('Send verification code error:', err);
       setError('Network error. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
@@ -210,7 +209,6 @@ function ForgotPasswordPage() {
         }
       }
     } catch (err) {
-      console.error('Verify code error:', err);
       setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
@@ -270,7 +268,6 @@ function ForgotPasswordPage() {
         }
       }
     } catch (err) {
-      console.error('Reset password error:', err);
       setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);

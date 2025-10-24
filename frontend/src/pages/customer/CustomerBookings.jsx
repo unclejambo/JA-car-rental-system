@@ -70,7 +70,7 @@ function TabPanel({ children, value, index, ...other }) {
 function CustomerBookings() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [activeTab, setActiveTab] = useState(0);
-  const [bookings, setBookings] = useState([]);
+  const [bookings, setBookings] = useState(null);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -151,7 +151,6 @@ function CustomerBookings() {
         setError(errorData.error || 'Failed to load bookings');
       }
     } catch (error) {
-      console.error('Error fetching bookings:', error);
       setError('Error connecting to server. Please try again.');
     } finally {
       setLoading(false);
@@ -161,14 +160,12 @@ function CustomerBookings() {
   // Fetch customer's payment history - Now fetches unpaid bookings instead
   const fetchPayments = async () => {
     try {
-      console.log('Fetching unpaid bookings for settlement...');
       const response = await authenticatedFetch(
         `${API_BASE}/bookings/my-bookings/list?pageSize=100`
       );
 
       if (response.ok) {
         const response_data = await response.json();
-        console.log('Bookings response for settlement:', response_data);
 
         // Handle paginated response - extract data array
         const data = Array.isArray(response_data)
@@ -183,15 +180,9 @@ function CustomerBookings() {
         );
         setPayments(unpaidBookings);
       } else {
-        console.error(
-          'Failed to fetch settlement data:',
-          response.status,
-          response.statusText
-        );
         setPayments([]);
       }
     } catch (error) {
-      console.error('Error fetching settlement data:', error);
       setPayments([]);
     }
   };
@@ -264,7 +255,6 @@ function CustomerBookings() {
         alert(`❌ ${errorData.error}`);
       }
     } catch (error) {
-      console.error('Error cancelling booking:', error);
       alert('❌ Failed to cancel booking. Please try again.');
     } finally {
       setActionLoading(false);
@@ -327,7 +317,6 @@ function CustomerBookings() {
         showMessage(errorData.error || 'Failed to extend booking', 'error');
       }
     } catch (error) {
-      console.error('Error extending booking:', error);
       showMessage('Failed to extend booking. Please try again.', 'error');
     } finally {
       setActionLoading(false);
@@ -371,7 +360,6 @@ function CustomerBookings() {
         );
       }
     } catch (error) {
-      console.error('Error cancelling extension:', error);
       showMessage(
         'Failed to cancel extension request. Please try again.',
         'error'
@@ -393,7 +381,7 @@ function CustomerBookings() {
   };
 
   // Filter bookings based on search query
-  const filteredBookings = bookings.filter((booking) => {
+  const filteredBookings = (bookings || []).filter((booking) => {
     if (!bookingSearchQuery) return true;
     const query = bookingSearchQuery.toLowerCase();
     return (
@@ -451,1166 +439,1276 @@ function CustomerBookings() {
       >
         <title>My Bookings</title>
 
+        {/* Loading Indicator - Initial Load (wrapped in Card) */}
+        {loading && bookings === null && (
+          <Card
+            sx={{
+              p: 0,
+              border: 'none',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              backgroundColor: '#fff',
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <CircularProgress sx={{ color: '#c10007' }} />
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Page Header */}
-        <Box sx={{ mb: { xs: 2, sm: 3 }, px: { xs: 1, sm: 0 } }}>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: 'bold',
-                color: '#c10007',
-                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-              }}
-            >
-              <HiBookOpen size={24} style={{ color: '#c10007' }} />
-              My Bookings
-            </Typography>
-            {/* Refresh Button - Fixed Upper Right */}
-            <Button
-              variant="outlined"
-              startIcon={<HiRefresh />}
-              onClick={fetchBookings}
-              disabled={loading}
-              size="small"
-              sx={{
-                borderColor: '#c10007',
-                color: '#c10007',
-                backgroundColor: 'white',
-                fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                '&:hover': {
-                  borderColor: '#a50006',
-                  backgroundColor: '#fff5f5',
-                },
-              }}
-            >
-              Refresh
-            </Button>
-          </Box>
+        {!(loading && bookings === null) && (
+          <>
+            <Box sx={{ mb: { xs: 2, sm: 3 }, px: { xs: 1, sm: 0 } }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 'bold',
+                    color: '#c10007',
+                    fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
+                >
+                  <HiBookOpen size={24} style={{ color: '#c10007' }} />
+                  My Bookings
+                </Typography>
+                {/* Refresh Button - Fixed Upper Right */}
+                <Button
+                  variant="outlined"
+                  startIcon={<HiRefresh />}
+                  onClick={fetchBookings}
+                  disabled={loading}
+                  size="small"
+                  sx={{
+                    borderColor: '#c10007',
+                    color: '#c10007',
+                    backgroundColor: 'white',
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    '&:hover': {
+                      borderColor: '#a50006',
+                      backgroundColor: '#fff5f5',
+                    },
+                  }}
+                >
+                  Refresh
+                </Button>
+              </Box>
 
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
-          >
-            Manage your car rental bookings and track payment history
-          </Typography>
-        </Box>
-
-        {/* Tabs */}
-        <Box
-          sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            mb: 3,
-            display: 'flex',
-            justifyContent: 'flex-start',
-          }}
-        >
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            sx={{
-              '& .MuiTab-root': {
-                textTransform: 'none',
-                fontWeight: 'bold',
-                fontSize: { xs: '0.775rem', sm: '.9rem' },
-                minWidth: { xs: 100, sm: 120 },
-                padding: { xs: '6px 8px', sm: '12px 16px' },
-              },
-              '& .Mui-selected': {
-                color: '#c10007 !important',
-              },
-              '& .MuiTabs-indicator': {
-                backgroundColor: '#c10007',
-              },
-            }}
-          >
-            <Tab label={`My Bookings (${bookings.length})`} />
-            <Tab label={`Settlement (${payments.length})`} />
-          </Tabs>
-        </Box>
-
-        {/* Search Bar - Aligned to the right like Refresh button */}
-        <Box
-          sx={{
-            mt: -1,
-            mb: -1,
-            display: 'flex',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <Box sx={{ width: '100%' }}>
-            {activeTab === 0 ? (
-              <SearchBar
-                value={bookingSearchQuery}
-                onChange={(e) => setBookingSearchQuery(e.target.value)}
-                placeholder="Search bookings..."
-                fullWidth
-              />
-            ) : (
-              <SearchBar
-                value={paymentSearchQuery}
-                onChange={(e) => setPaymentSearchQuery(e.target.value)}
-                placeholder="Search settlements..."
-                fullWidth
-              />
-            )}
-          </Box>
-        </Box>
-
-        {/* Result count below search bar - aligned to the right */}
-        {activeTab === 0 && bookingSearchQuery && (
-          <Box
-            sx={{
-              mb: 2,
-              px: { xs: 1, sm: 0 },
-              display: 'flex',
-              justifyContent: 'flex-end',
-            }}
-          ></Box>
-        )}
-        {activeTab === 1 && paymentSearchQuery && (
-          <Box
-            sx={{
-              mb: 1,
-              px: { xs: 1, sm: 0 },
-              display: 'flex',
-              justifyContent: 'flex-end',
-            }}
-          ></Box>
-        )}
-
-        {/* Error Alert */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-
-        {/* Loading Indicator */}
-        {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-            <CircularProgress sx={{ color: '#c10007' }} />
-          </Box>
-        )}
-
-        {/* Tab Panels */}
-        <TabPanel value={activeTab} index={0}>
-          {/* MY BOOKINGS TAB - HORIZONTAL LAYOUT */}
-          {filteredBookings.filter((b) => {
-            const status = b.booking_status?.toLowerCase();
-            return (
-              status === 'pending' ||
-              status === 'confirmed' ||
-              status === 'in progress' ||
-              status === 'ongoing'
-            );
-          }).length === 0 && !loading ? (
-            <Card sx={{ p: 4, textAlign: 'center', mx: { xs: 1, sm: 0 } }}>
-              <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-                {bookingSearchQuery
-                  ? 'No matching bookings found'
-                  : 'No bookings found'}
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+              >
+                Manage your car rental bookings and track payment history
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {bookingSearchQuery
-                  ? `No bookings found matching "${bookingSearchQuery}". Try a different search term.`
-                  : "You haven't made any car rental bookings yet."}
-              </Typography>
-            </Card>
-          ) : (
+            </Box>
+
+            {/* Tabs */}
             <Box
               sx={{
+                borderBottom: 1,
+                borderColor: 'divider',
+                mb: 3,
                 display: 'flex',
-                flexDirection: 'column',
-                gap: { xs: 0.75, sm: 1 },
-                px: { xs: 0.5, sm: 0 },
+                justifyContent: 'flex-start',
               }}
             >
-              {filteredBookings
-                .filter((booking) => {
-                  const status = booking.booking_status?.toLowerCase();
-                  return (
-                    status === 'pending' ||
-                    status === 'confirmed' ||
-                    status === 'in progress' ||
-                    status === 'ongoing'
-                  );
-                })
-                .map((booking) => {
-                  // Determine the status message and color based on pending requests
-                  let statusMessage = '';
-                  let statusColor = '';
+              <Tabs
+                value={activeTab}
+                onChange={handleTabChange}
+                sx={{
+                  '& .MuiTab-root': {
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                    fontSize: { xs: '0.775rem', sm: '.9rem' },
+                    minWidth: { xs: 100, sm: 120 },
+                    padding: { xs: '6px 8px', sm: '12px 16px' },
+                  },
+                  '& .Mui-selected': {
+                    color: '#c10007 !important',
+                  },
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: '#c10007',
+                  },
+                }}
+              >
+                <Tab label={`My Bookings (${bookings?.length || 0})`} />
+                <Tab label={`Settlement (${payments.length})`} />
+              </Tabs>
+            </Box>
 
-                  if (booking.isCancel) {
-                    statusMessage = 'Pending Cancellation';
-                    statusColor = '#FFA500'; // Orange
-                  } else if (booking.isExtend) {
-                    statusMessage = 'Pending Extension';
-                    statusColor = '#FFA500'; // Orange
-                  } else if (
-                    booking.isPay &&
-                    booking.payment_status?.toLowerCase() !== 'paid'
-                  ) {
-                    statusMessage = 'Pending Payment';
-                    statusColor = '#FFA500'; // Orange
-                  }
+            {/* Search Bar - Aligned to the right like Refresh button */}
+            <Box
+              sx={{
+                mt: -1,
+                mb: -1,
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <Box sx={{ width: '100%' }}>
+                {activeTab === 0 ? (
+                  <SearchBar
+                    value={bookingSearchQuery}
+                    onChange={(e) => setBookingSearchQuery(e.target.value)}
+                    placeholder="Search bookings..."
+                    fullWidth
+                  />
+                ) : (
+                  <SearchBar
+                    value={paymentSearchQuery}
+                    onChange={(e) => setPaymentSearchQuery(e.target.value)}
+                    placeholder="Search settlements..."
+                    fullWidth
+                  />
+                )}
+              </Box>
+            </Box>
 
-                  // Determine booking status badge color
-                  let bookingStatusColor = '';
-                  const bookingStatus = booking.booking_status?.toLowerCase();
+            {/* Result count below search bar - aligned to the right */}
+            {activeTab === 0 && bookingSearchQuery && (
+              <Box
+                sx={{
+                  mb: 2,
+                  px: { xs: 1, sm: 0 },
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                }}
+              ></Box>
+            )}
+            {activeTab === 1 && paymentSearchQuery && (
+              <Box
+                sx={{
+                  mb: 1,
+                  px: { xs: 1, sm: 0 },
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                }}
+              ></Box>
+            )}
 
-                  switch (bookingStatus) {
-                    case 'pending':
-                      bookingStatusColor = '#FF9800'; // Orange
-                      break;
-                    case 'approved':
-                    case 'confirmed':
-                      bookingStatusColor = '#2196F3'; // Blue
-                      break;
-                    case 'in progress':
-                    case 'ongoing':
-                      bookingStatusColor = '#4CAF50'; // Green
-                      break;
-                    default:
-                      bookingStatusColor = '#9E9E9E'; // Grey
-                  }
+            {/* Error Alert */}
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
+            )}
 
-                  return (
-                    <Card
-                      key={booking.booking_id}
-                      sx={{
-                        display: 'flex',
-                        flexDirection: { xs: 'column', sm: 'row' },
-                        border: '1px solid #e0e0e0',
-                        position: 'relative',
-                        '&:hover': {
-                          boxShadow: '0 4px 12px rgba(193, 0, 7, 0.1)',
-                          borderColor: '#c10007',
-                        },
-                        transition: 'all 0.3s ease',
-                      }}
-                    >
-                      {/* Status Badges on top-right corner */}
-                      <Box
+            {/* Loading Indicator */}
+            {loading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <CircularProgress sx={{ color: '#c10007' }} />
+              </Box>
+            )}
+
+            {/* Tab Panels */}
+            <TabPanel value={activeTab} index={0}>
+              {/* MY BOOKINGS TAB - HORIZONTAL LAYOUT */}
+              {filteredBookings.filter((b) => {
+                const status = b.booking_status?.toLowerCase();
+                return (
+                  status === 'pending' ||
+                  status === 'confirmed' ||
+                  status === 'in progress' ||
+                  status === 'ongoing'
+                );
+              }).length === 0 && !loading ? (
+                <Card sx={{ p: 4, textAlign: 'center', mx: { xs: 1, sm: 0 } }}>
+                  <Typography
+                    variant="h6"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    {bookingSearchQuery
+                      ? 'No matching bookings found'
+                      : 'No bookings found'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {bookingSearchQuery
+                      ? `No bookings found matching "${bookingSearchQuery}". Try a different search term.`
+                      : "You haven't made any car rental bookings yet."}
+                  </Typography>
+                </Card>
+              ) : (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: { xs: 0.75, sm: 1 },
+                    px: { xs: 0.5, sm: 0 },
+                  }}
+                >
+                  {filteredBookings
+                    .filter((booking) => {
+                      const status = booking.booking_status?.toLowerCase();
+                      return (
+                        status === 'pending' ||
+                        status === 'confirmed' ||
+                        status === 'in progress' ||
+                        status === 'ongoing'
+                      );
+                    })
+                    .map((booking) => {
+                      // Determine the status message and color based on pending requests
+                      let statusMessage = '';
+                      let statusColor = '';
+
+                      if (booking.isCancel) {
+                        statusMessage = 'Pending Cancellation';
+                        statusColor = '#FFA500'; // Orange
+                      } else if (booking.isExtend) {
+                        statusMessage = 'Pending Extension';
+                        statusColor = '#FFA500'; // Orange
+                      } else if (
+                        booking.isPay &&
+                        booking.payment_status?.toLowerCase() !== 'paid'
+                      ) {
+                        statusMessage = 'Pending Payment';
+                        statusColor = '#FFA500'; // Orange
+                      }
+
+                      // Determine booking status badge color
+                      let bookingStatusColor = '';
+                      const bookingStatus =
+                        booking.booking_status?.toLowerCase();
+
+                      switch (bookingStatus) {
+                        case 'pending':
+                          bookingStatusColor = '#FF9800'; // Orange
+                          break;
+                        case 'approved':
+                        case 'confirmed':
+                          bookingStatusColor = '#2196F3'; // Blue
+                          break;
+                        case 'in progress':
+                        case 'ongoing':
+                          bookingStatusColor = '#4CAF50'; // Green
+                          break;
+                        default:
+                          bookingStatusColor = '#9E9E9E'; // Grey
+                      }
+
+                      return (
+                        <Card
+                          key={booking.booking_id}
+                          sx={{
+                            display: 'flex',
+                            flexDirection: { xs: 'column', sm: 'row' },
+                            border: '1px solid #e0e0e0',
+                            position: 'relative',
+                            '&:hover': {
+                              boxShadow: '0 4px 12px rgba(193, 0, 7, 0.1)',
+                              borderColor: '#c10007',
+                            },
+                            transition: 'all 0.3s ease',
+                          }}
+                        >
+                          {/* Status Badges on top-right corner */}
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 10,
+                              right: 10,
+                              zIndex: 1,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 0.5,
+                              alignItems: 'flex-end',
+                            }}
+                          >
+                            {/* Booking Status Badge */}
+                            <Chip
+                              label={booking.booking_status}
+                              size="small"
+                              sx={{
+                                backgroundColor: bookingStatusColor,
+                                color: 'white',
+                                fontWeight: 'bold',
+                                textTransform: 'capitalize',
+                              }}
+                            />
+
+                            {/* Pending Action Badge */}
+                            {statusMessage && (
+                              <Chip
+                                label={statusMessage}
+                                size="small"
+                                sx={{
+                                  backgroundColor: statusColor,
+                                  color: 'white',
+                                  fontWeight: 'bold',
+                                }}
+                              />
+                            )}
+                          </Box>
+
+                          {/* Car Image - Left Side / Top on Mobile */}
+                          <Box
+                            sx={{
+                              alignContent: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <CardMedia
+                              component="div"
+                              sx={{
+                                width: '100%',
+                                height: { xs: 160, sm: 120 },
+                                minWidth: { xs: 'auto', sm: 200 },
+                                backgroundColor: '#f5f5f5',
+                                backgroundImage: booking.car_details.image_url
+                                  ? `url(${booking.car_details.image_url})`
+                                  : 'none',
+                                backgroundSize: 'cover',
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'center',
+                                display: 'flex',
+                              }}
+                            >
+                              {!booking.car_details.image_url && (
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  No Image
+                                </Typography>
+                              )}
+                            </CardMedia>
+                          </Box>
+
+                          {/* Content - Right Side / Bottom on Mobile */}
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexGrow: 1,
+                              flexDirection: 'column',
+                            }}
+                          >
+                            <CardContent
+                              sx={{ flex: '1 0 auto', p: { xs: 1.5, sm: 2 } }}
+                            >
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'flex-start',
+                                  mb: 1.5,
+                                  pr: { xs: 5, sm: 0 },
+                                }}
+                              >
+                                <Box>
+                                  {/* Car Name */}
+                                  <Typography
+                                    variant="h6"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      mb: 0.5,
+                                      fontSize: { xs: '1rem', sm: '1.25rem' },
+                                    }}
+                                  >
+                                    {booking.car_details.display_name}
+                                  </Typography>
+
+                                  {/* Plate Number */}
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{
+                                      fontSize: {
+                                        xs: '0.75rem',
+                                        sm: '0.875rem',
+                                      },
+                                    }}
+                                  >
+                                    Plate: {booking.car_details.license_plate}
+                                  </Typography>
+                                </Box>
+                              </Box>
+
+                              {/* Booking Details in Row */}
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: { xs: 0.3, md: 0.75 },
+                                  mb: 1.5,
+                                }}
+                              >
+                                {/* Date Range */}
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  <HiCalendar
+                                    size={16}
+                                    style={{ color: '#c10007', flexShrink: 0 }}
+                                  />
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontSize: {
+                                        xs: '0.75rem',
+                                        sm: '0.875rem',
+                                      },
+                                    }}
+                                  >
+                                    {formatPhilippineDate(booking.start_date, {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric',
+                                    })}{' '}
+                                    -{' '}
+                                    {formatPhilippineDate(booking.end_date, {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric',
+                                    })}
+                                  </Typography>
+                                </Box>
+
+                                {/* Time Range */}
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                  {/* Pickup Time */}
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 0.5,
+                                    }}
+                                  >
+                                    <HiClock
+                                      size={16}
+                                      style={{
+                                        color: '#c10007',
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        fontSize: {
+                                          xs: '0.75rem',
+                                          sm: '0.875rem',
+                                        },
+                                      }}
+                                    >
+                                      Pickup Time:{' '}
+                                      {parseAndFormatTime(booking.pickup_time)}
+                                    </Typography>
+                                  </Box>
+                                  <Typography variant="body2"> - </Typography>
+                                  {/* Drop-off Time */}
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 0.5,
+                                    }}
+                                  >
+                                    <HiClock
+                                      size={16}
+                                      style={{
+                                        color: '#c10007',
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        fontSize: {
+                                          xs: '0.75rem',
+                                          sm: '0.875rem',
+                                        },
+                                      }}
+                                    >
+                                      Drop-off Time:{' '}
+                                      {parseAndFormatTime(booking.dropoff_time)}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+
+                                {/* Pickup Location */}
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  <HiLocationMarker
+                                    size={16}
+                                    style={{ color: '#4CAF50', flexShrink: 0 }}
+                                  />
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontSize: {
+                                        xs: '0.75rem',
+                                        sm: '0.875rem',
+                                      },
+                                    }}
+                                  >
+                                    <strong>Pickup:</strong>{' '}
+                                    {booking.pickup_loc ||
+                                      'JA Car Rental Office'}
+                                  </Typography>
+                                </Box>
+
+                                {/* Drop-off Location */}
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  <HiLocationMarker
+                                    size={16}
+                                    style={{ color: '#c10007', flexShrink: 0 }}
+                                  />
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontSize: {
+                                        xs: '0.75rem',
+                                        sm: '0.875rem',
+                                      },
+                                    }}
+                                  >
+                                    <strong>Drop-off:</strong>{' '}
+                                    {booking.dropoff_loc ||
+                                      'JA Car Rental Office'}
+                                  </Typography>
+                                </Box>
+                              </Box>
+
+                              {/* Total Amount */}
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 0.5,
+                                  mb: 1,
+                                }}
+                              >
+                                <HiCurrencyDollar
+                                  size={16}
+                                  style={{ color: '#c10007' }}
+                                />
+                                <Typography
+                                  variant="body1"
+                                  sx={{
+                                    fontWeight: 'bold',
+                                    color: '#c10007',
+                                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                                  }}
+                                >
+                                  Total: ₱
+                                  {booking.total_amount?.toLocaleString()}
+                                </Typography>
+                              </Box>
+
+                              <Divider sx={{ mb: 2 }} />
+
+                              {/* Extension Request Alert */}
+                              {booking.isExtend && booking.new_end_date && (
+                                <Alert
+                                  severity="warning"
+                                  sx={{
+                                    mb: 2,
+                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                  }}
+                                >
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      mb: 0.5,
+                                      fontSize: {
+                                        xs: '0.75rem',
+                                        sm: '0.875rem',
+                                      },
+                                    }}
+                                  >
+                                    ⏳ Extension Request Pending
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                                    }}
+                                  >
+                                    New End Date:{' '}
+                                    {formatPhilippineDate(booking.new_end_date)}
+                                  </Typography>
+                                  {booking.extension_payment_deadline && (
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        fontSize: {
+                                          xs: '0.7rem',
+                                          sm: '0.8rem',
+                                        },
+                                        color: '#d32f2f',
+                                        fontWeight: 'bold',
+                                        mt: 0.5,
+                                      }}
+                                    >
+                                      💰 Payment Due:{' '}
+                                      {formatPhilippineDateTime(
+                                        booking.extension_payment_deadline
+                                      )}
+                                    </Typography>
+                                  )}
+                                </Alert>
+                              )}
+
+                              {/* Action Buttons */}
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  gap: 1,
+                                  flexWrap: 'wrap',
+                                }}
+                              >
+                                {/* Edit Button - Only for pending bookings without pending actions */}
+                                {booking.booking_status?.toLowerCase() ===
+                                  'pending' &&
+                                  !booking.isCancel &&
+                                  !booking.isExtend && (
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      startIcon={<HiPencil size={16} />}
+                                      sx={{
+                                        borderColor: '#2196f3',
+                                        color: '#2196f3',
+                                        fontSize: {
+                                          xs: '0.75rem',
+                                          sm: '0.875rem',
+                                        },
+                                        '&:hover': {
+                                          backgroundColor: '#e3f2fd',
+                                        },
+                                      }}
+                                      onClick={() => {
+                                        setSelectedBooking(booking);
+                                        setShowEditDialog(true);
+                                      }}
+                                    >
+                                      Edit
+                                    </Button>
+                                  )}
+
+                                {/* Cancel Button - For pending and confirmed bookings without pending cancellation */}
+                                {(booking.booking_status?.toLowerCase() ===
+                                  'pending' ||
+                                  booking.booking_status?.toLowerCase() ===
+                                    'confirmed') &&
+                                  !booking.isCancel && (
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      startIcon={<HiX size={16} />}
+                                      sx={{
+                                        borderColor: '#f44336',
+                                        color: '#f44336',
+                                        fontSize: {
+                                          xs: '0.75rem',
+                                          sm: '0.875rem',
+                                        },
+                                        '&:hover': {
+                                          backgroundColor: '#ffebee',
+                                        },
+                                      }}
+                                      onClick={() => {
+                                        setSelectedBooking(booking);
+                                        setShowCancelDialog(true);
+                                      }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  )}
+
+                                {/* Extend Button - For In Progress bookings without pending extension */}
+                                {booking.booking_status?.toLowerCase() ===
+                                  'in progress' &&
+                                  !booking.isExtend &&
+                                  booking.isExtend !== true &&
+                                  booking.isExtend !== 'true' &&
+                                  booking.isExtend !== 'TRUE' && (
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      startIcon={<HiPlus size={16} />}
+                                      sx={{
+                                        borderColor: '#4caf50',
+                                        color: '#4caf50',
+                                        fontSize: {
+                                          xs: '0.75rem',
+                                          sm: '0.875rem',
+                                        },
+                                        '&:hover': {
+                                          backgroundColor: '#e8f5e9',
+                                        },
+                                      }}
+                                      onClick={() => {
+                                        setSelectedBooking(booking);
+                                        setShowExtendDialog(true);
+                                      }}
+                                    >
+                                      Extend
+                                    </Button>
+                                  )}
+
+                                {/* Cancel Extension Button - For bookings with pending extension */}
+                                {(booking.isExtend === true ||
+                                  booking.isExtend === 'true' ||
+                                  booking.isExtend === 'TRUE') && (
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<HiX size={16} />}
+                                    sx={{
+                                      borderColor: '#ff9800',
+                                      color: '#ff9800',
+                                      fontSize: {
+                                        xs: '0.75rem',
+                                        sm: '0.875rem',
+                                      },
+                                      '&:hover': {
+                                        backgroundColor: '#fff3e0',
+                                      },
+                                    }}
+                                    onClick={() =>
+                                      handleCancelExtension(booking)
+                                    }
+                                    disabled={actionLoading}
+                                  >
+                                    Cancel Extension
+                                  </Button>
+                                )}
+                              </Box>
+                            </CardContent>
+                          </Box>
+                        </Card>
+                      );
+                    })}
+                </Box>
+              )}
+            </TabPanel>
+
+            <TabPanel value={activeTab} index={1}>
+              {/* SETTLEMENT TAB - HORIZONTAL LAYOUT WITHOUT IMAGE */}
+              {filteredPayments.filter((b) => {
+                const status = b.booking_status?.toLowerCase();
+                return (
+                  status === 'pending' ||
+                  status === 'confirmed' ||
+                  status === 'in progress' ||
+                  status === 'ongoing'
+                );
+              }).length === 0 && !loading ? (
+                <Card sx={{ p: 4, textAlign: 'center', mx: { xs: 1, sm: 0 } }}>
+                  <Typography
+                    variant="h6"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    {paymentSearchQuery
+                      ? 'No matching payments found'
+                      : 'No unpaid bookings'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {paymentSearchQuery
+                      ? `No payments found matching "${paymentSearchQuery}". Try a different search term.`
+                      : 'You have no outstanding payments at this time.'}
+                  </Typography>
+                </Card>
+              ) : (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: { xs: 1, sm: 2 },
+                    px: { xs: 0.5, sm: 0 },
+                  }}
+                >
+                  {filteredPayments
+                    .filter((booking) => {
+                      const status = booking.booking_status?.toLowerCase();
+                      return (
+                        status === 'pending' ||
+                        status === 'confirmed' ||
+                        status === 'in progress' ||
+                        status === 'ongoing'
+                      );
+                    })
+                    .map((booking) => (
+                      <Card
+                        key={booking.booking_id}
                         sx={{
-                          position: 'absolute',
-                          top: 10,
-                          right: 10,
-                          zIndex: 1,
                           display: 'flex',
-                          flexDirection: 'column',
-                          gap: 0.5,
-                          alignItems: 'flex-end',
+                          flexDirection: 'row',
+                          border: '1px solid #e0e0e0',
+                          position: 'relative',
+                          width: '100%',
+                          borderRadius: { xs: 0, sm: 1 },
+                          '&:hover': {
+                            boxShadow: '0 4px 12px rgba(193, 0, 7, 0.1)',
+                            borderColor: '#c10007',
+                          },
+                          transition: 'all 0.3s ease',
                         }}
                       >
-                        {/* Booking Status Badge */}
-                        <Chip
-                          label={booking.booking_status}
-                          size="small"
-                          sx={{
-                            backgroundColor: bookingStatusColor,
-                            color: 'white',
-                            fontWeight: 'bold',
-                            textTransform: 'capitalize',
-                          }}
-                        />
-
-                        {/* Pending Action Badge */}
-                        {statusMessage && (
+                        {/* Pay Now / Pending Payment Button - Fixed Upper Right */}
+                        {booking.isPay ? (
                           <Chip
-                            label={statusMessage}
+                            label="Pending Payment"
                             size="small"
                             sx={{
-                              backgroundColor: statusColor,
+                              position: 'absolute',
+                              top: 10,
+                              right: 10,
+                              backgroundColor: '#FFA500',
                               color: 'white',
                               fontWeight: 'bold',
                             }}
                           />
+                        ) : (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            sx={{
+                              position: 'absolute',
+                              top: { xs: 8, sm: 12 },
+                              right: { xs: 8, sm: 12 },
+                              backgroundColor: '#c10007',
+                              color: 'white',
+                              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                              padding: { xs: '4px 12px', sm: '6px 16px' },
+                              '&:hover': {
+                                backgroundColor: '#a50006',
+                              },
+                            }}
+                            onClick={() => {
+                              setSelectedBooking(booking);
+                              setShowPaymentDialog(true);
+                            }}
+                          >
+                            Pay Now
+                          </Button>
                         )}
-                      </Box>
 
-                      {/* Car Image - Left Side / Top on Mobile */}
-                      <Box
-                        sx={{
-                          alignContent: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <CardMedia
-                          component="div"
+                        {/* Content - Full Width (No Image) */}
+                        <Box
                           sx={{
-                            width: '100%',
-                            height: { xs: 160, sm: 120 },
-                            minWidth: { xs: 'auto', sm: 200 },
-                            backgroundColor: '#f5f5f5',
-                            backgroundImage: booking.car_details.image_url
-                              ? `url(${booking.car_details.image_url})`
-                              : 'none',
-                            backgroundSize: 'cover',
-                            backgroundRepeat: 'no-repeat',
-                            backgroundPosition: 'center',
                             display: 'flex',
+                            direction: 'column',
+                            flexGrow: 1,
+                            ml: { xs: 0.5, sm: 1 },
                           }}
                         >
-                          {!booking.car_details.image_url && (
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              No Image
-                            </Typography>
-                          )}
-                        </CardMedia>
-                      </Box>
-
-                      {/* Content - Right Side / Bottom on Mobile */}
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          flexGrow: 1,
-                          flexDirection: 'column',
-                        }}
-                      >
-                        <CardContent
-                          sx={{ flex: '1 0 auto', p: { xs: 1.5, sm: 2 } }}
-                        >
                           <Box
                             sx={{
                               display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'flex-start',
-                              mb: 1.5,
-                              pr: { xs: 5, sm: 0 },
-                            }}
-                          >
-                            <Box>
-                              {/* Car Name */}
-                              <Typography
-                                variant="h6"
-                                sx={{
-                                  fontWeight: 'bold',
-                                  mb: 0.5,
-                                  fontSize: { xs: '1rem', sm: '1.25rem' },
-                                }}
-                              >
-                                {booking.car_details.display_name}
-                              </Typography>
-
-                              {/* Plate Number */}
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                }}
-                              >
-                                Plate: {booking.car_details.license_plate}
-                              </Typography>
-                            </Box>
-                          </Box>
-
-                          {/* Booking Details in Row */}
-                          <Box
-                            sx={{
-                              display: 'flex',
+                              flexGrow: 1,
                               flexDirection: 'column',
-                              gap: { xs: 0.3, md: 0.75 },
-                              mb: 1.5,
                             }}
                           >
-                            {/* Date Range */}
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                              }}
+                            <CardContent
+                              sx={{ flex: '1', p: { xs: 0.5, sm: 1 } }}
                             >
-                              <HiCalendar
-                                size={16}
-                                style={{ color: '#c10007', flexShrink: 0 }}
-                              />
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                }}
-                              >
-                                {formatPhilippineDate(booking.start_date, {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric',
-                                })}{' '}
-                                -{' '}
-                                {formatPhilippineDate(booking.end_date, {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric',
-                                })}
-                              </Typography>
-                            </Box>
-
-                            {/* Time Range */}
-                            <Box sx={{ display: 'flex', gap: 2 }}>
-                              {/* Pickup Time */}
                               <Box
                                 sx={{
                                   display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 0.5,
+                                  flexDirection: { xs: 'column', sm: 'row' },
+                                  justifyContent: 'space-between',
+                                  alignItems: {
+                                    xs: 'flex-start',
+                                    sm: 'center',
+                                  },
+                                  gap: { xs: 1, sm: 0 },
+                                  mb: 1.5,
+                                  pr: { xs: 10, sm: 12 },
                                 }}
                               >
-                                <HiClock
-                                  size={16}
-                                  style={{ color: '#c10007', flexShrink: 0 }}
-                                />
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                  }}
-                                >
-                                  Pickup Time:{' '}
-                                  {parseAndFormatTime(booking.pickup_time)}
-                                </Typography>
+                                <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                                  {/* Payment Title */}
+                                  <Typography
+                                    variant="h6"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      mb: 0.5,
+                                      fontSize: { xs: '1rem', sm: '1.25rem' },
+                                    }}
+                                  >
+                                    Payment for{' '}
+                                    {booking.car_details.display_name}
+                                  </Typography>
+
+                                  {/* Plate Number */}
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{
+                                      fontSize: {
+                                        xs: '0.75rem',
+                                        sm: '0.875rem',
+                                      },
+                                    }}
+                                  >
+                                    Plate: {booking.car_details.license_plate}
+                                  </Typography>
+                                </Box>
                               </Box>
-                              <Typography variant="body2"> - </Typography>
-                              {/* Drop-off Time */}
+
+                              {/* Booking Details in Row */}
                               <Box
                                 sx={{
                                   display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 0.5,
+                                  flexDirection: 'column',
+                                  gap: { xs: 0.3, md: 0.75 },
+                                  mb: 1,
                                 }}
                               >
-                                <HiClock
-                                  size={16}
-                                  style={{ color: '#c10007', flexShrink: 0 }}
-                                />
-                                <Typography
-                                  variant="body2"
+                                {/* Date Range */}
+                                <Box
                                   sx={{
-                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
                                   }}
                                 >
-                                  Drop-off Time:{' '}
-                                  {parseAndFormatTime(booking.dropoff_time)}
-                                </Typography>
+                                  <HiCalendar
+                                    size={16}
+                                    style={{ color: '#c10007', flexShrink: 0 }}
+                                  />
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontSize: {
+                                        xs: '0.75rem',
+                                        sm: '0.875rem',
+                                      },
+                                    }}
+                                  >
+                                    {formatPhilippineDate(booking.start_date, {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric',
+                                    })}{' '}
+                                    -{' '}
+                                    {formatPhilippineDate(booking.end_date, {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric',
+                                    })}
+                                  </Typography>
+                                </Box>
+
+                                {/* Time Range */}
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                  {/* Pickup Time */}
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 0.5,
+                                    }}
+                                  >
+                                    <HiClock
+                                      size={16}
+                                      style={{
+                                        color: '#c10007',
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        fontSize: {
+                                          xs: '0.75rem',
+                                          sm: '0.875rem',
+                                        },
+                                      }}
+                                    >
+                                      Pickup Time:{' '}
+                                      {parseAndFormatTime(booking.pickup_time)}
+                                    </Typography>
+                                  </Box>
+                                  <Typography variant="body2"> - </Typography>
+                                  {/* Drop-off Time */}
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 0.5,
+                                    }}
+                                  >
+                                    <HiClock
+                                      size={16}
+                                      style={{
+                                        color: '#c10007',
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        fontSize: {
+                                          xs: '0.75rem',
+                                          sm: '0.875rem',
+                                        },
+                                      }}
+                                    >
+                                      Drop-off Time:{' '}
+                                      {parseAndFormatTime(booking.dropoff_time)}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+
+                                {/* Pickup Location */}
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  <HiLocationMarker
+                                    size={16}
+                                    style={{ color: '#4CAF50', flexShrink: 0 }}
+                                  />
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontSize: {
+                                        xs: '0.75rem',
+                                        sm: '0.875rem',
+                                      },
+                                    }}
+                                  >
+                                    <strong>Pickup:</strong>{' '}
+                                    {booking.pickup_loc ||
+                                      'JA Car Rental Office'}
+                                  </Typography>
+                                </Box>
+
+                                {/* Drop-off Location */}
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  <HiLocationMarker
+                                    size={16}
+                                    style={{ color: '#c10007', flexShrink: 0 }}
+                                  />
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontSize: {
+                                        xs: '0.75rem',
+                                        sm: '0.875rem',
+                                      },
+                                    }}
+                                  >
+                                    <strong>Drop-off:</strong>{' '}
+                                    {booking.dropoff_loc ||
+                                      'JA Car Rental Office'}
+                                  </Typography>
+                                </Box>
                               </Box>
-                            </Box>
 
-                            {/* Pickup Location */}
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                              }}
-                            >
-                              <HiLocationMarker
-                                size={16}
-                                style={{ color: '#4CAF50', flexShrink: 0 }}
-                              />
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                }}
-                              >
-                                <strong>Pickup:</strong>{' '}
-                                {booking.pickup_loc || 'JA Car Rental Office'}
-                              </Typography>
-                            </Box>
-
-                            {/* Drop-off Location */}
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                              }}
-                            >
-                              <HiLocationMarker
-                                size={16}
-                                style={{ color: '#c10007', flexShrink: 0 }}
-                              />
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                }}
-                              >
-                                <strong>Drop-off:</strong>{' '}
-                                {booking.dropoff_loc || 'JA Car Rental Office'}
-                              </Typography>
-                            </Box>
+                              {/* Balance/Unpaid Status */}
+                              {booking.balance > 0 && (
+                                <Box
+                                  sx={{
+                                    width: 'fit-content',
+                                    p: { xs: 0.8, sm: 1 },
+                                    backgroundColor: '#ffebee',
+                                    borderRadius: 1,
+                                    border: '1px solid #f44336',
+                                  }}
+                                >
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      color: '#d32f2f',
+                                      fontSize: {
+                                        xs: '0.75rem',
+                                        sm: '0.875rem',
+                                      },
+                                    }}
+                                  >
+                                    Outstanding Balance: ₱
+                                    {booking.balance?.toLocaleString()}
+                                  </Typography>
+                                </Box>
+                              )}
+                            </CardContent>
                           </Box>
+                        </Box>
+                      </Card>
+                    ))}
+                </Box>
+              )}
+            </TabPanel>
 
-                          {/* Total Amount */}
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 0.5,
-                              mb: 1,
-                            }}
-                          >
-                            <HiCurrencyDollar
-                              size={16}
-                              style={{ color: '#c10007' }}
-                            />
-                            <Typography
-                              variant="body1"
-                              sx={{
-                                fontWeight: 'bold',
-                                color: '#c10007',
-                                fontSize: { xs: '0.875rem', sm: '1rem' },
-                              }}
-                            >
-                              Total: ₱{booking.total_amount?.toLocaleString()}
-                            </Typography>
-                          </Box>
-
-                          <Divider sx={{ mb: 2 }} />
-
-                          {/* Extension Request Alert */}
-                          {booking.isExtend && booking.new_end_date && (
-                            <Alert
-                              severity="warning"
-                              sx={{
-                                mb: 2,
-                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                              }}
-                            >
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontWeight: 'bold',
-                                  mb: 0.5,
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                }}
-                              >
-                                ⏳ Extension Request Pending
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontSize: { xs: '0.7rem', sm: '0.8rem' },
-                                }}
-                              >
-                                New End Date:{' '}
-                                {formatPhilippineDate(booking.new_end_date)}
-                              </Typography>
-                              {booking.extension_payment_deadline && (
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    fontSize: { xs: '0.7rem', sm: '0.8rem' },
-                                    color: '#d32f2f',
-                                    fontWeight: 'bold',
-                                    mt: 0.5,
-                                  }}
-                                >
-                                  💰 Payment Due:{' '}
-                                  {formatPhilippineDateTime(
-                                    booking.extension_payment_deadline
-                                  )}
-                                </Typography>
-                              )}
-                            </Alert>
-                          )}
-
-                          {/* Action Buttons */}
-                          <Box
-                            sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}
-                          >
-                            {/* Edit Button - Only for pending bookings without pending actions */}
-                            {booking.booking_status?.toLowerCase() ===
-                              'pending' &&
-                              !booking.isCancel &&
-                              !booking.isExtend && (
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  startIcon={<HiPencil size={16} />}
-                                  sx={{
-                                    borderColor: '#2196f3',
-                                    color: '#2196f3',
-                                    fontSize: {
-                                      xs: '0.75rem',
-                                      sm: '0.875rem',
-                                    },
-                                    '&:hover': {
-                                      backgroundColor: '#e3f2fd',
-                                    },
-                                  }}
-                                  onClick={() => {
-                                    setSelectedBooking(booking);
-                                    setShowEditDialog(true);
-                                  }}
-                                >
-                                  Edit
-                                </Button>
-                              )}
-
-                            {/* Cancel Button - For pending and confirmed bookings without pending cancellation */}
-                            {(booking.booking_status?.toLowerCase() ===
-                              'pending' ||
-                              booking.booking_status?.toLowerCase() ===
-                                'confirmed') &&
-                              !booking.isCancel && (
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  startIcon={<HiX size={16} />}
-                                  sx={{
-                                    borderColor: '#f44336',
-                                    color: '#f44336',
-                                    fontSize: {
-                                      xs: '0.75rem',
-                                      sm: '0.875rem',
-                                    },
-                                    '&:hover': {
-                                      backgroundColor: '#ffebee',
-                                    },
-                                  }}
-                                  onClick={() => {
-                                    setSelectedBooking(booking);
-                                    setShowCancelDialog(true);
-                                  }}
-                                >
-                                  Cancel
-                                </Button>
-                              )}
-
-                            {/* Extend Button - For In Progress bookings without pending extension */}
-                            {booking.booking_status?.toLowerCase() ===
-                              'in progress' &&
-                              !booking.isExtend &&
-                              booking.isExtend !== true &&
-                              booking.isExtend !== 'true' &&
-                              booking.isExtend !== 'TRUE' && (
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  startIcon={<HiPlus size={16} />}
-                                  sx={{
-                                    borderColor: '#4caf50',
-                                    color: '#4caf50',
-                                    fontSize: {
-                                      xs: '0.75rem',
-                                      sm: '0.875rem',
-                                    },
-                                    '&:hover': {
-                                      backgroundColor: '#e8f5e9',
-                                    },
-                                  }}
-                                  onClick={() => {
-                                    setSelectedBooking(booking);
-                                    setShowExtendDialog(true);
-                                  }}
-                                >
-                                  Extend
-                                </Button>
-                              )}
-
-                            {/* Cancel Extension Button - For bookings with pending extension */}
-                            {(booking.isExtend === true ||
-                              booking.isExtend === 'true' ||
-                              booking.isExtend === 'TRUE') && (
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                startIcon={<HiX size={16} />}
-                                sx={{
-                                  borderColor: '#ff9800',
-                                  color: '#ff9800',
-                                  fontSize: {
-                                    xs: '0.75rem',
-                                    sm: '0.875rem',
-                                  },
-                                  '&:hover': {
-                                    backgroundColor: '#fff3e0',
-                                  },
-                                }}
-                                onClick={() => handleCancelExtension(booking)}
-                                disabled={actionLoading}
-                              >
-                                Cancel Extension
-                              </Button>
-                            )}
-                          </Box>
-                        </CardContent>
-                      </Box>
-                    </Card>
-                  );
-                })}
-            </Box>
-          )}
-        </TabPanel>
-
-        <TabPanel value={activeTab} index={1}>
-          {/* SETTLEMENT TAB - HORIZONTAL LAYOUT WITHOUT IMAGE */}
-          {filteredPayments.filter((b) => {
-            const status = b.booking_status?.toLowerCase();
-            return (
-              status === 'pending' ||
-              status === 'confirmed' ||
-              status === 'in progress' ||
-              status === 'ongoing'
-            );
-          }).length === 0 && !loading ? (
-            <Card sx={{ p: 4, textAlign: 'center', mx: { xs: 1, sm: 0 } }}>
-              <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-                {paymentSearchQuery
-                  ? 'No matching payments found'
-                  : 'No unpaid bookings'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {paymentSearchQuery
-                  ? `No payments found matching "${paymentSearchQuery}". Try a different search term.`
-                  : 'You have no outstanding payments at this time.'}
-              </Typography>
-            </Card>
-          ) : (
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: { xs: 1, sm: 2 },
-                px: { xs: 0.5, sm: 0 },
-              }}
+            {/* Cancel Booking Dialog */}
+            <Dialog
+              open={showCancelDialog}
+              onClose={() => setShowCancelDialog(false)}
+              maxWidth="sm"
+              fullWidth
             >
-              {filteredPayments
-                .filter((booking) => {
-                  const status = booking.booking_status?.toLowerCase();
-                  return (
-                    status === 'pending' ||
-                    status === 'confirmed' ||
-                    status === 'in progress' ||
-                    status === 'ongoing'
-                  );
-                })
-                .map((booking) => (
-                  <Card
-                    key={booking.booking_id}
+              <DialogTitle sx={{ color: '#c10007', fontWeight: 'bold' }}>
+                Cancel Booking
+              </DialogTitle>
+              <DialogContent>
+                <Typography variant="body1" sx={{ mb: 2 }}>
+                  Are you sure you want to cancel this booking?
+                </Typography>
+                {selectedBooking && (
+                  <Box
+                    sx={{ p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}
+                  >
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                      {selectedBooking.car_details.display_name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {formatPhilippineDate(selectedBooking.start_date, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}{' '}
+                      -{' '}
+                      {formatPhilippineDate(selectedBooking.end_date, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Total Amount: ₱
+                      {selectedBooking.total_amount?.toLocaleString()}
+                    </Typography>
+                  </Box>
+                )}
+                <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+                  Note: Cancellation policies may apply. Please check your
+                  booking terms.
+                </Typography>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setShowCancelDialog(false)}>
+                  Keep Booking
+                </Button>
+                <Button
+                  onClick={handleCancelBooking}
+                  color="error"
+                  variant="contained"
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    'Cancel Booking'
+                  )}
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            {/* Extend Booking Dialog */}
+            <Dialog
+              open={showExtendDialog}
+              onClose={() => setShowExtendDialog(false)}
+              maxWidth="sm"
+              fullWidth
+            >
+              <DialogTitle sx={{ color: '#c10007', fontWeight: 'bold' }}>
+                Extend Booking
+              </DialogTitle>
+              <DialogContent>
+                <Typography variant="body1" sx={{ mb: 2 }}>
+                  Extend your rental period for:
+                </Typography>
+                {selectedBooking && (
+                  <Box
                     sx={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      border: '1px solid #e0e0e0',
-                      position: 'relative',
-                      width: '100%',
-                      borderRadius: { xs: 0, sm: 1 },
-                      '&:hover': {
-                        boxShadow: '0 4px 12px rgba(193, 0, 7, 0.1)',
-                        borderColor: '#c10007',
-                      },
-                      transition: 'all 0.3s ease',
+                      p: 2,
+                      backgroundColor: '#f5f5f5',
+                      borderRadius: 1,
+                      mb: 3,
                     }}
                   >
-                    {/* Pay Now / Pending Payment Button - Fixed Upper Right */}
-                    {booking.isPay ? (
-                      <Chip
-                        label="Pending Payment"
-                        size="small"
-                        sx={{
-                          position: 'absolute',
-                          top: 10,
-                          right: 10,
-                          backgroundColor: '#FFA500',
-                          color: 'white',
-                          fontWeight: 'bold',
-                        }}
-                      />
-                    ) : (
-                      <Button
-                        size="small"
-                        variant="contained"
-                        sx={{
-                          position: 'absolute',
-                          top: { xs: 8, sm: 12 },
-                          right: { xs: 8, sm: 12 },
-                          backgroundColor: '#c10007',
-                          color: 'white',
-                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                          padding: { xs: '4px 12px', sm: '6px 16px' },
-                          '&:hover': {
-                            backgroundColor: '#a50006',
-                          },
-                        }}
-                        onClick={() => {
-                          setSelectedBooking(booking);
-                          setShowPaymentDialog(true);
-                        }}
-                      >
-                        Pay Now
-                      </Button>
-                    )}
-
-                    {/* Content - Full Width (No Image) */}
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        direction: 'column',
-                        flexGrow: 1,
-                        ml: { xs: 0.5, sm: 1 },
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          flexGrow: 1,
-                          flexDirection: 'column',
-                        }}
-                      >
-                        <CardContent sx={{ flex: '1', p: { xs: 0.5, sm: 1 } }}>
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              flexDirection: { xs: 'column', sm: 'row' },
-                              justifyContent: 'space-between',
-                              alignItems: { xs: 'flex-start', sm: 'center' },
-                              gap: { xs: 1, sm: 0 },
-                              mb: 1.5,
-                              pr: { xs: 10, sm: 12 },
-                            }}
-                          >
-                            <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
-                              {/* Payment Title */}
-                              <Typography
-                                variant="h6"
-                                sx={{
-                                  fontWeight: 'bold',
-                                  mb: 0.5,
-                                  fontSize: { xs: '1rem', sm: '1.25rem' },
-                                }}
-                              >
-                                Payment for {booking.car_details.display_name}
-                              </Typography>
-
-                              {/* Plate Number */}
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                }}
-                              >
-                                Plate: {booking.car_details.license_plate}
-                              </Typography>
-                            </Box>
-                          </Box>
-
-                          {/* Booking Details in Row */}
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: { xs: 0.3, md: 0.75 },
-                              mb: 1,
-                            }}
-                          >
-                            {/* Date Range */}
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                              }}
-                            >
-                              <HiCalendar
-                                size={16}
-                                style={{ color: '#c10007', flexShrink: 0 }}
-                              />
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                }}
-                              >
-                                {formatPhilippineDate(booking.start_date, {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric',
-                                })}{' '}
-                                -{' '}
-                                {formatPhilippineDate(booking.end_date, {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric',
-                                })}
-                              </Typography>
-                            </Box>
-
-                            {/* Time Range */}
-                            <Box sx={{ display: 'flex', gap: 2 }}>
-                              {/* Pickup Time */}
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 0.5,
-                                }}
-                              >
-                                <HiClock
-                                  size={16}
-                                  style={{ color: '#c10007', flexShrink: 0 }}
-                                />
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                  }}
-                                >
-                                  Pickup Time:{' '}
-                                  {parseAndFormatTime(booking.pickup_time)}
-                                </Typography>
-                              </Box>
-                              <Typography variant="body2"> - </Typography>
-                              {/* Drop-off Time */}
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 0.5,
-                                }}
-                              >
-                                <HiClock
-                                  size={16}
-                                  style={{ color: '#c10007', flexShrink: 0 }}
-                                />
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                  }}
-                                >
-                                  Drop-off Time:{' '}
-                                  {parseAndFormatTime(booking.dropoff_time)}
-                                </Typography>
-                              </Box>
-                            </Box>
-
-                            {/* Pickup Location */}
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                              }}
-                            >
-                              <HiLocationMarker
-                                size={16}
-                                style={{ color: '#4CAF50', flexShrink: 0 }}
-                              />
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                }}
-                              >
-                                <strong>Pickup:</strong>{' '}
-                                {booking.pickup_loc || 'JA Car Rental Office'}
-                              </Typography>
-                            </Box>
-
-                            {/* Drop-off Location */}
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                              }}
-                            >
-                              <HiLocationMarker
-                                size={16}
-                                style={{ color: '#c10007', flexShrink: 0 }}
-                              />
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                }}
-                              >
-                                <strong>Drop-off:</strong>{' '}
-                                {booking.dropoff_loc || 'JA Car Rental Office'}
-                              </Typography>
-                            </Box>
-                          </Box>
-
-                          {/* Balance/Unpaid Status */}
-                          {booking.balance > 0 && (
-                            <Box
-                              sx={{
-                                width: 'fit-content',
-                                p: { xs: 0.8, sm: 1 },
-                                backgroundColor: '#ffebee',
-                                borderRadius: 1,
-                                border: '1px solid #f44336',
-                              }}
-                            >
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontWeight: 'bold',
-                                  color: '#d32f2f',
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                }}
-                              >
-                                Outstanding Balance: ₱
-                                {booking.balance?.toLocaleString()}
-                              </Typography>
-                            </Box>
-                          )}
-                        </CardContent>
-                      </Box>
-                    </Box>
-                  </Card>
-                ))}
-            </Box>
-          )}
-        </TabPanel>
-
-        {/* Cancel Booking Dialog */}
-        <Dialog
-          open={showCancelDialog}
-          onClose={() => setShowCancelDialog(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle sx={{ color: '#c10007', fontWeight: 'bold' }}>
-            Cancel Booking
-          </DialogTitle>
-          <DialogContent>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              Are you sure you want to cancel this booking?
-            </Typography>
-            {selectedBooking && (
-              <Box sx={{ p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                  {selectedBooking.car_details.display_name}
-                </Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                      {selectedBooking.car_details.display_name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Current End Date:{' '}
+                      {formatPhilippineDate(
+                        selectedBooking.new_end_date ||
+                          selectedBooking.end_date,
+                        { month: 'long', day: 'numeric', year: 'numeric' }
+                      )}
+                    </Typography>
+                  </Box>
+                )}
+                <TextField
+                  label="New End Date"
+                  type="date"
+                  value={extendDate}
+                  onChange={(e) => setExtendDate(e.target.value)}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ min: getMinExtendDate() }}
+                  sx={{ mb: 2 }}
+                />
                 <Typography variant="body2" color="text.secondary">
-                  {formatPhilippineDate(selectedBooking.start_date, {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}{' '}
-                  -{' '}
-                  {formatPhilippineDate(selectedBooking.end_date, {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
+                  Additional charges will apply based on the daily rental rate.
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Amount: ₱
-                  {selectedBooking.total_amount?.toLocaleString()}
-                </Typography>
-              </Box>
-            )}
-            <Typography variant="body2" color="error" sx={{ mt: 2 }}>
-              Note: Cancellation policies may apply. Please check your booking
-              terms.
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowCancelDialog(false)}>
-              Keep Booking
-            </Button>
-            <Button
-              onClick={handleCancelBooking}
-              color="error"
-              variant="contained"
-              disabled={actionLoading}
-            >
-              {actionLoading ? (
-                <CircularProgress size={20} />
-              ) : (
-                'Cancel Booking'
-              )}
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Extend Booking Dialog */}
-        <Dialog
-          open={showExtendDialog}
-          onClose={() => setShowExtendDialog(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle sx={{ color: '#c10007', fontWeight: 'bold' }}>
-            Extend Booking
-          </DialogTitle>
-          <DialogContent>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              Extend your rental period for:
-            </Typography>
-            {selectedBooking && (
-              <Box
-                sx={{
-                  p: 2,
-                  backgroundColor: '#f5f5f5',
-                  borderRadius: 1,
-                  mb: 3,
-                }}
-              >
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                  {selectedBooking.car_details.display_name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Current End Date:{' '}
-                  {formatPhilippineDate(
-                    selectedBooking.new_end_date || selectedBooking.end_date,
-                    { month: 'long', day: 'numeric', year: 'numeric' }
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setShowExtendDialog(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleExtendBooking}
+                  color="primary"
+                  variant="contained"
+                  disabled={actionLoading || !extendDate}
+                  sx={{
+                    backgroundColor: '#c10007',
+                    '&:hover': { backgroundColor: '#a50006' },
+                  }}
+                >
+                  {actionLoading ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    'Extend Booking'
                   )}
-                </Typography>
-              </Box>
-            )}
-            <TextField
-              label="New End Date"
-              type="date"
-              value={extendDate}
-              onChange={(e) => setExtendDate(e.target.value)}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              inputProps={{ min: getMinExtendDate() }}
-              sx={{ mb: 2 }}
-            />
-            <Typography variant="body2" color="text.secondary">
-              Additional charges will apply based on the daily rental rate.
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowExtendDialog(false)}>Cancel</Button>
-            <Button
-              onClick={handleExtendBooking}
-              color="primary"
-              variant="contained"
-              disabled={actionLoading || !extendDate}
-              sx={{
-                backgroundColor: '#c10007',
-                '&:hover': { backgroundColor: '#a50006' },
-              }}
-            >
-              {actionLoading ? (
-                <CircularProgress size={20} />
-              ) : (
-                'Extend Booking'
-              )}
-            </Button>
-          </DialogActions>
-        </Dialog>
+                </Button>
+              </DialogActions>
+            </Dialog>
+          </>
+        )}
       </Box>
 
       {/* Edit Booking Modal */}

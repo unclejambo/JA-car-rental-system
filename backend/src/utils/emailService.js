@@ -26,18 +26,10 @@ const EMAIL_CONFIG = {
  */
 const createTransporter = () => {
   try {
-    console.log('Creating email transporter with config:', {
-      host: EMAIL_CONFIG.host,
-      port: EMAIL_CONFIG.port,
-      user: EMAIL_CONFIG.auth.user,
-      hasPassword: !!EMAIL_CONFIG.auth.pass
-    });
-
     const transporter = nodemailer.createTransport(EMAIL_CONFIG);
-    
+
     return transporter;
   } catch (error) {
-    console.error('Failed to create email transporter:', error);
     throw new Error('Email service configuration error');
   }
 };
@@ -67,10 +59,8 @@ export const generateResetToken = () => {
  */
 export const sendVerificationEmail = async (email, code, userName = 'User') => {
   try {
-    console.log(`📧 Preparing to send verification email to: ${email}`);
-    
     const transporter = createTransporter();
-    
+
     const mailOptions = {
       from: {
         name: 'JA Car Rental System',
@@ -85,18 +75,13 @@ export const sendVerificationEmail = async (email, code, userName = 'User') => {
     // In development mode, we can still send emails for testing
     // but we'll also log the code to console for easier testing
     if (process.env.NODE_ENV === 'development') {
-      console.log(`🧪 DEVELOPMENT MODE - Verification code for ${email}: ${code}`);
-      console.log('📧 Sending email with subject:', mailOptions.subject);
       // Continue to actually send the email in development for testing
     }
 
     // Send the email
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email sent successfully:', info.messageId);
-    
     return info;
   } catch (error) {
-    console.error('❌ Failed to send verification email:', error);
     throw error;
   }
 };
@@ -109,10 +94,8 @@ export const sendVerificationEmail = async (email, code, userName = 'User') => {
  */
 export const sendPasswordResetConfirmation = async (email, userName) => {
   try {
-    console.log(`📧 Sending password reset confirmation to: ${email}`);
-    
     const transporter = createTransporter();
-    
+
     const mailOptions = {
       from: {
         name: 'JA Car Rental System',
@@ -152,17 +135,12 @@ export const sendPasswordResetConfirmation = async (email, userName) => {
 
     // In development mode, we can still send emails for testing
     if (process.env.NODE_ENV === 'development') {
-      console.log(`🧪 DEVELOPMENT MODE - Password reset confirmation for ${email}`);
-      console.log('📧 Sending confirmation email with subject:', mailOptions.subject);
       // Continue to actually send the email in development for testing
     }
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Confirmation email sent successfully:', info.messageId);
-    
     return info;
   } catch (error) {
-    console.error('❌ Failed to send confirmation email:', error);
     throw error;
   }
 }
@@ -208,30 +186,30 @@ const getEmailTemplate = (code, purpose) => {
         <h1 style="color: white; margin: 0; font-size: 28px;">JA Car Rental</h1>
         <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">${title}</p>
       </div>
-      
+
       <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
         <h2 style="color: #333; margin-top: 0;">Verification Required</h2>
         <p style="font-size: 16px; margin-bottom: 25px;">${message}</p>
-        
+
         <div style="background: white; border: 2px dashed #3F86F1; border-radius: 8px; padding: 25px; text-align: center; margin: 25px 0;">
           <h3 style="margin: 0; color: #3F86F1; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Verification Code</h3>
           <div style="font-size: 36px; font-weight: bold; color: #333; margin: 10px 0; letter-spacing: 8px; font-family: monospace;">${code}</div>
           <p style="margin: 0; color: #666; font-size: 14px;">This code expires in 15 minutes</p>
         </div>
-        
+
         <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
           <p style="margin: 0; color: #856404; font-size: 14px;">
             <strong>Security Notice:</strong> If you didn't request this ${purpose.replace('_', ' ')}, please ignore this email or contact our support team.
           </p>
         </div>
-        
+
         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        
+
         <p style="font-size: 14px; color: #666; margin: 0;">
           Best regards,<br>
           <strong>JA Car Rental Team</strong>
         </p>
-        
+
         <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999; text-align: center;">
           <p>This is an automated message. Please do not reply to this email.</p>
           <p>© ${new Date().getFullYear()} JA Car Rental. All rights reserved.</p>
@@ -261,11 +239,11 @@ const getPasswordResetConfirmationTemplate = (userName) => {
         <h1 style="color: white; margin: 0; font-size: 28px;">JA Car Rental</h1>
         <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Password Reset Successful</p>
       </div>
-      
+
       <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
         <h2 style="color: #333; margin-top: 0;">Hello ${userName}!</h2>
         <p style="font-size: 16px; margin-bottom: 25px;">Your password has been successfully reset for your JA Car Rental account.</p>
-        
+
         <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; padding: 20px; margin: 20px 0; text-align: center;">
           <p style="margin: 0; color: #155724; font-size: 16px;">
             ✅ <strong>Password Updated Successfully</strong>
@@ -274,20 +252,20 @@ const getPasswordResetConfirmationTemplate = (userName) => {
             You can now log in with your new password.
           </p>
         </div>
-        
+
         <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
           <p style="margin: 0; color: #856404; font-size: 14px;">
             <strong>Security Notice:</strong> If you didn't make this change, please contact our support team immediately.
           </p>
         </div>
-        
+
         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        
+
         <p style="font-size: 14px; color: #666; margin: 0;">
           Best regards,<br>
           <strong>JA Car Rental Team</strong>
         </p>
-        
+
         <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999; text-align: center;">
           <p>This is an automated message. Please do not reply to this email.</p>
           <p>© ${new Date().getFullYear()} JA Car Rental. All rights reserved.</p>

@@ -101,10 +101,6 @@ export default function AddCarModal({ show, onClose }) {
     uploadFormData.append('model', formData.model);
     uploadFormData.append('licensePlate', formData.license_plate);
 
-    console.log(
-      'Uploading car image to:',
-      `${API_BASE}/api/storage/car-images`
-    );
 
     const response = await authenticatedFetch(
       `${API_BASE}/api/storage/car-images`,
@@ -115,7 +111,6 @@ export default function AddCarModal({ show, onClose }) {
     );
 
     const result = await response.json();
-    console.log('Car image upload response:', result);
 
     if (!response.ok) {
       throw new Error(
@@ -136,9 +131,7 @@ export default function AddCarModal({ show, onClose }) {
 
       // Upload car image first if one is selected
       if (carImageFile) {
-        console.log('Uploading car image...');
         carImageUrl = await uploadCarImage(carImageFile);
-        console.log('Car image uploaded, URL:', carImageUrl);
       }
 
       const carData = {
@@ -184,7 +177,6 @@ export default function AddCarModal({ show, onClose }) {
       // Refresh the page to show the new car
       window.location.reload();
     } catch (err) {
-      console.error('Error adding car:', err);
       setError(err.message || 'Failed to add car. Please try again.');
     } finally {
       setIsLoading(false);

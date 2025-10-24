@@ -23,7 +23,6 @@ export const useUserStore = create((set, get) => ({
       if (tab === 'DRIVER') set({ drivers: data });
       set((s) => ({ loaded: { ...s.loaded, [tab]: true } }));
     } catch (e) {
-      console.error(e);
       set({ error: e.message });
     } finally {
       set((s) => ({ loading: { ...s.loading, [tab]: false } }));

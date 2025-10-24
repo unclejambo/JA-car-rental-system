@@ -8,10 +8,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 export async function uploadLicense(req, res, next) {
   try {
-    console.log('--- LICENSE UPLOAD ROUTE CALLED ---');
-    console.log('File received:', req.file ? 'YES' : 'NO');
-    console.log('Body:', req.body);
-
     if (!req.file) {
       return res.status(400).json({ 
         ok: false, 
@@ -22,7 +18,7 @@ export async function uploadLicense(req, res, next) {
 
     const file = req.file;
     const { licenseNumber, username } = req.body;
-    
+
     // Check if there's an existing license image to delete
     if (licenseNumber) {
       try {
@@ -31,8 +27,6 @@ export async function uploadLicense(req, res, next) {
         });
 
         if (existingLicense?.dl_img_url) {
-          console.log('🗑️ Deleting old license image:', existingLicense.dl_img_url);
-          
           // Extract the path from the URL
           let oldPath = existingLicense.dl_img_url;
           if (oldPath.includes('/licenses/')) {
@@ -48,27 +42,21 @@ export async function uploadLicense(req, res, next) {
             .remove([oldPath]);
 
           if (deleteError) {
-            console.warn('⚠️ Failed to delete old license image:', deleteError);
             // Continue with upload even if delete fails
           } else {
-            console.log('✅ Old license image deleted successfully');
           }
         }
       } catch (err) {
-        console.warn('⚠️ Error checking/deleting old license image:', err);
         // Continue with upload even if delete check fails
       }
     }
-    
+
     const timestamp = Date.now();
     const fileExt = file.originalname.split('.').pop();
     const filename = `${licenseNumber || 'license'}_${username || 'user'}_${timestamp}.${fileExt}`;
-    
+
     const bucket = 'licenses';
     const path = `dl_img/${filename}`;
-
-    console.log('Uploading to Supabase:', { bucket, path, size: file.size });
-
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(path, file.buffer, { 
@@ -77,7 +65,6 @@ export async function uploadLicense(req, res, next) {
       });
 
     if (error) {
-      console.error('Supabase upload error:', error);
       return res.status(500).json({ 
         ok: false, 
         error: error.message || error,
@@ -91,7 +78,6 @@ export async function uploadLicense(req, res, next) {
       .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
 
     if (signedError) {
-      console.error('Error creating signed URL:', signedError);
       return res.status(500).json({ 
         ok: false, 
         error: 'Failed to create signed URL',
@@ -112,13 +98,9 @@ export async function uploadLicense(req, res, next) {
       size: file.size,
       supabaseData: data
     };
-
-    console.log('Upload response being sent:', responseData);
-    
     return res.status(200).json(responseData);
 
   } catch (err) {
-    console.error('Storage controller error:', err);
     return res.status(500).json({
       ok: false,
       error: err.message || 'Upload failed',
@@ -129,10 +111,6 @@ export async function uploadLicense(req, res, next) {
 
 export async function uploadImage(req, res, next) {
   try {
-    console.log('--- IMAGE UPLOAD ROUTE CALLED ---');
-    console.log('File received:', req.file ? 'YES' : 'NO');
-    console.log('Body:', req.body);
-
     if (!req.file) {
       return res.status(400).json({ 
         ok: false, 
@@ -142,17 +120,14 @@ export async function uploadImage(req, res, next) {
     }
 
     const file = req.file;
-    
+
     const timestamp = Date.now();
     const fileExt = file.originalname.split('.').pop();
     const filename = `car_image_${timestamp}.${fileExt}`;
-    
+
     // store in the 'licenses' bucket under car_img/
     const bucket = 'licenses';
     const path = `car_img/${filename}`;
-
-    console.log('Uploading car image to Supabase:', { bucket, path, size: file.size });
-
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(path, file.buffer, { 
@@ -161,7 +136,6 @@ export async function uploadImage(req, res, next) {
       });
 
     if (error) {
-      console.error('Supabase upload error:', error);
       return res.status(500).json({ 
         ok: false, 
         error: error.message || error,
@@ -185,13 +159,9 @@ export async function uploadImage(req, res, next) {
       size: file.size,
       supabaseData: data
     };
-
-    console.log('Upload response being sent:', responseData);
-    
     return res.status(200).json(responseData);
 
   } catch (err) {
-    console.error('Storage controller error:', err);
     return res.status(500).json({
       ok: false,
       error: err.message || 'Upload failed',
@@ -202,10 +172,6 @@ export async function uploadImage(req, res, next) {
 
 export async function uploadCarImage(req, res, next) {
   try {
-    console.log('--- CAR IMAGE UPLOAD ROUTE CALLED ---');
-    console.log('File received:', req.file ? 'YES' : 'NO');
-    console.log('Body:', req.body);
-
     if (!req.file) {
       return res.status(400).json({ 
         ok: false, 
@@ -216,18 +182,15 @@ export async function uploadCarImage(req, res, next) {
 
     const file = req.file;
     const { make, model, licensePlate } = req.body;
-    
+
     const timestamp = Date.now();
     const fileExt = file.originalname.split('.').pop();
     // Create a descriptive filename with car info
     const filename = `${make || 'car'}_${model || 'unknown'}_${licensePlate || 'unknown'}_${timestamp}.${fileExt}`;
-    
+
     // use 'licenses' bucket and car_img/ prefix
     const bucket = 'licenses';
     const path = `car_img/${filename}`;
-
-    console.log('Uploading car image to Supabase:', { bucket, path, size: file.size });
-
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(path, file.buffer, { 
@@ -236,7 +199,6 @@ export async function uploadCarImage(req, res, next) {
       });
 
     if (error) {
-      console.error('Supabase upload error:', error);
       return res.status(500).json({ 
         ok: false, 
         error: error.message || error,
@@ -260,13 +222,9 @@ export async function uploadCarImage(req, res, next) {
       size: file.size,
       supabaseData: data
     };
-
-    console.log('Car image upload response being sent:', responseData);
-    
     return res.status(200).json(responseData);
 
   } catch (err) {
-    console.error('Storage controller error:', err);
     return res.status(500).json({
       ok: false,
       error: err.message || 'Upload failed',
@@ -277,10 +235,6 @@ export async function uploadCarImage(req, res, next) {
 
 export async function uploadReleaseImage(req, res, next) {
   try {
-    console.log('--- RELEASE IMAGE UPLOAD ROUTE CALLED ---');
-    console.log('File received:', req.file ? 'YES' : 'NO');
-    console.log('Body:', req.body);
-
     if (!req.file) {
       return res.status(400).json({ 
         ok: false, 
@@ -291,15 +245,12 @@ export async function uploadReleaseImage(req, res, next) {
 
     const file = req.file;
     const { filename } = req.body;
-    
+
     // Use the provided filename or generate one
     const finalFilename = filename || `release_image_${Date.now()}.jpg`;
-    
+
     const bucket = 'licenses';
     const path = `release_images/${finalFilename}`;
-
-    console.log('Uploading release image to Supabase:', { bucket, path, size: file.size });
-
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(path, file.buffer, { 
@@ -308,7 +259,6 @@ export async function uploadReleaseImage(req, res, next) {
       });
 
     if (error) {
-      console.error('Supabase upload error:', error);
       return res.status(500).json({ 
         ok: false, 
         error: error.message || error,
@@ -332,13 +282,9 @@ export async function uploadReleaseImage(req, res, next) {
       size: file.size,
       supabaseData: data
     };
-
-    console.log('Release image upload response being sent:', responseData);
-    
     return res.status(200).json(responseData);
 
   } catch (err) {
-    console.error('Storage controller error:', err);
     return res.status(500).json({
       ok: false,
       error: err.message || 'Upload failed',
@@ -349,11 +295,6 @@ export async function uploadReleaseImage(req, res, next) {
 
 export async function uploadProfileImage(req, res, next) {
   try {
-    console.log('--- PROFILE IMAGE UPLOAD ROUTE CALLED ---');
-    console.log('File received:', req.file ? 'YES' : 'NO');
-    console.log('Body:', req.body);
-    console.log('User from JWT:', req.user);
-
     if (!req.file) {
       return res.status(400).json({ 
         ok: false, 
@@ -365,7 +306,7 @@ export async function uploadProfileImage(req, res, next) {
     // Get user ID and role from JWT token (set by auth middleware)
     const userId = req.user?.sub;
     const userRole = req.user?.role;
-    
+
     if (!userId) {
       return res.status(401).json({
         ok: false,
@@ -375,12 +316,12 @@ export async function uploadProfileImage(req, res, next) {
     }
 
     const file = req.file;
-    
+
     // Determine which table to query based on user role
     let currentUser;
     let whereClause;
     let selectClause;
-    
+
     if (userRole === 'customer') {
       whereClause = { customer_id: parseInt(userId) };
       selectClause = { profile_img_url: true };
@@ -408,41 +349,33 @@ export async function uploadProfileImage(req, res, next) {
     // Delete old profile image if exists
     if (currentUser?.profile_img_url) {
       try {
-        console.log('🗑️ Deleting old profile image:', currentUser.profile_img_url);
-        
         // Extract the path from the existing URL
         const urlParts = currentUser.profile_img_url.split('/');
         const bucketIndex = urlParts.findIndex(part => part === 'licenses');
-        
+
         if (bucketIndex !== -1) {
           const oldPath = urlParts.slice(bucketIndex + 1).join('/').split('?')[0]; // Remove query params
-          
+
           const { error: deleteError } = await supabase.storage
             .from('licenses')
             .remove([oldPath]);
-            
+
           if (deleteError) {
-            console.warn('Warning: Could not delete old profile image:', deleteError);
             // Continue with upload even if deletion fails
           } else {
-            console.log('✅ Old profile image deleted successfully');
           }
         }
       } catch (deleteErr) {
-        console.warn('Warning: Error deleting old profile image:', deleteErr);
         // Continue with upload even if deletion fails
       }
     }
-    
+
     const timestamp = Date.now();
     const fileExt = file.originalname.split('.').pop();
     const filename = `${userRole}_${userId}_profile_${timestamp}.${fileExt}`;
-    
+
     const bucket = 'licenses';
     const path = `profile_img/${filename}`;
-
-    console.log('🚀 Uploading new profile image to Supabase:', { bucket, path, size: file.size, userRole });
-
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(path, file.buffer, { 
@@ -451,7 +384,6 @@ export async function uploadProfileImage(req, res, next) {
       });
 
     if (error) {
-      console.error('Supabase upload error:', error);
       return res.status(500).json({ 
         ok: false, 
         error: error.message || error,
@@ -465,7 +397,6 @@ export async function uploadProfileImage(req, res, next) {
       .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year expiration
 
     if (signedUrlError) {
-      console.error('Supabase signed URL error:', signedUrlError);
       return res.status(500).json({ 
         ok: false, 
         error: signedUrlError.message || signedUrlError,
@@ -474,10 +405,8 @@ export async function uploadProfileImage(req, res, next) {
     }
 
     const imageUrl = signedUrlData.signedUrl;
-    
+
     // Update user profile with new image URL based on role
-    console.log('Updating user profile with image URL:', { userId, userRole, imageUrl });
-    
     let updatedUser;
     if (userRole === 'customer') {
       updatedUser = await prisma.customer.update({
@@ -513,9 +442,6 @@ export async function uploadProfileImage(req, res, next) {
         }
       });
     }
-
-    console.log('User profile updated successfully:', updatedUser);
-
     const responseData = { 
       ok: true,
       success: true,
@@ -532,13 +458,9 @@ export async function uploadProfileImage(req, res, next) {
         userRole: userRole
       }
     };
-
-    console.log('Profile image upload response being sent:', responseData);
-    
     return res.status(200).json(responseData);
 
   } catch (err) {
-    console.error('Storage controller error:', err);
     return res.status(500).json({
       ok: false,
       error: err.message || 'Upload failed',
@@ -549,9 +471,6 @@ export async function uploadProfileImage(req, res, next) {
 
 export async function deleteProfileImage(req, res, next) {
   try {
-    console.log('--- PROFILE IMAGE DELETE ROUTE CALLED ---');
-    console.log('Body:', req.body);
-
     const { filePath } = req.body;
 
     if (!filePath) {
@@ -565,7 +484,7 @@ export async function deleteProfileImage(req, res, next) {
     // Extract the path from the full URL - handle both signed URLs and public URLs
     let path;
     const bucket = 'licenses';
-    
+
     if (filePath.includes('/storage/v1/object/public/licenses/')) {
       // Public URL format: https://[project].supabase.co/storage/v1/object/public/licenses/profile_img/filename.jpg
       const urlParts = filePath.split('/storage/v1/object/public/licenses/');
@@ -582,12 +501,12 @@ export async function deleteProfileImage(req, res, next) {
       // Try to extract using our helper method (same as in adminProfileController)
       const urlParts = filePath.split('/');
       const bucketIndex = urlParts.findIndex(part => part === 'licenses');
-      
+
       if (bucketIndex !== -1) {
         path = urlParts.slice(bucketIndex + 1).join('/').split('?')[0];
       }
     }
-    
+
     if (!path) {
       return res.status(400).json({
         ok: false,
@@ -595,15 +514,11 @@ export async function deleteProfileImage(req, res, next) {
         message: 'Could not extract file path from URL'
       });
     }
-
-    console.log('Deleting profile image from Supabase:', { bucket, path });
-
     const { error } = await supabase.storage
       .from(bucket)
       .remove([path]);
 
     if (error) {
-      console.error('Supabase delete error:', error);
       return res.status(500).json({
         ok: false,
         error: error.message || error,
@@ -615,7 +530,7 @@ export async function deleteProfileImage(req, res, next) {
     // Get user ID and role from JWT token if available
     const userId = req.user?.sub;
     const userRole = req.user?.role;
-    
+
     if (userId && userRole) {
       try {
         if (userRole === 'customer') {
@@ -634,9 +549,7 @@ export async function deleteProfileImage(req, res, next) {
             data: { profile_img_url: null }
           });
         }
-        console.log(`✅ ${userRole} profile_img_url cleared from database`);
       } catch (dbError) {
-        console.warn('Warning: Could not clear profile_img_url from database:', dbError);
         // Don't fail the request if database update fails
       }
     }
@@ -647,7 +560,6 @@ export async function deleteProfileImage(req, res, next) {
     });
 
   } catch (err) {
-    console.error('Storage controller error:', err);
     return res.status(500).json({
       ok: false,
       error: err.message || 'Delete failed',

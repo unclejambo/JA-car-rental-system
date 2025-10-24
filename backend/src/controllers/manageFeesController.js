@@ -30,7 +30,6 @@ export const getFees = async (req, res) => {
 
     res.json(feesObject);
   } catch (error) {
-    console.error('Error fetching fees:', error);
     res.status(500).json({ error: 'Failed to fetch fees' });
   }
 };
@@ -39,7 +38,7 @@ export const getFees = async (req, res) => {
 export const updateFees = async (req, res) => {
   try {
     const feesData = req.body;
-    
+
     // Validate that all required fee types are provided
     const requiredFeeTypes = [
       'reservation_fee',
@@ -60,7 +59,7 @@ export const updateFees = async (req, res) => {
           error: `Missing required fee type: ${feeType}` 
         });
       }
-      
+
       if (!Number.isInteger(Number(feesData[feeType])) || Number(feesData[feeType]) <= 0) {
         return res.status(400).json({ 
           error: `Invalid amount for ${feeType}. Must be a positive integer.` 
@@ -92,7 +91,6 @@ export const updateFees = async (req, res) => {
           });
         }
       } catch (error) {
-        console.error(`Error updating fee ${feeType}:`, error);
         throw error;
       }
     });
@@ -117,8 +115,6 @@ export const updateFees = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error updating fees:', error);
-    console.error('Error details:', error.message);
     res.status(500).json({ 
       error: 'Failed to update fees',
       details: error.message 
@@ -156,7 +152,6 @@ export const initializeFees = async (req, res) => {
         }
         return existingFee;
       } catch (error) {
-        console.error(`Error initializing fee ${fee.fee_type}:`, error);
         throw error;
       }
     });
@@ -165,7 +160,6 @@ export const initializeFees = async (req, res) => {
 
     res.json({ message: 'Default fees initialized successfully' });
   } catch (error) {
-    console.error('Error initializing fees:', error);
     res.status(500).json({ error: 'Failed to initialize fees' });
   }
 };

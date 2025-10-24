@@ -41,7 +41,6 @@ async function login(req, res, next) {
         foundIn = 'admin';
       }
     } catch (err) {
-      console.log('Admin search failed:', err.message);
     }
 
     // Try Customer if not found in Admin
@@ -60,7 +59,6 @@ async function login(req, res, next) {
           foundIn = 'customer';
         }
       } catch (err) {
-        console.log('Customer search failed:', err.message);
       }
     }
 
@@ -80,7 +78,6 @@ async function login(req, res, next) {
           foundIn = 'driver';
         }
       } catch (err) {
-        console.log('Driver search failed:', err.message);
       }
     }
 
@@ -168,7 +165,6 @@ async function login(req, res, next) {
       },
     });
   } catch (err) {
-    console.error('Login error:', err);
     next(err);
   }
 }
@@ -182,18 +178,12 @@ async function validateToken(req, res, next) {
       user: req.user,
     });
   } catch (err) {
-    console.error('Token validation error:', err);
     next(err);
   }
 }
 
 async function register(req, res, next) {
   try {
-    console.log('--- REGISTER ROUTE CALLED ---');
-    console.log('Request URL:', req.originalUrl || req.url);
-    console.log('Headers (content-type):', req.headers['content-type'] || req.headers['Content-Type']);
-    console.log('Body:', req.body);
-
     // Accept field variants from frontend
     const {
       email,
@@ -214,10 +204,6 @@ async function register(req, res, next) {
 
     const licenseNumber =
       licenseNumberBody || req.body.license_number || req.body.driver_license_no;
-
-    console.log('Has driver license:', hasDriverLicense);
-    console.log('Extracted dl_img_url:', dl_img_url);
-
     // Basic validation (license fields are optional)
     if (
       !email ||
@@ -309,13 +295,6 @@ async function register(req, res, next) {
         isRecUpdate: 3, // Enable both SMS and Email notifications by default
       },
     });
-
-    console.log('Registration successful:', {
-      customerId: customer.customer_id,
-      licenseNumber,
-      dl_img_url
-    });
-
     return res.status(201).json({
       ok: true,
       message: 'Account created successfully',
@@ -328,7 +307,6 @@ async function register(req, res, next) {
       },
     });
   } catch (err) {
-    console.error('Registration error:', err);
     if (err.code === 'P2002') {
       return res.status(409).json({ ok: false, message: 'Unique constraint failed' });
     }

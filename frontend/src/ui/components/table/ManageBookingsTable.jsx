@@ -51,17 +51,10 @@ const ManageBookingsTable = ({
       setProcessing(true);
       const bookingId = row.actualBookingId;
 
-      console.log('Confirming booking:', {
-        bookingId,
-        currentStatus: row.booking_status,
-        currentIsPay: row.isPay,
-        activeTab,
-      });
 
       // Call the confirm booking API
       const result = await bookingAPI.confirmBooking(bookingId, logout);
 
-      console.log('Confirm result:', result);
 
       // Use the message from backend response
       const message = result.message || 'Booking confirmed successfully!';
@@ -72,7 +65,6 @@ const ManageBookingsTable = ({
         onDataChange();
       }
     } catch (error) {
-      console.error('Error confirming booking:', error);
       showMessage(error.message || 'Failed to confirm booking', 'error');
     } finally {
       setProcessing(false);
@@ -87,11 +79,6 @@ const ManageBookingsTable = ({
       setProcessing(true);
       const bookingId = row.actualBookingId;
 
-      console.log('Confirming cancellation:', {
-        bookingId,
-        currentStatus: row.booking_status,
-        isCancel: row.isCancel,
-      });
 
       // Call the confirm cancellation API
       const result = await bookingAPI.confirmCancellationRequest(
@@ -99,7 +86,6 @@ const ManageBookingsTable = ({
         logout
       );
 
-      console.log('Confirm cancellation result:', result);
 
       showMessage('Cancellation confirmed successfully!', 'success');
 
@@ -108,7 +94,6 @@ const ManageBookingsTable = ({
         onDataChange();
       }
     } catch (error) {
-      console.error('Error confirming cancellation:', error);
       showMessage(error.message || 'Failed to confirm cancellation', 'error');
     } finally {
       setProcessing(false);
@@ -123,11 +108,6 @@ const ManageBookingsTable = ({
       setProcessing(true);
       const bookingId = row.actualBookingId;
 
-      console.log('Rejecting cancellation:', {
-        bookingId,
-        currentStatus: row.booking_status,
-        isCancel: row.isCancel,
-      });
 
       // Call the reject cancellation API
       const result = await bookingAPI.rejectCancellationRequest(
@@ -135,7 +115,6 @@ const ManageBookingsTable = ({
         logout
       );
 
-      console.log('Reject cancellation result:', result);
 
       showMessage('Cancellation request rejected successfully!', 'success');
 
@@ -144,7 +123,6 @@ const ManageBookingsTable = ({
         onDataChange();
       }
     } catch (error) {
-      console.error('Error rejecting cancellation:', error);
       showMessage(
         error.message || 'Failed to reject cancellation request',
         'error'
@@ -162,13 +140,6 @@ const ManageBookingsTable = ({
       setProcessing(true);
       const bookingId = row.actualBookingId;
 
-      console.log('Confirming extension:', {
-        bookingId,
-        currentStatus: row.booking_status,
-        isExtend: row.isExtend,
-        isPay: row.isPay,
-        newEndDate: row.new_end_date,
-      });
 
       // Check if this is payment confirmation or extension approval
       const isPaid =
@@ -176,21 +147,17 @@ const ManageBookingsTable = ({
 
       if (isPaid) {
         // Customer has paid - confirm the PAYMENT (not the extension request)
-        console.log('🟢 Confirming extension PAYMENT...');
         const result = await bookingAPI.confirmBooking(bookingId, logout);
-        console.log('✅ Extension payment confirmed:', result);
         showMessage(
           'Extension payment confirmed! End date has been updated.',
           'success'
         );
       } else {
         // Customer hasn't paid yet - approve the extension REQUEST
-        console.log('🔵 Approving extension REQUEST...');
         const result = await bookingAPI.confirmExtensionRequest(
           bookingId,
           logout
         );
-        console.log('✅ Extension request approved:', result);
         showMessage(
           'Extension request approved! Waiting for customer payment.',
           'success'
@@ -202,7 +169,6 @@ const ManageBookingsTable = ({
         onDataChange();
       }
     } catch (error) {
-      console.error('Error confirming extension:', error);
       showMessage(error.message || 'Failed to confirm extension', 'error');
     } finally {
       setProcessing(false);
@@ -217,16 +183,10 @@ const ManageBookingsTable = ({
       setProcessing(true);
       const bookingId = row.actualBookingId;
 
-      console.log('Rejecting extension:', {
-        bookingId,
-        currentStatus: row.booking_status,
-        isExtend: row.isExtend,
-      });
 
       // Call the reject extension API
       const result = await bookingAPI.rejectExtensionRequest(bookingId, logout);
 
-      console.log('Reject extension result:', result);
 
       showMessage('Extension request rejected successfully!', 'success');
 
@@ -235,7 +195,6 @@ const ManageBookingsTable = ({
         onDataChange();
       }
     } catch (error) {
-      console.error('Error rejecting extension:', error);
       showMessage(
         error.message || 'Failed to reject extension request',
         'error'
@@ -253,11 +212,6 @@ const ManageBookingsTable = ({
       setProcessing(true);
       const bookingId = row.actualBookingId;
 
-      console.log('Cancelling payment:', {
-        bookingId,
-        currentStatus: row.booking_status,
-        currentIsPay: row.isPay,
-      });
 
       // Update isPay to false first
       await bookingAPI.updateIsPay(bookingId, false, logout);
@@ -272,7 +226,6 @@ const ManageBookingsTable = ({
         onDataChange();
       }
     } catch (error) {
-      console.error('Error cancelling payment:', error);
       showMessage(error.message || 'Failed to cancel payment', 'error');
     } finally {
       setProcessing(false);

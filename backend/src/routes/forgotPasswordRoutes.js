@@ -39,7 +39,6 @@ router.post('/forgot-password', async (req, res, next) => {
   try {
     await initiatePasswordReset(req, res);
   } catch (error) {
-    console.error('Forgot password route error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -67,7 +66,6 @@ router.post('/verify-reset-code', async (req, res, next) => {
   try {
     await verifyResetCode(req, res);
   } catch (error) {
-    console.error('Verify reset code route error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -94,7 +92,6 @@ router.post('/reset-password', async (req, res, next) => {
   try {
     await resetPassword(req, res);
   } catch (error) {
-    console.error('Reset password route error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'

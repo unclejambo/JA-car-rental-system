@@ -30,7 +30,6 @@ export const useTransactionStore = create((set, get) => ({
       if (tab === 'REFUND') set({ refunds: data });
       set((s) => ({ loaded: { ...s.loaded, [tab]: true } }));
     } catch (e) {
-      console.error(`Error loading ${tab}:`, e);
       set({ error: e.message });
     } finally {
       set((s) => ({ loading: { ...s.loading, [tab]: false } }));

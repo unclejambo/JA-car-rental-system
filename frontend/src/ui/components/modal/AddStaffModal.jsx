@@ -93,7 +93,6 @@ export default function AddStaffModal({ show, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate(formData)) return;
-    console.log('Add staff:', formData);
     onClose?.();
   };
 

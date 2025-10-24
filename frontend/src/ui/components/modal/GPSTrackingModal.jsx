@@ -66,11 +66,6 @@ const FLESPI_CONFIG = {
 };
 
 // Debug: Log configuration on load
-console.log('🔍 GPS Tracking Configuration:');
-console.log('  Token exists:', !!FLESPI_CONFIG.token && FLESPI_CONFIG.token !== 'YOUR_FLESPI_TOKEN_HERE');
-console.log('  Token preview:', FLESPI_CONFIG.token?.substring(0, 30) + '...');
-console.log('  Device ID:', FLESPI_CONFIG.deviceId);
-console.log('  Base URL:', FLESPI_CONFIG.baseUrl);
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -102,11 +97,6 @@ const GPSTrackingModal = ({ open, onClose, booking }) => {
   const hasGPSFromDB = booking?.car?.hasGPS || booking?.hasGPS || false;
   
   // Debug: Log booking data to see what's available
-  console.log('📦 GPS Modal - Booking data received:', booking);
-  console.log('🚗 Extracted car ID:', carId);
-  console.log('� Has GPS from DB:', hasGPSFromDB);
-  console.log('�📦 Car object:', booking?.car);
-  console.log('🔍 Available fields:', Object.keys(booking || {}));
   
   // Only allow GPS tracking if car ID exists and car has GPS enabled
   const hasGPS = carId && hasGPSFromDB;
@@ -148,24 +138,20 @@ const GPSTrackingModal = ({ open, onClose, booking }) => {
   // Fetch latest GPS position from messages (using messages endpoint instead of telemetry due to CORS)
   const fetchLivePosition = async () => {
     if (!hasGPS || !FLESPI_CONFIG.deviceId) {
-      console.log('⚠️ Cannot fetch live position:', { hasGPS, deviceId: FLESPI_CONFIG.deviceId });
       return;
     }
 
-    console.log('📡 Fetching live GPS position...');
     setLoading(true);
     setError(null);
 
     try {
       // Fetch just the latest message for live tracking
       const url = `${FLESPI_CONFIG.baseUrl}/devices/${FLESPI_CONFIG.deviceId}/messages?data=${JSON.stringify({ count: 1, reverse: true })}`;
-      console.log('  URL:', url);
       
       const authHeader = FLESPI_CONFIG.token.startsWith('FlespiToken') 
         ? FLESPI_CONFIG.token 
         : `FlespiToken ${FLESPI_CONFIG.token}`;
       
-      console.log('  Auth header:', authHeader.substring(0, 30) + '...');
       
       const response = await fetch(url, {
         headers: {
@@ -174,14 +160,12 @@ const GPSTrackingModal = ({ open, onClose, booking }) => {
         },
       });
 
-      console.log('  Response status:', response.status, response.statusText);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('✅ Latest GPS message received:', data);
 
       if (data.result && data.result.length > 0) {
         const latestMsg = data.result[0];
@@ -193,18 +177,14 @@ const GPSTrackingModal = ({ open, onClose, booking }) => {
         if (latestMsg['position.latitude'] && latestMsg['position.longitude']) {
           const lat = latestMsg['position.latitude'];
           const lon = latestMsg['position.longitude'];
-          console.log('📍 Live GPS Position:', { lat, lon });
           setMapCenter([lat, lon]);
           setMapZoom(15);
         } else {
-          console.log('⚠️ No position data in message');
         }
       } else {
-        console.log('⚠️ No GPS messages returned - device may be offline');
         setError('Device is not transmitting GPS data');
       }
     } catch (err) {
-      console.error('❌ Error fetching live position:', err);
       setError(`Failed to fetch GPS data: ${err.message}`);
     } finally {
       setLoading(false);
@@ -214,17 +194,14 @@ const GPSTrackingModal = ({ open, onClose, booking }) => {
   // Fetch message history (GPS tracking history)
   const fetchMessageHistory = async () => {
     if (!hasGPS || !FLESPI_CONFIG.deviceId) {
-      console.log('⚠️ Cannot fetch message history:', { hasGPS, deviceId: FLESPI_CONFIG.deviceId });
       return;
     }
 
-    console.log('📜 Fetching message history...');
     setLoading(true);
     setError(null);
 
     try {
       const url = `${FLESPI_CONFIG.baseUrl}/devices/${FLESPI_CONFIG.deviceId}/messages?data=${JSON.stringify({ count: 50, reverse: true })}`;
-      console.log('  URL:', url);
       
       // Token already includes "FlespiToken" prefix from .env
       const authHeader = FLESPI_CONFIG.token.startsWith('FlespiToken') 
@@ -238,15 +215,12 @@ const GPSTrackingModal = ({ open, onClose, booking }) => {
         },
       });
 
-      console.log('  Response status:', response.status, response.statusText);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('✅ Message history received:', data);
-      console.log('  Total messages:', data.result?.length || 0);
 
       if (data.result && data.result.length > 0) {
         setMessageHistory(data.result);
@@ -256,13 +230,10 @@ const GPSTrackingModal = ({ open, onClose, booking }) => {
           .filter(msg => msg['position.latitude'] && msg['position.longitude'])
           .map(msg => [msg['position.latitude'], msg['position.longitude']]);
         
-        console.log('🗺️ Route points:', routePoints.length);
         setRoute(routePoints);
       } else {
-        console.log('⚠️ No message history returned');
       }
     } catch (err) {
-      console.error('❌ Error fetching message history:', err);
       setError(`Failed to fetch GPS history: ${err.message}`);
     } finally {
       setLoading(false);
@@ -272,28 +243,19 @@ const GPSTrackingModal = ({ open, onClose, booking }) => {
   // Initial data fetch
   useEffect(() => {
     if (open && hasGPS) {
-      console.log('🚗 GPS Modal Opened for Car ID:', carId);
-      console.log('  Original car ID from booking:', carId);
-      console.log('  Booking data:', booking);
-      console.log('  Has GPS:', hasGPS);
       
       fetchLivePosition();
       fetchMessageHistory();
 
       // Set up auto-refresh every 30 seconds
       const interval = setInterval(() => {
-        console.log('🔄 Auto-refreshing GPS data...');
         fetchLivePosition();
       }, 30000);
 
       return () => {
-        console.log('🛑 GPS Modal Closed - Stopping auto-refresh');
         clearInterval(interval);
       };
     } else if (open && !hasGPS) {
-      console.log('⚠️ GPS Modal opened but car does not have GPS');
-      console.log('  Car ID:', carId);
-      console.log('  Booking:', booking);
     }
   }, [open, hasGPS]);
 

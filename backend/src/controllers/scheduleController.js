@@ -11,7 +11,7 @@ export const getSchedules = async (req, res) => {
     const { page, pageSize, skip } = getPaginationParams(req);
     const { sortBy, sortOrder } = getSortingParams(req, 'start_date', 'desc');
     const search = getSearchParam(req);
-    
+
     // Build where clause for filtering
     const where = {
       // Filter to show only Confirmed and In Progress bookings
@@ -20,7 +20,7 @@ export const getSchedules = async (req, res) => {
         in: ['Confirmed', 'In Progress']
       }
     };
-    
+
     // Search filter (customer name or car model)
     if (search) {
       where.OR = [
@@ -30,7 +30,7 @@ export const getSchedules = async (req, res) => {
         { car: { model: { contains: search, mode: 'insensitive' } } },
       ];
     }
-    
+
     // Status filter (if provided, it will override the default filter)
     if (req.query.status) {
       where.booking_status = req.query.status;
@@ -100,7 +100,6 @@ export const getSchedules = async (req, res) => {
 
     res.json(buildPaginationResponse(mapped, total, page, pageSize));
   } catch (error) {
-    console.error("Error fetching schedules:", error);
     res.status(500).json({ error: "Failed to fetch schedules" });
   }
 };
@@ -148,7 +147,6 @@ export const getSchedulesByCustomer = async (req, res) => {
 
     res.json(mapped);
   } catch (error) {
-    console.error("Error fetching customer schedules:", error);
     res.status(500).json({ error: "Failed to fetch customer schedules" });
   }
 };
@@ -171,10 +169,10 @@ export const getMySchedules = async (req, res) => {
     // Get pagination parameters
     const { page, pageSize, skip } = getPaginationParams(req);
     const { sortBy, sortOrder } = getSortingParams(req, 'start_date', 'desc');
-    
+
     // Build where clause
     const where = { customer_id: Number(customerId) };
-    
+
     // Status filter
     if (req.query.status) {
       where.booking_status = req.query.status;
@@ -220,7 +218,6 @@ export const getMySchedules = async (req, res) => {
 
     res.json(buildPaginationResponse(mapped, total, page, pageSize));
   } catch (error) {
-    console.error("Error fetching my schedules:", error);
     res.status(500).json({ error: "Failed to fetch customer schedules" });
   }
 };
@@ -243,10 +240,10 @@ export const getMyDriverSchedules = async (req, res) => {
     // Get pagination parameters
     const { page, pageSize, skip } = getPaginationParams(req);
     const { sortBy, sortOrder } = getSortingParams(req, 'start_date', 'desc');
-    
+
     // Build where clause
     const where = { drivers_id: Number(driverId) };
-    
+
     // Status filter
     if (req.query.status) {
       where.booking_status = req.query.status;
@@ -289,7 +286,6 @@ export const getMyDriverSchedules = async (req, res) => {
 
     res.json(buildPaginationResponse(mapped, total, page, pageSize));
   } catch (error) {
-    console.error("Error fetching driver schedules:", error);
     res.status(500).json({ error: "Failed to fetch driver schedules" });
   }
 };
@@ -306,7 +302,6 @@ export const getScheduleById = async (req, res) => {
     if (!schedule) return res.status(404).json({ error: "Schedule not found" });
     res.json(schedule);
   } catch (error) {
-    console.error("Error fetching schedule:", error);
     res.status(500).json({ error: "Failed to fetch schedule" });
   }
 };
@@ -350,7 +345,6 @@ export const createSchedule = async (req, res) => {
 
     res.status(201).json(newSchedule);
   } catch (error) {
-    console.error("Error creating schedule:", error);
     res.status(500).json({ error: "Failed to create schedule" });
   }
 };
@@ -375,7 +369,6 @@ export const updateSchedule = async (req, res) => {
 
     res.json(updated);
   } catch (error) {
-    console.error("Error updating schedule:", error);
     res.status(500).json({ error: "Failed to update schedule" });
   }
 };
@@ -389,7 +382,6 @@ export const deleteSchedule = async (req, res) => {
     await prisma.booking.delete({ where: { booking_id: id } });
     res.status(204).send();
   } catch (error) {
-    console.error("Error deleting schedule:", error);
     res.status(500).json({ error: "Failed to delete schedule" });
   }
 };

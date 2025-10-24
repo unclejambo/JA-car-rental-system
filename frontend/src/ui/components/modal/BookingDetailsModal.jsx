@@ -71,7 +71,6 @@ export default function BookingDetailsModal({
             setDriverName(driver.first_name || '');
           }
         } catch (error) {
-          console.error('Failed to fetch driver name:', error);
         }
       };
       fetchDriverName();
@@ -107,7 +106,6 @@ export default function BookingDetailsModal({
             }
           }
         } catch (error) {
-          console.error('Failed to fetch release data:', error);
         } finally {
           setLoadingRelease(false);
         }
@@ -140,7 +138,6 @@ export default function BookingDetailsModal({
             }
           }
         } catch (error) {
-          console.error('Failed to fetch return data:', error);
         } finally {
           setLoadingReturn(false);
         }

@@ -85,7 +85,6 @@ export default function AdminSettings() {
         setError('Failed to load profile');
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
       setError('Failed to load profile');
     } finally {
       setLoading(false);
@@ -254,7 +253,6 @@ export default function AdminSettings() {
         setShowSuccess(true);
       }
     } catch (error) {
-      console.error('Error removing image:', error);
       setError('Failed to remove profile picture');
     } finally {
       setImageUploading(false);
@@ -274,7 +272,6 @@ export default function AdminSettings() {
       formData.append('userId', profile.adminId || 'unknown');
       formData.append('userType', 'admin');
 
-      console.log('🚀 Uploading profile image...');
 
       const response = await authenticatedFetch(
         `${API_BASE}/api/storage/profile-images`,
@@ -285,7 +282,6 @@ export default function AdminSettings() {
       );
 
       const result = await response.json();
-      console.log('📦 Upload response:', result);
 
       if (!response.ok || (!result.ok && !result.success)) {
         throw new Error(result.message || 'Upload failed');
@@ -302,14 +298,12 @@ export default function AdminSettings() {
         throw new Error('No image URL returned from upload');
       }
 
-      console.log('✅ Image uploaded successfully:', imageUrl);
 
       // Update the preview immediately
       setImagePreview(imageUrl);
 
       return imageUrl;
     } catch (error) {
-      console.error('Error uploading image:', error);
       setError('Failed to upload profile picture');
       return null;
     } finally {
@@ -369,7 +363,6 @@ export default function AdminSettings() {
       let imageWasUploaded = false;
 
       if (profileImage) {
-        console.log('🖼️ Uploading new profile image...');
         profileImageUrl = await uploadProfileImage();
         if (!profileImageUrl) {
           // Upload failed, error already set
@@ -377,10 +370,6 @@ export default function AdminSettings() {
           setShowConfirmModal(false);
           return;
         }
-        console.log(
-          '✅ Profile image uploaded and saved to DB:',
-          profileImageUrl
-        );
         imageWasUploaded = true;
       }
 
@@ -417,7 +406,6 @@ export default function AdminSettings() {
       // If only image was uploaded, we can skip the profile update since backend already handled it
       if (imageWasUploaded && !hasOtherChanges) {
         // Image was already uploaded and saved, just refresh the profile data
-        console.log('📱 Only image changed, fetching updated profile...');
 
         const profileResponse = await authenticatedFetch(
           `${API_BASE}/api/admin-profile`
@@ -431,7 +419,6 @@ export default function AdminSettings() {
         }
       } else {
         // Update other profile fields
-        console.log('📤 Updating profile data:', updateData);
 
         const response = await authenticatedFetch(
           `${API_BASE}/api/admin-profile`,
@@ -464,7 +451,6 @@ export default function AdminSettings() {
         profileImageUrl: result.data.profile_img_url || '',
       };
 
-      console.log('🎉 Profile updated successfully:', updatedProfile);
 
       setImagePreview(result.data.profile_img_url || '');
       setProfileImage(null);
@@ -480,7 +466,6 @@ export default function AdminSettings() {
       setSuccessMessage('Profile updated successfully!');
       setShowSuccess(true);
     } catch (error) {
-      console.error('Error updating profile:', error);
       setError(error.message || 'Failed to update profile');
     } finally {
       setSaving(false);

@@ -70,12 +70,10 @@ function CustomerCars() {
     const loadCars = async () => {
       try {
         setLoading(true);
-        console.log('Fetching cars from:', `${API_BASE}/cars`);
         const response = await authenticatedFetch(`${API_BASE}/cars`);
 
         if (response.ok) {
           const response_data = await response.json();
-          console.log('Cars data received:', response_data);
 
           // Handle paginated response - extract data array
           const data = Array.isArray(response_data)
@@ -100,11 +98,9 @@ function CustomerCars() {
           }
         } else {
           const errorText = await response.text();
-          console.error('Failed to load cars:', errorText);
           setError('Failed to load cars. Please try again.');
         }
       } catch (error) {
-        console.error('Error loading cars:', error);
         setError('Error connecting to server. Please try again.');
       } finally {
         setLoading(false);
@@ -199,16 +195,10 @@ function CustomerCars() {
   // Handle booking submission
   const handleBookingSubmit = async (bookingData) => {
     try {
-      console.log('Submitting booking:', bookingData);
-
       // Get current user from auth context or localStorage
       const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
       const customerId = userInfo.customer_id || userInfo.id;
       const authToken = localStorage.getItem('authToken');
-
-      console.log('User Info:', userInfo);
-      console.log('Customer ID:', customerId);
-      console.log('Auth Token exists:', !!authToken);
 
       if (!customerId) {
         alert('Please log in to make a booking.');
@@ -236,19 +226,14 @@ function CustomerCars() {
         deliveryType: bookingData.deliveryType,
       };
 
-      console.log('Request data being sent:', requestData);
-
       const response = await authenticatedFetch(`${API_BASE}/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData),
       });
 
-      console.log('Response status:', response.status);
-
       if (response.ok) {
         const result = await response.json();
-        console.log('Booking submitted successfully:', result);
 
         // Store booking data and show success modal
         setSuccessBookingData(requestData);
@@ -256,13 +241,11 @@ function CustomerCars() {
         setShowSuccessModal(true);
       } else {
         const errorData = await response.json();
-        console.error('Booking submission failed:', errorData);
         alert(
           `Error submitting booking: ${errorData.error || errorData.details || 'Please try again.'}`
         );
       }
     } catch (error) {
-      console.error('Error submitting booking:', error);
       alert('Error submitting booking. Please try again.');
     }
   };
@@ -310,74 +293,6 @@ function CustomerCars() {
       };
     }
   };
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex' }}>
-        <title>Available Cars</title>
-        <Header
-          onMenuClick={() => setMobileOpen(true)}
-          isMenuOpen={mobileOpen}
-        />
-        <CustomerSideBar
-          mobileOpen={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-        />
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: { xs: 1, sm: 2, md: 3 },
-            width: `calc(100% - 18.7dvw)`,
-            ml: { xs: '0px', sm: '0px', md: '18.7dvw', lg: '18.7dvw' },
-            '@media (max-width: 1024px)': { ml: '0px' },
-            mt: { xs: '64px', sm: '64px', md: '56px', lg: '56px' },
-            height: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Typography variant="h6">Loading cars...</Typography>
-        </Box>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ display: 'flex' }}>
-        <title>Available Cars</title>
-        <Header
-          onMenuClick={() => setMobileOpen(true)}
-          isMenuOpen={mobileOpen}
-        />
-        <CustomerSideBar
-          mobileOpen={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-        />
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: { xs: 1, sm: 2, md: 3 },
-            width: `calc(100% - 18.7dvw)`,
-            ml: { xs: '0px', sm: '0px', md: '18.7dvw', lg: '18.7dvw' },
-            '@media (max-width: 1024px)': { ml: '0px' },
-            mt: { xs: '64px', sm: '64px', md: '56px', lg: '56px' },
-            height: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Typography variant="h6" color="error">
-            {error}
-          </Typography>
-        </Box>
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -433,93 +348,113 @@ function CustomerCars() {
               boxSizing: 'border-box',
             }}
           >
-            {/* Page Title */}
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: { xs: 'flex-start', sm: 'center' },
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: { xs: 1, sm: 2 },
-                mb: { xs: 2.5, sm: 3 }, // spacing below header
-              }}
-            >
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="h4"
-                  component="h1"
-                  sx={{
-                    fontWeight: 'bold',
-                    color: '#c10007',
-                    fontSize: { xs: '1.15rem', sm: '1.4rem', md: '1.6rem' },
-                    minWidth: 0,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  <HiMiniTruck
-                    style={{
-                      verticalAlign: '-3px',
-                      marginRight: '8px',
-                      fontSize: '1.1em',
-                    }}
-                  />
-                  J and A Cars
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: '0.75rem', sm: '1rem' }, mt: 0.5 }}
-                >
-                  {
-                    filteredCars.filter(
-                      (car) => car.car_status?.toLowerCase() === 'available'
-                    ).length
-                  }{' '}
-                  car
-                  {filteredCars.filter(
-                    (car) => car.car_status?.toLowerCase() === 'available'
-                  ).length !== 1
-                    ? 's'
-                    : ''}{' '}
-                  available and ready for rental
+            {/* Loading Indicator */}
+            {loading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <CircularProgress sx={{ color: '#c10007' }} />
+              </Box>
+            )}
+
+            {/* Error Message */}
+            {error && !loading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <Typography variant="h6" color="error">
+                  {error}
                 </Typography>
               </Box>
+            )}
 
-              <Button
-                onClick={() => setShowFilters(!showFilters)}
-                startIcon={<HiAdjustmentsHorizontal />}
-                variant="contained"
+            {/* Page Title */}
+            {!loading && !error && (
+              <Box
                 sx={{
-                  backgroundColor: '#c10007',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  minWidth: { xs: '120px', sm: '150px' },
-                  borderRadius: '8px',
-                  padding: '10px 20px',
-                  textTransform: 'none',
-                  boxShadow:
-                    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                  '&:hover': {
-                    backgroundColor: '#a50006',
-                    boxShadow:
-                      '0 6px 8px -1px rgba(0, 0, 0, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.06)',
-                  },
-                  '&:focus': {
-                    backgroundColor: '#a50006',
-                  },
-                  '&:active': {
-                    backgroundColor: '#8b0005',
-                  },
+                  display: 'flex',
+                  alignItems: { xs: 'flex-start', sm: 'center' },
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: { xs: 1, sm: 2 },
+                  mb: { xs: 2.5, sm: 3 }, // spacing below header
                 }}
               >
-                <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                  Filter Cars
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    variant="h4"
+                    component="h1"
+                    sx={{
+                      fontWeight: 'bold',
+                      color: '#c10007',
+                      fontSize: { xs: '1.15rem', sm: '1.4rem', md: '1.6rem' },
+                      minWidth: 0,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    <HiMiniTruck
+                      style={{
+                        verticalAlign: '-3px',
+                        marginRight: '8px',
+                        fontSize: '1.1em',
+                      }}
+                    />
+                    J and A Cars
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: '0.75rem', sm: '1rem' }, mt: 0.5 }}
+                  >
+                    {
+                      filteredCars.filter(
+                        (car) => car.car_status?.toLowerCase() === 'available'
+                      ).length
+                    }{' '}
+                    car
+                    {filteredCars.filter(
+                      (car) => car.car_status?.toLowerCase() === 'available'
+                    ).length !== 1
+                      ? 's'
+                      : ''}{' '}
+                    available and ready for rental
+                  </Typography>
                 </Box>
-                <Box sx={{ display: { xs: 'block', sm: 'none' } }}>Filter</Box>
-              </Button>
-            </Box>
+
+                <Button
+                  onClick={() => setShowFilters(!showFilters)}
+                  startIcon={<HiAdjustmentsHorizontal />}
+                  variant="contained"
+                  sx={{
+                    backgroundColor: '#c10007',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    minWidth: { xs: '120px', sm: '150px' },
+                    borderRadius: '8px',
+                    padding: '10px 20px',
+                    textTransform: 'none',
+                    boxShadow:
+                      '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                    '&:hover': {
+                      backgroundColor: '#a50006',
+                      boxShadow:
+                        '0 6px 8px -1px rgba(0, 0, 0, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.06)',
+                    },
+                    '&:focus': {
+                      backgroundColor: '#a50006',
+                    },
+                    '&:active': {
+                      backgroundColor: '#8b0005',
+                    },
+                  }}
+                >
+                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                    Filter Cars
+                  </Box>
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+                    Filter
+                  </Box>
+                </Button>
+              </Box>
+            )}
 
             {/* Filter Modal */}
             {showFilters && (
@@ -730,240 +665,239 @@ function CustomerCars() {
             )}
 
             {/* Cars Results */}
-            {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress size={60} sx={{ color: '#c10007' }} />
-              </Box>
-            ) : error ? (
+            {error ? (
               <Alert severity="error" sx={{ mb: 3 }}>
                 {error}
               </Alert>
             ) : (
-              <>
-                {filteredCars.length === 0 ? (
-                  <Box
-                    sx={{
-                      textAlign: 'center',
-                      py: 8,
-                      backgroundColor: '#f5f5f5',
-                      borderRadius: 2,
-                    }}
-                  >
-                    <Typography
-                      variant="h6"
-                      sx={{ color: 'text.secondary', mb: 1 }}
+              !loading && (
+                <>
+                  {filteredCars.length === 0 ? (
+                    <Box
+                      sx={{
+                        textAlign: 'center',
+                        py: 8,
+                        backgroundColor: '#f5f5f5',
+                        borderRadius: 2,
+                      }}
                     >
-                      No cars found
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ color: 'text.secondary' }}
+                      <Typography
+                        variant="h6"
+                        sx={{ color: 'text.secondary', mb: 1 }}
+                      >
+                        No cars found
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        Try adjusting your filter criteria
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Grid
+                      container
+                      spacing={3}
+                      justifyContent="center"
+                      sx={{
+                        px: { xs: 1, sm: 2, md: 3 },
+                      }}
                     >
-                      Try adjusting your filter criteria
-                    </Typography>
-                  </Box>
-                ) : (
-                  <Grid
-                    container
-                    spacing={3}
-                    justifyContent="center"
-                    sx={{
-                      px: { xs: 1, sm: 2, md: 3 },
-                    }}
-                  >
-                    {filteredCars.map((car) => {
-                      const statusInfo = getStatusInfo(car.car_status);
-                      const isUnderMaintenance = car.car_status
-                        ?.toLowerCase()
-                        .includes('maint');
-                      return (
-                        <Grid
-                          item
-                          xs={12}
-                          sm={6}
-                          md={3}
-                          key={car.car_id}
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <Card
+                      {filteredCars.map((car) => {
+                        const statusInfo = getStatusInfo(car.car_status);
+                        const isUnderMaintenance = car.car_status
+                          ?.toLowerCase()
+                          .includes('maint');
+                        return (
+                          <Grid
+                            item
+                            xs={12}
+                            sm={6}
+                            md={3}
+                            key={car.car_id}
                             sx={{
-                              width: 280,
-                              height: 450,
                               display: 'flex',
-                              flexDirection: 'column',
-                              justifyContent: 'space-between',
-                              borderRadius: 3,
-                              boxShadow: '0 3px 10px rgba(0,0,0,0.08)',
-                              transition:
-                                'transform 0.2s ease, box-shadow 0.2s ease',
-                              '&:hover': {
-                                transform: isUnderMaintenance
-                                  ? 'none'
-                                  : 'translateY(-4px)',
-                                boxShadow: isUnderMaintenance
-                                  ? '0 3px 10px rgba(0,0,0,0.08)'
-                                  : '0 6px 20px rgba(0,0,0,0.12)',
-                              },
-                              cursor: isUnderMaintenance
-                                ? 'not-allowed'
-                                : 'pointer',
-                              opacity: isUnderMaintenance ? 0.7 : 1,
-                              backgroundColor: '#fff',
+                              justifyContent: 'center',
                             }}
-                            onClick={() => handleCarClick(car)}
                           >
-                            <Box
+                            <Card
                               sx={{
-                                width: '100%',
-                                height: 200,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                backgroundColor: '#f9f9f9',
-                                borderTopLeftRadius: 12,
-                                borderTopRightRadius: 12,
-                                overflow: 'hidden',
-                              }}
-                            >
-                              <CardMedia
-                                component="img"
-                                image={car.car_img_url}
-                                alt={`${car.make} ${car.model}`}
-                                sx={{
-                                  maxWidth: '100%',
-                                  maxHeight: '100%',
-                                  objectFit: 'contain',
-                                }}
-                              />
-                            </Box>
-
-                            <CardContent
-                              sx={{
-                                height: 250,
-                                p: 2,
+                                width: 280,
+                                height: 450,
                                 display: 'flex',
                                 flexDirection: 'column',
                                 justifyContent: 'space-between',
+                                borderRadius: 3,
+                                boxShadow: '0 3px 10px rgba(0,0,0,0.08)',
+                                transition:
+                                  'transform 0.2s ease, box-shadow 0.2s ease',
+                                '&:hover': {
+                                  transform: isUnderMaintenance
+                                    ? 'none'
+                                    : 'translateY(-4px)',
+                                  boxShadow: isUnderMaintenance
+                                    ? '0 3px 10px rgba(0,0,0,0.08)'
+                                    : '0 6px 20px rgba(0,0,0,0.12)',
+                                },
+                                cursor: isUnderMaintenance
+                                  ? 'not-allowed'
+                                  : 'pointer',
+                                opacity: isUnderMaintenance ? 0.7 : 1,
+                                backgroundColor: '#fff',
                               }}
+                              onClick={() => handleCarClick(car)}
                             >
-                              <Box>
-                                {/* Car Title */}
-                                <Typography
-                                  variant="h6"
+                              <Box
+                                sx={{
+                                  width: '100%',
+                                  height: 200,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  backgroundColor: '#f9f9f9',
+                                  borderTopLeftRadius: 12,
+                                  borderTopRightRadius: 12,
+                                  overflow: 'hidden',
+                                }}
+                              >
+                                <CardMedia
+                                  component="img"
+                                  image={car.car_img_url}
+                                  alt={`${car.make} ${car.model}`}
                                   sx={{
-                                    fontWeight: 700,
-                                    mb: 0.5,
-                                    color: '#333',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                  }}
-                                >
-                                  {car.make} {car.model}
-                                </Typography>
-
-                                {/* Car Details */}
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                  sx={{ mb: 1 }}
-                                >
-                                  {car.year} • {car.no_of_seat} seats
-                                </Typography>
-
-                                {/* Plate Number */}
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                  sx={{ mb: 1 }}
-                                >
-                                  Plate: {car.license_plate}
-                                </Typography>
-
-                                {/* Status Badge */}
-                                <Chip
-                                  label={statusInfo.label}
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: statusInfo.color,
-                                    color: statusInfo.textColor || 'white',
-                                    fontWeight: 600,
-                                    mb: 2,
+                                    maxWidth: '100%',
+                                    maxHeight: '100%',
+                                    objectFit: 'contain',
                                   }}
                                 />
                               </Box>
 
-                              <Box>
-                                {/* Price */}
-                                <Typography
-                                  variant="h6"
-                                  sx={{
-                                    fontWeight: 'bold',
-                                    color: '#c10007',
-                                    fontSize: '1.2rem',
-                                    mb: 1,
-                                  }}
-                                >
-                                  ₱{car.rent_price?.toLocaleString() || '0'}/day
-                                </Typography>
+                              <CardContent
+                                sx={{
+                                  height: 250,
+                                  p: 2,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'space-between',
+                                }}
+                              >
+                                <Box>
+                                  {/* Car Title */}
+                                  <Typography
+                                    variant="h6"
+                                    sx={{
+                                      fontWeight: 700,
+                                      mb: 0.5,
+                                      color: '#333',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {car.make} {car.model}
+                                  </Typography>
 
-                                {/* Book Now Button */}
-                                <Button
-                                  variant="contained"
-                                  fullWidth
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCarClick(car);
-                                  }}
-                                  disabled={car.car_status
-                                    ?.toLowerCase()
-                                    .includes('maint')}
-                                  sx={{
-                                    backgroundColor: car.car_status
+                                  {/* Car Details */}
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ mb: 1 }}
+                                  >
+                                    {car.year} • {car.no_of_seat} seats
+                                  </Typography>
+
+                                  {/* Plate Number */}
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ mb: 1 }}
+                                  >
+                                    Plate: {car.license_plate}
+                                  </Typography>
+
+                                  {/* Status Badge */}
+                                  <Chip
+                                    label={statusInfo.label}
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: statusInfo.color,
+                                      color: statusInfo.textColor || 'white',
+                                      fontWeight: 600,
+                                      mb: 2,
+                                    }}
+                                  />
+                                </Box>
+
+                                <Box>
+                                  {/* Price */}
+                                  <Typography
+                                    variant="h6"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      color: '#c10007',
+                                      fontSize: '1.2rem',
+                                      mb: 1,
+                                    }}
+                                  >
+                                    ₱{car.rent_price?.toLocaleString() || '0'}
+                                    /day
+                                  </Typography>
+
+                                  {/* Book Now Button */}
+                                  <Button
+                                    variant="contained"
+                                    fullWidth
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCarClick(car);
+                                    }}
+                                    disabled={car.car_status
                                       ?.toLowerCase()
-                                      .includes('rent')
-                                      ? '#ff9800'
-                                      : '#c10007',
-                                    color: '#fff',
-                                    fontWeight: 600,
-                                    py: 1,
-                                    borderRadius: 2,
-                                    textTransform: 'none',
-                                    '&:hover': {
+                                      .includes('maint')}
+                                    sx={{
                                       backgroundColor: car.car_status
                                         ?.toLowerCase()
                                         .includes('rent')
-                                        ? '#f57c00'
-                                        : '#a50006',
-                                    },
-                                    '&:disabled': {
-                                      backgroundColor: '#ccc',
-                                      color: '#666',
-                                    },
-                                  }}
-                                >
-                                  {car.car_status
-                                    ?.toLowerCase()
-                                    .includes('maint')
-                                    ? 'Under Maintenance'
-                                    : car.car_status
+                                        ? '#ff9800'
+                                        : '#c10007',
+                                      color: '#fff',
+                                      fontWeight: 600,
+                                      py: 1,
+                                      borderRadius: 2,
+                                      textTransform: 'none',
+                                      '&:hover': {
+                                        backgroundColor: car.car_status
                                           ?.toLowerCase()
                                           .includes('rent')
-                                      ? 'Book Now (View Availability)'
-                                      : 'Book Now'}
-                                </Button>
-                              </Box>
-                            </CardContent>
-                          </Card>
-                        </Grid>
-                      );
-                    })}
-                  </Grid>
-                )}
-              </>
+                                          ? '#f57c00'
+                                          : '#a50006',
+                                      },
+                                      '&:disabled': {
+                                        backgroundColor: '#ccc',
+                                        color: '#666',
+                                      },
+                                    }}
+                                  >
+                                    {car.car_status
+                                      ?.toLowerCase()
+                                      .includes('maint')
+                                      ? 'Under Maintenance'
+                                      : car.car_status
+                                            ?.toLowerCase()
+                                            .includes('rent')
+                                        ? 'Book Now (View Availability)'
+                                        : 'Book Now'}
+                                  </Button>
+                                </Box>
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                        );
+                      })}
+                    </Grid>
+                  )}
+                </>
+              )
             )}
           </Box>
         </Box>

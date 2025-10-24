@@ -16,9 +16,6 @@ const prisma = new PrismaClient();
 export const initiatePasswordReset = async (req, res) => {
   try {
     const { identifier, method = 'email' } = req.body;
-
-    console.log('🔄 Password reset initiated for:', identifier);
-
     if (!identifier) {
       return res.status(400).json({
         success: false,
@@ -29,9 +26,6 @@ export const initiatePasswordReset = async (req, res) => {
     // Find user by email, username, or phone
     let user = null;
     let userType = null;
-
-    console.log('🔍 Searching for user with identifier:', identifier);
-
     // Check in customers table first
     user = await prisma.customer.findFirst({
       where: {
@@ -45,7 +39,6 @@ export const initiatePasswordReset = async (req, res) => {
 
     if (user) {
       userType = 'customer';
-      console.log('👤 Found customer:', user.username);
     } else {
       // Check in admins table
       user = await prisma.admin.findFirst({
@@ -60,7 +53,6 @@ export const initiatePasswordReset = async (req, res) => {
 
       if (user) {
         userType = 'admin';
-        console.log('👑 Found admin:', user.username);
       } else {
         // Check in drivers table
         user = await prisma.driver.findFirst({
@@ -75,13 +67,11 @@ export const initiatePasswordReset = async (req, res) => {
 
         if (user) {
           userType = 'driver';
-          console.log('🚗 Found driver:', user.username);
         }
       }
     }
 
     if (!user) {
-      console.log('❌ No user found with identifier:', identifier);
       return res.status(404).json({
         success: false,
         message: 'No account found with the provided information'
@@ -100,9 +90,6 @@ export const initiatePasswordReset = async (req, res) => {
         }
       }
     });
-
-    console.log(`📊 Rate limit check: ${recentAttempts}/${maxAttempts} attempts in last ${rateLimitWindow/60000} minutes`);
-
     if (recentAttempts >= maxAttempts) {
       const waitTime = process.env.NODE_ENV === 'development' ? '2 minutes' : '15 minutes';
       return res.status(429).json({
@@ -114,8 +101,6 @@ export const initiatePasswordReset = async (req, res) => {
 
     // Generate verification code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log('🔐 Generated verification code for:', user.email);
-
     // Get user ID based on user type
     let userId;
     switch (userType) {
@@ -146,18 +131,12 @@ export const initiatePasswordReset = async (req, res) => {
         expires_at: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
       }
     });
-
-    console.log('💾 Stored verification code in database');
-
     // Send verification email
     try {
       await sendVerificationEmail(user.email, code, user.first_name || user.username);
-      console.log(`✅ Verification email sent to: ${user.email}`);
     } catch (emailError) {
-      console.error('❌ Email sending failed:', emailError);
       // In development, we'll continue anyway and log the code
       if (process.env.NODE_ENV === 'development') {
-        console.log(`🧪 DEVELOPMENT MODE - Verification code for ${user.email}: ${code}`);
       } else {
         // In production, fail if email can't be sent
         return res.status(500).json({
@@ -183,7 +162,6 @@ export const initiatePasswordReset = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Password reset initiation error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error during password reset initiation'
@@ -197,9 +175,6 @@ export const initiatePasswordReset = async (req, res) => {
 export const verifyResetCode = async (req, res) => {
   try {
     const { identifier, code } = req.body;
-
-    console.log('🔍 Verifying reset code for:', identifier);
-
     // Validate input
     if (!identifier || !code) {
       return res.status(400).json({
@@ -359,9 +334,6 @@ export const verifyResetCode = async (req, res) => {
         expires_at: tokenExpiresAt
       }
     });
-
-    console.log(`✅ Code verified for ${userType} user: ${user.email}`);
-
     return res.status(200).json({
       success: true,
       message: 'Verification code confirmed. You can now reset your password.',
@@ -373,7 +345,6 @@ export const verifyResetCode = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Verify reset code error:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error. Please try again later.'
@@ -387,9 +358,6 @@ export const verifyResetCode = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { resetToken, newPassword, confirmPassword } = req.body;
-
-    console.log('🔑 Resetting password with token');
-
     // Validate input
     if (!resetToken || !newPassword || !confirmPassword) {
       return res.status(400).json({
@@ -509,9 +477,6 @@ export const resetPassword = async (req, res) => {
       },
       data: { verified: true } // Mark as used
     });
-
-    console.log(`✅ Password reset successful for ${resetRecord.user_type} user: ${user.email}`);
-
     return res.status(200).json({
       success: true,
       message: 'Password has been reset successfully. You can now log in with your new password.',
@@ -522,7 +487,6 @@ export const resetPassword = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Reset password error:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error. Please try again later.'
@@ -544,18 +508,14 @@ export const clearVerificationCodes = async (req, res) => {
 
     // Clear all verification codes
     await prisma.verificationCode.deleteMany({});
-    
+
     // Clear all password reset tokens
     await prisma.passwordResetToken.deleteMany({});
-    
-    console.log('🧹 Cleared all verification codes and reset tokens (development)');
-    
     res.status(200).json({
       success: true,
       message: 'All verification codes and reset tokens cleared (development only)'
     });
   } catch (error) {
-    console.error('Clear verification codes error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'

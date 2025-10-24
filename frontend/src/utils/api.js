@@ -2,8 +2,6 @@
 export const createAuthenticatedFetch = (logout) => {
   return async (url, options = {}) => {
     const token = localStorage.getItem('authToken');
-    console.log('🔑 Token exists:', !!token);
-    console.log('📞 Making request to:', url);
 
     if (token) {
       options.headers = {
@@ -14,22 +12,17 @@ export const createAuthenticatedFetch = (logout) => {
       // Decode token to see what role we have (for debugging)
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        console.log('👤 Token payload:', payload);
       } catch {
-        console.log('❌ Invalid token format');
       }
     } else {
-      console.log('❌ No token found in localStorage');
     }
 
     try {
       const response = await fetch(url, options);
-      console.log('📡 Response status:', response.status);
 
       // If token is invalid or expired (401/403), logout automatically
       if (response.status === 401 || response.status === 403) {
         const data = await response.json().catch(() => ({}));
-        console.log('❌ Error response:', data);
 
         // Check if it's a token-related error
         if (
@@ -38,7 +31,6 @@ export const createAuthenticatedFetch = (logout) => {
           data.message?.includes('Unauthorized') ||
           data.message?.includes('expired')
         ) {
-          console.log('🚪 Auto-logout triggered');
           logout();
           return response;
         }
@@ -46,7 +38,6 @@ export const createAuthenticatedFetch = (logout) => {
 
       return response;
     } catch (error) {
-      console.error('API request failed:', error);
       throw error;
     }
   };
@@ -114,7 +105,6 @@ export const bookingAPI = {
     });
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Failed to confirm booking' }));
-      console.error('Confirm booking error response:', error);
       throw new Error(error.message || error.error || 'Failed to confirm booking');
     }
     return await response.json();

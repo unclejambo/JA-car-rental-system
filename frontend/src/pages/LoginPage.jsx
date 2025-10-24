@@ -115,14 +115,11 @@ function LoginPage() {
       });
 
       const data = await response.json();
-      // console.log('Login response:', data);
-
       if (data.ok) {
         // Use auth context login method
         login(data.token, data.role, data.user);
 
         // Role-based routing
-        console.log('Redirecting user with role:', data.role);
         switch (data.role) {
           case 'admin':
             navigate('/admindashboard');
@@ -143,7 +140,6 @@ function LoginPage() {
         setError(data.message || 'Login failed');
       }
     } catch (err) {
-      console.error('Login error:', err);
       setError('Network error. Please check your connection and try again.');
     } finally {
       setIsLoading(false);

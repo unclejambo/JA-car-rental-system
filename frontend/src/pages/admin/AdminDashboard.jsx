@@ -158,14 +158,7 @@ function AdminDashboard() {
         bookingRequests,
         extensionCancellationRequests,
       });
-
-      // Debug logging
-      console.log('📊 Dashboard Data:', {
-        mostRentedCar: carsUtilization[0],
-        carImgUrl: carsUtilization[0]?.carImgUrl,
-      });
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -314,10 +307,6 @@ function AdminDashboard() {
                             src={dashboardData.mostRentedCar.carImgUrl}
                             alt={`${dashboardData.mostRentedCar.make} ${dashboardData.mostRentedCar.model}`}
                             onError={(e) => {
-                              console.error(
-                                'Image failed to load:',
-                                dashboardData.mostRentedCar.carImgUrl
-                              );
                               e.target.style.display = 'none';
                               e.target.parentElement.style.display = 'none';
                             }}
@@ -394,6 +383,7 @@ function AdminDashboard() {
                       <Button
                         component={Link}
                         to="/report-analytics"
+                        state={{ primaryView: 'topCars' }}
                         variant="contained"
                         fullWidth
                         sx={{
@@ -577,6 +567,7 @@ function AdminDashboard() {
                 <Button
                   component={Link}
                   to="/report-analytics"
+                  state={{ primaryView: 'topCustomers' }}
                   variant="outlined"
                   fullWidth
                   sx={{
@@ -590,7 +581,7 @@ function AdminDashboard() {
                     py: { xs: 1, md: 1.5 },
                   }}
                 >
-                  View All Customers
+                  View All Top Customers
                 </Button>
               </CardContent>
             </Card>

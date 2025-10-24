@@ -10,7 +10,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  */
 async function getSignedLicenseUrl(dl_img_url) {
   if (!dl_img_url) return null;
-  
+
   try {
     // Extract the path from the URL if it's already a full URL
     let path = dl_img_url;
@@ -21,32 +21,29 @@ async function getSignedLicenseUrl(dl_img_url) {
       // Decode any URL-encoded characters
       path = decodeURIComponent(path);
     }
-    
+
     // First check if the file exists before creating signed URL
     const { data: fileData, error: listError } = await supabase.storage
       .from('licenses')
       .list('', {
         search: path
       });
-    
+
     // If file doesn't exist, return original URL (might be a new upload)
     if (listError || !fileData || fileData.length === 0) {
-      console.log('File not found in storage, returning original URL:', path);
       return dl_img_url;
     }
-    
+
     const { data, error } = await supabase.storage
       .from('licenses')
       .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
-    
+
     if (error) {
-      console.error('Error generating signed URL:', error);
       return dl_img_url; // Return original URL as fallback
     }
-    
+
     return data.signedUrl;
   } catch (err) {
-    console.error('Exception generating signed URL:', err);
     return dl_img_url; // Return original URL as fallback
   }
 }
@@ -58,9 +55,6 @@ export const updateDriverLicense = async (req, res) => {
   try {
     const driverLicenseNo = req.params.id;
     const { restrictions, expiry_date, dl_img_url } = req.body;
-
-    console.log("🟢 Incoming update request:", req.body);
-
     // Find current record for comparison
     const existing = await prisma.driverLicense.findUnique({
       where: { driver_license_no: driverLicenseNo },
@@ -81,19 +75,15 @@ export const updateDriverLicense = async (req, res) => {
         dl_img_url: dl_img_url?.trim() || existing.dl_img_url,
       },
     });
-
-    console.log("✅ Prisma updated license:", updated);
-    
     // Generate signed URL for the response
     const signedUrl = await getSignedLicenseUrl(updated.dl_img_url);
     const response = {
       ...updated,
       dl_img_url: signedUrl || updated.dl_img_url,
     };
-    
+
     res.json(response);
   } catch (error) {
-    console.error("❌ Error updating driver license:", error);
     res.status(500).json({ error: "Failed to update driver license" });
   }
 };
@@ -104,9 +94,6 @@ export const updateDriverLicense = async (req, res) => {
 export const deleteLicenseImage = async (req, res) => {
   try {
     const driverLicenseNo = req.params.id;
-    
-    console.log("🗑️ License image delete request for:", driverLicenseNo);
-
     // Find current record
     const existing = await prisma.driverLicense.findUnique({
       where: { driver_license_no: driverLicenseNo },
@@ -134,32 +121,22 @@ export const deleteLicenseImage = async (req, res) => {
       imagePath = imagePath.split('?')[0];
       imagePath = decodeURIComponent(imagePath);
     }
-
-    console.log("Deleting from Supabase:", imagePath);
-
     // Delete the file from Supabase
     const { error: deleteError } = await supabase.storage
       .from('licenses')
       .remove([imagePath]);
 
     if (deleteError) {
-      console.error('❌ Supabase delete error:', deleteError);
       return res.status(500).json({ 
         success: false,
         error: "Failed to delete image from storage" 
       });
     }
-
-    console.log("✅ Image deleted from Supabase, updating database...");
-
     // Update database to set dl_img_url to null
     const updated = await prisma.driverLicense.update({
       where: { driver_license_no: driverLicenseNo },
       data: { dl_img_url: null },
     });
-
-    console.log("✅ Database updated, image URL set to null");
-
     res.json({
       success: true,
       message: "License image deleted successfully",
@@ -169,7 +146,6 @@ export const deleteLicenseImage = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("❌ Error deleting license image:", error);
     res.status(500).json({ 
       success: false,
       error: "Failed to delete license image" 

@@ -27,7 +27,6 @@ export const getAllRefundsForAnalytics = async (req, res) => {
 		});
 		res.json(refunds); // Return raw data without shaping
 	} catch (error) {
-		console.error('Error fetching refunds for analytics:', error);
 		res.status(500).json({ error: 'Failed to fetch refunds' });
 	}
 };
@@ -43,7 +42,6 @@ export const getRefunds = async (req, res) => {
 		});
 		res.json(refunds.map(shapeRefund));
 	} catch (error) {
-		console.error('Error fetching refunds:', error);
 		res.status(500).json({ error: 'Failed to fetch refunds' });
 	}
 };
@@ -146,9 +144,7 @@ export const createRefund = async (req, res) => {
 
 		res.status(201).json(shapeRefund(created));
 	} catch (error) {
-		console.error('Error creating refund:', error);
 		res.status(500).json({ error: 'Failed to create refund' });
 	}
 };
-
 

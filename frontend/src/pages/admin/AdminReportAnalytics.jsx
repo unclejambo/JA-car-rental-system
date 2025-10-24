@@ -93,9 +93,11 @@ export default function AdminReportAnalytics() {
   useEffect(() => {
     if (location.state?.primaryView) {
       setPrimaryView(location.state.primaryView);
-      // If navigating to topCustomers, also update the topCategory
+      // Update topCategory based on the primaryView
       if (location.state.primaryView === 'topCustomers') {
         setTopCategory('customers');
+      } else if (location.state.primaryView === 'topCars') {
+        setTopCategory('cars');
       }
     }
   }, [location.state]);

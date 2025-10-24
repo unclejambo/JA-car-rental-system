@@ -383,6 +383,7 @@ function AdminDashboard() {
                       <Button
                         component={Link}
                         to="/report-analytics"
+                        state={{ primaryView: 'topCars' }}
                         variant="contained"
                         fullWidth
                         sx={{
@@ -580,7 +581,7 @@ function AdminDashboard() {
                     py: { xs: 1, md: 1.5 },
                   }}
                 >
-                  View All Customers
+                  View All Top Customers
                 </Button>
               </CardContent>
             </Card>

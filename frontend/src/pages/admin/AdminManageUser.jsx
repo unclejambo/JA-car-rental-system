@@ -127,7 +127,6 @@ export default function AdminManageUser() {
 
         setRows(formattedData);
       } catch (err) {
-        console.error('Error fetching data:', err);
         setError('Failed to load data. Please try again later.');
       } finally {
         setLoading(false);

@@ -12,7 +12,6 @@ export const useCarStore = create((set, get) => ({
       set({ cars: response.data });
       return response.data;
     } catch (error) {
-      console.error('Error fetching cars:', error);
       throw error;
     }
   },
@@ -27,7 +26,6 @@ export const useCarStore = create((set, get) => ({
       await get().fetchCars();
       return response.data;
     } catch (error) {
-      console.error('Error adding car:', error);
       throw error;
     }
   },
@@ -42,7 +40,6 @@ export const useCarStore = create((set, get) => ({
       await get().fetchCars();
       return response.data;
     } catch (error) {
-      console.error('Error updating car:', error);
       throw error;
     }
   },
@@ -53,7 +50,6 @@ export const useCarStore = create((set, get) => ({
       await axios.delete(`${API_BASE}/cars/${carId}`);
       await get().fetchCars();
     } catch (error) {
-      console.error('Error deleting car:', error);
       throw error;
     }
   },

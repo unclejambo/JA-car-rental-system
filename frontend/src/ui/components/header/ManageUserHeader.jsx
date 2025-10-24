@@ -1,7 +1,6 @@
 import { Box, Button } from '@mui/material';
 
 const ManageUserHeader = ({ activeTab = 'CUSTOMER', onTabChange, userType }) => {
-  console.log('Debug - ManageUserHeader userType:', userType);
   // Filter tabs based on user role - staff can only see CUSTOMER tab
   const getAllTabs = () => {
     if (userType === 'staff') {

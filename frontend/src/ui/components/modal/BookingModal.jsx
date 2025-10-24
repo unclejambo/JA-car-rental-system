@@ -135,12 +135,10 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
     if (!car?.car_id) return;
     
     try {
-      console.log('Fetching available dates for car:', car.car_id);
       const response = await fetch(`${API_BASE}/api/cars/${car.car_id}/available-dates`);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Available dates data:', data);
         setAvailableDates(data);
         
         // Set minimum date based on availability
@@ -149,10 +147,8 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
           setFormData(prev => ({ ...prev, startDate: nextDate }));
         }
       } else {
-        console.error('Failed to fetch available dates:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching available dates:', error);
     }
   };
 
@@ -160,37 +156,29 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
     if (!car?.car_id) return;
     
     try {
-      console.log('🔍 Fetching unavailable periods for car:', car.car_id);
       const response = await fetch(`${API_BASE}/cars/${car.car_id}/unavailable-periods`);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('📅 Unavailable periods data:', data);
         setUnavailablePeriods(data.unavailable_periods || []);
       } else {
-        console.error('❌ Failed to fetch unavailable periods:', response.status);
         setUnavailablePeriods([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching unavailable periods:', error);
       setUnavailablePeriods([]);
     }
   };
 
   const fetchDrivers = async () => {
     try {
-      console.log('Fetching drivers...');
       const response = await authenticatedFetch(`${API_BASE}/drivers`);
-      console.log('Drivers response status:', response.status);
       
       if (response.ok) {
         const response_data = await response.json();
-        console.log('Drivers data received:', response_data);
         // Handle paginated response - extract data array
         const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
         // Filter out driver ID 1 (DEFAULT FOR SELFDRIVE) from customer-facing list
         const filteredDrivers = data.filter(driver => driver.drivers_id !== 1 && driver.driver_id !== 1);
-        console.log('Filtered drivers (excluding DEFAULT FOR SELFDRIVE):', filteredDrivers.length);
         
         // Add availability status to each driver
         const driversWithAvailability = filteredDrivers.map(driver => ({
@@ -202,39 +190,32 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         setDrivers(driversWithAvailability);
       } else {
         const errorText = await response.text();
-        console.error('Failed to fetch drivers:', response.status, errorText);
         setError('Failed to load available drivers. Please try again.');
       }
     } catch (error) {
-      console.error('Error fetching drivers:', error);
       setError('Failed to load available drivers. Please try again.');
     }
   };
 
   const fetchCustomerData = async () => {
     try {
-      console.log('Fetching customer data...');
       const response = await authenticatedFetch(`${API_BASE}/api/customers/me`);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Customer data received:', data);
         setCustomerData(data);
         
         // Check if customer has driver license
         const hasLicense = data.driver_license_no && data.driver_license_no.trim() !== '';
         setHasDriverLicense(hasLicense);
-        console.log('Customer has driver license:', hasLicense);
         
         // If no license, disable self-drive by default
         if (!hasLicense) {
           setIsSelfService(false);
         }
       } else {
-        console.error('Failed to fetch customer data:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching customer data:', error);
     }
   };
 
@@ -250,7 +231,6 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       }
       return false;
     } catch (error) {
-      console.error('Error checking driver availability:', error);
       return false;
     }
   };
@@ -260,7 +240,6 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       return;
     }
 
-    console.log('🔍 Checking driver availability for dates:', formData.startDate, '-', formData.endDate);
 
     // Update each driver's availability
     const updatedDrivers = await Promise.all(
@@ -268,7 +247,6 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         const driverId = driver.drivers_id || driver.driver_id;
         const isAvailable = await checkDriverAvailability(driverId, formData.startDate, formData.endDate);
         
-        console.log(`Driver ${driver.first_name} ${driver.last_name} (ID: ${driverId}):`, isAvailable ? '✅ Available' : '❌ Unavailable');
         
         return {
           ...driver,
@@ -652,7 +630,6 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         setFees(feesData);
       }
     } catch (error) {
-      console.error('Error fetching fees:', error);
       // Keep default fees if fetch fails
     }
   };

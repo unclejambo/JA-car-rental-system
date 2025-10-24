@@ -7,7 +7,7 @@ import { sendCarAvailabilityNotification } from '../utils/notificationService.js
 export const getCarWaitlist = async (req, res) => {
   try {
     const carId = parseInt(req.params.carId);
-    
+
     const waitlistEntries = await prisma.waitlist.findMany({
       where: { 
         car_id: carId,
@@ -26,10 +26,9 @@ export const getCarWaitlist = async (req, res) => {
         created_at: 'asc'
       }
     });
-    
+
     res.json(waitlistEntries);
   } catch (error) {
-    console.error('Error fetching waitlist:', error);
     res.status(500).json({ error: 'Failed to fetch waitlist' });
   }
 };
@@ -41,7 +40,7 @@ export const joinWaitlist = async (req, res) => {
   try {
     const carId = parseInt(req.params.carId);
     const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
-    
+
     if (!customerId) {
       return res.status(401).json({ error: 'Customer authentication required' });
     }
@@ -65,7 +64,7 @@ export const joinWaitlist = async (req, res) => {
       if (existingEntry.status === 'waiting') {
         return res.status(400).json({ error: 'You are already on the waitlist for this car' });
       }
-      
+
       // If previously notified, reactivate the entry
       if (existingEntry.status === 'notified') {
         waitlistEntry = await prisma.waitlist.update({
@@ -134,7 +133,6 @@ export const joinWaitlist = async (req, res) => {
       reactivated: isReactivated
     });
   } catch (error) {
-    console.error('Error joining waitlist:', error);
     res.status(500).json({ error: 'Failed to join waitlist' });
   }
 };
@@ -145,7 +143,7 @@ export const leaveWaitlist = async (req, res) => {
   try {
     const waitlistId = parseInt(req.params.waitlistId);
     const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
-    
+
     if (!customerId) {
       return res.status(401).json({ error: 'Customer authentication required' });
     }
@@ -174,7 +172,6 @@ export const leaveWaitlist = async (req, res) => {
       message: 'Successfully removed from waitlist' 
     });
   } catch (error) {
-    console.error('Error leaving waitlist:', error);
     res.status(500).json({ error: 'Failed to leave waitlist' });
   }
 };
@@ -185,7 +182,7 @@ export const leaveWaitlist = async (req, res) => {
 export const getMyWaitlistEntries = async (req, res) => {
   try {
     const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
-    
+
     if (!customerId) {
       return res.status(401).json({ error: 'Customer authentication required' });
     }
@@ -213,7 +210,6 @@ export const getMyWaitlistEntries = async (req, res) => {
 
     res.json(waitlistEntries);
   } catch (error) {
-    console.error('Error fetching customer waitlist:', error);
     res.status(500).json({ error: 'Failed to fetch waitlist entries' });
   }
 };
@@ -223,8 +219,6 @@ export const getMyWaitlistEntries = async (req, res) => {
 // @access  Internal
 export const notifyWaitlistOnCarAvailable = async (carId) => {
   try {
-    console.log(`\n🔔 Checking waitlist for car ${carId}...`);
-    
     // Get all waiting customers for this car who haven't been notified yet
     const waitingCustomers = await prisma.waitlist.findMany({
       where: {
@@ -257,14 +251,10 @@ export const notifyWaitlistOnCarAvailable = async (carId) => {
         created_at: 'asc' // First come, first served
       }
     });
-    
+
     if (waitingCustomers.length === 0) {
-      console.log(`   ℹ️  No customers waiting for car ${carId}`);
       return { success: true, notified: 0 };
     }
-    
-    console.log(`   📋 Found ${waitingCustomers.length} customer(s) waiting for this car`);
-    
     const results = {
       total: waitingCustomers.length,
       notified: 0,
@@ -272,14 +262,13 @@ export const notifyWaitlistOnCarAvailable = async (carId) => {
       skipped: 0,
       details: []
     };
-    
+
     // Send notifications to all waiting customers
     for (const entry of waitingCustomers) {
       const { Customer: customer, Car: car } = entry;
-      
+
       // Skip if customer has notifications disabled
       if (!customer.isRecUpdate || customer.isRecUpdate === 0) {
-        console.log(`   ⏭️  Skipping customer ${customer.customer_id} (notifications disabled)`);
         results.skipped++;
         results.details.push({
           customer_id: customer.customer_id,
@@ -288,10 +277,10 @@ export const notifyWaitlistOnCarAvailable = async (carId) => {
         });
         continue;
       }
-      
+
       // Send notification
       const notificationResult = await sendCarAvailabilityNotification(customer, car);
-      
+
       // Update waitlist entry
       try {
         await prisma.waitlist.update({
@@ -303,7 +292,7 @@ export const notifyWaitlistOnCarAvailable = async (carId) => {
             notification_success: notificationResult.success
           }
         });
-        
+
         if (notificationResult.success) {
           results.notified++;
           results.details.push({
@@ -320,7 +309,6 @@ export const notifyWaitlistOnCarAvailable = async (carId) => {
           });
         }
       } catch (updateError) {
-        console.error(`   ❌ Failed to update waitlist entry ${entry.waitlist_id}:`, updateError);
         results.failed++;
         results.details.push({
           customer_id: customer.customer_id,
@@ -329,20 +317,12 @@ export const notifyWaitlistOnCarAvailable = async (carId) => {
         });
       }
     }
-    
-    console.log(`\n✅ Notification summary for car ${carId}:`);
-    console.log(`   Total: ${results.total}`);
-    console.log(`   Notified: ${results.notified}`);
-    console.log(`   Failed: ${results.failed}`);
-    console.log(`   Skipped: ${results.skipped}\n`);
-    
     return {
       success: true,
       ...results
     };
-    
+
   } catch (error) {
-    console.error('❌ Error notifying waitlist:', error);
     return {
       success: false,
       error: error.message,

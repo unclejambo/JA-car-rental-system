@@ -120,7 +120,6 @@ export default function AdminSchedulePage() {
 
       setSchedule(filtered);
     } catch (error) {
-      console.error('Error fetching schedules:', error);
       setSchedule([]); // fallback to empty list so UI can render
     } finally {
       setLoading(false);

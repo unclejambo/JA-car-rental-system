@@ -28,7 +28,7 @@ export const generateOTP = () => {
 export const formatPhoneNumber = (phone) => {
   // Remove all non-numeric characters
   let cleaned = phone.replace(/\D/g, '');
-  
+
   // Handle different phone number formats
   if (cleaned.startsWith('0')) {
     // 09XX XXX XXXX -> +639XXXXXXXXX
@@ -43,7 +43,7 @@ export const formatPhoneNumber = (phone) => {
     // Assume it's missing country code
     cleaned = '63' + cleaned;
   }
-  
+
   return '+' + cleaned;
 };
 
@@ -54,7 +54,7 @@ export const formatPhoneNumber = (phone) => {
  */
 export const isValidPhilippinePhone = (phone) => {
   const cleaned = phone.replace(/\D/g, '');
-  
+
   // Check if it matches Philippine number patterns
   const patterns = [
     /^09\d{9}$/,          // 09XX XXX XXXX
@@ -62,7 +62,7 @@ export const isValidPhilippinePhone = (phone) => {
     /^639\d{9}$/,         // 639XX XXX XXXX
     /^\+639\d{9}$/,       // +639XX XXX XXXX
   ];
-  
+
   return patterns.some(pattern => pattern.test(phone));
 };
 
@@ -80,12 +80,6 @@ export const sendOTPSMS = async (phoneNumber, purpose = 'verification') => {
 
     // Format phone number
     const formattedPhone = formatPhoneNumber(phoneNumber);
-    
-    console.log('📱 Sending OTP SMS:', {
-      to: formattedPhone,
-      purpose: purpose
-    });
-
     // Create message template with {otp} placeholder
     // Semaphore will generate the OTP and replace {otp} with it
     let message = '';
@@ -118,14 +112,6 @@ export const sendOTPSMS = async (phoneNumber, purpose = 'verification') => {
 
     if (response.ok && Array.isArray(data) && data.length > 0) {
       const otpResponse = data[0];
-      console.log('✅ OTP SMS sent successfully:', {
-        message_id: otpResponse.message_id,
-        recipient: otpResponse.recipient,
-        status: otpResponse.status,
-        network: otpResponse.network,
-        code: otpResponse.code
-      });
-      
       return {
         success: true,
         messageId: otpResponse.message_id,
@@ -136,17 +122,13 @@ export const sendOTPSMS = async (phoneNumber, purpose = 'verification') => {
         data: otpResponse
       };
     } else {
-      console.error('❌ OTP SMS sending failed:', data);
       throw new Error(data.message || data.error || 'Failed to send OTP SMS');
     }
 
   } catch (error) {
-    console.error('❌ SMS Service Error:', error);
-    
     // In development mode, generate and log an OTP for testing
     if (process.env.NODE_ENV === 'development') {
       const devOtp = generateOTP();
-      console.log(`🧪 Development Mode: Generated OTP Code for ${phoneNumber} is: ${devOtp}`);
       return {
         success: true,
         messageId: 'dev-mode-' + Date.now(),
@@ -155,7 +137,7 @@ export const sendOTPSMS = async (phoneNumber, purpose = 'verification') => {
         otp: devOtp
       };
     }
-    
+
     throw error;
   }
 };
@@ -177,7 +159,7 @@ export const sendVerificationSuccessSMS = async (phoneNumber, userName) => {
 
     // Use regular messages endpoint for non-OTP messages
     const MESSAGES_URL = 'https://api.semaphore.co/api/v4/messages';
-    
+
     const formData = new URLSearchParams();
     formData.append('apikey', SEMAPHORE_API_KEY);
     formData.append('number', formattedPhone);
@@ -193,18 +175,15 @@ export const sendVerificationSuccessSMS = async (phoneNumber, userName) => {
     });
 
     const data = await response.json();
-    
+
     if (response.ok) {
-      console.log('✅ Verification success SMS sent');
       return { success: true, data };
     } else {
-      console.error('❌ Failed to send success SMS:', data);
       // Don't throw error for notification SMS
       return { success: false, data };
     }
 
   } catch (error) {
-    console.error('❌ Error sending success SMS:', error);
     return { success: false, error: error.message };
   }
 };

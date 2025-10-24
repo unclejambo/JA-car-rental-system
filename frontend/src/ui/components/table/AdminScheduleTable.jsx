@@ -92,12 +92,10 @@ const AdminScheduleTable = ({
       const bookingId =
         cancelDialog.booking.reservationId ?? cancelDialog.booking.booking_id;
 
-      console.log('Cancelling booking:', bookingId);
 
       // Call the admin cancel booking API
       const result = await bookingAPI.adminCancelBooking(bookingId, logout);
 
-      console.log('Cancel result:', result);
 
       showMessage('Booking cancelled successfully!', 'success');
 
@@ -107,7 +105,6 @@ const AdminScheduleTable = ({
       // Refresh the schedule data
       updateReservationStatus(bookingId, 'Cancelled');
     } catch (error) {
-      console.error('Error cancelling booking:', error);
       showMessage(error.message || 'Failed to cancel booking', 'error');
     }
   };
@@ -122,7 +119,6 @@ const AdminScheduleTable = ({
       const day = String(phDate.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     } catch (error) {
-      console.error('Error formatting date:', error);
       return String(iso);
     }
   };
@@ -133,7 +129,6 @@ const AdminScheduleTable = ({
     try {
       return formatPhilippineTime(iso);
     } catch (error) {
-      console.error('Error formatting time:', error);
       return String(iso);
     }
   };
@@ -305,7 +300,6 @@ const AdminScheduleTable = ({
             actionType
           );
         } catch (error) {
-          console.error('Error updating status:', error);
         }
       };
 
@@ -387,12 +381,6 @@ const AdminScheduleTable = ({
               variant="contained"
               color="success"
               onClick={() => {
-                console.log('🌍 Globe icon clicked!');
-                console.log('  Row data:', params.row);
-                console.log(
-                  '  Car ID:',
-                  params.row.car_id || params.row.carId || 'NOT FOUND'
-                );
                 if (onOpenGPS) {
                   onOpenGPS(params.row);
                 }

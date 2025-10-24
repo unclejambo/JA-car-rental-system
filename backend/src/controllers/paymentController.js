@@ -45,7 +45,6 @@ export const getPayments = async (req, res) => {
     });
     res.json(payments.map(shapePayment));
   } catch (error) {
-    console.error("Error fetching payments:", error);
     res.status(500).json({ error: "Failed to fetch payments" });
   }
 };
@@ -77,7 +76,6 @@ export const recalculatePaymentBalances = async (bookingId) => {
       });
     }
   } catch (error) {
-    console.error("Error recalculating payment balances:", error);
   }
 };
 
@@ -260,9 +258,6 @@ export const createPayment = async (req, res) => {
     // For GCash, notification is sent when admin approves via confirmBooking
     if (payment_method === "Cash") {
       try {
-        console.log(
-          "💰 Sending payment received notification for Cash payment..."
-        );
         await sendPaymentReceivedNotification(
           created,
           {
@@ -281,15 +276,12 @@ export const createPayment = async (req, res) => {
           updatedBooking,
           "cash"
         );
-        console.log("✅ Cash payment received notification sent");
       } catch (notificationError) {
-        console.error("Error sending payment notification:", notificationError);
         // Don't fail the payment creation if notification fails
       }
 
       // Send admin notification for cash payment recorded
       try {
-        console.log("💰 Sending admin notification for Cash payment...");
         await sendAdminPaymentCompletedNotification(
           created,
           {
@@ -314,12 +306,7 @@ export const createPayment = async (req, res) => {
           },
           "cash"
         );
-        console.log("✅ Admin cash payment notification sent");
       } catch (adminNotificationError) {
-        console.error(
-          "Error sending admin cash payment notification:",
-          adminNotificationError
-        );
         // Don't fail the payment creation if notification fails
       }
     }
@@ -327,9 +314,6 @@ export const createPayment = async (req, res) => {
     // Send booking confirmation notification if booking was just confirmed
     if (isNewlyConfirmed) {
       try {
-        console.log(
-          "📧 Payment received! Sending booking confirmation notification..."
-        );
         await sendBookingConfirmationNotification(
           updatedBooking,
           {
@@ -346,19 +330,13 @@ export const createPayment = async (req, res) => {
             license_plate: updatedBooking.car.license_plate,
           }
         );
-        console.log("✅ Booking confirmation notification sent after payment");
       } catch (notificationError) {
-        console.error(
-          "Error sending confirmation notification:",
-          notificationError
-        );
         // Don't fail the payment creation if notification fails
       }
     }
 
     res.status(201).json(shapePayment(created));
   } catch (error) {
-    console.error("Error creating payment:", error);
     res.status(500).json({ error: "Failed to create payment" });
   }
 };
@@ -432,7 +410,6 @@ export const deletePayment = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error deleting payment:", error);
     res.status(500).json({ error: "Failed to delete payment" });
   }
 };
@@ -464,13 +441,6 @@ export const deletePaymentByBookingId = async (req, res) => {
 
     // Get the latest payment
     const latestPayment = booking.payments[0];
-
-    console.log("Deleting payment:", {
-      bookingId,
-      paymentId: latestPayment.payment_id,
-      amount: latestPayment.amount,
-    });
-
     // Calculate total paid after removing this payment
     const totalPaidAfterDeletion = booking.payments
       .filter((p) => p.payment_id !== latestPayment.payment_id)
@@ -520,16 +490,6 @@ export const deletePaymentByBookingId = async (req, res) => {
 
     // Recalculate balances for remaining payments
     await recalculatePaymentBalances(bookingId);
-
-    console.log("Payment deleted successfully:", {
-      bookingId,
-      deletedPaymentId: latestPayment.payment_id,
-      newBalance,
-      totalPaidAfterDeletion,
-      newPaymentStatus,
-      newBookingStatus,
-    });
-
     res.status(200).json({
       message: "Payment deleted successfully",
       deleted_payment: latestPayment,
@@ -542,7 +502,6 @@ export const deletePaymentByBookingId = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error deleting payment by booking ID:", error);
     res.status(500).json({ error: "Failed to delete payment" });
   }
 };
@@ -550,8 +509,6 @@ export const deletePaymentByBookingId = async (req, res) => {
 // Utility function to fix all booking status inconsistencies
 export const fixAllBookingStatusInconsistencies = async (req, res) => {
   try {
-    console.log("🔄 Starting booking status consistency check...");
-
     // Get all bookings with their payments
     const bookings = await prisma.booking.findMany({
       include: {
@@ -608,9 +565,6 @@ export const fixAllBookingStatusInconsistencies = async (req, res) => {
         });
       }
     }
-
-    console.log(`✅ Fixed ${updatedCount} booking status inconsistencies`);
-
     res.status(200).json({
       message: `Fixed ${updatedCount} booking status inconsistencies`,
       updated_count: updatedCount,
@@ -618,7 +572,6 @@ export const fixAllBookingStatusInconsistencies = async (req, res) => {
       updates: results,
     });
   } catch (error) {
-    console.error("Error fixing booking status inconsistencies:", error);
     res
       .status(500)
       .json({ error: "Failed to fix booking status inconsistencies" });
@@ -717,15 +670,6 @@ export const processBookingPayment = async (req, res) => {
 
     const totalPaid = allPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
     const newBalance = (booking.total_amount || 0) - totalPaid;
-
-    console.log("💰 Payment calculation:", {
-      booking_id,
-      total_amount: booking.total_amount,
-      totalPaid,
-      newBalance,
-      payment_status: newBalance <= 0 ? "Paid" : "Unpaid",
-    });
-
     // Don't auto-confirm booking - admin must manually confirm via confirmBooking endpoint
     // Payment sets isPay=true to signal admin that payment needs approval
     // IMPORTANT: Never change status if booking is 'In Progress' (customer is using the car)
@@ -750,9 +694,6 @@ export const processBookingPayment = async (req, res) => {
     // Cash payments are recorded by admin/staff, so no request notification needed
     if (payment_method === "GCash") {
       try {
-        console.log(
-          "💳 Sending GCash payment request notification to admin..."
-        );
         await sendAdminPaymentRequestNotification(
           {
             payment_id: payment.payment_id,
@@ -782,12 +723,7 @@ export const processBookingPayment = async (req, res) => {
             license_plate: booking.car.license_plate,
           }
         );
-        console.log("✅ Admin GCash payment request notification sent");
       } catch (adminNotificationError) {
-        console.error(
-          "Error sending admin payment notification:",
-          adminNotificationError
-        );
         // Don't fail the payment request if notification fails
       }
     }
@@ -800,7 +736,6 @@ export const processBookingPayment = async (req, res) => {
       booking_status: bookingStatus,
     });
   } catch (error) {
-    console.error("Error processing payment:", error);
     res.status(500).json({ error: "Failed to process payment" });
   }
 };
@@ -886,7 +821,6 @@ export const getMyPayments = async (req, res) => {
 
     res.json(buildPaginationResponse(shapedPayments, total, page, pageSize));
   } catch (error) {
-    console.error("Error fetching customer payments:", error);
     res.status(500).json({ error: "Failed to fetch payment history" });
   }
 };

@@ -2,9 +2,6 @@ import prisma from '../config/prisma.js';
 
 export const createReleasePayment = async (req, res) => {
   try {
-    console.log('--- CREATE RELEASE PAYMENT REQUEST ---');
-    console.log('Request body:', req.body);
-    
     const { 
       booking_id, 
       customer_id, 
@@ -15,7 +12,6 @@ export const createReleasePayment = async (req, res) => {
     } = req.body;
 
     if (!booking_id || !customer_id || amount == null) {
-      console.log('Missing required fields:', { booking_id, customer_id, amount });
       return res.status(400).json({ 
         error: 'booking_id, customer_id, and amount are required' 
       });
@@ -41,7 +37,7 @@ export const createReleasePayment = async (req, res) => {
 
     // Calculate current total paid (before this payment)
     const currentTotalPaid = booking.payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-    
+
     // Calculate running balance after this payment
     const paymentAmount = Number(amount);
     const newTotalPaid = currentTotalPaid + paymentAmount;
@@ -119,7 +115,6 @@ export const createReleasePayment = async (req, res) => {
     res.status(201).json(response);
 
   } catch (error) {
-    console.error('Error creating release payment:', error);
     res.status(500).json({ 
       error: 'Failed to create release payment',
       details: error.message 
@@ -184,7 +179,6 @@ export const getReleasePayments = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching release payments:', error);
     res.status(500).json({ 
       error: 'Failed to fetch release payments',
       details: error.message 

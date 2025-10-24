@@ -149,12 +149,6 @@ export default function AddRefundModal({ show, onClose }) {
     const list = bookings.filter(
       (b) => b.customer_id === custId && b.booking_status !== 'Pending'
     );
-    console.log(
-      '[AddRefundModal] Filtered bookings for customer:',
-      custId,
-      'Non-pending bookings:',
-      list
-    );
     setBookingOptions(list);
     setFormData((fd) =>
       list.some((b) => b.booking_id === Number(fd.bookingId))
@@ -248,7 +242,6 @@ export default function AddRefundModal({ show, onClose }) {
       }
       onClose?.();
     } catch (err) {
-      console.error('Create refund failed', err);
       setErrors((prev) => ({ ...prev, form: err.message }));
     } finally {
       setSubmitting(false);
@@ -295,7 +288,6 @@ export default function AddRefundModal({ show, onClose }) {
           }
         }
       } catch (err) {
-        console.error('Failed to fetch customers/bookings/fees', err);
       } finally {
         if (!cancel) setLoadingData(false);
       }

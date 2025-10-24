@@ -173,7 +173,6 @@ export default function PaymentModal({ open, onClose, booking, onPaymentSuccess 
         setError(errorData.error || 'Failed to process payment');
       }
     } catch (error) {
-      console.error('Error processing payment:', error);
       setError('Failed to process payment. Please try again.');
     } finally {
       setLoading(false);

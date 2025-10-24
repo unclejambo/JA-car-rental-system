@@ -13,31 +13,29 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  */
 const refreshCarImageUrl = async (carImgUrl) => {
   if (!carImgUrl) return null;
-  
+
   try {
     // Extract the path from the existing URL
     const urlParts = carImgUrl.split('/');
     const bucketIndex = urlParts.findIndex(part => part === 'licenses');
-    
+
     if (bucketIndex === -1) return carImgUrl;
-    
+
     const encodedPath = urlParts.slice(bucketIndex + 1).join('/').split('?')[0];
-    
+
     // Decode URL encoding (e.g., %20 -> space)
     const path = decodeURIComponent(encodedPath);
-    
+
     const { data: signedUrlData, error } = await supabase.storage
       .from('licenses')
       .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year expiration
-    
+
     if (error) {
-      console.error('Error refreshing car image signed URL:', error);
       return carImgUrl;
     }
-    
+
     return signedUrlData.signedUrl;
   } catch (error) {
-    console.error('Error parsing car image URL:', error);
     return carImgUrl;
   }
 };
@@ -51,18 +49,17 @@ const extractStoragePath = (url) => {
     // Public: https://...supabase.co/storage/v1/object/public/licenses/car_img/filename
     const urlParts = url.split('/');
     const bucketIndex = urlParts.findIndex(part => part === 'licenses');
-    
+
     if (bucketIndex === -1) return null;
-    
+
     // Get everything after 'licenses/', remove query params
     const encodedPath = urlParts.slice(bucketIndex + 1).join('/').split('?')[0];
-    
+
     // Decode URL encoding (e.g., %20 -> space)
     const decodedPath = decodeURIComponent(encodedPath);
-    
+
     return decodedPath;
   } catch (error) {
-    console.error('Error extracting storage path:', error);
     return null;
   }
 };
@@ -70,38 +67,22 @@ const extractStoragePath = (url) => {
 // Helper function to delete image from Supabase storage
 const deleteImageFromStorage = async (imageUrl) => {
   if (!imageUrl) {
-    console.log('⚠️ No image URL provided for deletion');
     return;
   }
-  
+
   try {
-    console.log('🗑️ Attempting to delete old car image...');
-    console.log('📎 Original URL:', imageUrl);
-    
     const path = extractStoragePath(imageUrl);
-    console.log('📁 Extracted path:', path);
-    
     if (!path) {
-      console.warn('❌ Could not extract path from URL:', imageUrl);
       return;
     }
-
-    console.log('🔍 Attempting to remove from bucket "licenses" with path:', path);
-    
     const { data, error } = await supabase.storage
       .from('licenses')
       .remove([path]);
 
     if (error) {
-      console.error('❌ Supabase deletion error:', JSON.stringify(error, null, 2));
-      console.error('Error details:', error);
     } else {
-      console.log('✅ Old car image deleted successfully!');
-      console.log('🗑️ Deleted data:', data);
     }
   } catch (error) {
-    console.error('❌ Exception during deletion:', error);
-    console.error('Error stack:', error.stack);
   }
 };
 
@@ -117,10 +98,10 @@ export const getCars = async (req, res) => {
     const { page, pageSize, skip } = getPaginationParams(req);
     const { sortBy, sortOrder } = getSortingParams(req, 'car_id', 'asc');
     const search = getSearchParam(req);
-    
+
     // Build where clause
     const where = {};
-    
+
     // Search filter (make or model)
     if (search) {
       where.OR = [
@@ -129,12 +110,12 @@ export const getCars = async (req, res) => {
         { license_plate: { contains: search, mode: 'insensitive' } },
       ];
     }
-    
+
     // Status filter
     if (req.query.status) {
       where.car_status = req.query.status;
     }
-    
+
     // Car type filter
     if (req.query.car_type) {
       where.car_type = req.query.car_type;
@@ -150,7 +131,7 @@ export const getCars = async (req, res) => {
       take: pageSize,
       orderBy: { [sortBy]: sortOrder },
     });
-    
+
     // Refresh signed URLs for car images
     const carsWithFreshUrls = await Promise.all(
       cars.map(async (car) => {
@@ -160,10 +141,9 @@ export const getCars = async (req, res) => {
         return car;
       })
     );
-    
+
     res.json(buildPaginationResponse(carsWithFreshUrls, total, page, pageSize));
   } catch (error) {
-    console.error('Error fetching cars:', error);
     res.status(500).json({ error: 'Failed to fetch cars' });
   }
 };
@@ -183,7 +163,7 @@ export const getAvailableCars = async (req, res) => {
         car_id: 'asc'
       }
     });
-    
+
     // Refresh signed URLs for car images
     const carsWithFreshUrls = await Promise.all(
       cars.map(async (car) => {
@@ -193,10 +173,9 @@ export const getAvailableCars = async (req, res) => {
         return car;
       })
     );
-    
+
     res.json(carsWithFreshUrls);
   } catch (error) {
-    console.error('Error fetching available cars:', error);
     res.status(500).json({ error: 'Failed to fetch available cars' });
   }
 };
@@ -209,13 +188,12 @@ export const getCarGps = async (req, res) => {
   try {
     const car = await prisma.car.findUnique({ where: { car_id: carId } });
     if (!car) return res.status(404).json({ error: 'Car not found' });
-    
+
     res.json({
       gpsDeviceId: car.gpsDeviceId,
       message: 'GPS integration coming soon!',
     });
   } catch (error) {
-    console.error('Error fetching car GPS:', error);
     res.status(500).json({ error: 'Failed to fetch car GPS' });
   }
 };
@@ -242,13 +220,11 @@ export const createCar = async (req, res) => {
 
     // Handle file upload if image is provided
     if (req.file) {
-      console.log('🚀 Uploading new car image to Supabase');
-      
       const file = req.file;
       const timestamp = Date.now();
       const fileExt = file.originalname.split('.').pop();
       const filename = `${make || 'car'}_${model || 'unknown'}_${license_plate || 'unknown'}_${timestamp}.${fileExt}`;
-      
+
       const bucket = 'licenses';
       const path = `car_img/${filename}`;
 
@@ -260,7 +236,6 @@ export const createCar = async (req, res) => {
         });
 
       if (error) {
-        console.error('Supabase upload error:', error);
         return res.status(500).json({ error: 'Failed to upload image' });
       }
 
@@ -270,12 +245,10 @@ export const createCar = async (req, res) => {
         .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year expiration
 
       if (signedUrlError) {
-        console.error('Supabase signed URL error:', signedUrlError);
         return res.status(500).json({ error: 'Failed to generate image URL' });
       }
 
       imageUrl = signedUrlData.signedUrl;
-      console.log('✅ Car image uploaded successfully');
     }
 
     const newCar = await prisma.car.create({
@@ -294,7 +267,6 @@ export const createCar = async (req, res) => {
     });
     res.status(201).json(newCar);
   } catch (error) {
-    console.error('Error creating car:', error);
     res.status(500).json({ error: 'Failed to create car' });
   }
 };
@@ -323,26 +295,18 @@ export const updateCar = async (req, res) => {
 
     // Handle file upload if new image is provided
     if (req.file) {
-      console.log('📤 New car image detected, updating...');
-      
       // Get current car data to access old image URL
       const currentCar = await prisma.car.findUnique({
         where: { car_id: carId },
         select: { car_img_url: true }
       });
-
-      console.log('📸 Current car image URL from DB:', currentCar?.car_img_url);
-
       const file = req.file;
       const timestamp = Date.now();
       const fileExt = file.originalname.split('.').pop();
       const filename = `${make || 'car'}_${model || 'unknown'}_${license_plate || 'unknown'}_${timestamp}.${fileExt}`;
-      
+
       const bucket = 'licenses';
       const path = `car_img/${filename}`;
-
-      console.log('⬆️ Uploading to Supabase:', { bucket, path });
-
       const { data, error } = await supabase.storage
         .from(bucket)
         .upload(path, file.buffer, { 
@@ -351,7 +315,6 @@ export const updateCar = async (req, res) => {
         });
 
       if (error) {
-        console.error('Supabase upload error:', error);
         return res.status(500).json({ error: 'Failed to upload image' });
       }
 
@@ -361,20 +324,14 @@ export const updateCar = async (req, res) => {
         .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year expiration
 
       if (signedUrlError) {
-        console.error('Supabase signed URL error:', signedUrlError);
         return res.status(500).json({ error: 'Failed to generate image URL' });
       }
 
       imageUrl = signedUrlData.signedUrl;
-      console.log('✅ Car image uploaded successfully');
-      console.log('🆕 New image URL:', imageUrl);
-
       // Delete old image after successful upload
       if (currentCar?.car_img_url) {
-        console.log('🔄 Now deleting old image...');
         await deleteImageFromStorage(currentCar.car_img_url);
       } else {
-        console.log('ℹ️ No old image to delete');
       }
     }
 
@@ -402,26 +359,21 @@ export const updateCar = async (req, res) => {
       where: { car_id: carId },
       data: updateData,
     });
-    
+
     // Check if car status changed to "Available" - notify waitlist
     if (car_status && car_status === 'Available' && currentCar?.car_status !== 'Available') {
-      console.log(`\n🚗 Car ${carId} status changed to "Available" - checking waitlist...`);
-      
       // Trigger waitlist notifications asynchronously (don't wait for it)
       notifyWaitlistOnCarAvailable(carId)
         .then(result => {
           if (result.success && result.notified > 0) {
-            console.log(`✅ Waitlist notification complete: ${result.notified} customer(s) notified`);
           }
         })
         .catch(error => {
-          console.error('❌ Error in waitlist notification:', error);
         });
     }
-    
+
     res.json(updatedCar);
   } catch (error) {
-    console.error('Error updating car:', error);
     res.status(500).json({ error: 'Failed to update car' });
   }
 };
@@ -432,7 +384,7 @@ export const updateCar = async (req, res) => {
 export const getCarUnavailablePeriods = async (req, res) => {
   try {
     const carId = parseInt(req.params.id);
-    
+
     // Verify car exists
     const car = await prisma.car.findUnique({
       where: { car_id: carId },
@@ -468,24 +420,24 @@ export const getCarUnavailablePeriods = async (req, res) => {
 
     // Calculate unavailable periods including 1-day maintenance after each booking
     const unavailablePeriods = getUnavailablePeriods(bookings, 1);
-    
+
     // Get today's date to determine if booking is current or future
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     // Format response with additional details
     const formattedPeriods = unavailablePeriods.map(period => {
       const startDate = new Date(period.start_date);
       const endDate = new Date(period.end_date);
       startDate.setHours(0, 0, 0, 0);
       endDate.setHours(0, 0, 0, 0);
-      
+
       // Determine if this is a current rental (today is between start and end)
       const isCurrentlyRented = today >= startDate && today <= endDate && !period.is_maintenance;
-      
+
       // Find the booking to get its status
       const booking = bookings.find(b => b.booking_id === period.booking_id);
-      
+
       return {
         start_date: period.start_date,
         end_date: period.end_date,
@@ -511,7 +463,6 @@ export const getCarUnavailablePeriods = async (req, res) => {
       active_bookings: bookings.length
     });
   } catch (error) {
-    console.error('Error fetching unavailable periods:', error);
     res.status(500).json({ error: 'Failed to fetch unavailable periods' });
   }
 };
@@ -522,7 +473,7 @@ export const getCarUnavailablePeriods = async (req, res) => {
 export const deleteCar = async (req, res) => {
   try {
     const carId = parseInt(req.params.id);
-    
+
     // Get car data to access image URL before deletion
     const car = await prisma.car.findUnique({
       where: { car_id: carId },
@@ -545,7 +496,6 @@ export const deleteCar = async (req, res) => {
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting car:', error);
     res.status(500).json({ error: 'Failed to delete car' });
   }
 };

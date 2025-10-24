@@ -197,7 +197,6 @@ export default function PhoneVerificationModal({
         inputRefs.current[0]?.focus();
       }
     } catch (err) {
-      console.error('Verification error:', err);
       setError('Failed to verify OTP. Please try again.');
       if (onVerificationError) {
         onVerificationError(err);
@@ -246,7 +245,6 @@ export default function PhoneVerificationModal({
         }
       }
     } catch (err) {
-      console.error('Resend error:', err);
       setError('Failed to resend OTP. Please try again.');
     } finally {
       setLoading(false);

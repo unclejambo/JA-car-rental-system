@@ -34,10 +34,10 @@ export const getTransactions = async (req, res) => {
     const { page, pageSize, skip } = getPaginationParams(req);
     const { sortBy, sortOrder } = getSortingParams(req, 'transaction_id', 'desc');
     const search = getSearchParam(req);
-    
+
     // Build where clause
     const where = {};
-    
+
     // Search filter (customer name or car model)
     if (search) {
       where.OR = [
@@ -65,7 +65,6 @@ export const getTransactions = async (req, res) => {
     // Return all transactions with pagination structure maintained
     res.json(buildPaginationResponse(transactions.map(shapeTransaction), total, 1, total));
   } catch (error) {
-    console.error("Error fetching transactions:", error);
     res.status(500).json({ error: "Failed to fetch transactions" });
   }
 };
@@ -93,7 +92,6 @@ export const getMyTransactions = async (req, res) => {
 
     res.json(transactions.map(shapeTransaction));
   } catch (error) {
-    console.error("Error fetching customer transactions:", error);
     res.status(500).json({ error: "Failed to fetch transactions" });
   }
 };
@@ -133,7 +131,6 @@ export const createTransaction = async (req, res) => {
 
     res.status(201).json(shapeTransaction(created));
   } catch (error) {
-    console.error("Error creating transaction:", error);
     res.status(500).json({ error: "Failed to create transaction" });
   }
 };

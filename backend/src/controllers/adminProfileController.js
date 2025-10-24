@@ -31,13 +31,11 @@ const refreshProfileImageUrl = async (profileImgUrl) => {
       .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year expiration
 
     if (error) {
-      console.error("Error refreshing signed URL:", error);
       return profileImgUrl; // Return original URL if refresh fails
     }
 
     return signedUrlData.signedUrl;
   } catch (error) {
-    console.error("Error parsing profile image URL:", error);
     return profileImgUrl; // Return original URL if parsing fails
   }
 };
@@ -80,7 +78,6 @@ export const getAllAdminProfiles = async (req, res) => {
 
     res.json(adminsWithFreshUrls);
   } catch (error) {
-    console.error("Error fetching all admin profiles:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch admin profiles",
@@ -132,7 +129,6 @@ export const getAdminProfile = async (req, res) => {
       data: admin,
     });
   } catch (error) {
-    console.error("Error fetching admin profile:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch profile",
@@ -157,16 +153,6 @@ export const updateAdminProfile = async (req, res) => {
       currentPassword,
       profile_img_url,
     } = req.body;
-
-    console.log("🔄 Admin profile update request:", {
-      adminId,
-      first_name,
-      last_name,
-      email,
-      username,
-      profile_img_url: profile_img_url ? "URL provided" : "No URL",
-    });
-
     // Validate required fields
     if (!first_name || !last_name || !email || !username) {
       return res.status(400).json({
@@ -275,8 +261,6 @@ export const updateAdminProfile = async (req, res) => {
       data: updatedAdmin,
     });
   } catch (error) {
-    console.error("Error updating admin profile:", error);
-
     // Handle Prisma unique constraint errors
     if (error.code === "P2002") {
       const field = error.meta?.target?.[0] || "field";
@@ -354,7 +338,6 @@ export const changeAdminPassword = async (req, res) => {
       message: "Password changed successfully",
     });
   } catch (error) {
-    console.error("Error changing admin password:", error);
     res.status(500).json({
       success: false,
       message: "Failed to change password",

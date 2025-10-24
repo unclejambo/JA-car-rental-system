@@ -145,7 +145,6 @@ export default function DriverSettings() {
         throw new Error(t.message || 'Failed to fetch profile');
       }
       const result = await response.json();
-      console.log('Driver profile data:', result.data);
       if (!result.success) throw new Error(result.message || 'Failed to load');
 
       const data = result.data || {};
@@ -191,7 +190,6 @@ export default function DriverSettings() {
           'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
       );
     } catch (err) {
-      console.error('Error fetching profile:', err);
       setError(err.message || 'Failed to load profile');
     } finally {
       setLoading(false);
@@ -437,7 +435,6 @@ export default function DriverSettings() {
         setError(result.message || 'Failed to update profile');
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
       setError('Failed to update profile');
     } finally {
       setSaving(false);
@@ -475,7 +472,6 @@ export default function DriverSettings() {
 
     setLicenseImageUploading(true);
     try {
-      console.log('🚀 Uploading license image...');
 
       const formData = new FormData();
       formData.append('file', draftLicenseImage);
@@ -490,18 +486,14 @@ export default function DriverSettings() {
         }
       );
 
-      console.log('📡 Response status:', response.status);
       const result = await response.json();
-      console.log('📦 Upload response:', result);
 
       if (result.ok && result.filePath) {
-        console.log('✅ License image uploaded successfully:', result.filePath);
         return result.filePath;
       } else {
         throw new Error(result.error || result.message || 'Upload failed');
       }
     } catch (error) {
-      console.error('❌ Error uploading license image:', error);
       throw error;
     } finally {
       setLicenseImageUploading(false);
@@ -522,7 +514,6 @@ export default function DriverSettings() {
             throw new Error('Failed to upload license image');
           }
         } catch (uploadError) {
-          console.error('❌ License image upload failed:', uploadError);
           setErrorMessage('Failed to upload license image. Please try again.');
           setShowError(true);
           setSavingLicense(false);
@@ -537,7 +528,6 @@ export default function DriverSettings() {
         dl_img_url: uploadedImageUrl || licenseImage,
       };
 
-      console.log('🚀 Sending to backend:', updateData);
 
       const response = await authenticatedFetch(
         `${API_BASE}/api/driver-license/${licenseNumber}`,
@@ -551,7 +541,6 @@ export default function DriverSettings() {
       const result = await response.json();
 
       if (response.ok) {
-        console.log('✅ License updated:', result);
 
         // ✅ Update local state from backend response
         setLicenseRestrictions(result.restrictions || updateData.restrictions);
@@ -573,12 +562,10 @@ export default function DriverSettings() {
         setShowSuccess(true);
         setError(null); // Clear any errors
       } else {
-        console.error('❌ Failed to update license:', result);
         setErrorMessage(result.error || 'Failed to update license');
         setShowError(true);
       }
     } catch (error) {
-      console.error('❌ Error updating license:', error);
       setErrorMessage('Unexpected error updating license');
       setShowError(true);
     } finally {
@@ -614,7 +601,6 @@ export default function DriverSettings() {
 
     setLicenseImageUploading(true);
     try {
-      console.log('🗑️ Deleting license image...');
 
       const response = await authenticatedFetch(
         `${API_BASE}/api/driver-license/${licenseNumber}/image`,
@@ -626,7 +612,6 @@ export default function DriverSettings() {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        console.log('✅ License image deleted successfully');
 
         // Update local state to default image
         setLicenseImage(
@@ -642,7 +627,6 @@ export default function DriverSettings() {
         throw new Error(result.error || 'Failed to delete license image');
       }
     } catch (error) {
-      console.error('❌ Error deleting license image:', error);
       setErrorMessage(error.message || 'Failed to delete license image');
       setShowError(true);
     } finally {
@@ -676,7 +660,6 @@ export default function DriverSettings() {
         throw new Error(result.message || 'Failed to send OTP');
       }
     } catch (error) {
-      console.error('Error sending OTP:', error);
       setError(error.message || 'Failed to send OTP');
     }
   };
@@ -769,7 +752,6 @@ export default function DriverSettings() {
         throw new Error(result.message || 'Failed to update profile');
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
       setError(error.message || 'Failed to update profile');
     } finally {
       setSaving(false);
@@ -777,7 +759,6 @@ export default function DriverSettings() {
   };
 
   const handlePhoneVerificationError = (error) => {
-    console.error('Phone verification error:', error);
     setPendingProfileChanges(null);
     setPendingPhoneNumber('');
     setShowPhoneVerification(false);
@@ -867,7 +848,6 @@ export default function DriverSettings() {
         setShowSuccess(true);
       }
     } catch (error) {
-      console.error('Error removing image:', error);
       setError('Failed to remove profile picture');
     } finally {
       setImageUploading(false);
@@ -888,7 +868,6 @@ export default function DriverSettings() {
       formData.append('userId', driverId);
       formData.append('userType', 'driver');
 
-      console.log('🚀 Uploading profile image...');
 
       const response = await authenticatedFetch(
         `${API_BASE}/api/storage/profile-images`,
@@ -899,7 +878,6 @@ export default function DriverSettings() {
       );
 
       const result = await response.json();
-      console.log('📦 Upload response:', result);
 
       if (!response.ok || (!result.ok && !result.success)) {
         throw new Error(result.message || 'Upload failed');
@@ -914,14 +892,12 @@ export default function DriverSettings() {
         throw new Error('No image URL returned from upload');
       }
 
-      console.log('✅ Image uploaded successfully:', imageUrl);
 
       // Update the preview immediately
       setImagePreview(imageUrl);
 
       return imageUrl;
     } catch (error) {
-      console.error('Error uploading image:', error);
       setError('Failed to upload profile picture');
       return null;
     } finally {

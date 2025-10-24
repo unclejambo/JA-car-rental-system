@@ -10,10 +10,10 @@ export const getDrivers = async (req, res) => {
     const { page, pageSize, skip } = getPaginationParams(req);
     const { sortBy, sortOrder } = getSortingParams(req, 'drivers_id', 'desc');
     const search = getSearchParam(req);
-    
+
     // Build where clause
     const where = {};
-    
+
     // Search filter (name, email, or username)
     if (search) {
       where.OR = [
@@ -23,7 +23,7 @@ export const getDrivers = async (req, res) => {
         { username: { contains: search, mode: 'insensitive' } },
       ];
     }
-    
+
     // Status filter
     if (req.query.status) {
       where.status = req.query.status;
@@ -40,7 +40,7 @@ export const getDrivers = async (req, res) => {
       orderBy: { [sortBy]: sortOrder },
       include: { driver_license: true },
     });
-    
+
     // Map to plain object with expected frontend fields
     const sanitized = drivers.map((d) => ({
       ...d,
@@ -52,10 +52,9 @@ export const getDrivers = async (req, res) => {
       restriction: d.driver_license?.restrictions || null,
       expiryDate: d.driver_license?.expiry_date || null,
     }));
-    
+
     res.json(buildPaginationResponse(sanitized, total, page, pageSize));
   } catch (error) {
-    console.error("Error fetching drivers:", error);
     res.status(500).json({ error: "Failed to fetch drivers" });
   }
 };
@@ -95,7 +94,6 @@ export const getDriverById = async (req, res) => {
 
     res.json(formattedDriver);
   } catch (error) {
-    console.error("Error fetching driver:", error);
     res.status(500).json({ error: "Failed to fetch driver" });
   }
 };
@@ -188,8 +186,6 @@ export const createDriver = async (req, res) => {
       driver: driverResponse,
     });
   } catch (error) {
-    console.error("Error creating driver:", error);
-
     // Handle Prisma unique constraint errors
     if (error.code === "P2002") {
       const field = error.meta?.target?.[0] || "field";
@@ -306,8 +302,6 @@ export const updateDriver = async (req, res) => {
       driver: driverResponse,
     });
   } catch (error) {
-    console.error("Error updating driver:", error);
-
     // Handle Prisma unique constraint errors
     if (error.code === "P2002") {
       const field = error.meta?.target?.[0] || "field";
@@ -363,7 +357,6 @@ export const deleteDriver = async (req, res) => {
       message: "Driver deleted successfully",
     });
   } catch (error) {
-    console.error("Error deleting driver:", error);
     res.status(500).json({ error: "Failed to delete driver" });
   }
 };
@@ -446,7 +439,6 @@ export const checkDriverAvailability = async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Error checking driver availability:', error);
     res.status(500).json({ error: 'Failed to check driver availability' });
   }
 };

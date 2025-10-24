@@ -91,7 +91,6 @@ export default function AdminReportAnalytics() {
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (loading) {
-        console.log('Loading timeout reached, setting loading to false');
         setLoading(false);
         setError('Loading took too long. Please refresh the page.');
       }
@@ -139,24 +138,17 @@ export default function AdminReportAnalytics() {
   useEffect(() => {
     const loadYears = async () => {
       try {
-        console.log(
-          'Fetching available years from:',
-          `${API_BASE}/analytics/years`
-        );
         const authFetch = authenticatedFetch();
         const response = await authFetch(`${API_BASE}/analytics/years`);
-        console.log('Years API response status:', response.status);
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.log('Years API error response:', errorText);
           throw new Error(
             `HTTP error! status: ${response.status}, message: ${errorText}`
           );
         }
 
         const years = await response.json();
-        console.log('Available years from API:', years);
 
         // Ensure we have valid years array
         if (Array.isArray(years) && years.length > 0) {
@@ -166,7 +158,6 @@ export default function AdminReportAnalytics() {
         }
         setIsInitialLoad(false);
       } catch (err) {
-        console.error('Error fetching available years:', err);
 
         // Fallback to current year range if API fails
         const currentYear = new Date().getFullYear();
@@ -192,7 +183,6 @@ export default function AdminReportAnalytics() {
     const loadData = async () => {
       // Skip if no years available yet
       if (availableYears.length === 0) {
-        console.log('No available years yet, skipping data load');
         return;
       }
 
@@ -224,7 +214,6 @@ export default function AdminReportAnalytics() {
 
         // Handle expenses view - fetch real maintenance and refund data
         if (primaryView === 'expenses') {
-          console.log('Fetching expenses data (maintenance + refunds)');
 
           // Fetch maintenance and refunds data
           const [maintenanceRes, refundsRes] = await Promise.all([
@@ -239,8 +228,6 @@ export default function AdminReportAnalytics() {
           const maintenanceRecords = await maintenanceRes.json();
           const refundRecords = await refundsRes.json();
 
-          console.log('Maintenance records:', maintenanceRecords);
-          console.log('Refund records:', refundRecords);
 
           // Filter and aggregate data based on period
           let labels, maintenanceAggregated, refundsAggregated;
@@ -353,8 +340,6 @@ export default function AdminReportAnalytics() {
             });
           }
 
-          console.log('Aggregated maintenance data:', maintenanceAggregated);
-          console.log('Aggregated refunds data:', refundsAggregated);
 
           // Calculate totals
           const maintenanceTotal = maintenanceAggregated.reduce(
@@ -394,20 +379,16 @@ export default function AdminReportAnalytics() {
             endpoint = `/analytics/revenue?${params}`;
         }
 
-        console.log('Fetching analytics data from:', `${API_BASE}${endpoint}`);
         const response = await authFetch(`${API_BASE}${endpoint}`);
-        console.log('Analytics API response status:', response.status);
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.log('Analytics API error response:', errorText);
           throw new Error(
             `HTTP error! status: ${response.status}, message: ${errorText}`
           );
         }
 
         const data = await response.json();
-        console.log('Analytics API response data:', data);
 
         // Process data based on endpoint type
         if (primaryView === 'income') {
@@ -496,7 +477,6 @@ export default function AdminReportAnalytics() {
           }
         }
       } catch (err) {
-        console.error('Error fetching analytics data:', err);
         setError('Failed to fetch analytics data: ' + err.message);
       } finally {
         setLoading(false);
@@ -585,7 +565,6 @@ export default function AdminReportAnalytics() {
             ? ['Day 1', 'Day 2', '...']
             : DEFAULT_MONTHS;
 
-    console.log('Line chart data:', { labels, primaryView, period });
 
     if (primaryView === 'expenses') {
       // For expenses view, show two lines: maintenance and refunds
@@ -593,11 +572,6 @@ export default function AdminReportAnalytics() {
         maintenanceData.length > 0 ? maintenanceData : [];
       const refundsChartData = refundsData.length > 0 ? refundsData : [];
 
-      console.log('Expenses chart data:', {
-        maintenanceChartData,
-        refundsChartData,
-        period,
-      });
 
       return {
         labels,
@@ -623,7 +597,6 @@ export default function AdminReportAnalytics() {
     } else {
       // For income view, show single line
       const data = chartData.length > 0 ? chartData : [];
-      console.log('Income chart data:', { data, period });
 
       return {
         labels,
@@ -677,7 +650,6 @@ export default function AdminReportAnalytics() {
     const labels = hasApiData ? chartLabels : [];
     const data = hasApiData ? chartData : [];
 
-    console.log('Bar chart data:', { labels, data, topCategory, hasApiData });
 
     return {
       labels: labels,

@@ -81,7 +81,6 @@ export default function DriverSchedule() {
       const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
       setSchedules(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error fetching driver schedules:', err);
       setError('Failed to load driver schedule');
       setSchedules([]);
     } finally {

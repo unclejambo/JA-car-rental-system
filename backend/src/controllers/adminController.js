@@ -12,7 +12,6 @@ export const getAdmins = async (req, res) => {
         const sanitized = admins.map(({ password, ...a }) => ({ ...a, id: a.admin_id }));
         res.json(sanitized);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -31,7 +30,6 @@ export const getAdminById = async (req, res) => {
         const { password, ...safe } = admin;
         res.json(safe);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -82,7 +80,6 @@ export const createAdmin = async (req, res) => {
         const { password: _pw, ...safe } = admin;
         res.status(201).json(safe);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -104,7 +101,6 @@ export const updateAdmin = async (req, res) => {
         const { password: _pw, ...safe } = updated;
         res.json(safe);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -115,7 +111,6 @@ export const deleteAdmin = async (req, res) => {
         await prisma.admin.delete({ where: { admin_id: id } });
         res.status(204).send();
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };

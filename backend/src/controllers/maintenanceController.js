@@ -10,7 +10,6 @@ export const getAllMaintenanceRecords = async (req, res) => {
     });
     res.json(maintenanceRecords);
   } catch (error) {
-    console.error('Error fetching all maintenance records:', error);
     res.status(500).json({ error: 'Failed to fetch maintenance records' });
   }
 };
@@ -26,7 +25,6 @@ export const getMaintenanceRecords = async (req, res) => {
     });
     res.json(maintenanceRecords);
   } catch (error) {
-    console.error('Error fetching maintenance records:', error);
     res.status(500).json({ error: 'Failed to fetch maintenance records' });
   }
 };
@@ -68,7 +66,6 @@ export const createMaintenanceRecord = async (req, res) => {
 
     res.status(201).json(newMaintenanceRecord);
   } catch (error) {
-    console.error('Error creating maintenance record:', error);
     res.status(500).json({ error: 'Failed to create maintenance record' });
   }
 };
@@ -111,7 +108,6 @@ export const updateMaintenanceRecord = async (req, res) => {
 
     res.json(updatedMaintenanceRecord);
   } catch (error) {
-    console.error('Error updating maintenance record:', error);
     res.status(500).json({ error: 'Failed to update maintenance record' });
   }
 };

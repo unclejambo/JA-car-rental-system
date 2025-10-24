@@ -12,7 +12,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  */
 async function getSignedLicenseUrl(dl_img_url) {
   if (!dl_img_url) return null;
-  
+
   try {
     // Extract the path from the URL if it's already a full URL
     let path = dl_img_url;
@@ -21,19 +21,17 @@ async function getSignedLicenseUrl(dl_img_url) {
       // Decode any URL-encoded characters
       path = decodeURIComponent(path);
     }
-    
+
     const { data, error } = await supabase.storage
       .from('licenses')
       .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
-    
+
     if (error) {
-      console.error('Error generating signed URL:', error);
       return dl_img_url; // Return original URL as fallback
     }
-    
+
     return data.signedUrl;
   } catch (err) {
-    console.error('Exception generating signed URL:', err);
     return dl_img_url; // Return original URL as fallback
   }
 }
@@ -47,10 +45,10 @@ export const getCustomers = async (req, res) => {
     const { page, pageSize, skip } = getPaginationParams(req);
     const { sortBy, sortOrder } = getSortingParams(req, 'customer_id', 'desc');
     const search = getSearchParam(req);
-    
+
     // Build where clause
     const where = {};
-    
+
     // Search filter (name, email, or username)
     if (search) {
       where.OR = [
@@ -60,7 +58,7 @@ export const getCustomers = async (req, res) => {
         { username: { contains: search, mode: 'insensitive' } },
       ];
     }
-    
+
     // Status filter
     if (req.query.status) {
       where.status = req.query.status;
@@ -79,11 +77,10 @@ export const getCustomers = async (req, res) => {
         driver_license: true,
       },
     });
-    
+
     res.json(buildPaginationResponse(users, total, page, pageSize));
 
   } catch (error) {
-    console.error("Error fetching users:", error);
     res.status(500).json({ error: "Failed to fetch users" });
   }
 };
@@ -102,16 +99,15 @@ export const getCustomerById = async (req, res) => {
     });
 
     if (!customer) return res.status(404).json({ error: "Customer not found" });
-    
+
     // Generate signed URL for license image if it exists
     if (customer.driver_license?.dl_img_url) {
       const signedUrl = await getSignedLicenseUrl(customer.driver_license.dl_img_url);
       customer.driver_license.dl_img_url = signedUrl || customer.driver_license.dl_img_url;
     }
-    
+
     res.json(customer);
   } catch (error) {
-    console.error("Error fetching customer:", error);
     res.status(500).json({ error: "Failed to fetch customer" });
   }
 };
@@ -173,7 +169,6 @@ export const createCustomer = async (req, res) => {
         .status(409)
         .json({ error: "Record already exists (unique constraint)" });
     }
-    console.error("Error creating customer:", error);
     res.status(500).json({ error: "Failed to create customer" });
   }
 };
@@ -186,7 +181,6 @@ export const deleteCustomer = async (req, res) => {
     });
     res.status(204).send();
   } catch (error) {
-    console.error("Error deleting customer:", error);
     res.status(500).json({ error: "Failed to delete customer" });
   }
 };
@@ -233,14 +227,14 @@ export const updateCustomer = async (req, res) => {
           });
         }
       }
-      
+
       // Hash the new password
       data.password = await bcrypt.hash(data.password, 12);
     } else {
       // If no password provided or empty string, don't update it
       delete data.password;
     }
-    
+
     // Remove currentPassword from data (it's not a database field)
     delete data.currentPassword;
 
@@ -255,7 +249,6 @@ export const updateCustomer = async (req, res) => {
     const { password: _pw, ...safeCustomer } = updatedCustomer;
     res.json(safeCustomer);
   } catch (error) {
-    console.error("Error updating customer:", error);
     res.status(500).json({ error: "Failed to update customer" });
   }
 };
@@ -267,7 +260,7 @@ export const getCurrentCustomer = async (req, res) => {
   try {
     // req.user is set by authMiddleware
     const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
-    
+
     if (!customerId) {
       return res.status(401).json({ error: "Unauthorized - No customer ID found" });
     }
@@ -298,7 +291,6 @@ export const getCurrentCustomer = async (req, res) => {
 
     res.json(customer);
   } catch (error) {
-    console.error("Error fetching current customer:", error);
     res.status(500).json({ error: "Failed to fetch customer profile" });
   }
 };
@@ -309,20 +301,16 @@ export const getCurrentCustomer = async (req, res) => {
 export const updateNotificationSettings = async (req, res) => {
   try {
     const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
-    
+
     if (!customerId) {
       return res.status(401).json({ error: "Unauthorized - No customer ID found" });
     }
-    
-    console.log('🔔 Updating notification settings for customer:', customerId);
-    console.log('📝 Request body:', req.body);
-
     const { isRecUpdate } = req.body;
 
     // Validate isRecUpdate value (should be 0, 1, 2, or 3)
     const validValues = [0, 1, 2, 3];
     const parsedValue = parseInt(isRecUpdate);
-    
+
     if (!validValues.includes(parsedValue)) {
       return res.status(400).json({ 
         error: "Invalid notification setting. Must be 0 (none), 1 (SMS), 2 (Email), or 3 (Both)" 
@@ -339,15 +327,11 @@ export const updateNotificationSettings = async (req, res) => {
         isRecUpdate: true
       }
     });
-
-    console.log('✅ Notification settings updated successfully:', updatedCustomer);
-
     res.json({
       message: "Notification settings updated successfully",
       customer: updatedCustomer
     });
   } catch (error) {
-    console.error("Error updating notification settings:", error);
     res.status(500).json({ error: "Failed to update notification settings" });
   }
 };

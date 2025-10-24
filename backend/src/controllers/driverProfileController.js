@@ -11,7 +11,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  */
 async function getSignedLicenseUrl(dl_img_url) {
   if (!dl_img_url) return null;
-  
+
   try {
     // Extract the path from the URL if it's already a full URL
     let path = dl_img_url;
@@ -20,22 +20,15 @@ async function getSignedLicenseUrl(dl_img_url) {
       // Decode any URL-encoded characters
       path = decodeURIComponent(path);
     }
-    
-    console.log('Generating signed URL for path:', path);
-    
     const { data, error } = await supabase.storage
       .from('licenses')
       .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
-    
+
     if (error) {
-      console.error('Error generating signed URL:', error);
       return dl_img_url; // Return original URL as fallback
     }
-    
-    console.log('Generated signed URL:', data.signedUrl);
     return data.signedUrl;
   } catch (err) {
-    console.error('Exception generating signed URL:', err);
     return dl_img_url; // Return original URL as fallback
   }
 }
@@ -46,8 +39,6 @@ async function getSignedLicenseUrl(dl_img_url) {
 export const getDriverProfile = async (req, res) => {
   try {
     const driverId = parseInt(req.user.sub);
-    console.log("Driver profile request - driverId:", driverId);
-
     if (isNaN(driverId)) {
       return res.status(400).json({
         success: false,
@@ -100,7 +91,6 @@ export const getDriverProfile = async (req, res) => {
       data: formattedDriver,
     });
   } catch (error) {
-    console.error("Error fetching driver profile:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch profile",
@@ -275,8 +265,6 @@ export const updateDriverProfile = async (req, res) => {
       data: formattedDriver,
     });
   } catch (error) {
-    console.error("Error updating driver profile:", error);
-
     if (error.code === "P2002") {
       const field = error.meta?.target?.[0] || "field";
       return res.status(400).json({
@@ -353,7 +341,6 @@ export const changeDriverPassword = async (req, res) => {
       message: "Password changed successfully",
     });
   } catch (error) {
-    console.error("Error changing driver password:", error);
     res.status(500).json({
       success: false,
       message: "Failed to change password",

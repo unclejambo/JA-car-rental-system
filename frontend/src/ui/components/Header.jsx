@@ -96,7 +96,6 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
           }
         }
       } catch (error) {
-        console.error('Error fetching profile image:', error);
       } finally {
         setIsLoadingImage(false);
         setHasLoadedProfile(true);

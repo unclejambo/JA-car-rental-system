@@ -118,8 +118,6 @@ export default function AddPaymentModal({ show, onClose }) {
     // Filter bookings for this customer, and show all bookings (not just those with balances)
     // This allows payments to be added for any booking, including those with zero balance
     const list = bookings.filter((b) => b.customer_id === custId);
-    console.log(`📋 Bookings for customer ${custId}:`, list.length, 'found');
-    console.log('📋 Sample booking data:', list[0] || 'None');
     setBookingOptions(list);
     setFormData((fd) =>
       list.some((b) => b.booking_id === Number(fd.bookingId))
@@ -134,14 +132,6 @@ export default function AddPaymentModal({ show, onClose }) {
     if (name === 'customerName') {
       const match = findCustomerByName(value);
       next.customerId = match ? match.customer_id : undefined;
-      console.log(
-        '🔍 Customer search:',
-        value,
-        '→ Found:',
-        match
-          ? `${match.first_name} ${match.last_name} (ID: ${match.customer_id})`
-          : 'No match'
-      );
       updateBookingOptions(next.customerId);
     }
     setFormData(next);
@@ -218,7 +208,6 @@ export default function AddPaymentModal({ show, onClose }) {
       }
       onClose?.();
     } catch (err) {
-      console.error('Create payment failed', err);
       setErrors((prev) => ({ ...prev, form: err.message }));
     } finally {
       setSubmitting(false);
@@ -252,8 +241,6 @@ export default function AddPaymentModal({ show, onClose }) {
         const bData = Array.isArray(bData_raw) ? bData_raw : (bData_raw?.data || []);
         
         if (!cancel) {
-          console.log('🏪 Loaded customers:', cData?.length || 0);
-          console.log('📋 Loaded bookings:', bData?.length || 0);
           setCustomers(Array.isArray(cData) ? cData : []);
           setBookings(Array.isArray(bData) ? bData : []);
           if (formData.customerName) {
@@ -262,7 +249,6 @@ export default function AddPaymentModal({ show, onClose }) {
           }
         }
       } catch (err) {
-        console.error('Failed to fetch customers/bookings', err);
         setErrors((prev) => ({
           ...prev,
           form: 'Failed to load data. Please ensure you are logged in.',

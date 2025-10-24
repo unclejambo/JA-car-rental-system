@@ -53,7 +53,6 @@ export const AuthProvider = ({ children }) => {
         logout();
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
       logout();
     } finally {
       setIsLoading(false);
@@ -96,7 +95,6 @@ export const AuthProvider = ({ children }) => {
   }, [isAuthenticated, navigate]);
 
   const login = (token, role, userInfo) => {
-    // console.log('AuthContext login called with:', { token, role, userInfo });
     localStorage.setItem('authToken', token);
     localStorage.setItem('userRole', role);
     localStorage.setItem('userInfo', JSON.stringify(userInfo));
@@ -104,7 +102,6 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(true);
     setUserRole(role);
     setUser(userInfo);
-    // console.log('AuthContext state updated:', { isAuthenticated: true, role, userInfo });
   };
 
   const value = {

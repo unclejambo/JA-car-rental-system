@@ -158,14 +158,7 @@ function AdminDashboard() {
         bookingRequests,
         extensionCancellationRequests,
       });
-
-      // Debug logging
-      console.log('📊 Dashboard Data:', {
-        mostRentedCar: carsUtilization[0],
-        carImgUrl: carsUtilization[0]?.carImgUrl,
-      });
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -314,10 +307,6 @@ function AdminDashboard() {
                             src={dashboardData.mostRentedCar.carImgUrl}
                             alt={`${dashboardData.mostRentedCar.make} ${dashboardData.mostRentedCar.model}`}
                             onError={(e) => {
-                              console.error(
-                                'Image failed to load:',
-                                dashboardData.mostRentedCar.carImgUrl
-                              );
                               e.target.style.display = 'none';
                               e.target.parentElement.style.display = 'none';
                             }}

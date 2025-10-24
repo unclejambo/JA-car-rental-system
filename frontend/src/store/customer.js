@@ -15,7 +15,6 @@ export const useCustomerStore = create((set, get) => ({
       set({ customers: response.data });
       return response.data;
     } catch (error) {
-      console.error('Error fetching customers:', error);
       throw error;
     }
   },
@@ -27,7 +26,6 @@ export const useCustomerStore = create((set, get) => ({
       const response = await axios.get(`${customersUrl}/${customerId}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching customer by ID:', error);
       throw error;
     }
   },
@@ -49,7 +47,6 @@ export const useCustomerStore = create((set, get) => ({
       );
       return response.data;
     } catch (error) {
-      console.error('Error updating customer:', error);
       throw error;
     }
   },

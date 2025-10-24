@@ -16,13 +16,6 @@ const AnalyticsDebugger = () => {
       const API_BASE = getApiBase();
       const authenticatedFetch = createAuthenticatedFetch(logout);
       
-      console.log('Testing analytics with:', {
-        API_BASE,
-        userRole,
-        isAuthenticated,
-        user: user ? JSON.parse(user) : null,
-        token: localStorage.getItem('authToken') ? 'Present' : 'Missing'
-      });
       
       const response = await authenticatedFetch(`${API_BASE}/analytics/revenue`);
       

@@ -56,9 +56,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
   const [showOverdueFeeCancel, setShowOverdueFeeCancel] = useState(false);
 
   // Debug: Log when releaseData changes
-  useEffect(() => {
-    console.log('releaseData updated:', releaseData);
-  }, [releaseData]);
+  useEffect(() => {}, [releaseData]);
   const [calculatedFees, setCalculatedFees] = useState({
     gasLevelFee: 0,
     equipmentLossFee: 0,
@@ -90,13 +88,6 @@ export default function ReturnModal({ show, onClose, bookingId }) {
             const release = response.booking.releases[0];
 
             // Debug: Log release data and image URLs
-            console.log('Release data found:', release);
-            console.log('Image URLs:', {
-              front_img: release.front_img,
-              back_img: release.back_img,
-              right_img: release.right_img,
-              left_img: release.left_img,
-            });
 
             setReleaseData({
               gas_level: release.gas_level,
@@ -125,13 +116,6 @@ export default function ReturnModal({ show, onClose, bookingId }) {
             const timeDiff = currentTimePH - dropoffTime;
             const hoursDiff = Math.ceil(timeDiff / (1000 * 60 * 60));
 
-            console.log('Overdue calculation:', {
-              currentTimePH: currentTimePH.toISOString(),
-              dropoffTime: dropoffTime.toISOString(),
-              timeDiff,
-              hoursDiff,
-            });
-
             if (hoursDiff > 0) {
               setOverdueHours(hoursDiff);
             } else {
@@ -140,7 +124,6 @@ export default function ReturnModal({ show, onClose, bookingId }) {
           }
         } catch (err) {
           setError('Failed to load return data');
-          console.error(err);
         } finally {
           setLoading(false);
         }
@@ -166,9 +149,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
               overdueHours: showOverdueFeeCancel ? 0 : overdueHours,
             });
             setCalculatedFees(response.fees);
-          } catch (err) {
-            console.error('Failed to calculate fees:', err);
-          }
+          } catch (err) {}
         }
       };
       calculateFeesAsync();
@@ -231,7 +212,6 @@ export default function ReturnModal({ show, onClose, bookingId }) {
   const handleDamageImageUpload = async (file) => {
     // Just store the file locally, don't upload yet
     setDamageImageFile(file);
-    console.log('📎 Damage image selected:', file.name);
   };
 
   const handleSubmit = async (e) => {
@@ -269,13 +249,11 @@ export default function ReturnModal({ show, onClose, bookingId }) {
           formData.damageStatus === 'minorDamage' ? 'minor' : 'major'
         );
 
-        console.log('📸 Uploading damage image for booking:', bookingId);
         const uploadResponse = await returnAPI.uploadDamageImage(
           bookingId,
           formDataUpload
         );
         uploadedImageUrl = uploadResponse.imagePath;
-        console.log('✅ Damage image uploaded:', uploadedImageUrl);
       }
 
       const submitData = {
@@ -286,8 +264,6 @@ export default function ReturnModal({ show, onClose, bookingId }) {
         overdueHours: showOverdueFeeCancel ? 0 : overdueHours,
       };
 
-      console.log('📝 Submitting return with data:', submitData);
-
       await returnAPI.submitReturn(bookingId, submitData);
 
       setSuccess('Return submitted successfully');
@@ -296,7 +272,6 @@ export default function ReturnModal({ show, onClose, bookingId }) {
       }, 2000);
     } catch (err) {
       setError('Failed to submit return');
-      console.error('❌ Error submitting return:', err);
     } finally {
       setLoading(false);
     }
@@ -474,19 +449,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                                     height: '100%',
                                     objectFit: 'cover',
                                   }}
-                                  onLoad={() =>
-                                    console.log(
-                                      `${imgKey} loaded successfully from:`,
-                                      releaseData[imgKey]
-                                    )
-                                  }
-                                  onError={(e) => {
-                                    console.error(
-                                      `Failed to load ${imgKey}:`,
-                                      releaseData[imgKey]
-                                    );
-                                    console.error('Image error:', e);
-                                    // Try to show a broken image indicator
+                                  onLoad={(e) => {
                                     e.target.style.display = 'none';
                                     e.target.nextSibling.style.display =
                                       'block';

@@ -189,7 +189,6 @@ const RegisterPage = () => {
         uploadFd.append('licenseNumber', licenseNumber.trim());
         uploadFd.append('username', username.trim());
 
-        console.log('Uploading file to:', uploadUrl);
 
         const uploadRes = await fetch(uploadUrl, {
           method: 'POST',
@@ -197,7 +196,6 @@ const RegisterPage = () => {
         });
 
         const uploadJson = await uploadRes.json();
-        console.log('Upload response:', uploadJson);
 
         if (!uploadRes.ok) {
           throw new Error(
@@ -211,10 +209,8 @@ const RegisterPage = () => {
           uploadJson.path ||
           uploadJson.url ||
           uploadJson.publicUrl;
-        console.log('Extracted dl_img_url:', dl_img_url);
 
         if (!dl_img_url) {
-          console.error('No URL found in response:', uploadJson);
           throw new Error('File upload succeeded but no URL returned');
         }
       }
@@ -234,7 +230,6 @@ const RegisterPage = () => {
       });
 
       const otpJson = await otpRes.json();
-      console.log('OTP response:', otpJson);
 
       if (!otpRes.ok) {
         throw new Error(otpJson?.message || 'Failed to send verification code');
@@ -262,7 +257,6 @@ const RegisterPage = () => {
       setLoading(false);
       setShowPhoneVerification(true);
     } catch (err) {
-      console.error('Registration error:', err);
       setServerError(err.message || 'Registration failed');
       setLoading(false);
     }
@@ -287,7 +281,6 @@ const RegisterPage = () => {
       });
 
       const regJson = await regRes.json();
-      console.log('Registration response:', regJson);
 
       if (!regRes.ok) {
         throw new Error(
@@ -302,7 +295,6 @@ const RegisterPage = () => {
       setShowSuccess(true);
       setPendingRegistrationData(null);
     } catch (err) {
-      console.error('Registration completion error:', err);
       setServerError(err.message || 'Registration failed');
       setPendingRegistrationData(null);
     } finally {
@@ -312,7 +304,6 @@ const RegisterPage = () => {
 
   // Handle phone verification error
   const handlePhoneVerificationError = (error) => {
-    console.error('Phone verification error:', error);
     setServerError('Phone verification failed. Please try again.');
     setPendingRegistrationData(null);
   };

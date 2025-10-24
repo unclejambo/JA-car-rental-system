@@ -103,12 +103,6 @@ function CustomerDashboard() {
           ),
         ]);
 
-      console.log('📊 Raw API Data:', {
-        customerBookings,
-        customerSchedules,
-        availableCars: availableCars?.length || 0,
-      });
-
       // Process bookings data (already filtered for current customer)
       const bookings = Array.isArray(customerBookings) ? customerBookings : [];
 
@@ -206,18 +200,7 @@ function CustomerDashboard() {
         unpaidSettlements: unpaidSettlements.slice(0, 3),
         favoriteCar,
       });
-
-      console.log('📊 Processed Dashboard Data:', {
-        todaySchedule: todaySchedule.length,
-        myBookings: recentBookings.length,
-        totalBookings: bookings.length,
-        unpaidSettlements: unpaidSettlements.length,
-        favoriteCar,
-        sampleBooking: bookings[0],
-        sampleSchedule: schedules[0],
-      });
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
       // Set empty data to prevent crashes
       setDashboardData({
         todaySchedule: [],
@@ -230,30 +213,6 @@ function CustomerDashboard() {
       setLoading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex' }}>
-        <title>Dashboard</title>
-        <Header onMenuClick={() => setMobileOpen(true)} />
-        <CustomerSideBar
-          mobileOpen={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-        />
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -285,637 +244,671 @@ function CustomerDashboard() {
           minHeight: '100vh',
         }}
       >
+        {/* Loading Indicator */}
+        {loading && (
+          <Card
+            sx={{
+              p: 0,
+              border: 'none',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              backgroundColor: '#fff',
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <CircularProgress sx={{ color: '#c10007' }} />
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Top Section - Schedule & My Bookings */}
-        <Grid
-          container
-          spacing={{ xs: 0, md: 2 }}
-          sx={{
-            mb: { xs: 1, md: 2 },
-            px: { xs: 2, md: 0 },
-            display: 'flex',
-            justifyContent: { xs: 'center', md: 'space-between' },
-            gap: { xs: 2, md: 1 },
-            flexDirection: { xs: 'column', md: 'row' },
-          }}
-        >
-          {/* Today's Schedule */}
-          <Grid item xs={12} md={6} lg={7} xl={7} sx={{ flex: { md: 1 } }}>
-            <Card
+        {!loading && (
+          <>
+            <Grid
+              container
+              spacing={{ xs: 0, md: 2 }}
               sx={{
-                boxShadow: 2,
-                height: '100%',
-                minHeight: { xs: 'auto', lg: 500 },
+                mb: { xs: 1, md: 2 },
+                px: { xs: 2, md: 0 },
+                display: 'flex',
+                justifyContent: { xs: 'center', md: 'space-between' },
+                gap: { xs: 2, md: 1 },
+                flexDirection: { xs: 'column', md: 'row' },
               }}
             >
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box
+              {/* Today's Schedule */}
+              <Grid item xs={12} md={6} lg={7} xl={7} sx={{ flex: { md: 1 } }}>
+                <Card
                   sx={{
-                    display: 'flex',
-                    gap: 1,
-                    alignItems: 'start',
-                    mb: { xs: 1.5, md: 2 },
+                    boxShadow: 2,
+                    height: '100%',
+                    minHeight: { xs: 'auto', lg: 500 },
                   }}
                 >
-                  <Box>
-                    <Typography
-                      variant="h6"
+                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                    <Box
                       sx={{
-                        fontWeight: 'bold',
-                        mb: 0.5,
-                        fontSize: { xs: '1.125rem', md: '1.25rem' },
-                        color: '#000',
+                        display: 'flex',
+                        gap: 1,
+                        alignItems: 'start',
+                        mb: { xs: 1.5, md: 2 },
                       }}
                     >
-                      SCHEDULE
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontSize: { xs: '0.75rem', md: '0.875rem' },
-                        color: 'text.secondary',
-                      }}
-                    >
-                      TODAY
-                    </Typography>
-                  </Box>
-                  <Avatar
-                    sx={{
-                      bgcolor: '#c10007',
-                      width: { xs: 40, md: 48 },
-                      height: { xs: 40, md: 48 },
-                    }}
-                  >
-                    <Schedule sx={{ fontSize: { xs: 20, md: 24 } }} />
-                  </Avatar>
-                </Box>
-                <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
-
-                {dashboardData.todaySchedule &&
-                dashboardData.todaySchedule.length > 0 ? (
-                  <TableContainer
-                    component={Paper}
-                    sx={{
-                      boxShadow: 0,
-                      border: '1px solid #e0e0e0',
-                      maxHeight: { xs: 250, md: 320 },
-                      overflowX: 'auto',
-                    }}
-                  >
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow sx={{ bgcolor: '#fafafa' }}>
-                          <TableCell
-                            sx={{
-                              fontWeight: 'bold',
-                              fontSize: { xs: '0.75rem', md: '0.875rem' },
-                            }}
-                          >
-                            Time
-                          </TableCell>
-                          <TableCell
-                            sx={{
-                              fontWeight: 'bold',
-                              fontSize: { xs: '0.75rem', md: '0.875rem' },
-                            }}
-                          >
-                            Car
-                          </TableCell>
-                          <TableCell
-                            sx={{
-                              fontWeight: 'bold',
-                              fontSize: { xs: '0.75rem', md: '0.875rem' },
-                            }}
-                          >
-                            Type
-                          </TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {dashboardData.todaySchedule.map((schedule) => (
-                          <TableRow
-                            key={schedule.schedule_id || schedule.booking_id}
-                            sx={{ '&:hover': { bgcolor: '#f5f5f5' } }}
-                          >
-                            <TableCell
-                              sx={{
-                                fontSize: { xs: '0.75rem', md: '0.875rem' },
-                              }}
-                            >
-                              {schedule.pickup_time
-                                ? new Date(
-                                    schedule.pickup_time
-                                  ).toLocaleTimeString('en-US', {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })
-                                : new Date(
-                                    schedule.start_date
-                                  ).toLocaleTimeString('en-US', {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
-                            </TableCell>
-                            <TableCell
-                              sx={{
-                                fontSize: { xs: '0.75rem', md: '0.875rem' },
-                              }}
-                            >
-                              {schedule.car_model || 'N/A'}
-                            </TableCell>
-                            <TableCell
-                              sx={{
-                                fontSize: { xs: '0.75rem', md: '0.875rem' },
-                              }}
-                            >
-                              <Chip
-                                label={schedule.booking_status || 'Active'}
-                                size="small"
-                                sx={{
-                                  bgcolor: '#c10007',
-                                  color: 'white',
-                                  fontSize: { xs: '0.65rem', md: '0.75rem' },
-                                }}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                ) : (
-                  <Typography
-                    sx={{
-                      my: { xs: 2, md: 3 },
-                      fontSize: { xs: '0.875rem', md: '1rem' },
-                      color: 'text.secondary',
-                      textAlign: 'center',
-                    }}
-                  >
-                    No schedule for today.
-                  </Typography>
-                )}
-
-                <Button
-                  component={Link}
-                  to="/customer-schedule"
-                  variant="contained"
-                  fullWidth
-                  sx={{
-                    mt: { xs: 1.5, md: 2 },
-                    bgcolor: '#c10007',
-                    color: 'white',
-                    '&:hover': { bgcolor: '#a00006' },
-                    py: { xs: 1, md: 1.25 },
-                  }}
-                >
-                  More Details
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* My Bookings */}
-          <Grid item xs={12} md={6} lg={5} xl={5} sx={{ flex: { md: 1 } }}>
-            <Card
-              sx={{
-                boxShadow: 2,
-                height: '100%',
-                minHeight: { xs: 'auto', lg: 500 },
-              }}
-            >
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    gap: 1,
-                    alignItems: 'start',
-                    mb: { xs: 1.5, md: 2 },
-                  }}
-                >
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 'bold',
-                        mb: 0.5,
-                        fontSize: { xs: '1.125rem', md: '1.25rem' },
-                        color: '#000',
-                      }}
-                    >
-                      MY BOOKINGS
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontSize: { xs: '0.75rem', md: '0.875rem' },
-                        color: 'text.secondary',
-                      }}
-                    >
-                      RECENT BOOKINGS
-                    </Typography>
-                  </Box>
-                  <Avatar
-                    sx={{
-                      bgcolor: '#000',
-                      width: { xs: 40, md: 48 },
-                      height: { xs: 40, md: 48 },
-                    }}
-                  >
-                    <BookOnline sx={{ fontSize: { xs: 20, md: 24 } }} />
-                  </Avatar>
-                </Box>
-                <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
-
-                {dashboardData.myBookings &&
-                dashboardData.myBookings.length > 0 ? (
-                  <List
-                    sx={{
-                      py: 0,
-                      maxHeight: { xs: 250, md: 300 },
-                      overflow: 'auto',
-                    }}
-                  >
-                    {dashboardData.myBookings.map((booking, index) => (
-                      <ListItem
-                        key={booking.booking_id}
+                      <Box>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 'bold',
+                            mb: 0.5,
+                            fontSize: { xs: '1.125rem', md: '1.25rem' },
+                            color: '#000',
+                          }}
+                        >
+                          SCHEDULE
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: { xs: '0.75rem', md: '0.875rem' },
+                            color: 'text.secondary',
+                          }}
+                        >
+                          TODAY
+                        </Typography>
+                      </Box>
+                      <Avatar
                         sx={{
-                          bgcolor: '#f9f9f9',
-                          borderRadius: 1,
-                          mb:
-                            index < dashboardData.myBookings.length - 1 ? 1 : 0,
-                          border: '1px solid #e0e0e0',
-                          p: { xs: 1, md: 2 },
+                          bgcolor: '#c10007',
+                          width: { xs: 40, md: 48 },
+                          height: { xs: 40, md: 48 },
                         }}
                       >
-                        <ListItemAvatar>
-                          <Avatar
+                        <Schedule sx={{ fontSize: { xs: 20, md: 24 } }} />
+                      </Avatar>
+                    </Box>
+                    <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
+
+                    {dashboardData.todaySchedule &&
+                    dashboardData.todaySchedule.length > 0 ? (
+                      <TableContainer
+                        component={Paper}
+                        sx={{
+                          boxShadow: 0,
+                          border: '1px solid #e0e0e0',
+                          maxHeight: { xs: 250, md: 320 },
+                          overflowX: 'auto',
+                        }}
+                      >
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow sx={{ bgcolor: '#fafafa' }}>
+                              <TableCell
+                                sx={{
+                                  fontWeight: 'bold',
+                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                }}
+                              >
+                                Time
+                              </TableCell>
+                              <TableCell
+                                sx={{
+                                  fontWeight: 'bold',
+                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                }}
+                              >
+                                Car
+                              </TableCell>
+                              <TableCell
+                                sx={{
+                                  fontWeight: 'bold',
+                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                }}
+                              >
+                                Type
+                              </TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {dashboardData.todaySchedule.map((schedule) => (
+                              <TableRow
+                                key={
+                                  schedule.schedule_id || schedule.booking_id
+                                }
+                                sx={{ '&:hover': { bgcolor: '#f5f5f5' } }}
+                              >
+                                <TableCell
+                                  sx={{
+                                    fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                  }}
+                                >
+                                  {schedule.pickup_time
+                                    ? new Date(
+                                        schedule.pickup_time
+                                      ).toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })
+                                    : new Date(
+                                        schedule.start_date
+                                      ).toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                </TableCell>
+                                <TableCell
+                                  sx={{
+                                    fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                  }}
+                                >
+                                  {schedule.car_model || 'N/A'}
+                                </TableCell>
+                                <TableCell
+                                  sx={{
+                                    fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                  }}
+                                >
+                                  <Chip
+                                    label={schedule.booking_status || 'Active'}
+                                    size="small"
+                                    sx={{
+                                      bgcolor: '#c10007',
+                                      color: 'white',
+                                      fontSize: {
+                                        xs: '0.65rem',
+                                        md: '0.75rem',
+                                      },
+                                    }}
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    ) : (
+                      <Typography
+                        sx={{
+                          my: { xs: 2, md: 3 },
+                          fontSize: { xs: '0.875rem', md: '1rem' },
+                          color: 'text.secondary',
+                          textAlign: 'center',
+                        }}
+                      >
+                        No schedule for today.
+                      </Typography>
+                    )}
+
+                    <Button
+                      component={Link}
+                      to="/customer-schedule"
+                      variant="contained"
+                      fullWidth
+                      sx={{
+                        mt: { xs: 1.5, md: 2 },
+                        bgcolor: '#c10007',
+                        color: 'white',
+                        '&:hover': { bgcolor: '#a00006' },
+                        py: { xs: 1, md: 1.25 },
+                      }}
+                    >
+                      More Details
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* My Bookings */}
+              <Grid item xs={12} md={6} lg={5} xl={5} sx={{ flex: { md: 1 } }}>
+                <Card
+                  sx={{
+                    boxShadow: 2,
+                    height: '100%',
+                    minHeight: { xs: 'auto', lg: 500 },
+                  }}
+                >
+                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        gap: 1,
+                        alignItems: 'start',
+                        mb: { xs: 1.5, md: 2 },
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 'bold',
+                            mb: 0.5,
+                            fontSize: { xs: '1.125rem', md: '1.25rem' },
+                            color: '#000',
+                          }}
+                        >
+                          MY BOOKINGS
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: { xs: '0.75rem', md: '0.875rem' },
+                            color: 'text.secondary',
+                          }}
+                        >
+                          RECENT BOOKINGS
+                        </Typography>
+                      </Box>
+                      <Avatar
+                        sx={{
+                          bgcolor: '#000',
+                          width: { xs: 40, md: 48 },
+                          height: { xs: 40, md: 48 },
+                        }}
+                      >
+                        <BookOnline sx={{ fontSize: { xs: 20, md: 24 } }} />
+                      </Avatar>
+                    </Box>
+                    <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
+
+                    {dashboardData.myBookings &&
+                    dashboardData.myBookings.length > 0 ? (
+                      <List
+                        sx={{
+                          py: 0,
+                          maxHeight: { xs: 250, md: 300 },
+                          overflow: 'auto',
+                        }}
+                      >
+                        {dashboardData.myBookings.map((booking, index) => (
+                          <ListItem
+                            key={booking.booking_id}
                             sx={{
-                              bgcolor: '#000',
-                              width: { xs: 36, md: 40 },
-                              height: { xs: 36, md: 40 },
+                              bgcolor: '#f9f9f9',
+                              borderRadius: 1,
+                              mb:
+                                index < dashboardData.myBookings.length - 1
+                                  ? 1
+                                  : 0,
+                              border: '1px solid #e0e0e0',
+                              p: { xs: 1, md: 2 },
+                            }}
+                          >
+                            <ListItemAvatar>
+                              <Avatar
+                                sx={{
+                                  bgcolor: '#000',
+                                  width: { xs: 36, md: 40 },
+                                  height: { xs: 36, md: 40 },
+                                }}
+                              >
+                                <DirectionsCar
+                                  sx={{ fontSize: { xs: 18, md: 20 } }}
+                                />
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={
+                                booking.car_details?.display_name || 'N/A'
+                              }
+                              secondary={`${new Date(booking.booking_date).toLocaleDateString()} - ${booking.booking_status || 'N/A'}`}
+                              primaryTypographyProps={{
+                                fontSize: { xs: '0.875rem', md: '1rem' },
+                                fontWeight: 500,
+                              }}
+                              secondaryTypographyProps={{
+                                fontSize: { xs: '0.75rem', md: '0.875rem' },
+                              }}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    ) : (
+                      <Typography
+                        sx={{
+                          my: { xs: 2, md: 3 },
+                          fontSize: { xs: '0.875rem', md: '1rem' },
+                          color: 'text.secondary',
+                          textAlign: 'center',
+                        }}
+                      >
+                        No bookings found.
+                      </Typography>
+                    )}
+
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 'bold',
+                        fontSize: { xs: '1rem', md: '1.125rem' },
+                        color: '#000',
+                        mt: { xs: 1.5, md: 2 },
+                        mb: { xs: 1, md: 1.5 },
+                      }}
+                    >
+                      TOTAL BOOKINGS: {dashboardData.totalBookings}
+                    </Typography>
+
+                    <Button
+                      component={Link}
+                      to="/customer-bookings"
+                      variant="outlined"
+                      fullWidth
+                      sx={{
+                        borderColor: '#000',
+                        color: '#000',
+                        '&:hover': {
+                          borderColor: '#333',
+                          bgcolor: 'rgba(0, 0, 0, 0.04)',
+                        },
+                        py: { xs: 1, md: 1.25 },
+                      }}
+                    >
+                      More Details
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+
+            {/* Bottom Section - Unpaid Settlements & Favorite Car */}
+            <Grid
+              container
+              spacing={{ xs: 0, md: 2 }}
+              sx={{
+                px: { xs: 2, md: 0 },
+                display: 'flex',
+                justifyContent: { xs: 'center', md: 'space-between' },
+                gap: { xs: 2, md: 1 },
+                flexDirection: { xs: 'column', md: 'row' },
+              }}
+            >
+              {/* Unpaid Settlements */}
+              <Grid item xs={12} md={6} lg={6} xl={6} sx={{ flex: { md: 1 } }}>
+                <Card sx={{ boxShadow: 2, minHeight: { xs: 'auto', md: 450 } }}>
+                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'start',
+                        mb: { xs: 1.5, md: 2 },
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 'bold',
+                            mb: 0.5,
+                            fontSize: { xs: '1.125rem', md: '1.25rem' },
+                            color: '#000',
+                          }}
+                        >
+                          UNPAID
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: { xs: '0.75rem', md: '0.875rem' },
+                            color: 'text.secondary',
+                          }}
+                        >
+                          SETTLEMENTS
+                        </Typography>
+                      </Box>
+                      <Avatar
+                        sx={{
+                          bgcolor: '#c10007',
+                          width: { xs: 40, md: 48 },
+                          height: { xs: 40, md: 48 },
+                        }}
+                      >
+                        <Payment sx={{ fontSize: { xs: 20, md: 24 } }} />
+                      </Avatar>
+                    </Box>
+                    <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
+
+                    {dashboardData.unpaidSettlements &&
+                    dashboardData.unpaidSettlements.length > 0 ? (
+                      <List sx={{ py: 0 }}>
+                        {dashboardData.unpaidSettlements.map(
+                          (settlement, index) => (
+                            <ListItem
+                              key={settlement.booking_id}
+                              sx={{
+                                bgcolor: '#fff5f5',
+                                borderRadius: 1,
+                                mb:
+                                  index <
+                                  dashboardData.unpaidSettlements.length - 1
+                                    ? 1
+                                    : 0,
+                                border: '1px solid #ffcccb',
+                                p: { xs: 1, md: 2 },
+                              }}
+                            >
+                              <ListItemAvatar>
+                                <Avatar
+                                  sx={{
+                                    bgcolor: '#c10007',
+                                    width: { xs: 36, md: 40 },
+                                    height: { xs: 36, md: 40 },
+                                  }}
+                                >
+                                  <Payment
+                                    sx={{ fontSize: { xs: 18, md: 20 } }}
+                                  />
+                                </Avatar>
+                              </ListItemAvatar>
+                              <ListItemText
+                                primary={
+                                  settlement.car_details?.display_name || 'N/A'
+                                }
+                                secondary={`Due: ${new Date(settlement.booking_date).toLocaleDateString()} - ₱${settlement.total_amount || 0}`}
+                                primaryTypographyProps={{
+                                  fontSize: { xs: '0.875rem', md: '1rem' },
+                                  fontWeight: 500,
+                                }}
+                                secondaryTypographyProps={{
+                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                }}
+                              />
+                            </ListItem>
+                          )
+                        )}
+                      </List>
+                    ) : (
+                      <Typography
+                        sx={{
+                          my: { xs: 2, md: 3 },
+                          fontSize: { xs: '0.875rem', md: '1rem' },
+                          color: 'text.secondary',
+                          textAlign: 'center',
+                        }}
+                      >
+                        No unpaid settlements.
+                      </Typography>
+                    )}
+
+                    <Button
+                      component={Link}
+                      to="/customer-bookings"
+                      variant="contained"
+                      fullWidth
+                      sx={{
+                        mt: { xs: 1.5, md: 2 },
+                        bgcolor: '#c10007',
+                        color: 'white',
+                        '&:hover': { bgcolor: '#a00006' },
+                        py: { xs: 1, md: 1.25 },
+                      }}
+                    >
+                      More Details
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Favorite Car */}
+              <Grid item xs={12} md={6} lg={6} xl={6} sx={{ flex: { md: 1 } }}>
+                <Card sx={{ boxShadow: 2, minHeight: { xs: 'auto', md: 450 } }}>
+                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'start',
+                        mb: { xs: 1.5, md: 2 },
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 'bold',
+                            mb: 0.5,
+                            fontSize: { xs: '1.125rem', md: '1.25rem' },
+                            color: '#000',
+                          }}
+                        >
+                          FAVORITE CAR
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: { xs: '0.75rem', md: '0.875rem' },
+                            color: 'text.secondary',
+                          }}
+                        >
+                          MOST BOOKED
+                        </Typography>
+                      </Box>
+                      <Avatar
+                        sx={{
+                          bgcolor: '#000',
+                          width: { xs: 40, md: 48 },
+                          height: { xs: 40, md: 48 },
+                        }}
+                      >
+                        <Favorite sx={{ fontSize: { xs: 20, md: 24 } }} />
+                      </Avatar>
+                    </Box>
+                    <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
+
+                    {dashboardData.favoriteCar ? (
+                      <>
+                        {/* Car Image */}
+                        {dashboardData.favoriteCar.carImgUrl ? (
+                          <Box
+                            sx={{
+                              width: '100%',
+                              height: { xs: 150, md: 180 },
+                              borderRadius: 2,
+                              overflow: 'hidden',
+                              mb: { xs: 1.5, md: 2 },
+                              border: '2px solid #e0e0e0',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              backgroundColor: '#f9f9f9',
+                            }}
+                          >
+                            <img
+                              src={dashboardData.favoriteCar.carImgUrl}
+                              alt={dashboardData.favoriteCar.carModel}
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentElement.style.display = 'none';
+                              }}
+                              style={{
+                                maxWidth: '100%',
+                                maxHeight: '100%',
+                                objectFit: 'contain',
+                              }}
+                            />
+                          </Box>
+                        ) : (
+                          <Box
+                            sx={{
+                              width: '100%',
+                              height: { xs: 150, md: 180 },
+                              borderRadius: 2,
+                              mb: { xs: 1.5, md: 2 },
+                              border: '2px solid #e0e0e0',
+                              bgcolor: '#f5f5f5',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                             }}
                           >
                             <DirectionsCar
-                              sx={{ fontSize: { xs: 18, md: 20 } }}
-                            />
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={booking.car_details?.display_name || 'N/A'}
-                          secondary={`${new Date(booking.booking_date).toLocaleDateString()} - ${booking.booking_status || 'N/A'}`}
-                          primaryTypographyProps={{
-                            fontSize: { xs: '0.875rem', md: '1rem' },
-                            fontWeight: 500,
-                          }}
-                          secondaryTypographyProps={{
-                            fontSize: { xs: '0.75rem', md: '0.875rem' },
-                          }}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                ) : (
-                  <Typography
-                    sx={{
-                      my: { xs: 2, md: 3 },
-                      fontSize: { xs: '0.875rem', md: '1rem' },
-                      color: 'text.secondary',
-                      textAlign: 'center',
-                    }}
-                  >
-                    No bookings found.
-                  </Typography>
-                )}
-
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 'bold',
-                    fontSize: { xs: '1rem', md: '1.125rem' },
-                    color: '#000',
-                    mt: { xs: 1.5, md: 2 },
-                    mb: { xs: 1, md: 1.5 },
-                  }}
-                >
-                  TOTAL BOOKINGS: {dashboardData.totalBookings}
-                </Typography>
-
-                <Button
-                  component={Link}
-                  to="/customer-bookings"
-                  variant="outlined"
-                  fullWidth
-                  sx={{
-                    borderColor: '#000',
-                    color: '#000',
-                    '&:hover': {
-                      borderColor: '#333',
-                      bgcolor: 'rgba(0, 0, 0, 0.04)',
-                    },
-                    py: { xs: 1, md: 1.25 },
-                  }}
-                >
-                  More Details
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Bottom Section - Unpaid Settlements & Favorite Car */}
-        <Grid
-          container
-          spacing={{ xs: 0, md: 2 }}
-          sx={{
-            px: { xs: 2, md: 0 },
-            display: 'flex',
-            justifyContent: { xs: 'center', md: 'space-between' },
-            gap: { xs: 2, md: 1 },
-            flexDirection: { xs: 'column', md: 'row' },
-          }}
-        >
-          {/* Unpaid Settlements */}
-          <Grid item xs={12} md={6} lg={6} xl={6} sx={{ flex: { md: 1 } }}>
-            <Card sx={{ boxShadow: 2, minHeight: { xs: 'auto', md: 450 } }}>
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'start',
-                    mb: { xs: 1.5, md: 2 },
-                  }}
-                >
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 'bold',
-                        mb: 0.5,
-                        fontSize: { xs: '1.125rem', md: '1.25rem' },
-                        color: '#000',
-                      }}
-                    >
-                      UNPAID
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontSize: { xs: '0.75rem', md: '0.875rem' },
-                        color: 'text.secondary',
-                      }}
-                    >
-                      SETTLEMENTS
-                    </Typography>
-                  </Box>
-                  <Avatar
-                    sx={{
-                      bgcolor: '#c10007',
-                      width: { xs: 40, md: 48 },
-                      height: { xs: 40, md: 48 },
-                    }}
-                  >
-                    <Payment sx={{ fontSize: { xs: 20, md: 24 } }} />
-                  </Avatar>
-                </Box>
-                <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
-
-                {dashboardData.unpaidSettlements &&
-                dashboardData.unpaidSettlements.length > 0 ? (
-                  <List sx={{ py: 0 }}>
-                    {dashboardData.unpaidSettlements.map(
-                      (settlement, index) => (
-                        <ListItem
-                          key={settlement.booking_id}
-                          sx={{
-                            bgcolor: '#fff5f5',
-                            borderRadius: 1,
-                            mb:
-                              index < dashboardData.unpaidSettlements.length - 1
-                                ? 1
-                                : 0,
-                            border: '1px solid #ffcccb',
-                            p: { xs: 1, md: 2 },
-                          }}
-                        >
-                          <ListItemAvatar>
-                            <Avatar
                               sx={{
-                                bgcolor: '#c10007',
-                                width: { xs: 36, md: 40 },
-                                height: { xs: 36, md: 40 },
+                                fontSize: { xs: 60, md: 80 },
+                                color: '#c0c0c0',
                               }}
-                            >
-                              <Payment sx={{ fontSize: { xs: 18, md: 20 } }} />
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={
-                              settlement.car_details?.display_name || 'N/A'
-                            }
-                            secondary={`Due: ${new Date(settlement.booking_date).toLocaleDateString()} - ₱${settlement.total_amount || 0}`}
-                            primaryTypographyProps={{
+                            />
+                          </Box>
+                        )}
+
+                        {/* Car Details */}
+                        <Box>
+                          <Typography
+                            variant="h5"
+                            sx={{
+                              fontWeight: 'bold',
+                              fontSize: { xs: '1.25rem', md: '1.5rem' },
+                              color: '#000',
+                              mb: 0.5,
+                            }}
+                          >
+                            {dashboardData.favoriteCar.carModel ||
+                              `${dashboardData.favoriteCar.make || ''} ${dashboardData.favoriteCar.model || ''}`.trim() ||
+                              'N/A'}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              mb: { xs: 1.5, md: 2 },
                               fontSize: { xs: '0.875rem', md: '1rem' },
-                              fontWeight: 500,
+                              color: 'text.secondary',
                             }}
-                            secondaryTypographyProps={{
-                              fontSize: { xs: '0.75rem', md: '0.875rem' },
+                          >
+                            {dashboardData.favoriteCar.carType ||
+                              dashboardData.favoriteCar.car_type ||
+                              'N/A'}
+                          </Typography>
+                          <Divider sx={{ my: { xs: 1.5, md: 2 } }} />
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontWeight: 'bold',
+                              fontSize: { xs: '1rem', md: '1.125rem' },
+                              color: '#c10007',
                             }}
-                          />
-                        </ListItem>
-                      )
-                    )}
-                  </List>
-                ) : (
-                  <Typography
-                    sx={{
-                      my: { xs: 2, md: 3 },
-                      fontSize: { xs: '0.875rem', md: '1rem' },
-                      color: 'text.secondary',
-                      textAlign: 'center',
-                    }}
-                  >
-                    No unpaid settlements.
-                  </Typography>
-                )}
-
-                <Button
-                  component={Link}
-                  to="/customer-bookings"
-                  variant="contained"
-                  fullWidth
-                  sx={{
-                    mt: { xs: 1.5, md: 2 },
-                    bgcolor: '#c10007',
-                    color: 'white',
-                    '&:hover': { bgcolor: '#a00006' },
-                    py: { xs: 1, md: 1.25 },
-                  }}
-                >
-                  More Details
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Favorite Car */}
-          <Grid item xs={12} md={6} lg={6} xl={6} sx={{ flex: { md: 1 } }}>
-            <Card sx={{ boxShadow: 2, minHeight: { xs: 'auto', md: 450 } }}>
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'start',
-                    mb: { xs: 1.5, md: 2 },
-                  }}
-                >
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 'bold',
-                        mb: 0.5,
-                        fontSize: { xs: '1.125rem', md: '1.25rem' },
-                        color: '#000',
-                      }}
-                    >
-                      FAVORITE CAR
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontSize: { xs: '0.75rem', md: '0.875rem' },
-                        color: 'text.secondary',
-                      }}
-                    >
-                      MOST BOOKED
-                    </Typography>
-                  </Box>
-                  <Avatar
-                    sx={{
-                      bgcolor: '#000',
-                      width: { xs: 40, md: 48 },
-                      height: { xs: 40, md: 48 },
-                    }}
-                  >
-                    <Favorite sx={{ fontSize: { xs: 20, md: 24 } }} />
-                  </Avatar>
-                </Box>
-                <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
-
-                {dashboardData.favoriteCar ? (
-                  <>
-                    {/* Car Image */}
-                    {dashboardData.favoriteCar.carImgUrl ? (
-                      <Box
-                        sx={{
-                          width: '100%',
-                          height: { xs: 150, md: 180 },
-                          borderRadius: 2,
-                          overflow: 'hidden',
-                          mb: { xs: 1.5, md: 2 },
-                          border: '2px solid #e0e0e0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: '#f9f9f9',
-                        }}
-                      >
-                        <img
-                          src={dashboardData.favoriteCar.carImgUrl}
-                          alt={dashboardData.favoriteCar.carModel}
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.parentElement.style.display = 'none';
-                          }}
-                          style={{
-                            maxWidth: '100%',
-                            maxHeight: '100%',
-                            objectFit: 'contain',
-                          }}
-                        />
-                      </Box>
+                          >
+                            {dashboardData.favoriteCar.count} BOOKING
+                            {dashboardData.favoriteCar.count !== 1 ? 'S' : ''}
+                          </Typography>
+                        </Box>
+                      </>
                     ) : (
-                      <Box
-                        sx={{
-                          width: '100%',
-                          height: { xs: 150, md: 180 },
-                          borderRadius: 2,
-                          mb: { xs: 1.5, md: 2 },
-                          border: '2px solid #e0e0e0',
-                          bgcolor: '#f5f5f5',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <DirectionsCar
-                          sx={{
-                            fontSize: { xs: 60, md: 80 },
-                            color: '#c0c0c0',
-                          }}
-                        />
-                      </Box>
-                    )}
-
-                    {/* Car Details */}
-                    <Box>
                       <Typography
-                        variant="h5"
                         sx={{
-                          fontWeight: 'bold',
-                          fontSize: { xs: '1.25rem', md: '1.5rem' },
-                          color: '#000',
-                          mb: 0.5,
-                        }}
-                      >
-                        {dashboardData.favoriteCar.carModel ||
-                          `${dashboardData.favoriteCar.make || ''} ${dashboardData.favoriteCar.model || ''}`.trim() ||
-                          'N/A'}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          mb: { xs: 1.5, md: 2 },
+                          my: { xs: 2, md: 3 },
                           fontSize: { xs: '0.875rem', md: '1rem' },
                           color: 'text.secondary',
+                          textAlign: 'center',
                         }}
                       >
-                        {dashboardData.favoriteCar.carType ||
-                          dashboardData.favoriteCar.car_type ||
-                          'N/A'}
+                        No favorite car yet.
                       </Typography>
-                      <Divider sx={{ my: { xs: 1.5, md: 2 } }} />
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          fontWeight: 'bold',
-                          fontSize: { xs: '1rem', md: '1.125rem' },
-                          color: '#c10007',
-                        }}
-                      >
-                        {dashboardData.favoriteCar.count} BOOKING
-                        {dashboardData.favoriteCar.count !== 1 ? 'S' : ''}
-                      </Typography>
-                    </Box>
-                  </>
-                ) : (
-                  <Typography
-                    sx={{
-                      my: { xs: 2, md: 3 },
-                      fontSize: { xs: '0.875rem', md: '1rem' },
-                      color: 'text.secondary',
-                      textAlign: 'center',
-                    }}
-                  >
-                    No favorite car yet.
-                  </Typography>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </>
+        )}
       </Box>
     </Box>
   );

@@ -48,7 +48,6 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Debug middleware - log all requests
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
   next();
 });
 
@@ -94,7 +93,6 @@ app.use("/api/phone-verification", phoneVerificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
   res.status(500).json({ error: "Something went wrong!" });
 });
 
@@ -105,33 +103,18 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  
   // Setup auto-cancel scheduler
   // Runs every hour to check for expired bookings AND extensions
   const AUTO_CANCEL_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
-  
-  console.log('🕐 Setting up auto-cancel scheduler (runs every hour)...');
-  
   // Run immediately on startup (after 30 seconds to let server initialize)
   setTimeout(async () => {
-    console.log('Running initial auto-cancel check...');
-    console.log('📋 Step 1: Checking expired extensions...');
     await autoCancelExpiredExtensions();
-    console.log('📋 Step 2: Checking expired bookings...');
     await autoCancelExpiredBookings();
-    console.log('✅ Initial auto-cancel check completed');
   }, 30000);
-  
+
   // Then run every hour
   setInterval(async () => {
-    console.log('Running scheduled auto-cancel check...');
-    console.log('📋 Step 1: Checking expired extensions...');
     await autoCancelExpiredExtensions();
-    console.log('📋 Step 2: Checking expired bookings...');
     await autoCancelExpiredBookings();
-    console.log('✅ Scheduled auto-cancel check completed');
   }, AUTO_CANCEL_INTERVAL);
-  
-  console.log('✅ Auto-cancel scheduler initialized (checks extensions + bookings)');
 });

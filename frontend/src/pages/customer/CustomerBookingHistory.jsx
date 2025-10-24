@@ -153,17 +153,10 @@ function CustomerBookingHistory() {
         });
       }
 
-      console.log('Transaction map:', transactionMap);
-
       // Map backend booking data to table row shape and merge with transaction data
       const mappedBookings = Array.isArray(dataBookings)
         ? dataBookings.map((b) => {
             const transaction = transactionMap[b.booking_id];
-            console.log(`Booking ${b.booking_id}:`, {
-              transaction: transaction,
-              completion_date: transaction?.completionDate,
-              cancellation_date: transaction?.cancellationDate,
-            });
             return {
               booking_id: b.booking_id,
               booking_date: b.booking_date,
@@ -176,7 +169,6 @@ function CustomerBookingHistory() {
           })
         : [];
 
-      console.log('Mapped bookings:', mappedBookings);
       setBookings(mappedBookings);
 
       // Map backend payment data to table row shape
@@ -204,7 +196,6 @@ function CustomerBookingHistory() {
         : [];
       setPayments(mappedPayments);
     } catch (err) {
-      console.error('Error fetching history:', err);
       setError('Failed to load booking/payment history');
       setBookings([]);
       setPayments([]);
@@ -249,9 +240,7 @@ function CustomerBookingHistory() {
           setShowBookingDetailsModal(true);
         }
       }
-    } catch (error) {
-      console.error('Error fetching booking details:', error);
-    }
+    } catch (error) {}
   };
 
   // Filter bookings based on search query
@@ -282,32 +271,6 @@ function CustomerBookingHistory() {
         );
       })
     : [];
-
-  if (loading && (bookings === null || payments === null)) {
-    return (
-      <>
-        <Header
-          onMenuClick={() => setMobileOpen(true)}
-          isMenuOpen={mobileOpen}
-        />
-        <CustomerSideBar
-          mobileOpen={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-        />
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            mt: '80px',
-          }}
-        >
-          <Loading />
-        </Box>
-      </>
-    );
-  }
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -343,196 +306,209 @@ function CustomerBookingHistory() {
           }}
         >
           <CardContent>
-            {/* Page Header */}
-            <Box sx={{ mb: 3 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 1,
-                }}
-              >
-                <Typography
-                  variant="h4"
-                  sx={{
-                    fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
-                    fontWeight: 'bold',
-                    color: '#c10007',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <HiOutlineClipboardDocumentCheck
-                    size={24}
-                    style={{ marginRight: '8px' }}
-                  />
-                  Booking History
-                </Typography>
-                <Button
-                  variant="outlined"
-                  startIcon={<HiRefresh />}
-                  onClick={fetchData}
-                  disabled={loading}
-                  sx={{
-                    borderColor: '#c10007',
-                    color: '#c10007',
-                    '&:hover': {
-                      borderColor: '#a50006',
-                      backgroundColor: '#fff5f5',
-                    },
-                  }}
-                >
-                  Refresh
-                </Button>
-              </Box>
-              <Typography variant="body1" color="text.secondary">
-                View your past bookings and payments
-              </Typography>
-            </Box>
-
-            {/* Tabs */}
-            <Box
-              sx={{
-                borderBottom: 1,
-                borderColor: 'divider',
-                mb: 3,
-                display: 'flex',
-                justifyContent: 'flex-start',
-              }}
-            >
-              <Tabs
-                value={activeTab}
-                onChange={handleTabChange}
-                sx={{
-                  alignItems: 'flex-start',
-                  '& .MuiTabs-flexContainer': {
-                    justifyContent: 'flex-start',
-                  },
-                  '& .MuiTab-root': {
-                    textTransform: 'none',
-                    fontWeight: 'bold',
-                    fontSize: '1rem',
-                    minWidth: 120,
-                  },
-                  '& .Mui-selected': {
-                    color: '#c10007 !important',
-                  },
-                  '& .MuiTabs-indicator': {
-                    backgroundColor: '#c10007',
-                  },
-                }}
-              >
-                <Tab
-                  label={`Bookings (${bookings?.length || 0})`}
-                  icon={<HiOutlineClipboardDocumentCheck />}
-                  iconPosition="start"
-                />
-                <Tab
-                  label={`Payments (${payments?.length || 0})`}
-                  icon={<HiCreditCard />}
-                  iconPosition="start"
-                />
-              </Tabs>
-            </Box>
-
-            {/* Search Bar - Aligned to the right like Refresh button */}
-            <Box
-              sx={{
-                mt: -1,
-                mb: -1,
-                display: 'flex',
-                justifyContent: 'flex-end',
-              }}
-            >
-              <Box sx={{ width: '100%' }}>
-                {activeTab === 0 ? (
-                  <SearchBar
-                    value={bookingSearchQuery}
-                    onChange={(e) => setBookingSearchQuery(e.target.value)}
-                    placeholder="Search bookings..."
-                    fullWidth
-                  />
-                ) : (
-                  <SearchBar
-                    value={paymentSearchQuery}
-                    onChange={(e) => setPaymentSearchQuery(e.target.value)}
-                    placeholder="Search payments..."
-                    fullWidth
-                  />
-                )}
-              </Box>
-            </Box>
-
-            {/* Result count below search bar - aligned to the right */}
-            {activeTab === 0 && bookingSearchQuery && (
-              <Box
-                sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}
-              ></Box>
-            )}
-            {activeTab === 1 && paymentSearchQuery && (
-              <Box
-                sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}
-              ></Box>
-            )}
-
-            {/* Error Alert */}
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
-
             {/* Loading Indicator */}
-            {loading && (
+            {loading && (bookings === null || payments === null) && (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
                 <CircularProgress sx={{ color: '#c10007' }} />
               </Box>
             )}
 
-            {/* Tab Panels */}
-            <TabPanel value={activeTab} index={0}>
-              {filteredBookings && filteredBookings.length > 0 ? (
-                <CustomerBookingHistoryTable
-                  bookings={filteredBookings}
-                  loading={loading}
-                  onViewBooking={handleViewBooking}
-                />
-              ) : bookingSearchQuery ? (
-                <EmptyState
-                  icon={HiOutlineClipboardDocumentCheck}
-                  title="No Matching Bookings"
-                  message={`No bookings found matching "${bookingSearchQuery}". Try a different search term.`}
-                />
-              ) : (
-                <EmptyState
-                  icon={HiOutlineClipboardDocumentCheck}
-                  title="No Bookings Found"
-                  message="You haven't made any bookings yet."
-                />
-              )}
-            </TabPanel>
+            {/* Page Header */}
+            {!(loading && (bookings === null || payments === null)) && (
+              <>
+                <Box sx={{ mb: 3 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      mb: 1,
+                    }}
+                  >
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
+                        fontWeight: 'bold',
+                        color: '#c10007',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <HiOutlineClipboardDocumentCheck
+                        size={24}
+                        style={{ marginRight: '8px' }}
+                      />
+                      Booking History
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      startIcon={<HiRefresh />}
+                      onClick={fetchData}
+                      disabled={loading}
+                      sx={{
+                        borderColor: '#c10007',
+                        color: '#c10007',
+                        '&:hover': {
+                          borderColor: '#a50006',
+                          backgroundColor: '#fff5f5',
+                        },
+                      }}
+                    >
+                      Refresh
+                    </Button>
+                  </Box>
+                  <Typography variant="body1" color="text.secondary">
+                    View your past bookings and payments
+                  </Typography>
+                </Box>
 
-            <TabPanel value={activeTab} index={1}>
-              {filteredPayments && filteredPayments.length > 0 ? (
-                <CustomerPaymentHistoryTable
-                  payments={filteredPayments}
-                  loading={loading}
-                />
-              ) : paymentSearchQuery ? (
-                <EmptyState
-                  icon={HiCreditCard}
-                  title="No Matching Payments"
-                  message={`No payments found matching "${paymentSearchQuery}". Try a different search term.`}
-                />
-              ) : (
-                <EmptyState
-                  icon={HiCreditCard}
-                  title="No Payments Found"
-                  message="You haven't made any payments yet."
-                />
-              )}
-            </TabPanel>
+                {/* Tabs */}
+                <Box
+                  sx={{
+                    borderBottom: 1,
+                    borderColor: 'divider',
+                    mb: 3,
+                    display: 'flex',
+                    justifyContent: 'flex-start',
+                  }}
+                >
+                  <Tabs
+                    value={activeTab}
+                    onChange={handleTabChange}
+                    sx={{
+                      alignItems: 'flex-start',
+                      '& .MuiTabs-flexContainer': {
+                        justifyContent: 'flex-start',
+                      },
+                      '& .MuiTab-root': {
+                        textTransform: 'none',
+                        fontWeight: 'bold',
+                        fontSize: '1rem',
+                        minWidth: 120,
+                      },
+                      '& .Mui-selected': {
+                        color: '#c10007 !important',
+                      },
+                      '& .MuiTabs-indicator': {
+                        backgroundColor: '#c10007',
+                      },
+                    }}
+                  >
+                    <Tab
+                      label={`Bookings (${bookings?.length || 0})`}
+                      icon={<HiOutlineClipboardDocumentCheck />}
+                      iconPosition="start"
+                    />
+                    <Tab
+                      label={`Payments (${payments?.length || 0})`}
+                      icon={<HiCreditCard />}
+                      iconPosition="start"
+                    />
+                  </Tabs>
+                </Box>
+
+                {/* Search Bar - Aligned to the right like Refresh button */}
+                <Box
+                  sx={{
+                    mt: -1,
+                    mb: -1,
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                  }}
+                >
+                  <Box sx={{ width: '100%' }}>
+                    {activeTab === 0 ? (
+                      <SearchBar
+                        value={bookingSearchQuery}
+                        onChange={(e) => setBookingSearchQuery(e.target.value)}
+                        placeholder="Search bookings..."
+                        fullWidth
+                      />
+                    ) : (
+                      <SearchBar
+                        value={paymentSearchQuery}
+                        onChange={(e) => setPaymentSearchQuery(e.target.value)}
+                        placeholder="Search payments..."
+                        fullWidth
+                      />
+                    )}
+                  </Box>
+                </Box>
+
+                {/* Result count below search bar - aligned to the right */}
+                {activeTab === 0 && bookingSearchQuery && (
+                  <Box
+                    sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}
+                  ></Box>
+                )}
+                {activeTab === 1 && paymentSearchQuery && (
+                  <Box
+                    sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}
+                  ></Box>
+                )}
+
+                {/* Error Alert */}
+                {error && (
+                  <Alert severity="error" sx={{ mb: 3 }}>
+                    {error}
+                  </Alert>
+                )}
+
+                {/* Loading Indicator */}
+                {loading && (
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'center', py: 3 }}
+                  >
+                    <CircularProgress sx={{ color: '#c10007' }} />
+                  </Box>
+                )}
+
+                {/* Tab Panels */}
+                <TabPanel value={activeTab} index={0}>
+                  {filteredBookings && filteredBookings.length > 0 ? (
+                    <CustomerBookingHistoryTable
+                      bookings={filteredBookings}
+                      loading={loading}
+                      onViewBooking={handleViewBooking}
+                    />
+                  ) : bookingSearchQuery ? (
+                    <EmptyState
+                      icon={HiOutlineClipboardDocumentCheck}
+                      title="No Matching Bookings"
+                      message={`No bookings found matching "${bookingSearchQuery}". Try a different search term.`}
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={HiOutlineClipboardDocumentCheck}
+                      title="No Bookings Found"
+                      message="You haven't made any bookings yet."
+                    />
+                  )}
+                </TabPanel>
+
+                <TabPanel value={activeTab} index={1}>
+                  {filteredPayments && filteredPayments.length > 0 ? (
+                    <CustomerPaymentHistoryTable
+                      payments={filteredPayments}
+                      loading={loading}
+                    />
+                  ) : paymentSearchQuery ? (
+                    <EmptyState
+                      icon={HiCreditCard}
+                      title="No Matching Payments"
+                      message={`No payments found matching "${paymentSearchQuery}". Try a different search term.`}
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={HiCreditCard}
+                      title="No Payments Found"
+                      message="You haven't made any payments yet."
+                    />
+                  )}
+                </TabPanel>
+              </>
+            )}
           </CardContent>
         </Card>
       </Box>

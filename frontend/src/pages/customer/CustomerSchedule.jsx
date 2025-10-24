@@ -90,7 +90,6 @@ function CustomerSchedule() {
         : [];
       setSchedule(filteredSchedule);
     } catch (err) {
-      console.error('Error fetching schedules:', err);
       setError('Failed to load schedule');
       setSchedule([]);
     } finally {
@@ -101,33 +100,6 @@ function CustomerSchedule() {
   useEffect(() => {
     fetchData();
   }, []);
-
-  if (loading && schedule === null) {
-    return (
-      <>
-        <Header
-          onMenuClick={() => setMobileOpen(true)}
-          isMenuOpen={mobileOpen}
-        />
-        <CustomerSideBar
-          mobileOpen={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-        />
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            mt: '80px',
-          }}
-        >
-          <Loading />
-        </Box>
-      </>
-    );
-  }
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -166,75 +138,88 @@ function CustomerSchedule() {
           }}
         >
           <CardContent sx={{ flexGrow: 1 }}>
-            {/* Page Header */}
-            <Box sx={{ mb: 3 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 1,
-                }}
-              >
-                <Typography
-                  variant="h4"
-                  component="h1"
-                  sx={{
-                    fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
-                    fontWeight: 'bold',
-                    color: '#c10007',
-                  }}
-                >
-                  <HiCalendarDays
-                    style={{ verticalAlign: '-3px', marginRight: '8px' }}
-                  />
-                  Schedule
-                </Typography>
-                <Button
-                  variant="outlined"
-                  startIcon={<HiRefresh />}
-                  onClick={fetchData}
-                  disabled={loading}
-                  sx={{
-                    borderColor: '#c10007',
-                    color: '#c10007',
-                    '&:hover': {
-                      borderColor: '#a50006',
-                      backgroundColor: '#fff5f5',
-                    },
-                  }}
-                >
-                  Refresh
-                </Button>
-              </Box>
-              <Typography variant="body1" color="text.secondary">
-                View your upcoming and ongoing schedules.
-              </Typography>
-            </Box>
-
-            {/* Error */}
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
-
             {/* Loading Indicator */}
-            {loading && (
+            {loading && schedule === null && (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
                 <CircularProgress sx={{ color: '#c10007' }} />
               </Box>
             )}
 
-            {/* Schedule Table or Empty State */}
-            {!schedule || schedule.length === 0 ? (
-              <EmptyState
-                icon={HiCalendarDays}
-                title="No Schedule Found"
-                message="You don't have any schedules yet."
-              />
-            ) : (
-              <CustomerScheduleTable rows={schedule} loading={false} />
+            {/* Page Header */}
+            {!(loading && schedule === null) && (
+              <>
+                <Box sx={{ mb: 3 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      mb: 1,
+                    }}
+                  >
+                    <Typography
+                      variant="h4"
+                      component="h1"
+                      sx={{
+                        fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
+                        fontWeight: 'bold',
+                        color: '#c10007',
+                      }}
+                    >
+                      <HiCalendarDays
+                        style={{ verticalAlign: '-3px', marginRight: '8px' }}
+                      />
+                      Schedule
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      startIcon={<HiRefresh />}
+                      onClick={fetchData}
+                      disabled={loading}
+                      sx={{
+                        borderColor: '#c10007',
+                        color: '#c10007',
+                        '&:hover': {
+                          borderColor: '#a50006',
+                          backgroundColor: '#fff5f5',
+                        },
+                      }}
+                    >
+                      Refresh
+                    </Button>
+                  </Box>
+                  <Typography variant="body1" color="text.secondary">
+                    View your upcoming and ongoing schedules.
+                  </Typography>
+                </Box>
+
+                {/* Error */}
+                {error && (
+                  <Alert severity="error" sx={{ mb: 3 }}>
+                    {error}
+                  </Alert>
+                )}
+
+                {/* Loading Indicator */}
+                {loading && (
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'center', py: 3 }}
+                  >
+                    <CircularProgress sx={{ color: '#c10007' }} />
+                  </Box>
+                )}
+
+                {/* Schedule Table or Empty State */}
+                {!schedule || schedule.length === 0 ? (
+                  <EmptyState
+                    icon={HiCalendarDays}
+                    title="No Schedule Found"
+                    message="You don't have any schedules yet."
+                  />
+                ) : (
+                  <CustomerScheduleTable rows={schedule} loading={false} />
+                )}
+              </>
             )}
           </CardContent>
         </Card>

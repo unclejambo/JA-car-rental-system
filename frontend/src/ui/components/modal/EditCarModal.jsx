@@ -106,10 +106,8 @@ export default function EditCarModal({ show, onClose, car, onStatusChange }) {
       }
 
       const updatedCar = await response.json();
-      console.log('Car updated successfully:', updatedCar);
       onClose();
     } catch (error) {
-      console.error('Failed to update car:', error);
       setError(
         error.message || 'Failed to update car. Please check your inputs.'
       );

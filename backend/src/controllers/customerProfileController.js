@@ -11,29 +11,27 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  */
 const refreshProfileImageUrl = async (profileImgUrl) => {
   if (!profileImgUrl) return null;
-  
+
   try {
     // Extract the path from the existing URL
     // Format: https://...supabase.co/storage/v1/object/sign/licenses/profile_img/filename?token=...
     const urlParts = profileImgUrl.split('/');
     const bucketIndex = urlParts.findIndex(part => part === 'licenses');
-    
+
     if (bucketIndex === -1) return profileImgUrl; // Return original if can't parse
-    
+
     const path = urlParts.slice(bucketIndex + 1).join('/').split('?')[0]; // Remove query params
-    
+
     const { data: signedUrlData, error } = await supabase.storage
       .from('licenses')
       .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year expiration
-    
+
     if (error) {
-      console.error('Error refreshing signed URL:', error);
       return profileImgUrl; // Return original URL if refresh fails
     }
-    
+
     return signedUrlData.signedUrl;
   } catch (error) {
-    console.error('Error parsing profile image URL:', error);
     return profileImgUrl; // Return original URL if parsing fails
   }
 };
@@ -44,8 +42,6 @@ const refreshProfileImageUrl = async (profileImgUrl) => {
 export const getCustomerProfile = async (req, res) => {
   try {
     const customerId = parseInt(req.user.sub);
-    console.log('Customer profile request - customerId:', customerId);
-
     if (isNaN(customerId)) {
       return res.status(400).json({
         success: false,
@@ -85,7 +81,6 @@ export const getCustomerProfile = async (req, res) => {
       data: customer,
     });
   } catch (error) {
-    console.error('Error fetching customer profile:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch profile',
@@ -110,16 +105,6 @@ export const updateCustomerProfile = async (req, res) => {
       currentPassword,
       profile_img_url,
     } = req.body;
-
-    console.log('🔄 Customer profile update request:', { 
-      customerId, 
-      first_name, 
-      last_name, 
-      email, 
-      username, 
-      profile_img_url: profile_img_url ? 'URL provided' : 'No URL' 
-    });
-
     // Validate required fields
     if (!first_name || !last_name || !email || !username) {
       return res.status(400).json({
@@ -221,8 +206,6 @@ export const updateCustomerProfile = async (req, res) => {
       data: updatedCustomer,
     });
   } catch (error) {
-    console.error('Error updating customer profile:', error);
-
     if (error.code === 'P2002') {
       const field = error.meta?.target?.[0] || 'field';
       return res.status(400).json({
@@ -297,7 +280,6 @@ export const changeCustomerPassword = async (req, res) => {
       message: 'Password changed successfully',
     });
   } catch (error) {
-    console.error('Error changing customer password:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to change password',

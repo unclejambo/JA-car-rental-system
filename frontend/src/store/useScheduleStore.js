@@ -23,7 +23,6 @@ export const useScheduleStore = create((set, get) => ({
         throw new Error('Failed to fetch schedules');
       }
     } catch (error) {
-      console.error('Error fetching schedules:', error);
       set({ error: error.message, loading: false });
       throw error;
     }
@@ -61,7 +60,6 @@ export const useScheduleStore = create((set, get) => ({
         throw new Error(errorData.error || 'Failed to update reservation status');
       }
     } catch (error) {
-      console.error('Error updating reservation status:', error);
       set({ error: error.message });
       throw error;
     }
@@ -92,7 +90,6 @@ export const useScheduleStore = create((set, get) => ({
         throw new Error(errorData.error || 'Failed to add schedule');
       }
     } catch (error) {
-      console.error('Error adding schedule:', error);
       set({ error: error.message });
       throw error;
     }
@@ -127,7 +124,6 @@ export const useScheduleStore = create((set, get) => ({
         throw new Error(errorData.error || 'Failed to update schedule');
       }
     } catch (error) {
-      console.error('Error updating schedule:', error);
       set({ error: error.message });
       throw error;
     }
@@ -154,7 +150,6 @@ export const useScheduleStore = create((set, get) => ({
         throw new Error(errorData.error || 'Failed to delete schedule');
       }
     } catch (error) {
-      console.error('Error deleting schedule:', error);
       set({ error: error.message });
       throw error;
     }

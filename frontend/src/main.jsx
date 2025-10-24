@@ -18,7 +18,6 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
 import ViewCarsPage from './pages/ViewCarsPage.jsx';
 import CustomerDashboard from './pages/customer/CustomerDashboard.jsx';
 import ProtectedRoute from './ui/components/modal/ProtectedRoute.jsx';
-import CustomerProfile from './pages/customer/CustomerProfile.jsx';
 import CustomerBookings from './pages/customer/CustomerBookings.jsx';
 import CustomerBookingHistory from './pages/customer/CustomerBookingHistory.jsx';
 import CustomerCars from './pages/customer/CustomerCars.jsx';
@@ -115,15 +114,6 @@ createRoot(document.getElementById('root')).render(
               element={
                 <ProtectedRoute requiredRole="customer">
                   <CustomerDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/customer-profile"
-              element={
-                <ProtectedRoute requiredRole="customer">
-                  <CustomerProfile />
                 </ProtectedRoute>
               }
             />

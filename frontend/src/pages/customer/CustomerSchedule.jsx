@@ -121,6 +121,7 @@ function CustomerSchedule() {
             ml: '0px',
           },
           mt: { xs: '74px', sm: '74px', md: '64px' },
+          border: 'none',
           display: 'flex',
           overflow: 'hidden',
           flexDirection: 'column',
@@ -129,7 +130,6 @@ function CustomerSchedule() {
         <Card
           sx={{
             p: 1,
-            borderRadius: 3,
             boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
             flexGrow: 1,
             display: 'flex',

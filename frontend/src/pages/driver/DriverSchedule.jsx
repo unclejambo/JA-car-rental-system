@@ -135,7 +135,6 @@ export default function DriverSchedule() {
         <Card
           sx={{
             p: 0,
-            borderRadius: 3,
             boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
             backgroundColor: '#fff',
           }}

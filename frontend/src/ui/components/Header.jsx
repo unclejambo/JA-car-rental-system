@@ -159,7 +159,17 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
         </Link>
 
         {isAuthenticated && (
-          <div className="user-profile-panel">
+          <Link
+            to={
+              userRole === 'admin' || userRole === 'staff'
+                ? '/settings'
+                : userRole === 'driver'
+                  ? '/driver-settings'
+                  : '/customer-account'
+            }
+            className="user-profile-panel"
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
             <div className="profile-avatar">
               {profileImageUrl ? (
                 <img
@@ -192,7 +202,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
             >
               {getUserDisplayName()}
             </span>
-          </div>
+          </Link>
         )}
       </div>
     </header>

@@ -565,7 +565,7 @@ function AdminDashboard() {
 
                 <Button
                   component={Link}
-                  to="/report-analytics"
+                  to="/manage-user"
                   variant="outlined"
                   fullWidth
                   sx={{

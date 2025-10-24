@@ -171,7 +171,6 @@ export default function AdminReportAnalytics() {
         }
         setIsInitialLoad(false);
       } catch (err) {
-
         // Fallback to current year range if API fails
         const currentYear = new Date().getFullYear();
         const fallbackYears = [];
@@ -227,7 +226,6 @@ export default function AdminReportAnalytics() {
 
         // Handle expenses view - fetch real maintenance and refund data
         if (primaryView === 'expenses') {
-
           // Fetch maintenance and refunds data
           const [maintenanceRes, refundsRes] = await Promise.all([
             authFetch(`${API_BASE}/maintenance`),
@@ -240,7 +238,6 @@ export default function AdminReportAnalytics() {
 
           const maintenanceRecords = await maintenanceRes.json();
           const refundRecords = await refundsRes.json();
-
 
           // Filter and aggregate data based on period
           let labels, maintenanceAggregated, refundsAggregated;
@@ -352,7 +349,6 @@ export default function AdminReportAnalytics() {
               }
             });
           }
-
 
           // Calculate totals
           const maintenanceTotal = maintenanceAggregated.reduce(
@@ -578,13 +574,11 @@ export default function AdminReportAnalytics() {
             ? ['Day 1', 'Day 2', '...']
             : DEFAULT_MONTHS;
 
-
     if (primaryView === 'expenses') {
       // For expenses view, show two lines: maintenance and refunds
       const maintenanceChartData =
         maintenanceData.length > 0 ? maintenanceData : [];
       const refundsChartData = refundsData.length > 0 ? refundsData : [];
-
 
       return {
         labels,
@@ -662,7 +656,6 @@ export default function AdminReportAnalytics() {
 
     const labels = hasApiData ? chartLabels : [];
     const data = hasApiData ? chartData : [];
-
 
     return {
       labels: labels,

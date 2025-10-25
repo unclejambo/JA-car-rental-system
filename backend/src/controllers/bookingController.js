@@ -221,7 +221,20 @@ export const createBookingRequest = async (req, res) => {
         purpose,
         start_date: new Date(start_date),
         end_date: new Date(end_date),
-        pickup_time: pickup_time ? new Date(pickup_time) : new Date(start_date),
+        pickup_time: pickup_time 
+          ? (() => {
+              // If pickup_time is a time string (HH:MM), combine with start_date in Philippine timezone
+              if (typeof pickup_time === 'string' && pickup_time.includes(':') && !pickup_time.includes('T')) {
+                const [hours, minutes] = pickup_time.split(':');
+                const dateStr = start_date.split('T')[0]; // Get YYYY-MM-DD
+                // Create ISO string with Philippine timezone offset (+08:00)
+                const isoString = `${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000+08:00`;
+                return new Date(isoString);
+              }
+              // Otherwise treat as full datetime
+              return new Date(pickup_time);
+            })()
+          : new Date(start_date),
         pickup_loc: pickup_loc || delivery_location,
         dropoff_loc,
         isSelfDriver: Boolean(isSelfDriver),
@@ -319,23 +332,21 @@ export const createBooking = async (req, res) => {
     const startDateTime = new Date(start_date || startDate);
     const endDateTime = new Date(end_date || endDate);
 
-    // Handle time fields - combine date with time for DateTime fields
+    // Handle time fields - combine date with time for DateTime fields in Philippine timezone
     const pickupTimeStr = pickup_time || pickupTime || "09:00";
     const dropoffTimeStr = dropoff_time || dropoffTime || "17:00";
 
-    // Create DateTime objects by combining date and time
-    const pickupDateTime = new Date(startDateTime);
+    // Create ISO string with Philippine timezone offset (+08:00)
+    // This explicitly tells PostgreSQL timestamptz: "This time is in Philippine timezone"
     const [pickupHour, pickupMinute] = pickupTimeStr.split(":");
-    pickupDateTime.setHours(parseInt(pickupHour), parseInt(pickupMinute), 0, 0);
+    const startDateStr = (start_date || startDate).split('T')[0]; // Get YYYY-MM-DD
+    const pickupISOString = `${startDateStr}T${String(pickupHour).padStart(2, '0')}:${String(pickupMinute).padStart(2, '0')}:00.000+08:00`;
+    const pickupDateTime = new Date(pickupISOString);
 
-    const dropoffDateTime = new Date(endDateTime);
     const [dropoffHour, dropoffMinute] = dropoffTimeStr.split(":");
-    dropoffDateTime.setHours(
-      parseInt(dropoffHour),
-      parseInt(dropoffMinute),
-      0,
-      0
-    );
+    const endDateStr = (end_date || endDate).split('T')[0]; // Get YYYY-MM-DD
+    const dropoffISOString = `${endDateStr}T${String(dropoffHour).padStart(2, '0')}:${String(dropoffMinute).padStart(2, '0')}:00.000+08:00`;
+    const dropoffDateTime = new Date(dropoffISOString);
 
     // Handle driver selection properly
     const driverId = drivers_id || selectedDriver;

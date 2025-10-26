@@ -168,17 +168,15 @@ export default function CustomerSettings() {
             );
 
             if (!notificationResponse.ok) {
-              const _errorData = await notificationResponse.json();
+              const errorData = await notificationResponse.json();
             } else {
-              const _result = await notificationResponse.json();
+              const result = await notificationResponse.json();
 
               // Update initial values to reflect saved state
               setInitialReceiveUpdatesPhone(receiveUpdatesPhone);
               setInitialReceiveUpdatesEmail(receiveUpdatesEmail);
             }
-          } catch (_notifError) {
-            // Silently fail notification preference update
-          }
+          } catch (notifError) {}
         }
 
         setProfile({
@@ -313,9 +311,7 @@ export default function CustomerSettings() {
                 setInitialReceiveUpdatesPhone(receiveUpdatesPhone);
                 setInitialReceiveUpdatesEmail(receiveUpdatesEmail);
               }
-            } catch (notifError) {
-              // Silently fail notification preference update
-            }
+            } catch (notifError) {}
           }
 
           // Update profile state

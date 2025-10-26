@@ -205,8 +205,8 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         const data = await response.json();
         setCustomerData(data);
         
-        // Check if customer has driver license
-        const hasLicense = data.driver_license_no && data.driver_license_no.trim() !== '';
+        // Check if customer has driver license (using new schema structure)
+        const hasLicense = data.driver_license?.driver_license_no && data.driver_license.driver_license_no.trim() !== '';
         setHasDriverLicense(hasLicense);
         
         // If no license, disable self-drive by default

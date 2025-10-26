@@ -10,7 +10,12 @@ import {
   MenuItem,
   Stack,
   Box,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
+import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
+import { useAuth } from '../../../hooks/useAuth';
+import { formatPhilippineLicense, validatePhilippineLicense } from '../../../utils/licenseFormatter';
 
 const driverSchema = z.object({
   driverFirstName: z.string().min(1, 'First name is required'),
@@ -22,7 +27,10 @@ const driverSchema = z.object({
     .max(15, 'Enter a valid phone number')
     .regex(/^\d+$/, 'Digits only'),
   driverEmail: z.string().email('Enter a valid email'),
-  driverLicense: z.string().min(1, 'License number is required'),
+  driverLicense: z.string().min(1, 'License number is required').refine(
+    (val) => validatePhilippineLicense(val),
+    { message: 'Invalid license format. Expected: NXX-YY-ZZZZZZ (e.g., N01-23-456789)' }
+  ),
   restriction: z
     .string()
     .min(1, 'Restriction is required')
@@ -33,7 +41,8 @@ const driverSchema = z.object({
   status: z.enum(['Active', 'Inactive']),
 });
 
-export default function AddDriverModal({ show, onClose }) {
+export default function AddDriverModal({ show, onClose, onSuccess }) {
+  const { logout } = useAuth();
   const [formData, setFormData] = useState({
     driverFirstName: '',
     driverLastName: '',
@@ -49,6 +58,8 @@ export default function AddDriverModal({ show, onClose }) {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
 
   const validate = (data) => {
     const res = driverSchema.safeParse(data);
@@ -79,6 +90,13 @@ export default function AddDriverModal({ show, onClose }) {
     validate(next);
   };
 
+  const handleLicenseChange = (e) => {
+    const formatted = formatPhilippineLicense(e.target.value);
+    const next = { ...formData, driverLicense: formatted };
+    setFormData(next);
+    validate(next);
+  };
+
   const blockNonNumericKeys = (e) => {
     const allowed = [
       'Backspace',
@@ -97,11 +115,81 @@ export default function AddDriverModal({ show, onClose }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate(formData)) return;
 
-    onClose?.();
+    setLoading(true);
+    setApiError('');
+
+    try {
+      const authenticatedFetch = createAuthenticatedFetch(logout);
+      const API_BASE = getApiBase();
+
+      // Transform formData to match backend expectations
+      const payload = {
+        first_name: formData.driverFirstName,
+        last_name: formData.driverLastName,
+        address: formData.driverAddress,
+        contact_no: formData.contactNumber,
+        email: formData.driverEmail,
+        username: formData.username,
+        password: formData.password,
+        driver_license_no: formData.driverLicense,
+        restrictions: formData.restriction,
+        expiry_date: formData.expirationDate,
+        status: formData.status.toLowerCase(),
+      };
+
+      console.log('Submitting driver data:', payload);
+
+      const response = await authenticatedFetch(`${API_BASE}/drivers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || 'Failed to create driver');
+      }
+
+      const result = await response.json();
+      console.log('Driver created successfully:', result);
+
+      // Reset form
+      setFormData({
+        driverFirstName: '',
+        driverLastName: '',
+        driverAddress: '',
+        contactNumber: '',
+        driverEmail: '',
+        driverLicense: '',
+        restriction: '',
+        expirationDate: '',
+        username: '',
+        password: '',
+        status: 'Active',
+      });
+
+      // Call success callback to refresh the list
+      if (onSuccess) {
+        onSuccess();
+      }
+
+      // Close modal
+      onClose?.();
+
+      // Show success message
+      alert('✅ Driver created successfully!');
+    } catch (error) {
+      console.error('Error creating driver:', error);
+      setApiError(error.message || 'Failed to create driver. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -114,6 +202,11 @@ export default function AddDriverModal({ show, onClose }) {
     >
       <DialogTitle>Add New Driver</DialogTitle>
       <DialogContent dividers>
+        {apiError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {apiError}
+          </Alert>
+        )}
         <form id="addDriverForm" onSubmit={handleSubmit}>
           <Stack spacing={2}>
             <TextField
@@ -175,10 +268,11 @@ export default function AddDriverModal({ show, onClose }) {
               label="Driver's License"
               name="driverLicense"
               value={formData.driverLicense}
-              onChange={handleInputChange}
+              onChange={handleLicenseChange}
               required
               error={!!errors.driverLicense}
-              helperText={errors.driverLicense}
+              helperText={errors.driverLicense || 'Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)'}
+              placeholder="N01-23-456789"
               fullWidth
             />
             <TextField
@@ -255,8 +349,10 @@ export default function AddDriverModal({ show, onClose }) {
             form="addDriverForm"
             variant="contained"
             color="success"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
           >
-            Save
+            {loading ? 'Saving...' : 'Save'}
           </Button>
           <Button
             onClick={onClose}

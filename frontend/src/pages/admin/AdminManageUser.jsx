@@ -187,11 +187,27 @@ export default function AdminManageUser() {
     fetchData(activeTab);
   }, [activeTab, fetchData]);
 
+  const handleStaffSuccess = useCallback(() => {
+    fetchData('STAFF');
+  }, [fetchData]);
+
+  const handleDriverSuccess = useCallback(() => {
+    fetchData('DRIVER');
+  }, [fetchData]);
+
   return (
     <Box sx={{ display: 'flex' }}>
       <title>Manage Users</title>
-      <AddStaffModal show={showAddStaffModal} onClose={closeAddStaffModal} />
-      <AddDriverModal show={showAddDriverModal} onClose={closeAddDriverModal} />
+      <AddStaffModal 
+        show={showAddStaffModal} 
+        onClose={closeAddStaffModal}
+        onSuccess={handleStaffSuccess}
+      />
+      <AddDriverModal 
+        show={showAddDriverModal} 
+        onClose={closeAddDriverModal}
+        onSuccess={handleDriverSuccess}
+      />
 
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar

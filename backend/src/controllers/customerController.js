@@ -279,7 +279,16 @@ export const getCurrentCustomer = async (req, res) => {
         status: true,
         isRecUpdate: true,
         profile_img_url: true,
-        driver_license_no: true,
+        driver_license_id: true,
+        driver_license: {
+          select: {
+            license_id: true,
+            driver_license_no: true,
+            expiry_date: true,
+            restrictions: true,
+            dl_img_url: true,
+          },
+        },
         date_created: true
         // Exclude password for security
       }

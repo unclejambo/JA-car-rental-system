@@ -267,8 +267,9 @@ async function register(req, res, next) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create driverLicense record only if user has a license
+    let driverLicenseId = null;
     if (licenseNumber && licenseExpiry && dl_img_url) {
-      await prisma.driverLicense.create({
+      const driverLicense = await prisma.driverLicense.create({
         data: {
           driver_license_no: licenseNumber,
           expiry_date: new Date(licenseExpiry),
@@ -276,6 +277,7 @@ async function register(req, res, next) {
           dl_img_url: dl_img_url, // Store the Supabase URL
         },
       });
+      driverLicenseId = driverLicense.license_id; // Capture the new license_id
     }
 
     // Create customer
@@ -290,7 +292,7 @@ async function register(req, res, next) {
         password: hashedPassword,
         fb_link: fb_link || null,
         status: 'active',
-        driver_license_no: licenseNumber || null, // NULL if no license
+        driver_license_id: driverLicenseId, // Use driver_license_id FK instead of driver_license_no
         date_created: new Date(),
         isRecUpdate: 3, // Enable both SMS and Email notifications by default
       },

@@ -19,6 +19,7 @@ import SuccessModal from '../ui/components/modal/SuccessModal.jsx';
 import RegisterTermsAndConditionsModal from '../ui/modals/RegisterTermsAndConditionsModal.jsx';
 import PhoneVerificationModal from '../components/PhoneVerificationModal.jsx';
 import { useAuth } from '../hooks/useAuth.js';
+import { formatPhilippineLicense, validatePhilippineLicense } from '../utils/licenseFormatter';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
@@ -79,11 +80,37 @@ const RegisterPage = () => {
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    let processedValue = type === 'checkbox' ? checked : value;
+    
+    // Convert date values to yyyy-MM-dd format for HTML date inputs
+    if (type === 'date' && value) {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        // Format as yyyy-MM-dd
+        processedValue = date.toISOString().split('T')[0];
+      }
+    }
+    
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: processedValue,
     }));
     setErrors((prev) => ({ ...prev, [name]: undefined }));
+  };
+
+  const handleLicenseChange = (e) => {
+    const formatted = formatPhilippineLicense(e.target.value);
+    setFormData((prev) => ({
+      ...prev,
+      licenseNumber: formatted,
+    }));
+    // Validate the format and set error if invalid
+    if (formatted && !validatePhilippineLicense(formatted)) {
+      setErrors((prev) => ({ ...prev, licenseNumber: 'Invalid license format. Expected: NXX-YY-ZZZZZZ (e.g., N01-23-456789)' }));
+    } else {
+      setErrors((prev) => ({ ...prev, licenseNumber: undefined }));
+    }
   };
 
   const handleFileChange = (e) => {
@@ -167,6 +194,10 @@ const RegisterPage = () => {
         if (!licenseNumber?.trim() || !licenseExpiry?.trim() || !licenseFile) {
           throw new Error('Please provide driver license number, expiry date, and image');
         }
+        // Validate license format
+        if (!validatePhilippineLicense(licenseNumber.trim())) {
+          throw new Error('Invalid license format. Expected: NXX-YY-ZZZZZZ (e.g., N01-23-456789)');
+        }
       }
 
       if (password !== confirmPassword) {
@@ -247,7 +278,9 @@ const RegisterPage = () => {
         fb_link: fb_link.trim(),
         hasDriverLicense: hasDriverLicense,
         licenseNumber: hasDriverLicense === 'yes' ? licenseNumber.trim() : null,
-        licenseExpiry: hasDriverLicense === 'yes' ? licenseExpiry.trim() : null,
+        // Ensure date is in yyyy-MM-dd format (not ISO string with time)
+        licenseExpiry: hasDriverLicense === 'yes' && licenseExpiry ? 
+          new Date(licenseExpiry).toISOString().split('T')[0] : null,
         restrictions: hasDriverLicense === 'yes' ? (restrictions?.trim() || '') : null,
         dl_img_url: dl_img_url,
         agreeTerms: true,
@@ -755,15 +788,15 @@ const RegisterPage = () => {
                   name="licenseNumber"
                   label="DRIVER'S LICENSE NUMBER"
                   value={formData.licenseNumber}
-                  onChange={onChange}
+                  onChange={handleLicenseChange}
                   type="text"
-                  placeholder="License number"
+                  placeholder="N01-23-456789"
                   fullWidth
                   variant="outlined"
                   size="medium"
                   required
                   error={!!errors.licenseNumber}
-                  helperText={errors.licenseNumber}
+                  helperText={errors.licenseNumber || 'Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)'}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       backgroundColor: 'rgba(229, 231, 235, 0.8)',

@@ -35,12 +35,12 @@ model Customer {
   fb_link           String?
   date_created      DateTime?      @db.Timestamptz(6)
   status            String?
-  driver_license_no String?
   isRecUpdate       Int?           @db.SmallInt
   profile_img_url   String?
   phone_verified    Boolean?       @default(false)
+  driver_license_id Int?
   bookings          Booking[]
-  driver_license    DriverLicense? @relation("CustomerDriverLicense", fields: [driver_license_no], references: [driver_license_no])
+  driver_license    DriverLicense? @relation("CustomerDriverLicense", fields: [driver_license_id], references: [license_id])
   payments          Payment[]
   refunds           Refund[]
   transactions      Transaction[]
@@ -48,10 +48,12 @@ model Customer {
 }
 
 model DriverLicense {
-  driver_license_no String     @id
+  driver_license_no String     @unique
   expiry_date       DateTime?  @db.Timestamptz(6)
   restrictions      String?
   dl_img_url        String?
+  drivers_licens_id String?    @unique @db.Uuid
+  license_id        Int        @id @default(autoincrement())
   customers         Customer[] @relation("CustomerDriverLicense")
   drivers           Driver[]
 }
@@ -65,13 +67,13 @@ model Driver {
   email             String
   username          String
   password          String
-  driver_license_no String
   status            String?
   profile_img_url   String?
   phone_verified    Boolean?      @default(false)
   booking_status    Int?          @db.SmallInt
+  driver_license_id Int
   bookings          Booking[]
-  driver_license    DriverLicense @relation(fields: [driver_license_no], references: [driver_license_no])
+  driver_license    DriverLicense @relation(fields: [driver_license_id], references: [license_id])
   releases          Release[]
 }
 

@@ -189,15 +189,20 @@ export const registerUser = async (req, res) => {
       }
     }
 
-    // Create driver license record
-    const driverLicense = await prisma.driverLicense.create({
-      data: {
-        driver_license_no: licenseNumber,
-        expiry_date: new Date(licenseExpiry),
-        restrictions: restrictions || null,
-        dl_img_url: licenseImageUrl
-      }
-    });
+    // Create driver license record (only if user has a license)
+    let driverLicenseId = null;
+    
+    if (licenseNumber && licenseExpiry) {
+      const driverLicense = await prisma.driverLicense.create({
+        data: {
+          driver_license_no: licenseNumber,
+          expiry_date: new Date(licenseExpiry),
+          restrictions: restrictions || null,
+          dl_img_url: licenseImageUrl
+        }
+      });
+      driverLicenseId = driverLicense.license_id;
+    }
 
     // Create customer record
     const customer = await prisma.customer.create({
@@ -209,7 +214,7 @@ export const registerUser = async (req, res) => {
         password: hashedPassword,
         address: address,
         contact_no: contactNumber,
-        driver_license_no: licenseNumber,
+        driver_license_id: driverLicenseId, // Use license_id instead of license_no
         status: 'Active',
         date_created: new Date(),
         isRecUpdate: 3 // Enable both SMS and Email notifications by default

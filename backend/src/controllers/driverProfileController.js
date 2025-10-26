@@ -60,7 +60,7 @@ export const getDriverProfile = async (req, res) => {
 
     // Get license info
     const license = await prisma.driverLicense.findUnique({
-      where: { driver_license_no: driver.driver_license_no },
+      where: { license_id: driver.driver_license_id },
     });
 
     // Generate signed URL for license image if it exists
@@ -77,7 +77,8 @@ export const getDriverProfile = async (req, res) => {
       contact_no: driver.contact_no,
       email: driver.email,
       username: driver.username,
-      license_number: driver.driver_license_no,
+      license_id: license?.license_id || null,
+      license_number: license?.driver_license_no || null,
       user_type: "driver",
       status: driver.status,
       profile_img_url: driver.profile_img_url,
@@ -206,7 +207,7 @@ export const updateDriverProfile = async (req, res) => {
         contact_no: contact_no || null,
         email,
         username,
-        driver_license_no: license_number,
+        driver_license_id: licenseRecord.license_id, // Use license_id FK
         password: hashedPassword,
         // Only update profile_img_url if provided, otherwise preserve existing
         profile_img_url: req.body.profile_img_url !== undefined 
@@ -218,7 +219,7 @@ export const updateDriverProfile = async (req, res) => {
     // ✅ Update driver license info (restrictions + expiry)
     if (license_restrictions !== undefined || license_expiry !== undefined) {
       await prisma.driverLicense.update({
-        where: { driver_license_no: license_number },
+        where: { license_id: licenseRecord.license_id }, // Use license_id
         data: {
           restrictions:
             license_restrictions !== undefined
@@ -233,7 +234,7 @@ export const updateDriverProfile = async (req, res) => {
 
     // ✅ Re-fetch latest license info
     const refreshedLicense = await prisma.driverLicense.findUnique({
-      where: { driver_license_no: license_number },
+      where: { license_id: licenseRecord.license_id }, // Use license_id
     });
 
     // Generate signed URL for license image if it exists
@@ -250,7 +251,8 @@ export const updateDriverProfile = async (req, res) => {
       contact_no: updatedDriver.contact_no,
       email: updatedDriver.email,
       username: updatedDriver.username,
-      license_number: updatedDriver.driver_license_no,
+      license_id: refreshedLicense?.license_id || null, // Include license_id
+      license_number: refreshedLicense?.driver_license_no || null, // Get from refreshed license
       user_type: "driver",
       status: updatedDriver.status,
       profile_img_url: updatedDriver.profile_img_url,

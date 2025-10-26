@@ -53,20 +53,38 @@ async function getSignedLicenseUrl(dl_img_url) {
 // @access  Authenticated
 export const updateDriverLicense = async (req, res) => {
   try {
-    const driverLicenseNo = req.params.id;
-    const { restrictions, expiry_date, dl_img_url } = req.body;
+    const licenseId = parseInt(req.params.id, 10);
+    const { restrictions, expiry_date, dl_img_url, driver_license_no } = req.body;
+    
+    // Validate license_id
+    if (isNaN(licenseId)) {
+      return res.status(400).json({ error: "Invalid license ID" });
+    }
+
     // Find current record for comparison
     const existing = await prisma.driverLicense.findUnique({
-      where: { driver_license_no: driverLicenseNo },
+      where: { license_id: licenseId },
     });
 
     if (!existing) {
       return res.status(404).json({ error: "License not found" });
     }
 
+    // If updating license number, check if it's already in use by another record
+    if (driver_license_no && driver_license_no !== existing.driver_license_no) {
+      const duplicate = await prisma.driverLicense.findUnique({
+        where: { driver_license_no: driver_license_no },
+      });
+      
+      if (duplicate && duplicate.license_id !== licenseId) {
+        return res.status(400).json({ error: "License number already exists" });
+      }
+    }
+
     const updated = await prisma.driverLicense.update({
-      where: { driver_license_no: driverLicenseNo },
+      where: { license_id: licenseId },
       data: {
+        driver_license_no: driver_license_no?.trim() || existing.driver_license_no,
         restrictions:
           typeof restrictions === "string"
             ? restrictions.trim()
@@ -93,10 +111,19 @@ export const updateDriverLicense = async (req, res) => {
 // @access  Authenticated
 export const deleteLicenseImage = async (req, res) => {
   try {
-    const driverLicenseNo = req.params.id;
+    const licenseId = parseInt(req.params.id, 10);
+    
+    // Validate license_id
+    if (isNaN(licenseId)) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid license ID" 
+      });
+    }
+
     // Find current record
     const existing = await prisma.driverLicense.findUnique({
-      where: { driver_license_no: driverLicenseNo },
+      where: { license_id: licenseId },
     });
 
     if (!existing) {
@@ -134,7 +161,7 @@ export const deleteLicenseImage = async (req, res) => {
     }
     // Update database to set dl_img_url to null
     const updated = await prisma.driverLicense.update({
-      where: { driver_license_no: driverLicenseNo },
+      where: { license_id: licenseId },
       data: { dl_img_url: null },
     });
     res.json({

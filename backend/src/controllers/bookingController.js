@@ -822,7 +822,12 @@ export const getMyBookings = async (req, res) => {
           select: {
             first_name: true,
             last_name: true,
-            driver_license_no: true,
+            driver_license_id: true,
+            driver_license: {
+              select: {
+                driver_license_no: true,
+              },
+            },
           },
         },
         payments: {
@@ -854,7 +859,7 @@ export const getMyBookings = async (req, res) => {
         driver_details: driver
           ? {
               name: `${driver.first_name} ${driver.last_name}`,
-              license: driver.driver_license_no,
+              license: driver.driver_license?.driver_license_no || null,
             }
           : null,
         payment_info: payments || [],

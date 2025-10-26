@@ -30,6 +30,7 @@ import ConfirmationModal from '../../ui/components/modal/ConfirmationModal';
 import { FormControlLabel, Checkbox } from '@mui/material';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
 import PhoneVerificationModal from '../../components/PhoneVerificationModal';
+import { formatPhilippineLicense, validatePhilippineLicense, getLicenseValidationError } from '../../utils/licenseFormatter';
 
 export default function CustomerSettings() {
   // ✅ Added Snackbar state
@@ -442,21 +443,11 @@ export default function CustomerSettings() {
         _setError(null);
         const customer = await getCustomerById(user?.id);
         if (customer) {
-          const licenseNo =
-            typeof customer.driver_license_no === 'string'
-              ? customer.driver_license_no
-              : customer.driver_license_no?.driver_license_no || '';
-          const licenseRestrictions =
-            typeof customer.driver_license?.restrictions === 'string'
-              ? customer.driver_license?.restrictions
-              : customer.driver_license?.restrictions?.restrictions || '';
-          const licenseExpiration =
-            typeof customer.driver_license?.expiry_date === 'string'
-              ? customer.driver_license?.expiry_date
-              : customer.driver_license?.expiry_date?.expiry_date || '';
+          const licenseNo = customer.driver_license?.driver_license_no || '';
+          const licenseRestrictions = customer.driver_license?.restrictions || '';
+          const licenseExpiration = customer.driver_license?.expiry_date || '';
           const licenseImage =
             customer.driver_license?.dl_img_url ||
-            customer.DriverLicense?.dl_img_url ||
             'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
 
           setLicenseNo(licenseNo);
@@ -601,7 +592,27 @@ export default function CustomerSettings() {
   }
 
   async function handleLicenseSaveConfirm() {
+    // Validate license number format
+    const licenseError = getLicenseValidationError(draftLicenseNo);
+    if (licenseError) {
+      setSuccessMessage(licenseError);
+      setShowSuccess(true);
+      return;
+    }
+
     setSavingLicense(true);
+
+    // Get customer's license_id from the initial data fetch
+    let user = JSON.parse(localStorage.getItem('userInfo'));
+    const customer = await getCustomerById(user?.id);
+    const licenseId = customer?.driver_license?.license_id;
+
+    if (!licenseId) {
+      setSuccessMessage('License ID not found. Please refresh and try again.');
+      setShowSuccess(true);
+      setSavingLicense(false);
+      return;
+    }
 
     try {
       // Upload image first if a new one was selected
@@ -619,18 +630,19 @@ export default function CustomerSettings() {
       }
 
       const updateData = {
+        driver_license_no: draftLicenseNo || licenseNo, // Include license number for editing
         restrictions: draftLicenseRestrictions,
         expiry_date: draftLicenseExpiration,
         dl_img_url: uploadedImageUrl || '',
       };
 
-      const response = await fetch(
-        `http://localhost:3001/api/driver-license/${draftLicenseNo}`,
+      // Use license_id (numeric) instead of license number in URL
+      const response = await authenticatedFetch(
+        `${API_BASE}/api/driver-license/${licenseId}`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
           },
           body: JSON.stringify(updateData),
         }
@@ -639,9 +651,10 @@ export default function CustomerSettings() {
       const result = await response.json();
 
       if (response.ok) {
-        setLicenseRestrictions(updateData.restrictions);
-        setLicenseExpiration(updateData.expiry_date);
-        setLicenseImage(uploadedImageUrl);
+        setLicenseNo(result.driver_license_no || draftLicenseNo); // Update from response
+        setLicenseRestrictions(result.restrictions || updateData.restrictions);
+        setLicenseExpiration(result.expiry_date || updateData.expiry_date);
+        setLicenseImage(result.dl_img_url || uploadedImageUrl);
         setDraftLicenseImage(null); // Clear draft after successful save
         setPreviewLicenseImage(null); // Clear preview
         setIsEditingLicense(false);
@@ -1503,15 +1516,14 @@ export default function CustomerSettings() {
                                 <TextField
                                   label="License No"
                                   value={draftLicenseNo}
+                                  onChange={(e) => {
+                                    const formatted = formatPhilippineLicense(e.target.value);
+                                    setDraftLicenseNo(formatted);
+                                  }}
                                   fullWidth
-                                  InputProps={{
-                                    readOnly: true,
-                                  }}
-                                  sx={{
-                                    '& .MuiInputBase-input.Mui-disabled': {
-                                      WebkitTextFillColor: '#000', // ensure black text color
-                                    },
-                                  }}
+                                  placeholder="N01-23-456789"
+                                  helperText="Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)"
+                                  error={draftLicenseNo && !validatePhilippineLicense(draftLicenseNo)}
                                 />
                                 <TextField
                                   label="Restrictions"

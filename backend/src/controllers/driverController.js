@@ -46,7 +46,8 @@ export const getDrivers = async (req, res) => {
       ...d,
       driver_id: d.drivers_id,
       id: d.drivers_id,
-      license_number: d.driver_license_no,
+      license_number: d.driver_license?.driver_license_no || null,
+      license_id: d.driver_license_id,
       rating: 4.5,
       password: undefined,
       restriction: d.driver_license?.restrictions || null,
@@ -85,7 +86,8 @@ export const getDriverById = async (req, res) => {
       contactNo: driver.contact_no,
       email: driver.email,
       license: {
-        number: driver.driver_license_no,
+        id: driver.driver_license?.license_id || null,
+        number: driver.driver_license?.driver_license_no || null,
         expiryDate: driver.driver_license?.expiry_date,
         restrictions: driver.driver_license?.restrictions,
       },
@@ -112,6 +114,8 @@ export const createDriver = async (req, res) => {
       username,
       password,
       driver_license_no,
+      restrictions,
+      expiry_date,
       status,
     } = req.body;
 
@@ -146,15 +150,23 @@ export const createDriver = async (req, res) => {
       });
     }
 
-    // Check if license exists
-    const licenseExists = await prisma.driverLicense.findUnique({
+    // Check if license exists, create if not
+    let licenseExists = await prisma.driverLicense.findUnique({
       where: { driver_license_no: driver_license_no },
     });
 
     if (!licenseExists) {
-      return res.status(400).json({
-        error: "Invalid license number. License not found in system.",
+      // Create the driver license
+      console.log(`Creating driver license: ${driver_license_no}`);
+      licenseExists = await prisma.driverLicense.create({
+        data: {
+          driver_license_no: driver_license_no,
+          restrictions: restrictions || null,
+          expiry_date: expiry_date ? new Date(expiry_date) : null,
+          dl_img_url: null,
+        },
       });
+      console.log('Driver license created successfully');
     }
 
     // Hash password
@@ -170,7 +182,7 @@ export const createDriver = async (req, res) => {
         email,
         username,
         password: hashedPassword,
-        driver_license_no,
+        driver_license_id: licenseExists.license_id,
         status: status || "active",
       },
       include: {
@@ -186,6 +198,8 @@ export const createDriver = async (req, res) => {
       driver: driverResponse,
     });
   } catch (error) {
+    console.error('Error creating driver:', error);
+    
     // Handle Prisma unique constraint errors
     if (error.code === "P2002") {
       const field = error.meta?.target?.[0] || "field";
@@ -254,10 +268,8 @@ export const updateDriver = async (req, res) => {
     }
 
     // Check if license number is valid (if being changed)
-    if (
-      driver_license_no &&
-      driver_license_no !== existingDriver.driver_license_no
-    ) {
+    let newLicenseId = null;
+    if (driver_license_no) {
       const licenseExists = await prisma.driverLicense.findUnique({
         where: { driver_license_no: driver_license_no },
       });
@@ -267,6 +279,8 @@ export const updateDriver = async (req, res) => {
           error: "Invalid license number. License not found in system.",
         });
       }
+      
+      newLicenseId = licenseExists.license_id;
     }
 
     // Prepare update data
@@ -277,7 +291,7 @@ export const updateDriver = async (req, res) => {
     if (contact_no !== undefined) updateData.contact_no = contact_no;
     if (email) updateData.email = email;
     if (username) updateData.username = username;
-    if (driver_license_no) updateData.driver_license_no = driver_license_no;
+    if (newLicenseId) updateData.driver_license_id = newLicenseId;
     if (status) updateData.status = status;
 
     // Hash password if provided

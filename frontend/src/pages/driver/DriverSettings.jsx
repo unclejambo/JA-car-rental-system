@@ -36,6 +36,7 @@ import { HiCog8Tooth } from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
 import { updateLicense } from '../../store/license'; // same approach as CustomerSettings
+import { formatPhilippineLicense, validatePhilippineLicense, getLicenseValidationError } from '../../utils/licenseFormatter';
 
 export default function DriverSettings() {
   // Tabs
@@ -87,6 +88,7 @@ export default function DriverSettings() {
 
   // License tab states (moved licenseNumber here)
   const [isEditingLicense, setIsEditingLicense] = useState(false);
+  const [licenseId, setLicenseId] = useState(null); // License ID for API calls
   const [licenseNumber, setLicenseNumber] = useState('');
   const [licenseRestrictions, setLicenseRestrictions] = useState('');
   const [licenseExpiration, setLicenseExpiration] = useState('');
@@ -167,9 +169,11 @@ export default function DriverSettings() {
       setImagePreview(data.profile_img_url || ''); // ✅ Set profile image preview
 
       // license fields (defensive)
-      setLicenseNumber(data.license_number || data.driver_license_no || '');
+      setLicenseId(data.license_id || data.license?.license_id || null);
+      setLicenseNumber(data.license_number || data.driver_license?.driver_license_no || data.license?.driver_license_no || '');
       setLicenseRestrictions(
         data.license_restrictions ||
+          data.driver_license?.restrictions ||
           data.license?.restrictions ||
           data.licenseRestrictions ||
           ''
@@ -177,6 +181,7 @@ export default function DriverSettings() {
       setLicenseExpiration(
         data.license_expiry || // <-- this is the correct key
           data.license_expiration ||
+          data.driver_license?.expiry_date ||
           data.license?.expiry_date ||
           data.license?.expiration_date ||
           data.DriverLicense?.expiry_date ||
@@ -187,6 +192,8 @@ export default function DriverSettings() {
       setLicenseImage(
         data.license_img_url ||
           data.license_image_url ||
+          data.driver_license?.dl_img_url ||
+          data.license?.dl_img_url ||
           data.DriverLicense?.dl_img_url ||
           data.license_img ||
           'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
@@ -487,23 +494,41 @@ export default function DriverSettings() {
         }
       );
 
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || error.message || 'Upload failed');
+      }
+
       const result = await response.json();
 
-      if (result.ok && result.filePath) {
+      if (result.filePath) {
         return result.filePath;
       } else {
-        throw new Error(result.error || result.message || 'Upload failed');
+        throw new Error('No file path returned from upload');
       }
-    } catch (error) {
-      throw error;
     } finally {
       setLicenseImageUploading(false);
     }
   };
 
   const handleLicenseSaveConfirm = async () => {
+    // Validate license number format
+    const licenseError = getLicenseValidationError(draftLicenseNo);
+    if (licenseError) {
+      setErrorMessage(licenseError);
+      setShowError(true);
+      return;
+    }
+
     setSavingLicense(true);
     setError(null); // Clear any previous errors
+
+    if (!licenseId) {
+      setErrorMessage('License ID not found. Please refresh and try again.');
+      setShowError(true);
+      setSavingLicense(false);
+      return;
+    }
 
     try {
       // Upload license image first if there's a new image
@@ -514,7 +539,7 @@ export default function DriverSettings() {
           if (!uploadedImageUrl) {
             throw new Error('Failed to upload license image');
           }
-        } catch (uploadError) {
+        } catch (_uploadError) {
           setErrorMessage('Failed to upload license image. Please try again.');
           setShowError(true);
           setSavingLicense(false);
@@ -523,14 +548,16 @@ export default function DriverSettings() {
       }
 
       const updateData = {
+        driver_license_no: draftLicenseNo || licenseNumber, // Include license number for editing
         restrictions: draftLicenseRestrictions || licenseRestrictions,
         expiry_date: draftLicenseExpiration || licenseExpiration,
         // Use new image if uploaded, otherwise preserve existing
         dl_img_url: uploadedImageUrl || licenseImage,
       };
 
+      // Use the license_id (numeric ID) instead of license number
       const response = await authenticatedFetch(
-        `${API_BASE}/api/driver-license/${licenseNumber}`,
+        `${API_BASE}/api/driver-license/${licenseId}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -542,6 +569,7 @@ export default function DriverSettings() {
 
       if (response.ok) {
         // ✅ Update local state from backend response
+        setLicenseNumber(result.driver_license_no || draftLicenseNo);
         setLicenseRestrictions(result.restrictions || updateData.restrictions);
         setLicenseExpiration(result.expiry_date || updateData.expiry_date);
         // Use the response image URL (which may be a signed URL)
@@ -564,7 +592,7 @@ export default function DriverSettings() {
         setErrorMessage(result.error || 'Failed to update license');
         setShowError(true);
       }
-    } catch (error) {
+    } catch (_error) {
       setErrorMessage('Unexpected error updating license');
       setShowError(true);
     } finally {
@@ -1513,13 +1541,21 @@ export default function DriverSettings() {
                         {!isEditingLicense && (
                           <IconButton
                             onClick={openLicenseEdit}
+                            title="Edit License Information"
+                            aria-label="Edit license information"
                             sx={{
                               position: 'absolute',
                               top: 12,
-                              right: 50,
-                              backgroundColor: '#fff',
+                              right: { xs: 8, sm: 50 },
+                              backgroundColor: '#1976d2',
+                              color: '#fff',
                               boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                              '&:hover': { backgroundColor: '#f5f5f5' },
+                              '&:hover': { 
+                                backgroundColor: '#1565c0',
+                                transform: 'scale(1.05)',
+                              },
+                              zIndex: 10,
+                              transition: 'all 0.2s',
                             }}
                           >
                             <EditIcon />
@@ -1539,15 +1575,14 @@ export default function DriverSettings() {
                               <TextField
                                 label="License No"
                                 value={draftLicenseNo}
+                                onChange={(e) => {
+                                  const formatted = formatPhilippineLicense(e.target.value);
+                                  setDraftLicenseNo(formatted);
+                                }}
                                 fullWidth
-                                InputProps={{
-                                  readOnly: true,
-                                }}
-                                sx={{
-                                  '& .MuiInputBase-input.Mui-disabled': {
-                                    WebkitTextFillColor: '#000', // ensure black text color
-                                  },
-                                }}
+                                placeholder="N01-23-456789"
+                                helperText="Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)"
+                                error={draftLicenseNo && !validatePhilippineLicense(draftLicenseNo)}
                               />
                               <TextField
                                 label="Restrictions"
@@ -1570,28 +1605,27 @@ export default function DriverSettings() {
                             </>
                           ) : (
                             <>
-                              <Typography sx={{ fontWeight: 700 }}>
-                                License No:{' '}
-                                <span style={{ fontWeight: 400 }}>
-                                  {licenseNumber || ''}
-                                </span>
-                              </Typography>
-                              <Typography sx={{ fontWeight: 700 }}>
-                                Restrictions:{' '}
-                                <span style={{ fontWeight: 400 }}>
-                                  {licenseRestrictions || ''}
-                                </span>
-                              </Typography>
-                              <Typography sx={{ fontWeight: 700 }}>
-                                Expiration Date:{' '}
-                                <span style={{ fontWeight: 400 }}>
-                                  {licenseExpiration
-                                    ? new Date(licenseExpiration)
-                                        .toISOString()
-                                        .split('T')[0]
-                                    : 'N/A'}
-                                </span>
-                              </Typography>
+                              <TextField
+                                label="License No"
+                                value={licenseNumber}
+                                fullWidth
+                                placeholder="N01-23-456789"
+                                InputProps={{ readOnly: true }}
+                              />
+                              <TextField
+                                label="Restrictions"
+                                value={licenseRestrictions}
+                                fullWidth
+                                InputProps={{ readOnly: true }}
+                              />
+                              <TextField
+                                label="Expiration Date"
+                                value={licenseExpiration ? new Date(licenseExpiration).toISOString().split('T')[0] : ''}
+                                type="date"
+                                InputLabelProps={{ shrink: true }}
+                                fullWidth
+                                InputProps={{ readOnly: true }}
+                              />
                             </>
                           )}
                         </Box>

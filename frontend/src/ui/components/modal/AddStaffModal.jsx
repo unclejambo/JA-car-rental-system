@@ -10,7 +10,11 @@ import {
   MenuItem,
   Stack,
   Box,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
+import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
+import { useAuth } from '../../../hooks/useAuth';
 
 const staffSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -28,7 +32,8 @@ const staffSchema = z.object({
   status: z.enum(['Active', 'Inactive']),
 });
 
-export default function AddStaffModal({ show, onClose }) {
+export default function AddStaffModal({ show, onClose, onSuccess }) {
+  const { logout } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -42,6 +47,8 @@ export default function AddStaffModal({ show, onClose }) {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
 
   const validate = (data) => {
     const res = staffSchema.safeParse(data);
@@ -90,10 +97,77 @@ export default function AddStaffModal({ show, onClose }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate(formData)) return;
-    onClose?.();
+
+    setLoading(true);
+    setApiError('');
+
+    try {
+      const authenticatedFetch = createAuthenticatedFetch(logout);
+      const API_BASE = getApiBase();
+
+      // Transform formData to match backend expectations
+      const payload = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        address: formData.address,
+        contact_no: formData.phone,
+        email: formData.email,
+        username: formData.username,
+        password: formData.password,
+        user_type: formData.role,
+        isActive: formData.status === 'Active',
+      };
+
+      console.log('Submitting staff data:', payload);
+
+      const response = await authenticatedFetch(`${API_BASE}/admins`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || 'Failed to create staff member');
+      }
+
+      const result = await response.json();
+      console.log('Staff created successfully:', result);
+
+      // Reset form
+      setFormData({
+        firstName: '',
+        lastName: '',
+        address: '',
+        phone: '',
+        email: '',
+        role: 'staff',
+        username: '',
+        password: '',
+        status: 'Active',
+      });
+
+      // Call success callback to refresh the list
+      if (onSuccess) {
+        onSuccess();
+      }
+
+      // Close modal
+      onClose?.();
+
+      // Show success message
+      alert('✅ Staff member created successfully!');
+    } catch (error) {
+      console.error('Error creating staff:', error);
+      setApiError(error.message || 'Failed to create staff member. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -106,6 +180,11 @@ export default function AddStaffModal({ show, onClose }) {
     >
       <DialogTitle>Add Staff Member</DialogTitle>
       <DialogContent dividers>
+        {apiError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {apiError}
+          </Alert>
+        )}
         <form id="addStaffForm" onSubmit={handleSubmit}>
           <Stack spacing={2}>
             <TextField
@@ -229,8 +308,10 @@ export default function AddStaffModal({ show, onClose }) {
             form="addStaffForm"
             variant="contained"
             color="success"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
           >
-            Save
+            {loading ? 'Saving...' : 'Save'}
           </Button>
           <Button
             onClick={onClose}

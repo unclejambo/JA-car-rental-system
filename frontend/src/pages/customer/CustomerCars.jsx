@@ -201,12 +201,12 @@ function CustomerCars() {
       const authToken = localStorage.getItem('authToken');
 
       if (!customerId) {
-        alert('Please log in to make a booking.');
+        showMessage('Please log in to make a booking.', 'error');
         return;
       }
 
       if (!authToken) {
-        alert('Please log in to make a booking.');
+        showMessage('Please log in to make a booking.', 'error');
         return;
       }
 
@@ -241,12 +241,13 @@ function CustomerCars() {
         setShowSuccessModal(true);
       } else {
         const errorData = await response.json();
-        alert(
-          `Error submitting booking: ${errorData.error || errorData.details || 'Please try again.'}`
+        showMessage(
+          `Error submitting booking: ${errorData.error || errorData.details || 'Please try again.'}`,
+          'error'
         );
       }
     } catch (error) {
-      alert('Error submitting booking. Please try again.');
+      showMessage('Error submitting booking. Please try again.', 'error');
     }
   };
 
@@ -803,7 +804,7 @@ function CustomerCars() {
                                     color="text.secondary"
                                     sx={{ mb: 1 }}
                                   >
-                                    {car.year} • {car.no_of_seat} seats
+                                    {car.year} • {car.no_of_seat} seats • {car.isManual ? 'Manual' : 'Automatic'}
                                   </Typography>
 
                                   {/* Plate Number */}

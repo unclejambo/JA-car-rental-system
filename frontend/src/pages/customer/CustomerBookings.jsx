@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import CustomerSideBar from '../../ui/components/CustomerSideBar';
 import Header from '../../ui/components/Header';
 import SearchBar from '../../ui/components/SearchBar';
@@ -68,8 +69,18 @@ function TabPanel({ children, value, index, ...other }) {
 }
 
 function CustomerBookings() {
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = React.useState(false);
-  const [activeTab, setActiveTab] = useState(0);
+  
+  // Check URL parameter for initial tab
+  const getInitialTab = () => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab === 'settlement') return 1; // Settlement is index 1
+    return 0; // Default to My Bookings
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [bookings, setBookings] = useState(null);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -243,10 +254,10 @@ function CustomerBookings() {
 
       if (response.ok) {
         const result = await response.json();
-        const message = result.pending_approval
-          ? `✅ Cancellation request submitted! Your booking is pending admin approval. You'll be notified once it's confirmed.`
-          : `✅ ${result.message}`;
-        alert(message);
+        // Only show alert if there's an error, not for successful cancellation requests
+        if (!result.pending_approval && result.error) {
+          alert(`❌ ${result.error}`);
+        }
         fetchBookings(); // Refresh the list
         setShowCancelDialog(false);
         setSelectedBooking(null);

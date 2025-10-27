@@ -108,8 +108,26 @@ export default function BookingSuccessModal({ open, onClose, bookingData, car })
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#c10007' }}>
               🚗 Vehicle Details
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+              {/* Car Image */}
+              {car.car_img_url && (
+                <Box
+                  component="img"
+                  src={car.car_img_url}
+                  alt={`${car.make} ${car.model}`}
+                  sx={{
+                    width: 120,
+                    height: 80,
+                    objectFit: 'cover',
+                    borderRadius: 2,
+                    border: '1px solid #e0e0e0'
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none'; // Hide image if failed to load
+                  }}
+                />
+              )}
+              <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                   {car.make} {car.model} ({car.year})
                 </Typography>

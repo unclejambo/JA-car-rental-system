@@ -90,6 +90,7 @@ model Car {
   year          Int?
   car_type      String?
   hasGPS        Boolean?
+  isManual      Boolean?      @default(false)
   bookings      Booking[]
   maintenances  Maintenance[]
   transactions  Transaction[]

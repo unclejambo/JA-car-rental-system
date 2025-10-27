@@ -732,7 +732,7 @@ function CustomerDashboard() {
 
                     <Button
                       component={Link}
-                      to="/customer-bookings"
+                      to="/customer-bookings?tab=settlement"
                       variant="contained"
                       fullWidth
                       sx={{

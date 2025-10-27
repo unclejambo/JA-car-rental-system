@@ -40,6 +40,8 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
   const [drivers, setDrivers] = useState([]);
   const [isSelfService, setIsSelfService] = useState(true);
   const [missingFields, setMissingFields] = useState([]);
+  const [hasDriverLicense, setHasDriverLicense] = useState(true); // Assume true initially
+  const [customerData, setCustomerData] = useState(null);
   
   const [formData, setFormData] = useState({
     purpose: '',
@@ -53,9 +55,29 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
     selectedDriver: '',
   });
 
+  // Fetch customer data to check driver license
+  const fetchCustomerData = async () => {
+    try {
+      const response = await authenticatedFetch(`${API_BASE}/customers/me`);
+      if (response.ok) {
+        const data = await response.json();
+        setCustomerData(data);
+        // Check if customer has driver license
+        const hasLicense = data.driver_license_no && data.driver_license_no.trim() !== '';
+        setHasDriverLicense(hasLicense);
+      }
+    } catch (error) {
+      console.error('Error fetching customer data:', error);
+      setHasDriverLicense(false);
+    }
+  };
+
   // Initialize form with booking data
   useEffect(() => {
     if (booking && open) {
+      
+      // Fetch customer data for license check
+      fetchCustomerData();
       
       const isDelivery = booking.deliver_loc && booking.deliver_loc.trim() !== '';
       
@@ -192,28 +214,19 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
       return false;
     }
 
-    // Validate pickup and dropoff times (must be between 7:00 AM - 7:00 PM)
-    if (formData.pickupTime) {
-      const [pickupHour, pickupMinute] = formData.pickupTime.split(':').map(Number);
-      const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
-      const minTime = 7 * 60; // 7:00 AM
-      const maxTime = 19 * 60; // 7:00 PM
-
-      if (pickupTimeInMinutes < minTime || pickupTimeInMinutes > maxTime) {
-        setError('Pickup time must be between 7:00 AM and 7:00 PM (office hours)');
-        setMissingFields(['pickupTime']);
-        return false;
-      }
-    }
-
+    // Validate dropoff time (must be between 7:00 AM - 12:00 AM midnight)
+    // Pickup time has NO restrictions (24/7 available)
     if (formData.dropoffTime) {
       const [dropoffHour, dropoffMinute] = formData.dropoffTime.split(':').map(Number);
       const dropoffTimeInMinutes = dropoffHour * 60 + dropoffMinute;
       const minTime = 7 * 60; // 7:00 AM
-      const maxTime = 19 * 60; // 7:00 PM
+      const maxTime = 24 * 60; // 12:00 AM (midnight) - 24:00 = 00:00
 
-      if (dropoffTimeInMinutes < minTime || dropoffTimeInMinutes > maxTime) {
-        setError('Drop-off time must be between 7:00 AM and 7:00 PM (office hours)');
+      // Allow 00:00 (midnight) as valid dropoff time
+      const isMidnight = dropoffHour === 0 && dropoffMinute === 0;
+      
+      if (!isMidnight && (dropoffTimeInMinutes < minTime || dropoffTimeInMinutes >= maxTime)) {
+        setError('Drop-off time must be between 7:00 AM and 12:00 AM (midnight)');
         setMissingFields(['dropoffTime']);
         return false;
       }
@@ -713,14 +726,28 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
               control={
                 <Switch
                   checked={isSelfService}
-                  onChange={(e) => setIsSelfService(e.target.checked)}
+                  onChange={(e) => {
+                    // Check if customer has driver license before allowing self-drive
+                    if (e.target.checked && !hasDriverLicense) {
+                      setError('You must have a driver\'s license on file to use self-drive service. Please update your profile.');
+                      return;
+                    }
+                    setIsSelfService(e.target.checked);
+                    setError(''); // Clear any previous errors
+                  }}
                   color="primary"
+                  disabled={!hasDriverLicense && !isSelfService} // Disable if no license and trying to enable
                 />
               }
               label={
                 <Box>
                   <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
                     Self-Drive Service
+                    {!hasDriverLicense && (
+                      <Typography component="span" variant="caption" color="error" sx={{ ml: 1 }}>
+                        🔒 (Driver's license required)
+                      </Typography>
+                    )}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {isSelfService ? 'You will drive the vehicle yourself' : 'A driver will be assigned'}

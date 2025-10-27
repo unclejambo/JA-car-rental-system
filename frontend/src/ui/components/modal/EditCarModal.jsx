@@ -46,6 +46,7 @@ export default function EditCarModal({ show, onClose, car, onStatusChange }) {
         license_plate: raw.license_plate || car.license_plate || '',
         car_img_url: raw.car_img_url || car.image || '',
         hasGPS: raw.hasGPS ?? car.hasGPS ?? false,
+        isManual: raw.isManual ?? car.isManual ?? false,
       });
     }
   }, [car]);
@@ -242,6 +243,29 @@ export default function EditCarModal({ show, onClose, car, onStatusChange }) {
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Enable if this vehicle has GPS tracking installed
+                    </Typography>
+                  </Box>
+                }
+              />
+            </Box>
+
+            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    name="isManual"
+                    checked={formData.isManual || false}
+                    onChange={handleToggle}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                      Manual Transmission
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Enable if this vehicle has manual transmission (automatic by default)
                     </Typography>
                   </Box>
                 }

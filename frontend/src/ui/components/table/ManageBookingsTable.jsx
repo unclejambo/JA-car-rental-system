@@ -1,9 +1,10 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, Alert, Snackbar } from '@mui/material';
+import { Box, Alert, Snackbar, Typography } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import { HiInboxIn } from 'react-icons/hi';
 import { useState } from 'react';
 import { bookingAPI, paymentAPI } from '../../../utils/api';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +23,46 @@ const ManageBookingsTable = ({
     message: '',
     severity: 'success',
   });
+
+  // Custom empty state overlay
+  const NoRowsOverlay = () => {
+    const getMessage = () => {
+      switch (activeTab) {
+        case 'CANCELLATION':
+          return 'No cancellation requests';
+        case 'EXTENSION':
+          return 'No extension requests';
+        default:
+          return 'No bookings found';
+      }
+    };
+
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          backgroundColor: '#f9f9f9',
+          py: 8,
+        }}
+      >
+        <HiInboxIn size={64} color="#9e9e9e" />
+        <Typography
+          variant="h6"
+          sx={{
+            mt: 2,
+            color: '#757575',
+            fontWeight: 500,
+          }}
+        >
+          {getMessage()}
+        </Typography>
+      </Box>
+    );
+  };
 
   // Logout function for API calls
   const logout = () => {
@@ -449,7 +490,7 @@ const ManageBookingsTable = ({
                   py: 0.5,
                 }}
               >
-                💰 New booking - Awaiting customer payment
+                � Request Type (Please Check to Confirm Booking)
               </Box>
             );
           }
@@ -473,25 +514,32 @@ const ManageBookingsTable = ({
         },
       },
     ],
-    // CANCELLATION: [
-    //   {
-    //     field: 'cancellation_date',
-    //     headerName: 'Cancellation Date',
-    //     flex: 1.5,
-    //     minWidth: 120,
-    //     resizable: true,
-    //     renderCell: (params) => {
-    //       return formatDateString(params.value);
-    //     },
-    //   },
-    //   {
-    //     field: 'cancellation_reason',
-    //     headerName: 'Cancellation Reason',
-    //     flex: 1.5,
-    //     minWidth: 120,
-    //     resizable: true,
-    //   },
-    // ],
+    CANCELLATION: [
+      {
+        field: 'request_type',
+        headerName: 'Request Type',
+        flex: 2,
+        minWidth: 200,
+        resizable: true,
+        renderCell: (params) => {
+          return (
+            <Box
+              sx={{
+                fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
+                color: '#d32f2f',
+                fontWeight: 500,
+                lineHeight: 1.3,
+                wordBreak: 'break-word',
+                whiteSpace: 'normal',
+                py: 0.5,
+              }}
+            >
+              ❌ Customer requested to cancel
+            </Box>
+          );
+        },
+      },
+    ],
     EXTENSION: [
       {
         field: 'new_end_date',
@@ -870,6 +918,9 @@ const ManageBookingsTable = ({
           pagination: {
             paginationModel: { pageSize: 10, page: 0 },
           },
+        }}
+        slots={{
+          noRowsOverlay: NoRowsOverlay,
         }}
         getRowClassName={(params) => {
           if (activeTab !== 'BOOKINGS') return '';

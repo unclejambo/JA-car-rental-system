@@ -430,6 +430,7 @@ export default function AdminCarPage() {
           rent_price: item.rent_price ?? item.rent_price,
           license_plate: item.license_plate ?? item.license_plate,
           image: item.car_img_url ?? item.image ?? '',
+          isManual: item.isManual ?? false,
           status,
           raw: item,
         };

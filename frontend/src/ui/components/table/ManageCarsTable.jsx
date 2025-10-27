@@ -72,6 +72,16 @@ const ManageCarsTable = ({
         editable: false,
       },
       {
+        field: 'isManual',
+        headerName: 'Transmission',
+        flex: 1.5,
+        minWidth: 100,
+        editable: false,
+        renderCell: (params) => {
+          return params.value ? 'Manual' : 'Automatic';
+        },
+      },
+      {
         field: 'rent_price',
         headerName: 'Rent Price',
         flex: 1.5,

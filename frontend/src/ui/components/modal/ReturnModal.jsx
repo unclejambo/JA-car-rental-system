@@ -288,7 +288,11 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     { label: 'Gas Level Fee', amount: calculatedFees.gasLevelFee },
     { label: 'Equipment Loss Fee', amount: calculatedFees.equipmentLossFee },
     { label: 'Damage Fee', amount: calculatedFees.damageFee },
-    { label: 'Cleaning Fee', amount: calculatedFees.cleaningFee },
+    {
+      label: 'Cleaning Fee (Deduction)',
+      amount: calculatedFees.cleaningFee,
+      isDeduction: true,
+    },
     { label: 'Stain Removal Fee', amount: calculatedFees.stainRemovalFee },
     {
       label: 'Overdue Fee',
@@ -296,12 +300,22 @@ export default function ReturnModal({ show, onClose, bookingId }) {
       showCancel: true,
       hours: overdueHours,
     },
-  ].filter((fee) => fee.amount > 0);
+  ].filter((fee) => fee.amount !== 0); // Show both positive and negative amounts
 
   const total = calculatedFees.total;
 
-  const currency = (v) =>
-    `₱ ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const currency = (v, isDeduction = false) => {
+    const absValue = Math.abs(v);
+    const formatted = absValue.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    // For deductions (negative values), show with minus sign
+    if (isDeduction || v < 0) {
+      return `- ₱ ${formatted}`;
+    }
+    return `₱ ${formatted}`;
+  };
 
   // Get car name for title
   const carName = bookingData?.car
@@ -799,9 +813,15 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                             sx={{
                               flexShrink: 0,
                               whiteSpace: 'nowrap',
+                              color:
+                                f.isDeduction || f.amount < 0
+                                  ? 'success.main'
+                                  : 'inherit',
+                              fontWeight:
+                                f.isDeduction || f.amount < 0 ? 600 : 400,
                             }}
                           >
-                            {currency(f.amount)}
+                            {currency(f.amount, f.isDeduction)}
                           </Typography>
                           {f.showCancel &&
                             f.amount > 0 &&

@@ -245,15 +245,16 @@ export const submitReturn = async (req, res) => {
       }
 
       // Cleaning fee calculation
+      // If car is NOT clean, deduct cleaning fee (subtract from total)
       if (!isClean) {
-        let cleaningFee = feesObject.cleaning_fee || 0;
-        if (hasStain) {
-          cleaningFee += feesObject.stain_removal_fee || 0;
-          feesList.push('Cleaning', 'Stain');
-        } else {
-          feesList.push('Cleaning');
-        }
-        calculatedFees += cleaningFee;
+        calculatedFees -= (feesObject.cleaning_fee || 0);
+        feesList.push('Cleaning');
+      }
+      
+      // If stain is present, ADD stain removal fee (add to total)
+      if (hasStain) {
+        calculatedFees += (feesObject.stain_removal_fee || 0);
+        feesList.push('Stain');
       }
 
       // Overdue fee calculation
@@ -569,11 +570,15 @@ export const calculateReturnFees = async (req, res) => {
     // Handle both boolean and string values for isClean
     const isNotClean = isClean === false || isClean === 'false';
     const hasStainValue = hasStain === true || hasStain === 'true';
+    
+    // If car is NOT clean, deduct cleaning fee (show as negative)
     if (isNotClean) {
-      calculatedFees.cleaningFee = feesObject.cleaning_fee || 0;
-      if (hasStainValue) {
-        calculatedFees.stainRemovalFee = feesObject.stain_removal_fee || 0;
-      }
+      calculatedFees.cleaningFee = -(feesObject.cleaning_fee || 0);
+    }
+    
+    // If stain is present, ADD stain removal fee (show as positive)
+    if (hasStainValue) {
+      calculatedFees.stainRemovalFee = feesObject.stain_removal_fee || 0;
     }
 
     // Overdue fee calculation

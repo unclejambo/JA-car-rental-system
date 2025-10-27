@@ -290,7 +290,7 @@ function CustomerDashboard() {
                     <Box
                       sx={{
                         display: 'flex',
-                        gap: 1,
+                        justifyContent: 'space-between',
                         alignItems: 'start',
                         mb: { xs: 1.5, md: 2 },
                       }}
@@ -471,7 +471,7 @@ function CustomerDashboard() {
                     <Box
                       sx={{
                         display: 'flex',
-                        gap: 1,
+                        justifyContent: 'space-between',
                         alignItems: 'start',
                         mb: { xs: 1.5, md: 2 },
                       }}

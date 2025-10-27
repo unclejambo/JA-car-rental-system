@@ -83,6 +83,19 @@ export const createRelease = async (req, res) => {
       }
     });
 
+    // Update car status to "rented"
+    if (booking.car_id) {
+      try {
+        await prisma.car.update({
+          where: { car_id: booking.car_id },
+          data: { car_status: 'rented' }
+        });
+      } catch (carUpdateError) {
+        // Don't fail the release if car status update fails
+        console.error('Failed to update car status:', carUpdateError);
+      }
+    }
+
     // Update driver booking_status if driver is assigned
     if (updatedBooking.drivers_id) {
       try {

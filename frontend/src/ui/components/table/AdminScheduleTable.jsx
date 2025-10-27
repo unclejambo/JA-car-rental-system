@@ -92,10 +92,8 @@ const AdminScheduleTable = ({
       const bookingId =
         cancelDialog.booking.reservationId ?? cancelDialog.booking.booking_id;
 
-
       // Call the admin cancel booking API
       const result = await bookingAPI.adminCancelBooking(bookingId, logout);
-
 
       showMessage('Booking cancelled successfully!', 'success');
 
@@ -272,26 +270,20 @@ const AdminScheduleTable = ({
     headerAlign: 'left',
     align: 'left',
     renderCell: (params) => {
-      // Get current date in Philippine timezone
+      // Get current date and time in Philippine timezone
       const now = toPhilippineTime(new Date());
-      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-      // Get start and end dates in Philippine timezone
-      const startIso = params.row.start_date ?? params.row.startDate ?? '';
-      const endIso = params.row.end_date ?? params.row.endDate ?? '';
+      // Get pickup time in Philippine timezone
+      const pickupTimeIso = params.row.pickup_time ?? null;
+      const pickupTimePH = pickupTimeIso
+        ? toPhilippineTime(pickupTimeIso)
+        : null;
 
-      let startDate = null;
-      let endDate = null;
-
-      if (startIso) {
-        const phStart = toPhilippineTime(startIso);
-        startDate = `${phStart.getFullYear()}-${String(phStart.getMonth() + 1).padStart(2, '0')}-${String(phStart.getDate()).padStart(2, '0')}`;
-      }
-
-      if (endIso) {
-        const phEnd = toPhilippineTime(endIso);
-        endDate = `${phEnd.getFullYear()}-${String(phEnd.getMonth() + 1).padStart(2, '0')}-${String(phEnd.getDate()).padStart(2, '0')}`;
-      }
+      // Get dropoff time in Philippine timezone
+      const dropoffTimeIso = params.row.dropoff_time ?? null;
+      const dropoffTimePH = dropoffTimeIso
+        ? toPhilippineTime(dropoffTimeIso)
+        : null;
 
       const handleAction = async (actionType) => {
         try {
@@ -299,12 +291,26 @@ const AdminScheduleTable = ({
             params.row.reservationId ?? params.row.booking_id,
             actionType
           );
-        } catch (error) {
-        }
+        } catch (error) {}
       };
 
-      // Show release button if today is start date and status is 'Confirmed'
-      if (today === startDate && params.row.status === 'Confirmed') {
+      // Show release button if current time is within 1 hour before pickup time and status is 'Confirmed'
+      // Calculate 1 hour before pickup time
+      const oneHourBeforePickup = pickupTimePH
+        ? new Date(pickupTimePH.getTime() - 60 * 60 * 1000) // Subtract 1 hour in milliseconds
+        : null;
+
+      const oneHourAfterPickup = pickupTimePH
+        ? new Date(pickupTimePH.getTime() + 60 * 60 * 1000) // Add 1 hour in milliseconds
+        : null;
+
+      if (
+        pickupTimePH &&
+        oneHourBeforePickup &&
+        now >= oneHourBeforePickup &&
+        now <= oneHourAfterPickup &&
+        params.row.status === 'Confirmed'
+      ) {
         return (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Button
@@ -344,8 +350,12 @@ const AdminScheduleTable = ({
         );
       }
 
-      // Show return button if today is end date and status is 'Ongoing'
-      if (today === endDate && params.row.status === 'In Progress') {
+      // Show return button if current time is at or past dropoff time and status is 'In Progress'
+      if (
+        dropoffTimePH &&
+        now >= dropoffTimePH &&
+        params.row.status === 'In Progress'
+      ) {
         return (
           <Button
             variant="contained"

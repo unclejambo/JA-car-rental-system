@@ -773,18 +773,51 @@ export default function BookingDetailsModal({
                 >
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      Car ID:
+                      Car Make & Model:
                     </Typography>
                     <Typography variant="body1" fontWeight="medium">
-                      #{booking.car_id || 'N/A'}
+                      {booking.car_model || 
+                       (booking.car_make ? `${booking.car_make} ${booking.car_year || ''}`.trim() : 'N/A')}
                     </Typography>
                   </Box>
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      Car model:
+                      License Plate:
                     </Typography>
                     <Typography variant="body1" fontWeight="medium">
-                      {booking.car_model || 'N/A'}
+                      {booking.car_license_plate || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Year:
+                    </Typography>
+                    <Typography variant="body1" fontWeight="medium">
+                      {booking.car_year || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Seats:
+                    </Typography>
+                    <Typography variant="body1" fontWeight="medium">
+                      {booking.car_seats || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Car Type:
+                    </Typography>
+                    <Typography variant="body1" fontWeight="medium">
+                      {booking.car_type || 'N/A'}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Daily Rate:
+                    </Typography>
+                    <Typography variant="body1" fontWeight="medium" color="primary.main">
+                      {booking.car_rent_price ? `₱${booking.car_rent_price.toLocaleString()}` : 'N/A'}
                     </Typography>
                   </Box>
                 </Box>

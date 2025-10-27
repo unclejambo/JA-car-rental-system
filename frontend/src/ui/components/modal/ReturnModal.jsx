@@ -425,7 +425,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                               sx={{
                                 width: { xs: 50, sm: 80 },
                                 height: { xs: 50, sm: 80 },
-                                cursor: 'pointer',
+                                cursor: releaseData[imgKey] && releaseData[imgKey].trim() !== '' ? 'pointer' : 'default',
                                 border: '1px solid #ddd',
                                 borderRadius: 1,
                                 overflow: 'hidden',
@@ -435,12 +435,13 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                               }}
-                              onClick={() =>
-                                handleImageClick(releaseData[imgKey])
-                              }
+                              onClick={() => {
+                                if (releaseData[imgKey] && releaseData[imgKey].trim() !== '') {
+                                  handleImageClick(releaseData[imgKey]);
+                                }
+                              }}
                             >
-                              {releaseData[imgKey] &&
-                              releaseData[imgKey].trim() !== '' ? (
+                              {releaseData[imgKey] && releaseData[imgKey].trim() !== '' ? (
                                 <img
                                   src={releaseData[imgKey]}
                                   alt={imgKey.replace('_', ' ')}
@@ -449,38 +450,31 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                                     height: '100%',
                                     objectFit: 'cover',
                                   }}
-                                  onLoad={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.nextSibling.style.display =
-                                      'block';
+                                />
+                              ) : (
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    fontSize: 8,
+                                    color: 'text.secondary',
+                                    textAlign: 'center',
+                                  }}
+                                >
+                                  No Image
+                                </Typography>
+                              )}
+                              {releaseData[imgKey] && releaseData[imgKey].trim() !== '' && (
+                                <ZoomInIcon
+                                  sx={{
+                                    position: 'absolute',
+                                    top: 2,
+                                    right: 2,
+                                    fontSize: 12,
+                                    color: 'white',
+                                    textShadow: '1px 1px 1px black',
                                   }}
                                 />
-                              ) : null}
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  fontSize: 8,
-                                  color: 'text.secondary',
-                                  display:
-                                    releaseData[imgKey] &&
-                                    releaseData[imgKey].trim() !== ''
-                                      ? 'none'
-                                      : 'block',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                {releaseData[imgKey] ? 'Error' : 'No Image'}
-                              </Typography>
-                              <ZoomInIcon
-                                sx={{
-                                  position: 'absolute',
-                                  top: 2,
-                                  right: 2,
-                                  fontSize: 12,
-                                  color: 'white',
-                                  textShadow: '1px 1px 1px black',
-                                }}
-                              />
+                              )}
                             </Box>
                           ))}
                         </Stack>

@@ -236,7 +236,18 @@ function CustomerBookingHistory() {
         );
 
         if (fullBooking) {
-          setSelectedBooking(fullBooking);
+          // Transform car_details object to flat fields for modal compatibility
+          const transformedBooking = {
+            ...fullBooking,
+            car_model: fullBooking.car_details?.display_name || fullBooking.car_model,
+            car_make: fullBooking.car_details?.make,
+            car_year: fullBooking.car_details?.year,
+            car_license_plate: fullBooking.car_details?.license_plate,
+            car_seats: fullBooking.car_details?.seats,
+            car_type: fullBooking.car_details?.type,
+            car_rent_price: fullBooking.car_details?.rent_price,
+          };
+          setSelectedBooking(transformedBooking);
           setShowBookingDetailsModal(true);
         }
       }

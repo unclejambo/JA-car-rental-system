@@ -71,7 +71,7 @@ function TabPanel({ children, value, index, ...other }) {
 function CustomerBookings() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = React.useState(false);
-  
+
   // Check URL parameter for initial tab
   const getInitialTab = () => {
     const params = new URLSearchParams(location.search);
@@ -79,7 +79,7 @@ function CustomerBookings() {
     if (tab === 'settlement') return 1; // Settlement is index 1
     return 0; // Default to My Bookings
   };
-  
+
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [bookings, setBookings] = useState(null);
   const [payments, setPayments] = useState([]);
@@ -168,7 +168,7 @@ function CustomerBookings() {
     }
   };
 
-  // Fetch customer's payment history - Now fetches unpaid bookings instead
+  // Fetch customer's payment history - Now fetches unpaid bookings and pending payment verification
   const fetchPayments = async () => {
     try {
       const response = await authenticatedFetch(
@@ -183,11 +183,12 @@ function CustomerBookings() {
           ? response_data
           : response_data.data || [];
 
-        // Filter only unpaid bookings that are not cancelled
+        // Filter unpaid bookings OR bookings with pending payment verification (isPay = true)
         const unpaidBookings = (data || []).filter(
           (booking) =>
-            booking.payment_status?.toLowerCase() === 'unpaid' &&
-            booking.booking_status?.toLowerCase() !== 'cancelled'
+            booking.booking_status?.toLowerCase() !== 'cancelled' &&
+            (booking.payment_status?.toLowerCase() === 'unpaid' ||
+              booking.isPay === true)
         );
         setPayments(unpaidBookings);
       } else {
@@ -1287,7 +1288,7 @@ function CustomerBookings() {
                         {/* Pay Now / Pending Payment Button - Fixed Upper Right */}
                         {booking.isPay ? (
                           <Chip
-                            label="Pending Payment"
+                            label="Awaiting Admin Approval"
                             size="small"
                             sx={{
                               position: 'absolute',

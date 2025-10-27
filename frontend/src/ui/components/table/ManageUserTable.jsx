@@ -2,11 +2,17 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Box, Select, MenuItem, useMediaQuery, Skeleton } from '@mui/material';
 
 // use Vite env var, fallback to localhost; remove trailing slash if present
-const API_BASE = (
-  import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL )
+const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL;
 
 const ManageUserTable = ({ activeTab, rows, loading }) => {
   const isSmallScreen = useMediaQuery('(max-width:600px)');
+  const formatDate = (iso) => {
+    if (!iso) return '';
+    if (typeof iso === 'string' && iso.includes('T')) return iso.split('T')[0];
+    const d = new Date(iso);
+    if (isNaN(d)) return String(iso);
+    return d.toISOString().split('T')[0];
+  };
 
   // Define columns that are common to all tabs
   const commonColumns = [
@@ -104,12 +110,6 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
     ],
     DRIVER: [
       {
-        field: 'licenseType',
-        headerName: 'License Type',
-        flex: 1,
-        minWidth: 100,
-      },
-      {
         field: 'restriction',
         headerName: 'Restriction',
         flex: 1.5,
@@ -120,6 +120,9 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         headerName: 'Expiry Date',
         flex: 1.5,
         minWidth: 80,
+        renderCell: (params) => (
+          <span>{formatDate(params?.row?.expiryDate ?? params?.value)}</span>
+        ),
       },
       {
         field: 'username',
@@ -195,8 +198,7 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
 
           // update only the status cell in the grid with the display label
           params.api.updateRows([{ id: params.id, status: newStatusLabel }]);
-        } catch (error) {
-        }
+        } catch (error) {}
       };
 
       // normalize value so boolean, "Active"/"active" all display correctly

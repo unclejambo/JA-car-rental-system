@@ -15,7 +15,10 @@ import {
 } from '@mui/material';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
 import { useAuth } from '../../../hooks/useAuth';
-import { formatPhilippineLicense, validatePhilippineLicense } from '../../../utils/licenseFormatter';
+import {
+  formatPhilippineLicense,
+  validatePhilippineLicense,
+} from '../../../utils/licenseFormatter';
 
 const driverSchema = z.object({
   driverFirstName: z.string().min(1, 'First name is required'),
@@ -27,14 +30,14 @@ const driverSchema = z.object({
     .max(15, 'Enter a valid phone number')
     .regex(/^\d+$/, 'Digits only'),
   driverEmail: z.string().email('Enter a valid email'),
-  driverLicense: z.string().min(1, 'License number is required').refine(
-    (val) => validatePhilippineLicense(val),
-    { message: 'Invalid license format. Expected: NXX-YY-ZZZZZZ (e.g., N01-23-456789)' }
-  ),
-  restriction: z
+  driverLicense: z
     .string()
-    .min(1, 'Restriction is required')
-    .regex(/^[0-9,\s]+$/, 'Use numbers and commas only'),
+    .min(1, 'License number is required')
+    .refine((val) => validatePhilippineLicense(val), {
+      message:
+        'Invalid license format. Expected: NXX-YY-ZZZZZZ (e.g., N01-23-456789)',
+    }),
+  restriction: z.string().min(1, 'Restriction is required'),
   expirationDate: z.string().min(1, 'Expiration date is required'),
   username: z.string().min(3, 'Username must be at least 3 characters'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -153,7 +156,9 @@ export default function AddDriverModal({ show, onClose, onSuccess }) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || 'Failed to create driver');
+        throw new Error(
+          errorData.message || errorData.error || 'Failed to create driver'
+        );
       }
 
       const result = await response.json();
@@ -186,7 +191,9 @@ export default function AddDriverModal({ show, onClose, onSuccess }) {
       alert('✅ Driver created successfully!');
     } catch (error) {
       console.error('Error creating driver:', error);
-      setApiError(error.message || 'Failed to create driver. Please try again.');
+      setApiError(
+        error.message || 'Failed to create driver. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -271,12 +278,15 @@ export default function AddDriverModal({ show, onClose, onSuccess }) {
               onChange={handleLicenseChange}
               required
               error={!!errors.driverLicense}
-              helperText={errors.driverLicense || 'Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)'}
+              helperText={
+                errors.driverLicense ||
+                'Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)'
+              }
               placeholder="N01-23-456789"
               fullWidth
             />
             <TextField
-              label="Restriction (e.g., 1,2)"
+              label="Restriction (e.g., A,B,1,2)"
               name="restriction"
               value={formData.restriction}
               onChange={handleInputChange}
@@ -350,7 +360,9 @@ export default function AddDriverModal({ show, onClose, onSuccess }) {
             variant="contained"
             color="success"
             disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
+            startIcon={
+              loading ? <CircularProgress size={20} color="inherit" /> : null
+            }
           >
             {loading ? 'Saving...' : 'Save'}
           </Button>

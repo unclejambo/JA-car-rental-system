@@ -301,7 +301,9 @@ export async function sendBookingSuccessNotification(booking, customer, car) {
   const endDateFormatted = formatDatePH(booking.end_date);
 
   // Build notification messages
-  const smsMessage = `Hi ${first_name}! Your booking for ${carName} is successful! To confirm, pay ₱${booking.balance?.toLocaleString() || booking.total_amount?.toLocaleString()} within ${deadlineDescription} (by ${deadlineFormatted}). Booking ID: ${booking.booking_id}. - JA Car Rental`;
+  const smsMessage = `Hi ${first_name}! Your booking for ${carName} is successful! To confirm, pay ₱1,000 for the reservation fee within ${deadlineDescription} (by ${deadlineFormatted}). Booking ID: ${booking.booking_id}. - JA Car Rental`;
+
+  // ${booking.balance?.toLocaleString() || booking.total_amount?.toLocaleString()}
 
   const emailSubject = `Booking Successful - ${carName} (Booking #${booking.booking_id})`;
   const emailBody = `
@@ -325,7 +327,7 @@ Amount Due: ₱${booking.balance?.toLocaleString() || booking.total_amount?.toLo
 
 ⏰ IMPORTANT - PAYMENT DEADLINE:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-To confirm your booking, you must pay at least ₱1,000 (minimum confirmation fee) within ${deadlineDescription}.
+To confirm your booking, you must pay the reservation fee, which is ₱1,000 within ${deadlineDescription}.
 
 Payment Deadline: ${deadlineFormatted}
 
@@ -545,11 +547,11 @@ export async function sendPaymentReceivedNotification(payment, customer, car, bo
     - Total Amount: ₱${total_amount.toLocaleString()}
     - Amount Paid: ₱${(total_amount - balance).toLocaleString()}
     - Remaining Balance: ₱${balance.toLocaleString()}
-    ${balance > 0 ? '\n    ⚠️ Please pay the remaining balance before your pickup date.' : '\n    ✅ Your booking is fully paid!'}
+    ${balance > 0 ? '\n    ⚠️ Please pay the remaining balance before/on the pickup date.' : '\n    ✅ Your booking is fully paid!'}
 
     ${balance > 0 
-      ? 'You can pay the remaining balance via GCash or cash on the day of pickup.' 
-      : 'Your booking is now fully confirmed. We look forward to serving you!'}
+      ? 'You can pay the remaining balance via GCash or cash before/on the day of pickup.' 
+      : 'Your booking is now fully paid. We look forward to serving you!'}
 
     If you have any questions about your payment or booking, please don't hesitate to contact us.
 

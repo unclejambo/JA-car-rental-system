@@ -10,9 +10,21 @@ import {
   Divider,
   IconButton,
 } from '@mui/material';
-import { HiCheckCircle, HiX, HiCalendar, HiClock, HiLocationMarker, HiCurrencyDollar } from 'react-icons/hi';
+import {
+  HiCheckCircle,
+  HiX,
+  HiCalendar,
+  HiClock,
+  HiLocationMarker,
+  HiCurrencyDollar,
+} from 'react-icons/hi';
 
-export default function BookingSuccessModal({ open, onClose, bookingData, car }) {
+export default function BookingSuccessModal({
+  open,
+  onClose,
+  bookingData,
+  car,
+}) {
   if (!bookingData || !car) return null;
 
   const formatDate = (dateString) => {
@@ -20,14 +32,14 @@ export default function BookingSuccessModal({ open, onClose, bookingData, car })
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
   const formatTime = (timeString) => {
     return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -81,34 +93,34 @@ export default function BookingSuccessModal({ open, onClose, bookingData, car })
         <Box sx={{ mb: 2 }}>
           <HiCheckCircle size={64} />
         </Box>
-        
+
         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
           Booking Confirmed!
         </Typography>
-        
+
         <Typography variant="h6" sx={{ opacity: 0.9 }}>
           Your car rental request has been submitted successfully
         </Typography>
       </Box>
 
       <DialogContent sx={{ p: 0 }}>
-        {/* Booking Reference */}
-        <Box sx={{ p: 3, backgroundColor: '#f8f9fa', textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            Booking Reference
-          </Typography>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#c10007' }}>
-            #BK-{Date.now().toString().slice(-6)}
-          </Typography>
-        </Box>
-
         {/* Car Details */}
         <Card sx={{ m: 3, border: '2px solid #c10007' }}>
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#c10007' }}>
+            <Typography
+              variant="h6"
+              sx={{ mb: 2, fontWeight: 'bold', color: '#c10007' }}
+            >
               🚗 Vehicle Details
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 2,
+              }}
+            >
               {/* Car Image */}
               {car.car_img_url && (
                 <Box
@@ -120,7 +132,7 @@ export default function BookingSuccessModal({ open, onClose, bookingData, car })
                     height: 80,
                     objectFit: 'cover',
                     borderRadius: 2,
-                    border: '1px solid #e0e0e0'
+                    border: '1px solid #e0e0e0',
                   }}
                   onError={(e) => {
                     e.target.style.display = 'none'; // Hide image if failed to load
@@ -135,7 +147,10 @@ export default function BookingSuccessModal({ open, onClose, bookingData, car })
                   {car.no_of_seat} seats • Plate: {car.license_plate}
                 </Typography>
               </Box>
-              <Typography variant="h6" sx={{ color: '#c10007', fontWeight: 'bold' }}>
+              <Typography
+                variant="h6"
+                sx={{ color: '#c10007', fontWeight: 'bold' }}
+              >
                 ₱{car.rent_price?.toLocaleString()}/day
               </Typography>
             </Box>
@@ -158,7 +173,8 @@ export default function BookingSuccessModal({ open, onClose, bookingData, car })
                     Rental Period
                   </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {formatDate(bookingData.startDate)} - {formatDate(bookingData.endDate)}
+                    {formatDate(bookingData.startDate)} -{' '}
+                    {formatDate(bookingData.endDate)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {calculateDays()} days total
@@ -176,7 +192,8 @@ export default function BookingSuccessModal({ open, onClose, bookingData, car })
                     Schedule
                   </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    Pickup: {formatTime(bookingData.pickupTime)} • Drop-off: {formatTime(bookingData.dropoffTime)}
+                    Pickup: {formatTime(bookingData.pickupTime)} • Drop-off:{' '}
+                    {formatTime(bookingData.dropoffTime)}
                   </Typography>
                 </Box>
               </Box>
@@ -191,7 +208,9 @@ export default function BookingSuccessModal({ open, onClose, bookingData, car })
                     Service Type
                   </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {bookingData.deliveryType === 'delivery' ? '🚚 Delivery Service' : '📍 Pickup Service'}
+                    {bookingData.deliveryType === 'delivery'
+                      ? '🚚 Delivery Service'
+                      : '📍 Pickup Service'}
                   </Typography>
                   {bookingData.deliveryType === 'delivery' ? (
                     <Typography variant="body2" color="text.secondary">
@@ -214,11 +233,16 @@ export default function BookingSuccessModal({ open, onClose, bookingData, car })
                   <Typography variant="body2" color="text.secondary">
                     Total Cost
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#c10007' }}>
+                  <Typography
+                    variant="h6"
+                    sx={{ fontWeight: 'bold', color: '#c10007' }}
+                  >
                     ₱{bookingData.totalCost?.toLocaleString()}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {bookingData.isSelfDrive ? 'Self-Drive Service' : 'With Professional Driver'}
+                    {bookingData.isSelfDrive
+                      ? 'Self-Drive Service'
+                      : 'With Professional Driver'}
                   </Typography>
                 </Box>
               </Box>
@@ -228,9 +252,14 @@ export default function BookingSuccessModal({ open, onClose, bookingData, car })
 
         {/* Status Info */}
         <Box sx={{ px: 3, pb: 3 }}>
-          <Card sx={{ backgroundColor: '#f0f8ff', border: '2px solid #2196f3' }}>
+          <Card
+            sx={{ backgroundColor: '#f0f8ff', border: '2px solid #2196f3' }}
+          >
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#1976d2' }}>
+              <Typography
+                variant="h6"
+                sx={{ mb: 2, fontWeight: 'bold', color: '#1976d2' }}
+              >
                 📞 What's Next?
               </Typography>
               <Typography variant="body2" sx={{ mb: 2, lineHeight: 1.6 }}>
@@ -250,10 +279,10 @@ export default function BookingSuccessModal({ open, onClose, bookingData, car })
         </Box>
 
         {/* Tap to Close */}
-        <Box 
-          sx={{ 
-            p: 2, 
-            backgroundColor: '#c10007', 
+        <Box
+          sx={{
+            p: 2,
+            backgroundColor: '#c10007',
             textAlign: 'center',
             cursor: 'pointer',
             '&:hover': {
@@ -262,7 +291,10 @@ export default function BookingSuccessModal({ open, onClose, bookingData, car })
           }}
           onClick={onClose}
         >
-          <Typography variant="body2" sx={{ color: 'white', fontWeight: 'bold' }}>
+          <Typography
+            variant="body2"
+            sx={{ color: 'white', fontWeight: 'bold' }}
+          >
             Tap anywhere to continue
           </Typography>
         </Box>

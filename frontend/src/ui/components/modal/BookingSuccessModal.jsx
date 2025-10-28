@@ -46,7 +46,10 @@ export default function BookingSuccessModal({
   const calculateDays = () => {
     const start = new Date(bookingData.startDate);
     const end = new Date(bookingData.endDate);
-    return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    // Calculate difference in days and add 1 to include both start and end days
+    // Use Math.floor to handle same-day bookings correctly
+    const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+    return diffDays + 1;
   };
 
   return (
@@ -104,19 +107,6 @@ export default function BookingSuccessModal({
       </Box>
 
       <DialogContent sx={{ p: 0 }}>
-        {/* Booking Reference */}
-        <Box sx={{ p: 3, backgroundColor: '#f8f9fa', textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            Booking Reference
-          </Typography>
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 'bold', color: '#c10007' }}
-          >
-            #BK-{Date.now().toString().slice(-6)}
-          </Typography>
-        </Box>
-
         {/* Car Details */}
         <Card sx={{ m: 3, border: '2px solid #c10007' }}>
           <CardContent>

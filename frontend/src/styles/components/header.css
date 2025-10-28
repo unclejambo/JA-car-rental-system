@@ -170,8 +170,8 @@
 }
 
 .profile-avatar {
-  width: 2rem; /* 40px */
-  height: 2rem; /* 40px */
+  width: 2.5rem; /* 40px */
+  height: 2.5rem; /* 40px */
   border-radius: 50%;
   overflow: hidden;
   display: flex;
@@ -249,14 +249,16 @@
 
 /* Mobile responsive adjustments */
 
+@media (max-width: 1024px) {
+  .profile-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .user-profile-panel {
     gap: 0.5rem; /* 8px */
-  }
-
-  .profile-avatar {
-    width: 1.5rem;
-    height: 1.5rem;
   }
 
   .profile-name {

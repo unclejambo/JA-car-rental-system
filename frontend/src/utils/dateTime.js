@@ -166,17 +166,19 @@ export function parseAndFormatTime(timeString) {
 }
 
 /**
- * Calculate date difference in days
- * @param {Date|string} startDate - Start date
- * @param {Date|string} endDate - End date
- * @returns {number} - Number of days difference
+ * Calculate days difference between two dates using hours-based calculation
+ * @param {Date|string} startDate - Start date (can include time)
+ * @param {Date|string} endDate - End date (can include time)
+ * @returns {number} - Number of days difference (24 hours = 1 day, rounded up)
  */
 export function calculateDaysDifference(startDate, endDate) {
   const start = toPhilippineTime(startDate);
   const end = toPhilippineTime(endDate);
   
+  // Calculate total hours, then convert to days (24 hours = 1 day)
   const diffTime = Math.abs(end - start);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const totalHours = diffTime / (1000 * 60 * 60);
+  const diffDays = Math.ceil(totalHours / 24); // Round up partial days
   
   return diffDays;
 }

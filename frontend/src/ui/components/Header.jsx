@@ -171,6 +171,11 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
             style={{ textDecoration: 'none', color: 'inherit' }}
           >
             <div className="profile-avatar">
+              {isLoadingImage && (
+                <div className="loading-avatar">
+                  <div className="loading-spinner"></div>
+                </div>
+              )}
               {profileImageUrl ? (
                 <img
                   src={profileImageUrl}
@@ -183,25 +188,18 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
                   }}
                 />
               ) : null}
-              <div
-                className="avatar-placeholder"
-                style={{ display: profileImageUrl ? 'none' : 'block' }}
-              ></div>
-              {isLoadingImage && (
-                <div className="avatar-placeholder loading-avatar">
-                  <div className="loading-spinner"></div>
-                </div>
-              )}
             </div>
-            <span
-              className="profile-name"
-              style={{
-                fontFamily: 'Pathway Gothic One, sans-serif',
-                fontSize: '1rem',
-              }}
-            >
-              {getUserDisplayName()}
-            </span>
+            {!isMobile && (
+              <span
+                className="profile-name"
+                style={{
+                  fontFamily: 'Pathway Gothic One, sans-serif',
+                  fontSize: '1rem',
+                }}
+              >
+                {getUserDisplayName()}
+              </span>
+            )}
           </Link>
         )}
       </div>

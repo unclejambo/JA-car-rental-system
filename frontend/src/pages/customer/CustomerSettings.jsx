@@ -25,7 +25,7 @@ import { HiCog8Tooth } from 'react-icons/hi2';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import { useCustomerStore } from '../../store/customer';
 import SaveCancelModal from '../../ui/components/modal/SaveCancelModal';
-import { updateLicense } from '../../store/license';
+import { updateLicense, createLicenseForCustomer } from '../../store/license';
 import ConfirmationModal from '../../ui/components/modal/ConfirmationModal';
 import { FormControlLabel, Checkbox } from '@mui/material';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
@@ -423,6 +423,7 @@ export default function CustomerSettings() {
     useState(false);
 
   const [isEditingLicense, setIsEditingLicense] = useState(false);
+  const [hasNoLicense, setHasNoLicense] = useState(false); // Track if customer has no license
   const [licenseNo, setLicenseNo] = useState('');
   const [licenseRestrictions, setLicenseRestrictions] = useState('');
   const [licenseExpiration, setLicenseExpiration] = useState('');
@@ -447,6 +448,10 @@ export default function CustomerSettings() {
         _setError(null);
         const customer = await getCustomerById(user?.id);
         if (customer) {
+          // Check if customer has a license
+          const hasLicense = customer.driver_license_id !== null && customer.driver_license !== null;
+          setHasNoLicense(!hasLicense);
+
           const licenseNo = customer.driver_license?.driver_license_no || '';
           const licenseRestrictions = customer.driver_license?.restrictions || '';
           const licenseExpiration = customer.driver_license?.expiry_date || '';
@@ -604,74 +609,119 @@ export default function CustomerSettings() {
       return;
     }
 
-    setSavingLicense(true);
-
-    // Get customer's license_id from the initial data fetch
-    let user = JSON.parse(localStorage.getItem('userInfo'));
-    const customer = await getCustomerById(user?.id);
-    const licenseId = customer?.driver_license?.license_id;
-
-    if (!licenseId) {
-      setSuccessMessage('License ID not found. Please refresh and try again.');
+    // Validate required fields
+    if (!draftLicenseNo || !draftLicenseExpiration || !draftLicenseImage) {
+      setSuccessMessage('All license fields are required (License Number, Expiry Date, and License Image)');
       setShowSuccess(true);
-      setSavingLicense(false);
       return;
     }
 
+    setSavingLicense(true);
+
+    let user = JSON.parse(localStorage.getItem('userInfo'));
+    const customerId = user?.id;
+
     try {
-      // Upload image first if a new one was selected
-      let uploadedImageUrl = licenseImage;
-      if (draftLicenseImage) {
-        uploadedImageUrl = await uploadLicenseImage();
+      // Check if customer is adding a new license or updating existing one
+      if (hasNoLicense) {
+        // Customer is adding a new license
+        // Upload image first
+        const uploadedImageUrl = await uploadLicenseImage();
         if (!uploadedImageUrl) {
-          setSuccessMessage(
-            'Failed to upload license image. Please try again.'
-          );
+          setSuccessMessage('Failed to upload license image. Please try again.');
           setShowSuccess(true);
           setSavingLicense(false);
-          return; // Stop execution if upload fails
+          return;
         }
-      }
 
-      const updateData = {
-        driver_license_no: draftLicenseNo || licenseNo, // Include license number for editing
-        restrictions: draftLicenseRestrictions,
-        expiry_date: draftLicenseExpiration,
-        dl_img_url: uploadedImageUrl || '',
-      };
+        const createData = {
+          driver_license_no: draftLicenseNo,
+          restrictions: draftLicenseRestrictions || '',
+          expiry_date: draftLicenseExpiration,
+          dl_img_url: uploadedImageUrl,
+        };
 
-      // Use license_id (numeric) instead of license number in URL
-      const response = await authenticatedFetch(
-        `${API_BASE}/api/driver-license/${licenseId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updateData),
+        const result = await createLicenseForCustomer(customerId, createData);
+
+        if (result.success) {
+          setLicenseNo(result.license.driver_license_no);
+          setLicenseRestrictions(result.license.restrictions || '');
+          setLicenseExpiration(result.license.expiry_date);
+          setLicenseImage(result.license.dl_img_url);
+          setDraftLicenseImage(null);
+          setPreviewLicenseImage(null);
+          setIsEditingLicense(false);
+          setHasNoLicense(false); // Customer now has a license
+          setOpenLicenseSaveModal(false);
+          setSuccessMessage('Driver\'s license added successfully!');
+          setShowSuccess(true);
+        } else {
+          setSuccessMessage(result.error || 'Failed to add license');
+          setShowSuccess(true);
         }
-      );
-
-      const result = await response.json();
-
-      if (response.ok) {
-        setLicenseNo(result.driver_license_no || draftLicenseNo); // Update from response
-        setLicenseRestrictions(result.restrictions || updateData.restrictions);
-        setLicenseExpiration(result.expiry_date || updateData.expiry_date);
-        setLicenseImage(result.dl_img_url || uploadedImageUrl);
-        setDraftLicenseImage(null); // Clear draft after successful save
-        setPreviewLicenseImage(null); // Clear preview
-        setIsEditingLicense(false);
-        setOpenLicenseSaveModal(false);
-        setOpenLicenseCancelModal(false);
-        setSuccessMessage('License information updated successfully!');
-        setShowSuccess(true);
       } else {
-        setSuccessMessage(result.error || 'Failed to update license');
-        setShowSuccess(true);
+        // Customer is updating existing license
+        const customer = await getCustomerById(customerId);
+        const licenseId = customer?.driver_license?.license_id;
+
+        if (!licenseId) {
+          setSuccessMessage('License ID not found. Please refresh and try again.');
+          setShowSuccess(true);
+          setSavingLicense(false);
+          return;
+        }
+
+        // Upload image first if a new one was selected
+        let uploadedImageUrl = licenseImage;
+        if (draftLicenseImage) {
+          uploadedImageUrl = await uploadLicenseImage();
+          if (!uploadedImageUrl) {
+            setSuccessMessage('Failed to upload license image. Please try again.');
+            setShowSuccess(true);
+            setSavingLicense(false);
+            return;
+          }
+        }
+
+        const updateData = {
+          driver_license_no: draftLicenseNo || licenseNo,
+          restrictions: draftLicenseRestrictions,
+          expiry_date: draftLicenseExpiration,
+          dl_img_url: uploadedImageUrl || '',
+        };
+
+        const response = await authenticatedFetch(
+          `${API_BASE}/api/driver-license/${licenseId}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updateData),
+          }
+        );
+
+        const result = await response.json();
+
+        if (response.ok) {
+          setLicenseNo(result.driver_license_no || draftLicenseNo);
+          setLicenseRestrictions(result.restrictions || updateData.restrictions);
+          setLicenseExpiration(result.expiry_date || updateData.expiry_date);
+          setLicenseImage(result.dl_img_url || uploadedImageUrl);
+          setDraftLicenseImage(null);
+          setPreviewLicenseImage(null);
+          setIsEditingLicense(false);
+          setOpenLicenseSaveModal(false);
+          setOpenLicenseCancelModal(false);
+          setSuccessMessage('License information updated successfully!');
+          setShowSuccess(true);
+        } else {
+          setSuccessMessage(result.error || 'Failed to update license');
+          setShowSuccess(true);
+        }
       }
     } catch (error) {
-      setSuccessMessage('Error updating license');
+      setSuccessMessage('Error saving license');
       setShowSuccess(true);
     } finally {
       setSavingLicense(false);
@@ -1481,227 +1531,262 @@ export default function CustomerSettings() {
                             minHeight: '230px',
                           }}
                         >
-                          {/* Top-right Edit Button */}
-                          {!isEditingLicense && (
-                            <IconButton
-                              onClick={() => {
-                                setDraftLicenseNo(licenseNo);
-                                setDraftLicenseRestrictions(
-                                  licenseRestrictions
-                                );
-                                setDraftLicenseExpiration(licenseExpiration);
-                                setPreviewLicenseImage(null);
-                                setDraftLicenseImage(null);
-                                setIsEditingLicense(true);
-                              }}
-                              sx={{
-                                position: 'absolute',
-                                top: 12,
-                                right: 50,
-                                backgroundColor: '#fff',
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                                '&:hover': { backgroundColor: '#f5f5f5' },
-                              }}
-                            >
-                              <EditIcon />
-                            </IconButton>
-                          )}
-                          {/* Left Side - License Details */}
-                          <Box
-                            sx={{
-                              flex: 1,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: 2,
-                            }}
-                          >
-                            {isEditingLicense ? (
-                              <>
-                                <TextField
-                                  label="License No"
-                                  value={draftLicenseNo}
-                                  onChange={(e) => {
-                                    const formatted = formatPhilippineLicense(e.target.value);
-                                    setDraftLicenseNo(formatted);
-                                  }}
-                                  fullWidth
-                                  placeholder="N01-23-456789"
-                                  helperText="Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)"
-                                  error={draftLicenseNo && !validatePhilippineLicense(draftLicenseNo)}
-                                />
-                                <TextField
-                                  label="Restrictions"
-                                  value={draftLicenseRestrictions}
-                                  onChange={(e) =>
-                                    setDraftLicenseRestrictions(e.target.value)
-                                  }
-                                  fullWidth
-                                />
-                                <TextField
-                                  label="Expiration Date"
-                                  value={draftLicenseExpiration}
-                                  onChange={(e) =>
-                                    setDraftLicenseExpiration(e.target.value)
-                                  }
-                                  type="date"
-                                  InputLabelProps={{ shrink: true }}
-                                  fullWidth
-                                />
-                              </>
-                            ) : (
-                              <>
-                                <Typography sx={{ fontWeight: 700 }}>
-                                  License No:{' '}
-                                  <span style={{ fontWeight: 400 }}>
-                                    {typeof licenseNo === 'string'
-                                      ? licenseNo
-                                      : ''}
-                                  </span>
-                                </Typography>
-                                <Typography sx={{ fontWeight: 700 }}>
-                                  Restrictions:{' '}
-                                  <span style={{ fontWeight: 400 }}>
-                                    {typeof licenseRestrictions === 'string'
-                                      ? licenseRestrictions
-                                      : ''}
-                                  </span>
-                                </Typography>
-                                <Typography sx={{ fontWeight: 700 }}>
-                                  Expiration Date:{' '}
-                                  <span style={{ fontWeight: 400 }}>
-                                    {licenseExpiration
-                                      ? new Date(licenseExpiration)
-                                          .toISOString()
-                                          .split('T')[0]
-                                      : 'N/A'}
-                                  </span>
-                                </Typography>
-                              </>
-                            )}
-                          </Box>
-                          {/* Right Side - License Image */}
-                          <Box
-                            sx={{
-                              flex: 1,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              gap: 2,
-                            }}
-                          >
-                            <Box sx={{ position: 'relative' }}>
-                              <img
-                                src={
-                                  isEditingLicense && previewLicenseImage
-                                    ? previewLicenseImage
-                                    : licenseImage
-                                }
-                                alt="License"
-                                style={{
-                                  maxWidth: '300px',
-                                  maxHeight: '200px',
-                                  borderRadius: '12px',
-                                  boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                                  objectFit: 'contain',
-                                  cursor: isEditingLicense
-                                    ? 'default'
-                                    : 'pointer',
-                                  transition: 'transform 0.2s ease',
-                                  opacity: licenseImageUploading ? 0.5 : 1,
-                                }}
-                                onClick={() =>
-                                  !isEditingLicense && setOpenLicenseModal(true)
-                                }
-                              />
-                              {/* Upload/Change/Remove Buttons (Only in Edit Mode) */}
-                              {isEditingLicense && (
-                                <Box
-                                  sx={{
-                                    mt: 2,
-                                    display: 'flex',
-                                    gap: 1,
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                  }}
-                                >
-                                  {licenseImageUploading ? (
-                                    <CircularProgress size={24} />
-                                  ) : (
-                                    <>
-                                      <Button
-                                        variant="contained"
-                                        component="label"
-                                        startIcon={<PhotoCamera />}
-                                        disabled={savingLicense}
-                                      >
-                                        {previewLicenseImage
-                                          ? 'Change Image'
-                                          : 'Upload Image'}
-                                        <input
-                                          type="file"
-                                          accept="image/jpeg,image/jpg,image/png,image/webp"
-                                          hidden
-                                          onChange={handleLicenseFileChange}
-                                        />
-                                      </Button>
-                                      {previewLicenseImage && (
-                                        <Button
-                                          variant="outlined"
-                                          color="error"
-                                          size="small"
-                                          onClick={() => {
-                                            setDraftLicenseImage(null);
-                                            setPreviewLicenseImage(null);
-                                          }}
-                                          disabled={savingLicense}
-                                        >
-                                          Remove
-                                        </Button>
-                                      )}
-                                    </>
-                                  )}
-                                </Box>
-                              )}
-                            </Box>
-                          </Box>
-                          {/* Save / Cancel Buttons (centered at bottom) */}
-                          {isEditingLicense && (
+                          {/* Show "Add License" button if customer has no license and not editing */}
+                          {hasNoLicense && !isEditingLicense && (
                             <Box
                               sx={{
-                                position: { xs: 'static', md: 'absolute' },
-                                mt: { xs: 3, md: 0 },
-                                bottom: { md: 10 },
-                                left: { md: '50%' },
-                                transform: { md: 'translateX(-50%)' },
+                                width: '100%',
                                 display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: 2,
-                                width: { xs: '100%', md: 'auto' },
+                                py: 4,
                               }}
                             >
+                              <BadgeIcon sx={{ fontSize: 80, color: '#c10007', opacity: 0.5 }} />
+                              <Typography variant="h6" color="text.secondary">
+                                No Driver's License on Record
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" textAlign="center">
+                                You haven't added your driver's license yet. Add one to enable self-drive bookings.
+                              </Typography>
                               <Button
                                 variant="contained"
                                 color="primary"
-                                startIcon={<SaveIcon />}
-                                onClick={() => setOpenLicenseSaveModal(true)}
-                                disabled={
-                                  savingLicense || licenseImageUploading
-                                }
+                                onClick={() => {
+                                  setDraftLicenseNo('');
+                                  setDraftLicenseRestrictions('');
+                                  setDraftLicenseExpiration('');
+                                  setPreviewLicenseImage(null);
+                                  setDraftLicenseImage(null);
+                                  setIsEditingLicense(true);
+                                }}
+                                sx={{ mt: 2 }}
                               >
-                                Save Changes
-                              </Button>
-                              <Button
-                                variant="outlined"
-                                color="inherit"
-                                startIcon={<CloseIcon />}
-                                onClick={() => setOpenLicenseCancelModal(true)}
-                                disabled={
-                                  savingLicense || licenseImageUploading
-                                }
-                              >
-                                Cancel
+                                Add Driver's License
                               </Button>
                             </Box>
+                          )}
+
+                          {/* Show license form when editing or if has license */}
+                          {(!hasNoLicense || isEditingLicense) && (
+                            <>
+                              {/* Top-right Edit Button - only show if has license and not editing */}
+                              {!hasNoLicense && !isEditingLicense && (
+                                <IconButton
+                                  onClick={() => {
+                                    setDraftLicenseNo(licenseNo);
+                                    setDraftLicenseRestrictions(licenseRestrictions);
+                                    setDraftLicenseExpiration(licenseExpiration);
+                                    setPreviewLicenseImage(null);
+                                    setDraftLicenseImage(null);
+                                    setIsEditingLicense(true);
+                                  }}
+                                  sx={{
+                                    position: 'absolute',
+                                    top: 12,
+                                    right: 50,
+                                    backgroundColor: '#fff',
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                                    '&:hover': { backgroundColor: '#f5f5f5' },
+                                  }}
+                                >
+                                  <EditIcon />
+                                </IconButton>
+                              )}
+                              
+                              {/* Left Side - License Details */}
+                              <Box
+                                sx={{
+                                  flex: 1,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 2,
+                                }}
+                              >
+                                {isEditingLicense ? (
+                                  <>
+                                    <TextField
+                                      label="License No *"
+                                      value={draftLicenseNo}
+                                      onChange={(e) => {
+                                        const formatted = formatPhilippineLicense(e.target.value);
+                                        setDraftLicenseNo(formatted);
+                                      }}
+                                      fullWidth
+                                      required
+                                      placeholder="N01-23-456789"
+                                      helperText="Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)"
+                                      error={draftLicenseNo && !validatePhilippineLicense(draftLicenseNo)}
+                                    />
+                                    <TextField
+                                      label="Restrictions"
+                                      value={draftLicenseRestrictions}
+                                      onChange={(e) =>
+                                        setDraftLicenseRestrictions(e.target.value)
+                                      }
+                                      fullWidth
+                                      placeholder="e.g., 1, 2, 3"
+                                    />
+                                    <TextField
+                                      label="Expiration Date *"
+                                      value={draftLicenseExpiration}
+                                      onChange={(e) =>
+                                        setDraftLicenseExpiration(e.target.value)
+                                      }
+                                      type="date"
+                                      InputLabelProps={{ shrink: true }}
+                                      fullWidth
+                                      required
+                                    />
+                                  </>
+                                ) : (
+                                  <>
+                                    <Typography sx={{ fontWeight: 700 }}>
+                                      License No:{' '}
+                                      <span style={{ fontWeight: 400 }}>
+                                        {typeof licenseNo === 'string' ? licenseNo : 'N/A'}
+                                      </span>
+                                    </Typography>
+                                    <Typography sx={{ fontWeight: 700 }}>
+                                      Restrictions:{' '}
+                                      <span style={{ fontWeight: 400 }}>
+                                        {typeof licenseRestrictions === 'string' && licenseRestrictions
+                                          ? licenseRestrictions
+                                          : 'None'}
+                                      </span>
+                                    </Typography>
+                                    <Typography sx={{ fontWeight: 700 }}>
+                                      Expiration Date:{' '}
+                                      <span style={{ fontWeight: 400 }}>
+                                        {licenseExpiration
+                                          ? new Date(licenseExpiration).toISOString().split('T')[0]
+                                          : 'N/A'}
+                                      </span>
+                                    </Typography>
+                                  </>
+                                )}
+                              </Box>
+                              
+                              {/* Right Side - License Image */}
+                              <Box
+                                sx={{
+                                  flex: 1,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  gap: 2,
+                                }}
+                              >
+                                <Box sx={{ position: 'relative' }}>
+                                  <img
+                                    src={
+                                      isEditingLicense && previewLicenseImage
+                                        ? previewLicenseImage
+                                        : licenseImage
+                                    }
+                                    alt="License"
+                                    style={{
+                                      maxWidth: '300px',
+                                      maxHeight: '200px',
+                                      borderRadius: '12px',
+                                      boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                                      objectFit: 'contain',
+                                      cursor: isEditingLicense ? 'default' : 'pointer',
+                                      transition: 'transform 0.2s ease',
+                                      opacity: licenseImageUploading ? 0.5 : 1,
+                                    }}
+                                    onClick={() =>
+                                      !isEditingLicense && !hasNoLicense && setOpenLicenseModal(true)
+                                    }
+                                  />
+                                  {/* Upload/Change/Remove Buttons (Only in Edit Mode) */}
+                                  {isEditingLicense && (
+                                    <Box
+                                      sx={{
+                                        mt: 2,
+                                        display: 'flex',
+                                        gap: 1,
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                      }}
+                                    >
+                                      {licenseImageUploading ? (
+                                        <CircularProgress size={24} />
+                                      ) : (
+                                        <>
+                                          <Button
+                                            variant="contained"
+                                            component="label"
+                                            startIcon={<PhotoCamera />}
+                                            disabled={savingLicense}
+                                          >
+                                            {previewLicenseImage ? 'Change Image' : 'Upload Image *'}
+                                            <input
+                                              type="file"
+                                              accept="image/jpeg,image/jpg,image/png,image/webp"
+                                              hidden
+                                              onChange={handleLicenseFileChange}
+                                            />
+                                          </Button>
+                                          {previewLicenseImage && (
+                                            <Button
+                                              variant="outlined"
+                                              color="error"
+                                              size="small"
+                                              onClick={() => {
+                                                setDraftLicenseImage(null);
+                                                setPreviewLicenseImage(null);
+                                              }}
+                                              disabled={savingLicense}
+                                            >
+                                              Remove
+                                            </Button>
+                                          )}
+                                        </>
+                                      )}
+                                    </Box>
+                                  )}
+                                </Box>
+                              </Box>
+                              
+                              {/* Save / Cancel Buttons (centered at bottom) */}
+                              {isEditingLicense && (
+                                <Box
+                                  sx={{
+                                    position: { xs: 'static', md: 'absolute' },
+                                    mt: { xs: 3, md: 0 },
+                                    bottom: { md: 10 },
+                                    left: { md: '50%' },
+                                    transform: { md: 'translateX(-50%)' },
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    gap: 2,
+                                    width: { xs: '100%', md: 'auto' },
+                                  }}
+                                >
+                                  <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<SaveIcon />}
+                                    onClick={() => setOpenLicenseSaveModal(true)}
+                                    disabled={savingLicense || licenseImageUploading}
+                                  >
+                                    {hasNoLicense ? 'Add License' : 'Save Changes'}
+                                  </Button>
+                                  <Button
+                                    variant="outlined"
+                                    color="inherit"
+                                    startIcon={<CloseIcon />}
+                                    onClick={() => setOpenLicenseCancelModal(true)}
+                                    disabled={savingLicense || licenseImageUploading}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </Box>
+                              )}
+                            </>
                           )}
                           {/* MODAL FOR LICENSE IMAGE */}
                           <Modal
@@ -1806,35 +1891,46 @@ export default function CustomerSettings() {
         onClose={() => setOpenLicenseSaveModal(false)}
         onConfirm={handleLicenseSaveConfirm}
         options={{
-          title: 'Confirm License Changes',
-          message:
-            'Please review your license changes before saving to the database.',
-          confirmText: 'Save Changes',
+          title: hasNoLicense ? 'Confirm Add License' : 'Confirm License Changes',
+          message: hasNoLicense 
+            ? 'Please review your license information before adding it to the database.'
+            : 'Please review your license changes before saving to the database.',
+          confirmText: hasNoLicense ? 'Add License' : 'Save Changes',
           cancelText: 'Cancel',
           confirmColor: 'primary',
-          changes: [
-            ...(draftLicenseNo !== licenseNo
-              ? [{ field: 'License No', from: licenseNo, to: draftLicenseNo }]
-              : []),
-            ...(draftLicenseRestrictions !== licenseRestrictions
-              ? [
-                  {
-                    field: 'Restrictions',
-                    from: licenseRestrictions,
-                    to: draftLicenseRestrictions,
-                  },
-                ]
-              : []),
-            ...(draftLicenseExpiration !== licenseExpiration
-              ? [
-                  {
-                    field: 'Expiration Date',
-                    from: licenseExpiration,
-                    to: draftLicenseExpiration,
-                  },
-                ]
-              : []),
-          ],
+          changes: hasNoLicense
+            ? [
+                { field: 'License No', from: 'None', to: draftLicenseNo || 'Not provided' },
+                { field: 'Restrictions', from: 'None', to: draftLicenseRestrictions || 'None' },
+                { field: 'Expiration Date', from: 'None', to: draftLicenseExpiration || 'Not provided' },
+                { field: 'License Image', from: 'None', to: draftLicenseImage ? 'Uploaded' : 'Not uploaded' },
+              ]
+            : [
+                ...(draftLicenseNo !== licenseNo
+                  ? [{ field: 'License No', from: licenseNo || 'None', to: draftLicenseNo }]
+                  : []),
+                ...(draftLicenseRestrictions !== licenseRestrictions
+                  ? [
+                      {
+                        field: 'Restrictions',
+                        from: licenseRestrictions || 'None',
+                        to: draftLicenseRestrictions || 'None',
+                      },
+                    ]
+                  : []),
+                ...(draftLicenseExpiration !== licenseExpiration
+                  ? [
+                      {
+                        field: 'Expiration Date',
+                        from: licenseExpiration,
+                        to: draftLicenseExpiration,
+                      },
+                    ]
+                  : []),
+                ...(draftLicenseImage
+                  ? [{ field: 'License Image', from: 'Current', to: 'New upload' }]
+                  : []),
+              ],
           loading: savingLicense,
           showWarning: true,
         }}

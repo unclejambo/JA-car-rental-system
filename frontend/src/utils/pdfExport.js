@@ -349,7 +349,7 @@ export const generateAnalyticsPDF = (params) => {
     );
   }
 
-  // Save the PDF
-  const fileName = `Analytics_Report_${period}_${selectedYear}_${new Date().toISOString().split('T')[0]}.pdf`;
+  // Save the PDF with descriptive name including view type
+  const fileName = `JA_Analytics_${primaryView}_${period}_${selectedYear}_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(fileName);
 };

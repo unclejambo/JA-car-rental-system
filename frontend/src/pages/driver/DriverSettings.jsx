@@ -1107,10 +1107,7 @@ export default function DriverSettings() {
                       >
                         <Box
                           sx={{
-                            position: { xs: 'relative', md: 'relative' },
-                            top: { md: 12 },
-                            right: { md: 20 },
-                            zIndex: 30,
+                            position: 'relative',
                             display: 'flex',
                             justifyContent: 'flex-end',
                             mb: { xs: 1, md: 0 },
@@ -1121,10 +1118,11 @@ export default function DriverSettings() {
                               onClick={handleEditToggle}
                               sx={{
                                 position: 'absolute',
-                                top: 10,
-                                right: 40,
+                                top: { xs: -8, md: 10 },
+                                right: { xs: 8, md: 40 },
                                 backgroundColor: '#fff',
                                 boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                                zIndex: 30,
                                 '&:hover': { backgroundColor: '#f5f5f5' },
                               }}
                             >

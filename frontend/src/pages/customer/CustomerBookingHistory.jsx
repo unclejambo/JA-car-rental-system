@@ -86,7 +86,7 @@ function CustomerBookingHistory() {
 
   const API_BASE = getApiBase().replace(/\/$/, '');
 
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     setLoading(true);
     setError('');
 
@@ -154,19 +154,37 @@ function CustomerBookingHistory() {
       }
 
       // Map backend booking data to table row shape and merge with transaction data
+      // Filter only Completed and Cancelled bookings
       const mappedBookings = Array.isArray(dataBookings)
-        ? dataBookings.map((b) => {
-            const transaction = transactionMap[b.booking_id];
-            return {
-              booking_id: b.booking_id,
-              booking_date: b.booking_date,
-              car_model: b.car_details?.display_name || '',
-              completion_date: transaction?.completionDate || null,
-              cancellation_date: transaction?.cancellationDate || null,
-              amount: b.total_amount ?? '',
-              status: b.has_outstanding_balance ? 'Unpaid' : 'Paid',
-            };
-          })
+        ? dataBookings
+            .filter(
+              (b) =>
+                b.booking_status === 'Completed' ||
+                b.booking_status === 'Cancelled'
+            )
+            .map((b) => {
+              const transaction = transactionMap[b.booking_id];
+              // Construct car model from car_details
+              const carModel = b.car_details
+                ? b.car_details.display_name ||
+                  `${b.car_details.make || ''} ${b.car_details.model || ''} ${b.car_details.year ? `(${b.car_details.year})` : ''}`.trim()
+                : '';
+
+              // Get driver name from driver_details
+              const driverName = b.driver_details?.name || 'No Driver Assigned';
+
+              return {
+                booking_id: b.booking_id,
+                booking_date: b.booking_date,
+                car_model: carModel,
+                driver_name: driverName,
+                completion_date: transaction?.completionDate || null,
+                cancellation_date: transaction?.cancellationDate || null,
+                amount: b.total_amount ?? '',
+                status: b.has_outstanding_balance ? 'Unpaid' : 'Paid',
+                booking_status: b.booking_status,
+              };
+            })
         : [];
 
       setBookings(mappedBookings);
@@ -202,11 +220,11 @@ function CustomerBookingHistory() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   // Handler to view booking details
   const handleViewBooking = async (bookingRow) => {
@@ -236,7 +254,18 @@ function CustomerBookingHistory() {
         );
 
         if (fullBooking) {
-          setSelectedBooking(fullBooking);
+          // Transform car_details object to flat fields for modal compatibility
+          const transformedBooking = {
+            ...fullBooking,
+            car_model: fullBooking.car_details?.display_name || fullBooking.car_model,
+            car_make: fullBooking.car_details?.make,
+            car_year: fullBooking.car_details?.year,
+            car_license_plate: fullBooking.car_details?.license_plate,
+            car_seats: fullBooking.car_details?.seats,
+            car_type: fullBooking.car_details?.type,
+            car_rent_price: fullBooking.car_details?.rent_price,
+          };
+          setSelectedBooking(transformedBooking);
           setShowBookingDetailsModal(true);
         }
       }

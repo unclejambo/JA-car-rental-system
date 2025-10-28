@@ -102,21 +102,19 @@ function parsePhilippineDateTimeString(dateTimeString) {
 }
 
 /**
- * Calculate day difference between two dates in Philippine timezone
- * @param {Date} startDate - Start date
- * @param {Date} endDate - End date
- * @returns {number} - Number of days difference
+ * Calculate day difference between two dates using hours-based calculation
+ * @param {Date} startDate - Start date (can include time)
+ * @param {Date} endDate - End date (can include time)
+ * @returns {number} - Number of days difference (24 hours = 1 day, rounded up)
  */
 function calculateDaysDifference(startDate, endDate) {
   const start = toPhilippineTime(startDate);
   const end = toPhilippineTime(endDate);
   
-  // Reset time to midnight for accurate day calculation
-  start.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
-  
+  // Calculate total hours, then convert to days (24 hours = 1 day)
   const diffTime = Math.abs(end - start);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const totalHours = diffTime / (1000 * 60 * 60);
+  const diffDays = Math.ceil(totalHours / 24); // Round up partial days
   
   return diffDays;
 }

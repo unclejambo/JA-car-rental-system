@@ -288,7 +288,11 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     { label: 'Gas Level Fee', amount: calculatedFees.gasLevelFee },
     { label: 'Equipment Loss Fee', amount: calculatedFees.equipmentLossFee },
     { label: 'Damage Fee', amount: calculatedFees.damageFee },
-    { label: 'Cleaning Fee', amount: calculatedFees.cleaningFee },
+    {
+      label: 'Cleaning Fee (Deduction)',
+      amount: calculatedFees.cleaningFee,
+      isDeduction: true,
+    },
     { label: 'Stain Removal Fee', amount: calculatedFees.stainRemovalFee },
     {
       label: 'Overdue Fee',
@@ -296,12 +300,22 @@ export default function ReturnModal({ show, onClose, bookingId }) {
       showCancel: true,
       hours: overdueHours,
     },
-  ].filter((fee) => fee.amount > 0);
+  ].filter((fee) => fee.amount !== 0); // Show both positive and negative amounts
 
   const total = calculatedFees.total;
 
-  const currency = (v) =>
-    `₱ ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const currency = (v, isDeduction = false) => {
+    const absValue = Math.abs(v);
+    const formatted = absValue.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    // For deductions (negative values), show with minus sign
+    if (isDeduction || v < 0) {
+      return `- ₱ ${formatted}`;
+    }
+    return `₱ ${formatted}`;
+  };
 
   // Get car name for title
   const carName = bookingData?.car
@@ -425,7 +439,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                               sx={{
                                 width: { xs: 50, sm: 80 },
                                 height: { xs: 50, sm: 80 },
-                                cursor: 'pointer',
+                                cursor: releaseData[imgKey] && releaseData[imgKey].trim() !== '' ? 'pointer' : 'default',
                                 border: '1px solid #ddd',
                                 borderRadius: 1,
                                 overflow: 'hidden',
@@ -435,12 +449,13 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                               }}
-                              onClick={() =>
-                                handleImageClick(releaseData[imgKey])
-                              }
+                              onClick={() => {
+                                if (releaseData[imgKey] && releaseData[imgKey].trim() !== '') {
+                                  handleImageClick(releaseData[imgKey]);
+                                }
+                              }}
                             >
-                              {releaseData[imgKey] &&
-                              releaseData[imgKey].trim() !== '' ? (
+                              {releaseData[imgKey] && releaseData[imgKey].trim() !== '' ? (
                                 <img
                                   src={releaseData[imgKey]}
                                   alt={imgKey.replace('_', ' ')}
@@ -449,38 +464,31 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                                     height: '100%',
                                     objectFit: 'cover',
                                   }}
-                                  onLoad={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.nextSibling.style.display =
-                                      'block';
+                                />
+                              ) : (
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    fontSize: 8,
+                                    color: 'text.secondary',
+                                    textAlign: 'center',
+                                  }}
+                                >
+                                  No Image
+                                </Typography>
+                              )}
+                              {releaseData[imgKey] && releaseData[imgKey].trim() !== '' && (
+                                <ZoomInIcon
+                                  sx={{
+                                    position: 'absolute',
+                                    top: 2,
+                                    right: 2,
+                                    fontSize: 12,
+                                    color: 'white',
+                                    textShadow: '1px 1px 1px black',
                                   }}
                                 />
-                              ) : null}
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  fontSize: 8,
-                                  color: 'text.secondary',
-                                  display:
-                                    releaseData[imgKey] &&
-                                    releaseData[imgKey].trim() !== ''
-                                      ? 'none'
-                                      : 'block',
-                                  textAlign: 'center',
-                                }}
-                              >
-                                {releaseData[imgKey] ? 'Error' : 'No Image'}
-                              </Typography>
-                              <ZoomInIcon
-                                sx={{
-                                  position: 'absolute',
-                                  top: 2,
-                                  right: 2,
-                                  fontSize: 12,
-                                  color: 'white',
-                                  textShadow: '1px 1px 1px black',
-                                }}
-                              />
+                              )}
                             </Box>
                           ))}
                         </Stack>
@@ -799,9 +807,15 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                             sx={{
                               flexShrink: 0,
                               whiteSpace: 'nowrap',
+                              color:
+                                f.isDeduction || f.amount < 0
+                                  ? 'success.main'
+                                  : 'inherit',
+                              fontWeight:
+                                f.isDeduction || f.amount < 0 ? 600 : 400,
                             }}
                           >
-                            {currency(f.amount)}
+                            {currency(f.amount, f.isDeduction)}
                           </Typography>
                           {f.showCancel &&
                             f.amount > 0 &&

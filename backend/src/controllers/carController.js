@@ -214,6 +214,8 @@ export const createCar = async (req, res) => {
       car_status,
       car_img_url,
       mileage,
+      hasGPS,
+      isManual,
     } = req.body;
 
     let imageUrl = car_img_url;
@@ -263,6 +265,8 @@ export const createCar = async (req, res) => {
         car_status: car_status || 'Available',
         car_img_url: imageUrl,
         mileage: mileage ? parseFloat(mileage) : null,
+        hasGPS: hasGPS === true || hasGPS === 'true' || false,
+        isManual: isManual === true || isManual === 'true' || false,
       },
     });
     res.status(201).json(newCar);
@@ -289,6 +293,7 @@ export const updateCar = async (req, res) => {
       car_img_url,
       mileage,
       hasGPS,
+      isManual,
     } = req.body;
 
     let imageUrl = car_img_url;
@@ -348,6 +353,7 @@ export const updateCar = async (req, res) => {
     if (imageUrl !== undefined) updateData.car_img_url = imageUrl;
     if (mileage !== undefined) updateData.mileage = mileage ? parseFloat(mileage) : null;
     if (hasGPS !== undefined) updateData.hasGPS = hasGPS === true || hasGPS === 'true';
+    if (isManual !== undefined) updateData.isManual = isManual === true || isManual === 'true';
 
     // Get current status before update to detect changes
     const currentCar = await prisma.car.findUnique({

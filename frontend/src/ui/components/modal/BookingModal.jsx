@@ -732,7 +732,9 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
 
     const start = new Date(formData.startDate);
     const end = new Date(formData.endDate);
-    const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    // Calculate difference in days and add 1 to include both start and end days
+    // Use Math.floor to handle same-day bookings correctly (24 hours = 1 day, not 2)
+    const daysDiff = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
     // Base cost: daily rate * number of days
     let totalCost = daysDiff * car.rent_price;
@@ -837,7 +839,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         payment_deadline_hours: paymentDeadlineHours,
         fee_breakdown: {
           base_cost:
-            (Math.ceil(
+            (Math.floor(
               (new Date(formData.endDate) - new Date(formData.startDate)) /
                 (1000 * 60 * 60 * 24)
             ) +
@@ -848,13 +850,13 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
           driver_fee: isSelfService
             ? 0
             : fees.driver_fee *
-              (Math.ceil(
+              (Math.floor(
                 (new Date(formData.endDate) - new Date(formData.startDate)) /
                   (1000 * 60 * 60 * 24)
               ) +
                 1),
           total_days:
-            Math.ceil(
+            Math.floor(
               (new Date(formData.endDate) - new Date(formData.startDate)) /
                 (1000 * 60 * 60 * 24)
             ) + 1,
@@ -2035,7 +2037,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                       {formData.startDate} to {formData.endDate}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {Math.ceil(
+                      {Math.floor(
                         (new Date(formData.endDate) -
                           new Date(formData.startDate)) /
                           (1000 * 60 * 60 * 24)
@@ -2194,7 +2196,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                       }}
                     >
                       <Typography variant="body2">
-                        {Math.ceil(
+                        {Math.floor(
                           (new Date(formData.endDate) -
                             new Date(formData.startDate)) /
                             (1000 * 60 * 60 * 24)
@@ -2204,12 +2206,11 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                       <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                         ₱
                         {(
-                          (Math.ceil(
+                          (Math.floor(
                             (new Date(formData.endDate) -
                               new Date(formData.startDate)) /
                               (1000 * 60 * 60 * 24)
-                          ) +
-                            1) *
+                          ) + 1) *
                           car.rent_price
                         ).toLocaleString()}
                       </Typography>
@@ -2245,7 +2246,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                       >
                         <Typography variant="body2">
                           Driver Fee (
-                          {Math.ceil(
+                          {Math.floor(
                             (new Date(formData.endDate) -
                               new Date(formData.startDate)) /
                               (1000 * 60 * 60 * 24)
@@ -2256,7 +2257,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                           ₱
                           {(
                             fees.driver_fee *
-                            (Math.ceil(
+                            (Math.floor(
                               (new Date(formData.endDate) -
                                 new Date(formData.startDate)) /
                                 (1000 * 60 * 60 * 24)

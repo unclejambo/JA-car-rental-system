@@ -229,7 +229,7 @@ export const generateAnalyticsCSV = (params) => {
   const url = URL.createObjectURL(blob);
   
   link.setAttribute('href', url);
-  link.setAttribute('download', `Analytics_Report_${period}_${selectedYear}_${new Date().toISOString().split('T')[0]}.csv`);
+  link.setAttribute('download', `JA_Analytics_${primaryView}_${period}_${selectedYear}_${new Date().toISOString().split('T')[0]}.csv`);
   link.style.visibility = 'hidden';
   
   document.body.appendChild(link);

@@ -46,7 +46,10 @@ export default function BookingSuccessModal({
   const calculateDays = () => {
     const start = new Date(bookingData.startDate);
     const end = new Date(bookingData.endDate);
-    return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    // Calculate difference in days and add 1 to include both start and end days
+    // Use Math.floor to handle same-day bookings correctly
+    const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+    return diffDays + 1;
   };
 
   return (

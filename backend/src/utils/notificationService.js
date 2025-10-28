@@ -749,7 +749,13 @@ export async function sendAdminCancellationRequestNotification(booking, customer
     RENTAL PERIOD:
     - Start Date: ${startDateFormatted}
     - End Date: ${endDateFormatted}
-    - Duration: ${Math.ceil((new Date(end_date) - new Date(start_date)) / (1000 * 60 * 60 * 24))} days
+    - Duration: ${(() => {
+        const startDateTime = new Date(start_date);
+        const endDateTime = new Date(end_date);
+        const totalHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
+        const days = Math.ceil(totalHours / 24);
+        return `${totalHours.toFixed(1)} hours (${days} day${days !== 1 ? 's' : ''})`;
+      })()}
 
     FINANCIAL DETAILS:
     - Total Amount: ₱${total_amount.toLocaleString()}
@@ -979,7 +985,13 @@ export async function sendAdminNewBookingNotification(booking, customer, car) {
     RENTAL PERIOD:
     - Start Date: ${startDateFormatted}
     - End Date: ${endDateFormatted}
-    - Duration: ${Math.ceil((new Date(end_date) - new Date(start_date)) / (1000 * 60 * 60 * 24))} days
+    - Duration: ${(() => {
+        const startDateTime = new Date(start_date);
+        const endDateTime = new Date(end_date);
+        const totalHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
+        const days = Math.ceil(totalHours / 24);
+        return `${totalHours.toFixed(1)} hours (${days} day${days !== 1 ? 's' : ''})`;
+      })()}
 
     FINANCIAL DETAILS:
     - Total Amount: ₱${total_amount.toLocaleString()}

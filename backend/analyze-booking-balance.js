@@ -24,7 +24,12 @@ async function analyzeBooking49Balance() {
     if (!booking) {
       return;
     }
-    const days = Math.ceil((new Date(booking.end_date) - new Date(booking.start_date)) / (1000 * 60 * 60 * 24));
+    // Calculate hours-based duration (24 hours = 1 day)
+    const startDateTime = new Date(booking.start_date);
+    const endDateTime = new Date(booking.end_date);
+    const totalHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
+    const days = Math.ceil(totalHours / 24);
+    
     if (booking.payments.length === 0) {
     } else {
       let totalPaid = 0;

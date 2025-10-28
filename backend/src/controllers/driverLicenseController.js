@@ -179,3 +179,105 @@ export const deleteLicenseImage = async (req, res) => {
     });
   }
 };
+
+// @desc    Create a new driver license for a customer
+// @route   POST /driver-license/customer/:customerId
+// @access  Authenticated
+export const createDriverLicenseForCustomer = async (req, res) => {
+  try {
+    const customerId = parseInt(req.params.customerId, 10);
+    const { driver_license_no, restrictions, expiry_date, dl_img_url } = req.body;
+    
+    // Validate customer ID
+    if (isNaN(customerId)) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid customer ID" 
+      });
+    }
+
+    // Validate required fields
+    if (!driver_license_no || !expiry_date || !dl_img_url) {
+      return res.status(400).json({ 
+        success: false,
+        error: "License number, expiry date, and license image are required" 
+      });
+    }
+
+    // Check if customer exists
+    const customer = await prisma.customer.findUnique({
+      where: { customer_id: customerId },
+      include: { driver_license: true }
+    });
+
+    if (!customer) {
+      return res.status(404).json({ 
+        success: false,
+        error: "Customer not found" 
+      });
+    }
+
+    // Check if customer already has a license
+    if (customer.driver_license_id) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Customer already has a driver's license on record" 
+      });
+    }
+
+    // Check if license number already exists
+    const existingLicense = await prisma.driverLicense.findUnique({
+      where: { driver_license_no: driver_license_no.trim() }
+    });
+
+    if (existingLicense) {
+      return res.status(409).json({ 
+        success: false,
+        error: "This license number is already registered in the system" 
+      });
+    }
+
+    // Validate expiry date is in the future
+    const expiryDate = new Date(expiry_date);
+    const now = new Date();
+    if (expiryDate <= now) {
+      return res.status(400).json({ 
+        success: false,
+        error: "License expiry date must be in the future" 
+      });
+    }
+
+    // Create the driver license record
+    const newLicense = await prisma.driverLicense.create({
+      data: {
+        driver_license_no: driver_license_no.trim(),
+        restrictions: restrictions?.trim() || null,
+        expiry_date: expiryDate,
+        dl_img_url: dl_img_url.trim()
+      }
+    });
+
+    // Update customer with the new license_id
+    await prisma.customer.update({
+      where: { customer_id: customerId },
+      data: { driver_license_id: newLicense.license_id }
+    });
+
+    // Generate signed URL for the response
+    const signedUrl = await getSignedLicenseUrl(newLicense.dl_img_url);
+    
+    res.status(201).json({
+      success: true,
+      message: "Driver's license added successfully",
+      license: {
+        ...newLicense,
+        dl_img_url: signedUrl || newLicense.dl_img_url,
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to create driver license" 
+    });
+  }
+};

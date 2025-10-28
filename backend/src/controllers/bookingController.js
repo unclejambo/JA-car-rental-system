@@ -75,7 +75,17 @@ export const getBookings = async (req, res) => {
       orderBy: { [sortBy]: sortOrder },
       include: {
         customer: { select: { first_name: true, last_name: true } },
-        car: { select: { make: true, model: true, year: true } },
+        car: { 
+          select: { 
+            make: true, 
+            model: true, 
+            year: true, 
+            license_plate: true, 
+            no_of_seat: true,
+            car_type: true,
+            rent_price: true
+          } 
+        },
         payments: { select: { amount: true } },
         extensions: {
           orderBy: { extension_id: "desc" },
@@ -115,6 +125,12 @@ export const getBookings = async (req, res) => {
             customer?.last_name ?? ""
           }`.trim(),
           car_model: [car?.make, car?.model].filter(Boolean).join(" "),
+          car_make: car?.make || null,
+          car_year: car?.year || null,
+          car_license_plate: car?.license_plate || null,
+          car_seats: car?.no_of_seat || null,
+          car_type: car?.car_type || null,
+          car_rent_price: car?.rent_price || null,
           total_paid: totalPaid,
           remaining_balance: remainingBalance,
           latest_extension: latestExtension, // Include extension info
@@ -135,7 +151,17 @@ export const getBookingById = async (req, res) => {
       where: { booking_id: bookingId },
       include: {
         customer: { select: { first_name: true, last_name: true } },
-        car: { select: { make: true, model: true, year: true } },
+        car: { 
+          select: { 
+            make: true, 
+            model: true, 
+            year: true, 
+            license_plate: true, 
+            no_of_seat: true,
+            car_type: true,
+            rent_price: true
+          } 
+        },
         driver: { select: { first_name: true } },
         payments: { select: { amount: true } },
       },
@@ -164,6 +190,12 @@ export const getBookingById = async (req, res) => {
         customer?.last_name ?? ""
       }`.trim(),
       car_model: [car?.make, car?.model].filter(Boolean).join(" "),
+      car_make: car?.make || null,
+      car_year: car?.year || null,
+      car_license_plate: car?.license_plate || null,
+      car_seats: car?.no_of_seat || null,
+      car_type: car?.car_type || null,
+      car_rent_price: car?.rent_price || null,
       driver_name: driver && driver.first_name ? driver.first_name : null,
       total_paid: totalPaid,
       remaining_balance: remainingBalance,
@@ -816,6 +848,9 @@ export const getMyBookings = async (req, res) => {
             year: true,
             license_plate: true,
             car_img_url: true,
+            no_of_seat: true,
+            car_type: true,
+            rent_price: true,
           },
         },
         driver: {
@@ -855,6 +890,9 @@ export const getMyBookings = async (req, res) => {
           license_plate: car?.license_plate,
           image_url: car?.car_img_url,
           display_name: `${car?.make} ${car?.model} (${car?.year})`,
+          seats: car?.no_of_seat,
+          type: car?.car_type,
+          rent_price: car?.rent_price,
         },
         driver_details: driver
           ? {

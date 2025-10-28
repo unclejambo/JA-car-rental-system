@@ -98,7 +98,7 @@ export default function BookingSuccessModal({
         </Box>
 
         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-          Booking Confirmed!
+          Booking Request Sent!
         </Typography>
 
         <Typography variant="h6" sx={{ opacity: 0.9 }}>
@@ -121,28 +121,9 @@ export default function BookingSuccessModal({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: 2,
               }}
             >
-              {/* Car Image */}
-              {car.car_img_url && (
-                <Box
-                  component="img"
-                  src={car.car_img_url}
-                  alt={`${car.make} ${car.model}`}
-                  sx={{
-                    width: 120,
-                    height: 80,
-                    objectFit: 'cover',
-                    borderRadius: 2,
-                    border: '1px solid #e0e0e0',
-                  }}
-                  onError={(e) => {
-                    e.target.style.display = 'none'; // Hide image if failed to load
-                  }}
-                />
-              )}
-              <Box sx={{ flex: 1 }}>
+              <Box>
                 <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                   {car.make} {car.model} ({car.year})
                 </Typography>
@@ -266,16 +247,21 @@ export default function BookingSuccessModal({
                 📞 What's Next?
               </Typography>
               <Typography variant="body2" sx={{ mb: 2, lineHeight: 1.6 }}>
-                • Our team will review your booking within 2-4 hours
+                • Go to your My Bookings section under the Settlement tab to
+                make your payment and choose your preferred payment method to
+                secure your booking.
               </Typography>
               <Typography variant="body2" sx={{ mb: 2, lineHeight: 1.6 }}>
-                • You'll receive a confirmation call to verify details
+                • You can pay ₱1,000 to reserve your booking. The remaining
+                balance must be settled before the vehicle is released.
               </Typography>
               <Typography variant="body2" sx={{ mb: 2, lineHeight: 1.6 }}>
-                • Payment instructions will be provided upon confirmation
+                • After completing your payment, you’ll receive a confirmation
+                message.
               </Typography>
               <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                • Check your booking history for status updates
+                • You can also check your booking status anytime in the My
+                Bookings section.
               </Typography>
             </CardContent>
           </Card>

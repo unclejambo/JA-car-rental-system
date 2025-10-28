@@ -25,9 +25,27 @@ export default function AdminBookingPage() {
   const openManageFeesModal = () => setShowManageFeesModal(true);
   const closeManageFeesModal = () => setShowManageFeesModal(false);
 
-  const openBookingDetailsModal = (booking) => {
-    setSelectedBooking(booking);
+  const openBookingDetailsModal = async (booking) => {
     setShowBookingDetailsModal(true);
+    setSelectedBooking(booking); // Set initial data to prevent flash of empty content
+    
+    // Fetch complete booking data with all car details
+    try {
+      const authFetch = createAuthenticatedFetch(() => {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+      });
+      const API_BASE = getApiBase().replace(/\/$/, '');
+      
+      const response = await authFetch(`${API_BASE}/bookings/${booking.booking_id}`);
+      if (response.ok) {
+        const completeBooking = await response.json();
+        setSelectedBooking(completeBooking);
+      }
+    } catch (err) {
+      console.error('Failed to fetch complete booking details:', err);
+      // Keep the initial booking data if fetch fails
+    }
   };
 
   const closeBookingDetailsModal = () => {

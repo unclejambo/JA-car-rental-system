@@ -71,11 +71,229 @@ const RegisterTermsAndConditionsModal = ({ open, onClose, onAgree }) => {
               sx={{ fontWeight: 'bold', mb: 2, color: '#1976d2' }}
             ></Typography>
             <Typography variant="body2" sx={{ lineHeight: 1.6, mb: 2 }}>
-              This Car Rental Agreement is made between JA Car Rental (“Lessor”)
-              and the undersigned renter (“Lessee”). By clicking "I Agree " the
+              This Car Rental Agreement is made between JA Car Rental ("Lessor")
+              and the undersigned renter ("Lessee"). By clicking "I Agree " the
               renter agrees to all the terms and conditions below.
             </Typography>
           </div>
+
+          {/* Personal Information Collection and Consent Section */}
+          <div>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 'bold', mb: 2, color: '#1976d2' }}
+            >
+              Collection and Use of Personal Information
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ lineHeight: 1.6, mb: 2, textAlign: 'justify' }}
+            >
+              By registering for an account and using our services, you
+              expressly consent to the collection, use, storage, and processing
+              of your personal information by JA Car Rental for legitimate
+              business purposes. We are committed to protecting your privacy and
+              handling your data responsibly in accordance with applicable data
+              privacy laws, including the Data Privacy Act of 2012 (Republic Act
+              No. 10173).
+            </Typography>
+
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 'bold', mb: 1, mt: 2 }}
+            >
+              Information We Collect:
+            </Typography>
+            <ul className="list-disc ml-6 space-y-1">
+              <li>
+                <Typography variant="body2">
+                  <strong>Personal Identification Information:</strong> Full
+                  name, address, contact number, email address, and Facebook
+                  profile link
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Government-Issued IDs:</strong> Driver's license
+                  information (number, expiry date, restrictions) and images of
+                  valid identification documents
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Account Credentials:</strong> Username and encrypted
+                  password for account access
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Booking and Transaction Records:</strong> Rental
+                  history, payment information, vehicle usage data, and service
+                  preferences
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Communication Records:</strong> Messages, inquiries,
+                  feedback, and support requests
+                </Typography>
+              </li>
+            </ul>
+
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 'bold', mb: 1, mt: 2 }}
+            >
+              How We Use Your Information:
+            </Typography>
+            <ul className="list-disc ml-6 space-y-1">
+              <li>
+                <Typography variant="body2">
+                  <strong>Service Delivery:</strong> To process and fulfill your
+                  vehicle rental bookings, manage reservations, and provide
+                  customer support
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Identity Verification:</strong> To verify your
+                  identity and eligibility to rent vehicles, ensuring compliance
+                  with legal requirements
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Payment Processing:</strong> To process payments,
+                  issue invoices, manage security deposits, and handle refunds
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Safety and Security:</strong> To protect our vehicles,
+                  prevent fraud, investigate incidents, and ensure compliance
+                  with rental agreements
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Communication:</strong> To send booking confirmations,
+                  notifications, reminders, updates about your reservations, and
+                  respond to your inquiries
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Business Operations:</strong> To maintain accurate
+                  records, conduct internal analysis, improve our services, and
+                  comply with legal and regulatory obligations
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Marketing and Promotions:</strong> To inform you about
+                  special offers, promotions, new services, and updates (you may
+                  opt-out at any time)
+                </Typography>
+              </li>
+            </ul>
+
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 'bold', mb: 1, mt: 2 }}
+            >
+              Data Protection and Security:
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ lineHeight: 1.6, mb: 1, textAlign: 'justify' }}
+            >
+              We implement appropriate technical and organizational measures to
+              protect your personal information against unauthorized access,
+              alteration, disclosure, or destruction. Your data is stored
+              securely and accessed only by authorized personnel for legitimate
+              business purposes.
+            </Typography>
+
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 'bold', mb: 1, mt: 2 }}
+            >
+              Data Sharing and Disclosure:
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ lineHeight: 1.6, mb: 1, textAlign: 'justify' }}
+            >
+              We do not sell, trade, or rent your personal information to third
+              parties. We may share your information only in the following
+              circumstances:
+            </Typography>
+            <ul className="list-disc ml-6 space-y-1">
+              <li>
+                <Typography variant="body2">
+                  With service providers who assist in our operations (payment
+                  processors, insurance providers)
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  When required by law, court order, or government authorities
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  To protect our rights, property, safety, or the safety of
+                  others
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  With your explicit consent for specific purposes
+                </Typography>
+              </li>
+            </ul>
+
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 'bold', mb: 1, mt: 2 }}
+            >
+              Your Rights:
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ lineHeight: 1.6, mb: 1, textAlign: 'justify' }}
+            >
+              You have the right to access, correct, or request deletion of your
+              personal information, subject to legal and contractual
+              limitations. You may also withdraw your consent at any time,
+              though this may affect your ability to use our services.
+            </Typography>
+
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 'bold', mb: 1, mt: 2 }}
+            >
+              Consent Acknowledgment:
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                lineHeight: 1.6,
+                mb: 2,
+                textAlign: 'justify',
+                fontStyle: 'italic',
+              }}
+            >
+              By clicking "I Agree" and proceeding with registration, you
+              acknowledge that you have read, understood, and consent to the
+              collection, use, storage, and processing of your personal
+              information as described above for the legitimate business
+              purposes of JA Car Rental. You confirm that you are providing
+              accurate and complete information and that you have the authority
+              to provide such information.
+            </Typography>
+          </div>
+
           {/* Reservation Term Section */}
           <div>
             <Typography

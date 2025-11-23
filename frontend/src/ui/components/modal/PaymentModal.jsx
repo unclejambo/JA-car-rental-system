@@ -24,7 +24,7 @@ import {
   Step,
   StepLabel,
 } from '@mui/material';
-import { HiX, HiCurrencyDollar, HiQrcode, HiCash } from 'react-icons/hi';
+import { HiX, HiCurrencyDollar, HiQrcode, HiCash, HiDownload } from 'react-icons/hi';
 import { useAuth } from '../../../hooks/useAuth';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
 
@@ -236,7 +236,7 @@ export default function PaymentModal({
             justifyContent: 'center',
           }}
         >
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Card
               sx={{
                 cursor: 'pointer',
@@ -275,7 +275,7 @@ export default function PaymentModal({
             </Card>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Card
               sx={{
                 cursor: 'pointer',
@@ -339,7 +339,7 @@ export default function PaymentModal({
           <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
             {/* Cash Payment Instructions - Show only instructions, no amount input */}
             {paymentData.payment_method === 'Cash' ? (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Paper
                   sx={{
                     p: { xs: 2, sm: 4 },
@@ -426,7 +426,7 @@ export default function PaymentModal({
             ) : (
               <>
                 {/* Payment Amount - Only for GCash */}
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Box sx={{ width: '100%', maxWidth: '100%' }}>
                     <TextField
                       fullWidth
@@ -450,7 +450,7 @@ export default function PaymentModal({
                 {/* GCash-specific fields */}
                 {paymentData.payment_method === 'GCash' && (
                   <>
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                       <Box sx={{ width: '100%', maxWidth: '100%' }}>
                         <TextField
                           fullWidth
@@ -468,7 +468,7 @@ export default function PaymentModal({
                     </Grid>
 
                     {/* QR Code Section */}
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                       <Paper
                         sx={{
                           p: { xs: 2, sm: 3 },
@@ -497,37 +497,55 @@ export default function PaymentModal({
                             GCash Payment
                           </Typography>
 
-                          {/* QR Code Placeholder */}
+                          {/* QR Code Image */}
                           <Box
                             sx={{
-                              width: { xs: 150, sm: 200 },
-                              height: { xs: 150, sm: 200 },
+                              width: { xs: 200, sm: 250 },
+                              height: { xs: 200, sm: 250 },
                               backgroundColor: '#fff',
                               border: '2px solid #e0e0e0',
                               borderRadius: 2,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              flexDirection: 'column',
-                              gap: 1,
                               mx: 'auto',
+                              overflow: 'hidden',
                             }}
                           >
-                            <HiQrcode size={64} color="#c10007" />
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              sx={{
-                                textAlign: 'center',
-                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                px: 1,
+                            <img
+                              src="/QR.png"
+                              alt="GCash QR Code"
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'contain',
                               }}
-                            >
-                              GCash QR Code
-                              <br />
-                              Amount: ₱{paymentData.amount}
-                            </Typography>
+                            />
                           </Box>
+
+                          {/* Download QR Button */}
+                          <Button
+                            variant="outlined"
+                            startIcon={<HiDownload />}
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = '/QR-Full.jpg';
+                              link.download = 'JA-Car-Rental-GCash-QR.jpg';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                            sx={{
+                              borderColor: '#c10007',
+                              color: '#c10007',
+                              '&:hover': {
+                                borderColor: '#a00006',
+                                backgroundColor: 'rgba(193, 0, 7, 0.04)',
+                              },
+                            }}
+                          >
+                            Download QR Code
+                          </Button>
 
                           <Alert
                             severity="info"
@@ -562,7 +580,7 @@ export default function PaymentModal({
                     </Grid>
 
                     {/* Reference Number - Only for GCash */}
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                       <TextField
                         fullWidth
                         label="Reference Number *"
@@ -720,11 +738,10 @@ export default function PaymentModal({
           backgroundColor: '#c10007',
           color: 'white',
           pb: 2,
+          fontWeight: 'bold',
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-          Process Payment
-        </Typography>
+        Process Payment
         <IconButton onClick={handleClose} sx={{ color: 'white' }}>
           <HiX />
         </IconButton>

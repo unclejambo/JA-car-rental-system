@@ -257,7 +257,8 @@ function CustomerBookingHistory() {
           // Transform car_details object to flat fields for modal compatibility
           const transformedBooking = {
             ...fullBooking,
-            car_model: fullBooking.car_details?.display_name || fullBooking.car_model,
+            car_model:
+              fullBooking.car_details?.display_name || fullBooking.car_model,
             car_make: fullBooking.car_details?.make,
             car_year: fullBooking.car_details?.year,
             car_license_plate: fullBooking.car_details?.license_plate,
@@ -365,7 +366,7 @@ function CustomerBookingHistory() {
                       }}
                     >
                       <HiOutlineClipboardDocumentCheck
-                        size={24}
+                        size={32}
                         style={{ marginRight: '8px' }}
                       />
                       Booking History

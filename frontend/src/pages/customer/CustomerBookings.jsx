@@ -490,7 +490,7 @@ function CustomerBookings() {
                     gap: 1,
                   }}
                 >
-                  <HiBookOpen size={24} style={{ color: '#c10007' }} />
+                  <HiBookOpen size={32} style={{ color: '#c10007' }} />
                   My Bookings
                 </Typography>
                 {/* Refresh Button - Fixed Upper Right */}
@@ -554,7 +554,19 @@ function CustomerBookings() {
                 }}
               >
                 <Tab label={`My Bookings (${bookings?.length || 0})`} />
-                <Tab label={`Settlement (${payments.length})`} />
+                <Tab
+                  label={`Settlement (${
+                    payments.filter((booking) => {
+                      const status = booking.booking_status?.toLowerCase();
+                      return (
+                        status === 'pending' ||
+                        status === 'confirmed' ||
+                        status === 'in progress' ||
+                        status === 'ongoing'
+                      );
+                    }).length
+                  })`}
+                />
               </Tabs>
             </Box>
 

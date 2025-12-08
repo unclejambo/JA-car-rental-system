@@ -450,23 +450,6 @@ export default function PaymentModal({
                 {/* GCash-specific fields */}
                 {paymentData.payment_method === 'GCash' && (
                   <>
-                    <Grid size={{ xs: 12 }}>
-                      <Box sx={{ width: '100%', maxWidth: '100%' }}>
-                        <TextField
-                          fullWidth
-                          label="GCash Number"
-                          value={paymentData.gcash_no}
-                          onChange={(e) =>
-                            handleInputChange('gcash_no', e.target.value)
-                          }
-                          placeholder="09XXXXXXXXX"
-                          required
-                          helperText="Enter your 11-digit GCash number"
-                          sx={{ width: '100%' }}
-                        />
-                      </Box>
-                    </Grid>
-
                     {/* QR Code Section */}
                     <Grid size={{ xs: 12 }}>
                       <Paper
@@ -577,6 +560,23 @@ export default function PaymentModal({
                           </Alert>
                         </Box>
                       </Paper>
+                    </Grid>
+
+                    <Grid size={{ xs: 12 }}>
+                      <Box sx={{ width: '100%', maxWidth: '100%' }}>
+                        <TextField
+                          fullWidth
+                          label="GCash Number"
+                          value={paymentData.gcash_no}
+                          onChange={(e) =>
+                            handleInputChange('gcash_no', e.target.value)
+                          }
+                          placeholder="09XXXXXXXXX"
+                          required
+                          helperText="Enter your 11-digit GCash number"
+                          sx={{ width: '100%' }}
+                        />
+                      </Box>
                     </Grid>
 
                     {/* Reference Number - Only for GCash */}

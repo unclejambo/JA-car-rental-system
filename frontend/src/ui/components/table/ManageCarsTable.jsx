@@ -1,7 +1,15 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, IconButton, Button, Select, MenuItem } from '@mui/material';
+import {
+  Box,
+  IconButton,
+  Button,
+  Select,
+  MenuItem,
+  Typography,
+} from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { HiInboxIn } from 'react-icons/hi';
 
 const NullLoadingOverlay = () => null;
 
@@ -14,6 +22,44 @@ const ManageCarsTable = ({
   onSetAvailable,
   onStatusChange,
 }) => {
+  // Custom empty state overlay
+  const NoRowsOverlay = () => {
+    const getMessage = () => {
+      switch (activeTab) {
+        case 'MAINTENANCE':
+          return 'No Cars Under Maintenance';
+        default:
+          return 'No Cars Found';
+      }
+    };
+
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          backgroundColor: '#f9f9f9',
+          py: 8,
+        }}
+      >
+        <HiInboxIn size={64} color="#9e9e9e" />
+        <Typography
+          variant="h6"
+          sx={{
+            mt: 2,
+            color: '#757575',
+            fontWeight: 500,
+          }}
+        >
+          {getMessage()}
+        </Typography>
+      </Box>
+    );
+  };
+
   const commonColumns = [
     {
       field: 'car_id',
@@ -330,7 +376,7 @@ const ManageCarsTable = ({
         componentsProps={{
           loadingOverlay: { sx: { display: 'none !important' } },
         }}
-        autoHeight={false}
+        autoHeight={true}
         hideFooterSelectedRowCount
         disableColumnMenu
         disableColumnFilter
@@ -345,8 +391,12 @@ const ManageCarsTable = ({
             paginationModel: { pageSize: 10, page: 0 },
           },
         }}
+        slots={{
+          noRowsOverlay: () => <NoRowsOverlay />,
+        }}
         sx={{
           width: '100%',
+          minHeight: '400px',
           '& .MuiDataGrid-main': {
             width: '100%',
             display: 'flex',

@@ -1,11 +1,62 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, Select, MenuItem, useMediaQuery, Skeleton } from '@mui/material';
+import {
+  Box,
+  Select,
+  MenuItem,
+  useMediaQuery,
+  Skeleton,
+  Typography,
+} from '@mui/material';
+import { HiInboxIn } from 'react-icons/hi';
 
 // use Vite env var, fallback to localhost; remove trailing slash if present
 const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL;
 
 const ManageUserTable = ({ activeTab, rows, loading }) => {
   const isSmallScreen = useMediaQuery('(max-width:600px)');
+
+  // Custom empty state overlay
+  const NoRowsOverlay = () => {
+    const getMessage = () => {
+      switch (activeTab) {
+        case 'CUSTOMER':
+          return 'No Customers Yet';
+        case 'STAFF':
+          return 'No Staffs Yet';
+        case 'DRIVER':
+          return 'No Drivers Yet';
+        default:
+          return 'No Users Yet';
+      }
+    };
+
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          backgroundColor: '#f9f9f9',
+          py: 8,
+        }}
+      >
+        <HiInboxIn size={64} color="#9e9e9e" />
+        <Typography
+          variant="h6"
+          sx={{
+            mt: 2,
+            color: '#757575',
+            fontWeight: 500,
+          }}
+        >
+          {getMessage()}
+        </Typography>
+      </Box>
+    );
+  };
+
   const formatDate = (iso) => {
     if (!iso) return '';
     if (typeof iso === 'string' && iso.includes('T')) return iso.split('T')[0];
@@ -284,7 +335,7 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         rows={rows}
         columns={columns.filter((col) => !col.hide)}
         loading={loading}
-        autoHeight={false}
+        autoHeight={true}
         hideFooterSelectedRowCount
         disableColumnMenu
         disableColumnFilter
@@ -304,8 +355,12 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         //     variant: 'linear-progress',
         //   },
         // }}
+        slots={{
+          noRowsOverlay: () => <NoRowsOverlay />,
+        }}
         sx={{
           width: '100%',
+          minHeight: '400px',
           '& .MuiDataGrid-main': {
             width: '100%',
             display: 'flex',

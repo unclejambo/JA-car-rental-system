@@ -29,11 +29,11 @@ const ManageBookingsTable = ({
     const getMessage = () => {
       switch (activeTab) {
         case 'CANCELLATION':
-          return 'No cancellation requests';
+          return 'No Cancellation Requests';
         case 'EXTENSION':
-          return 'No extension requests';
+          return 'No Extension Requests';
         default:
-          return 'No bookings found';
+          return 'No Booking Requests';
       }
     };
 
@@ -92,10 +92,8 @@ const ManageBookingsTable = ({
       setProcessing(true);
       const bookingId = row.actualBookingId;
 
-
       // Call the confirm booking API
       const result = await bookingAPI.confirmBooking(bookingId, logout);
-
 
       // Use the message from backend response
       const message = result.message || 'Booking confirmed successfully!';
@@ -120,13 +118,11 @@ const ManageBookingsTable = ({
       setProcessing(true);
       const bookingId = row.actualBookingId;
 
-
       // Call the confirm cancellation API
       const result = await bookingAPI.confirmCancellationRequest(
         bookingId,
         logout
       );
-
 
       showMessage('Cancellation confirmed successfully!', 'success');
 
@@ -149,13 +145,11 @@ const ManageBookingsTable = ({
       setProcessing(true);
       const bookingId = row.actualBookingId;
 
-
       // Call the reject cancellation API
       const result = await bookingAPI.rejectCancellationRequest(
         bookingId,
         logout
       );
-
 
       showMessage('Cancellation request rejected successfully!', 'success');
 
@@ -180,7 +174,6 @@ const ManageBookingsTable = ({
     try {
       setProcessing(true);
       const bookingId = row.actualBookingId;
-
 
       // Check if this is payment confirmation or extension approval
       const isPaid =
@@ -224,10 +217,8 @@ const ManageBookingsTable = ({
       setProcessing(true);
       const bookingId = row.actualBookingId;
 
-
       // Call the reject extension API
       const result = await bookingAPI.rejectExtensionRequest(bookingId, logout);
-
 
       showMessage('Extension request rejected successfully!', 'success');
 
@@ -252,7 +243,6 @@ const ManageBookingsTable = ({
     try {
       setProcessing(true);
       const bookingId = row.actualBookingId;
-
 
       // Update isPay to false first
       await bookingAPI.updateIsPay(bookingId, false, logout);
@@ -420,7 +410,10 @@ const ManageBookingsTable = ({
           const bookingStatus = params.row.booking_status?.toLowerCase();
 
           // Payment submitted - awaiting admin confirmation
-          if (isPaid && (bookingStatus === 'pending' || bookingStatus === 'confirmed')) {
+          if (
+            isPaid &&
+            (bookingStatus === 'pending' || bookingStatus === 'confirmed')
+          ) {
             return (
               <Box
                 sx={{
@@ -905,7 +898,7 @@ const ManageBookingsTable = ({
         rows={displayRows}
         columns={columns.filter((col) => !col.hide)}
         loading={loading}
-        autoHeight={false}
+        autoHeight={true}
         hideFooterSelectedRowCount
         disableColumnMenu
         disableColumnFilter
@@ -920,11 +913,11 @@ const ManageBookingsTable = ({
           },
         }}
         slots={{
-          noRowsOverlay: NoRowsOverlay,
+          noRowsOverlay: () => <NoRowsOverlay />,
         }}
         getRowClassName={(params) => {
           if (activeTab !== 'BOOKINGS') return '';
-          
+
           const isPaid =
             params.row.isPay === true ||
             params.row.isPay === 'true' ||
@@ -932,7 +925,10 @@ const ManageBookingsTable = ({
           const bookingStatus = params.row.booking_status?.toLowerCase();
 
           // Payment submitted - light green background
-          if (isPaid && (bookingStatus === 'pending' || bookingStatus === 'confirmed')) {
+          if (
+            isPaid &&
+            (bookingStatus === 'pending' || bookingStatus === 'confirmed')
+          ) {
             return 'row-payment-submitted';
           }
 
@@ -947,7 +943,7 @@ const ManageBookingsTable = ({
           }
 
           // Pending - light orange background
-          if (bookingStatus === 'pending' && !isPaid) {
+          if (bookingStatus === 'pending' && !isPay) {
             return 'row-awaiting-payment';
           }
 
@@ -955,6 +951,7 @@ const ManageBookingsTable = ({
         }}
         sx={{
           width: '100%',
+          minHeight: '400px',
           '& .MuiDataGrid-main': {
             width: '100%',
             display: 'flex',

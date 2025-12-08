@@ -1,8 +1,49 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, IconButton, Tooltip } from '@mui/material';
+import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import { HiInboxIn } from 'react-icons/hi';
 
 const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
+  // Custom empty state overlay
+  const NoRowsOverlay = () => {
+    const getMessage = () => {
+      switch (activeTab) {
+        case 'PAYMENT':
+          return 'No Payments';
+        case 'REFUND':
+          return 'No Refunds';
+        default:
+          return 'No Transactions';
+      }
+    };
+
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          backgroundColor: '#f9f9f9',
+          py: 8,
+        }}
+      >
+        <HiInboxIn size={64} color="#9e9e9e" />
+        <Typography
+          variant="h6"
+          sx={{
+            mt: 2,
+            color: '#757575',
+            fontWeight: 500,
+          }}
+        >
+          {getMessage()}
+        </Typography>
+      </Box>
+    );
+  };
+
   const commonColumns = [
     {
       field: 'customerName',
@@ -220,7 +261,7 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         columns={columns.filter((col) => !col.hide)}
         getRowId={(row) => row.transactionId}
         loading={loading}
-        autoHeight={false}
+        autoHeight={true}
         hideFooterSelectedRowCount
         disableColumnMenu
         disableColumnFilter
@@ -235,8 +276,12 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
             paginationModel: { pageSize: 10, page: 0 },
           },
         }}
+        slots={{
+          noRowsOverlay: () => <NoRowsOverlay />,
+        }}
         sx={{
           width: '100%',
+          minHeight: '400px',
           '& .MuiDataGrid-main': {
             width: '100%',
             display: 'flex',

@@ -9,6 +9,7 @@ import {
   DialogActions,
   Snackbar,
   Alert,
+  Typography,
 } from '@mui/material';
 import PublicIcon from '@mui/icons-material/Public';
 import IconButton from '@mui/material/IconButton';
@@ -17,6 +18,7 @@ import { useState } from 'react';
 import { useScheduleStore } from '../../../store/useScheduleStore';
 import { bookingAPI } from '../../../utils/api';
 import { useNavigate } from 'react-router-dom';
+import { HiInboxIn } from 'react-icons/hi';
 import {
   formatDateForInput,
   formatPhilippineTime,
@@ -34,6 +36,35 @@ const AdminScheduleTable = ({
   const updateReservationStatus = useScheduleStore(
     (state) => state.updateReservationStatus
   );
+
+  // Custom empty state overlay
+  const NoRowsOverlay = () => {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          backgroundColor: '#f9f9f9',
+          py: 8,
+        }}
+      >
+        <HiInboxIn size={64} color="#9e9e9e" />
+        <Typography
+          variant="h6"
+          sx={{
+            mt: 2,
+            color: '#757575',
+            fontWeight: 500,
+          }}
+        >
+          No Schedules
+        </Typography>
+      </Box>
+    );
+  };
 
   // State for cancel confirmation dialog
   const [cancelDialog, setCancelDialog] = useState({
@@ -458,7 +489,7 @@ const AdminScheduleTable = ({
         columns={columns}
         getRowId={(row) => row.reservationId ?? row.booking_id ?? row.id}
         loading={loading}
-        autoHeight
+        autoHeight={true}
         hideFooterSelectedRowCount
         disableColumnMenu
         disableColumnFilter
@@ -473,8 +504,12 @@ const AdminScheduleTable = ({
             paginationModel: { pageSize: 10, page: 0 },
           },
         }}
+        slots={{
+          noRowsOverlay: () => <NoRowsOverlay />,
+        }}
         sx={{
           width: '100%',
+          minHeight: '400px',
           '& .MuiDataGrid-main': {
             width: '100%',
             display: 'flex',

@@ -89,7 +89,6 @@ function ForgotPasswordPage() {
 
   // Step 2: Verification
   const [verificationCode, setVerificationCode] = useState('');
-  const [maskedIdentifier, setMaskedIdentifier] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [canResend, setCanResend] = useState(true);
 
@@ -153,7 +152,6 @@ function ForgotPasswordPage() {
       const data = await response.json();
 
       if (data.success) {
-        setMaskedIdentifier(data.data?.email || identifier); // Use the email from response
         setCurrentStep(STEPS.VERIFY);
         setSuccess(data.message);
         setCountdown(60); // 1 minute countdown for resend
@@ -442,7 +440,7 @@ function ForgotPasswordPage() {
                   Enter verification code
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#666', marginBottom: 2 }}>
-                  We sent a 6-digit code to {maskedIdentifier}
+                  Please enter the 6-digit verification code we sent to you
                 </Typography>
 
                 <TextField

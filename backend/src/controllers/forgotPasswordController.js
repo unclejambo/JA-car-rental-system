@@ -6,6 +6,7 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { sendVerificationEmail } from '../utils/emailService.js';
+import { sendOTPSMS, formatPhoneNumber } from '../utils/smsService.js';
 
 const prisma = new PrismaClient();
 
@@ -15,14 +16,19 @@ const prisma = new PrismaClient();
  */
 export const initiatePasswordReset = async (req, res) => {
   try {
+    console.log('🔄 Password reset initiation request received');
     const { identifier, method = 'email' } = req.body;
+    
     if (!identifier) {
+      console.log('❌ Missing identifier');
       return res.status(400).json({
         success: false,
         message: 'Email, username, or phone number is required'
       });
     }
 
+    console.log(`🔍 Looking up user with identifier: ${identifier}`);
+    
     // Find user by email, username, or phone
     let user = null;
     let userType = null;
@@ -72,11 +78,15 @@ export const initiatePasswordReset = async (req, res) => {
     }
 
     if (!user) {
+      console.log('❌ User not found');
       return res.status(404).json({
         success: false,
         message: 'No account found with the provided information'
       });
     }
+
+    console.log(`✅ User found: ${user.email} (${userType})`);
+    console.log('⏱️ Checking rate limiting...');
 
     // Rate limiting check - simplified for easier testing
     const rateLimitWindow = process.env.NODE_ENV === 'development' ? 2 * 60 * 1000 : 15 * 60 * 1000; // 2 min dev, 15 min prod
@@ -91,6 +101,7 @@ export const initiatePasswordReset = async (req, res) => {
       }
     });
     if (recentAttempts >= maxAttempts) {
+      console.log(`❌ Rate limit exceeded: ${recentAttempts} attempts`);
       const waitTime = process.env.NODE_ENV === 'development' ? '2 minutes' : '15 minutes';
       return res.status(429).json({
         success: false,
@@ -99,8 +110,13 @@ export const initiatePasswordReset = async (req, res) => {
       });
     }
 
+    console.log(`✅ Rate limit check passed (${recentAttempts}/${maxAttempts} attempts)`);
+    console.log('🔢 Generating verification code...');
+
     // Generate verification code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log(`✅ Code generated: ${code}`);
+    
     // Get user ID based on user type
     let userId;
     switch (userType) {
@@ -117,40 +133,107 @@ export const initiatePasswordReset = async (req, res) => {
         throw new Error('Invalid user type');
     }
 
+    console.log(`💾 Storing verification code for user_id: ${userId}...`);
+
+    // Determine identifier and type based on method
+    const verificationType = method === 'sms' ? 'sms' : 'email';
+    const identifierValue = method === 'sms' ? user.contact_no : user.email;
+
     // Store verification code in database
     await prisma.verificationCode.create({
       data: {
         user_id: userId,
         user_type: userType,
-        identifier: user.email,
+        identifier: identifierValue,
         code: code,
-        type: 'email',
+        type: verificationType,
         purpose: 'password_reset',
         attempts: 0,
         max_attempts: 3,
         expires_at: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+        created_at: new Date()
       }
     });
-    // Send verification email
-    try {
-      await sendVerificationEmail(user.email, code, user.first_name || user.username);
-    } catch (emailError) {
-      // In development, we'll continue anyway and log the code
-      if (process.env.NODE_ENV === 'development') {
-      } else {
-        // In production, fail if email can't be sent
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to send verification email. Please try again later.'
+    
+    console.log('✅ Verification code stored in database');
+
+    // Send verification based on method
+    if (method === 'sms') {
+      console.log('📱 Sending verification SMS...');
+      try {
+        // For SMS, we need to send our own code since we're using custom message
+        const formattedPhone = formatPhoneNumber(user.contact_no);
+        const message = `JA Car Rental: Your password reset code is ${code}. Valid for 15 minutes. Do not share this code.`;
+        
+        // Use the regular messages endpoint with our code
+        const SEMAPHORE_API_KEY = process.env.SEMAPHORE_API_KEY;
+        const MESSAGES_URL = 'https://api.semaphore.co/api/v4/messages';
+        const SENDER_NAME = 'JACarRental';
+
+        const formData = new URLSearchParams();
+        formData.append('apikey', SEMAPHORE_API_KEY);
+        formData.append('number', formattedPhone);
+        formData.append('message', message);
+        formData.append('sendername', SENDER_NAME);
+
+        const response = await fetch(MESSAGES_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: formData.toString()
         });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to send SMS');
+        }
+
+        console.log('✅ Verification SMS sent successfully');
+      } catch (smsError) {
+        console.error('❌ Error sending verification SMS:', smsError);
+        // In development, we'll continue anyway and log the code
+        if (process.env.NODE_ENV === 'development') {
+          console.log('⚠️ Development mode: Continuing despite SMS error');
+          console.log(`📋 Verification code: ${code}`);
+        } else {
+          // In production, fail if SMS can't be sent
+          return res.status(500).json({
+            success: false,
+            message: 'Failed to send verification SMS. Please try again later.'
+          });
+        }
+      }
+    } else {
+      console.log('📧 Sending verification email...');
+      try {
+        await sendVerificationEmail(user.email, code, user.first_name || user.username);
+        console.log('✅ Verification email sent successfully');
+      } catch (emailError) {
+        console.error('❌ Error sending verification email:', emailError);
+        // In development, we'll continue anyway and log the code
+        if (process.env.NODE_ENV === 'development') {
+          console.log('⚠️ Development mode: Continuing despite email error');
+          console.log(`📋 Verification code: ${code}`);
+        } else {
+          // In production, fail if email can't be sent
+          return res.status(500).json({
+            success: false,
+            message: 'Failed to send verification email. Please try again later.'
+          });
+        }
       }
     }
+
+    console.log('✅ Password reset initiation completed successfully');
 
     res.status(200).json({
       success: true,
       message: `Verification code sent via ${method}`,
       data: {
         email: user.email,
+        phone: user.contact_no,
         method: method,
         userType: userType,
         // Only include code in development mode for easier testing
@@ -162,9 +245,11 @@ export const initiatePasswordReset = async (req, res) => {
     });
 
   } catch (error) {
+    console.error('❌ Error in initiatePasswordReset:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error during password reset initiation'
+      message: 'Internal server error during password reset initiation',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -174,14 +259,19 @@ export const initiatePasswordReset = async (req, res) => {
  */
 export const verifyResetCode = async (req, res) => {
   try {
+    console.log('🔄 Verification code check request received');
     const { identifier, code } = req.body;
+    
     // Validate input
     if (!identifier || !code) {
+      console.log('❌ Missing identifier or code');
       return res.status(400).json({
         success: false,
         message: 'Please provide both identifier and verification code'
       });
     }
+
+    console.log(`🔍 Looking up user with identifier: ${identifier}`);
 
     // Find user first
     let user = null;
@@ -357,9 +447,12 @@ export const verifyResetCode = async (req, res) => {
  */
 export const resetPassword = async (req, res) => {
   try {
+    console.log('🔄 Reset password request received');
     const { resetToken, newPassword, confirmPassword } = req.body;
+    
     // Validate input
     if (!resetToken || !newPassword || !confirmPassword) {
+      console.log('❌ Missing required fields');
       return res.status(400).json({
         success: false,
         message: 'Please provide reset token and both password fields'
@@ -368,6 +461,7 @@ export const resetPassword = async (req, res) => {
 
     // Validate password match
     if (newPassword !== confirmPassword) {
+      console.log('❌ Passwords do not match');
       return res.status(400).json({
         success: false,
         message: 'Passwords do not match'
@@ -376,12 +470,14 @@ export const resetPassword = async (req, res) => {
 
     // Validate password strength
     if (!newPassword || newPassword.length < 6) {
+      console.log('❌ Password too short');
       return res.status(400).json({
         success: false,
         message: 'Password must be at least 6 characters long'
       });
     }
 
+    console.log('🔍 Looking up reset token...');
     // Find reset token
     const resetRecord = await prisma.passwordResetToken.findFirst({
       where: {
@@ -391,14 +487,18 @@ export const resetPassword = async (req, res) => {
     });
 
     if (!resetRecord) {
+      console.log('❌ Reset token not found or already used');
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired reset token'
       });
     }
 
+    console.log(`✅ Reset token found for user_id: ${resetRecord.user_id}, user_type: ${resetRecord.user_type}`);
+
     // Check if token has expired
     if (resetRecord.expires_at < new Date()) {
+      console.log('❌ Reset token has expired');
       return res.status(400).json({
         success: false,
         message: 'Reset token has expired. Please start the process again.',
@@ -406,6 +506,7 @@ export const resetPassword = async (req, res) => {
       });
     }
 
+    console.log('🔍 Finding user...');
     // Find the user
     let user = null;
     switch (resetRecord.user_type) {
@@ -427,14 +528,20 @@ export const resetPassword = async (req, res) => {
     }
 
     if (!user) {
+      console.log(`❌ User not found for user_type: ${resetRecord.user_type}, user_id: ${resetRecord.user_id}`);
       return res.status(400).json({
         success: false,
         message: 'User not found'
       });
     }
 
+    console.log(`✅ User found: ${user.email}`);
+    console.log('🔐 Hashing new password...');
+    
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 12);
+    
+    console.log('💾 Updating user password...');
 
     // Update user password based on user type
     switch (resetRecord.user_type) {
@@ -458,6 +565,9 @@ export const resetPassword = async (req, res) => {
         break;
     }
 
+    console.log('✅ Password updated successfully');
+    console.log('🔒 Marking reset token as used...');
+
     // Mark reset token as used
     await prisma.passwordResetToken.update({
       where: { id: resetRecord.id },
@@ -466,6 +576,8 @@ export const resetPassword = async (req, res) => {
         updated_at: new Date()
       }
     });
+
+    console.log('🗑️ Invalidating verification codes...');
 
     // Invalidate all verification codes for this user
     await prisma.verificationCode.updateMany({
@@ -477,6 +589,9 @@ export const resetPassword = async (req, res) => {
       },
       data: { verified: true } // Mark as used
     });
+    
+    console.log('✅ Password reset completed successfully');
+    
     return res.status(200).json({
       success: true,
       message: 'Password has been reset successfully. You can now log in with your new password.',
@@ -487,9 +602,11 @@ export const resetPassword = async (req, res) => {
     });
 
   } catch (error) {
+    console.error('❌ Error in resetPassword:', error);
     return res.status(500).json({
       success: false,
-      message: 'Internal server error. Please try again later.'
+      message: 'Internal server error. Please try again later.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

@@ -345,12 +345,16 @@ export const verifyResetCode = async (req, res) => {
         throw new Error('Invalid user type');
     }
 
-    // Find verification code
+    console.log(`🔍 Looking for verification code for user_id: ${userId}, type: ${userType}`);
+
+    // Find verification code (check for both email and SMS types)
     const verificationRecord = await prisma.verificationCode.findFirst({
       where: {
         user_id: userId,
         user_type: userType,
-        type: 'email',
+        type: {
+          in: ['email', 'sms']  // Accept both types
+        },
         purpose: 'password_reset',
         verified: false
       },
@@ -360,14 +364,18 @@ export const verifyResetCode = async (req, res) => {
     });
 
     if (!verificationRecord) {
+      console.log('❌ No verification code found');
       return res.status(400).json({
         success: false,
         message: 'No verification code found. Please request a new one.'
       });
     }
 
+    console.log(`✅ Verification code found: ${verificationRecord.code} (type: ${verificationRecord.type})`)
+
     // Check if code has expired
     if (verificationRecord.expires_at < new Date()) {
+      console.log('❌ Verification code expired');
       return res.status(400).json({
         success: false,
         message: 'Verification code has expired. Please request a new one.',
@@ -377,12 +385,15 @@ export const verifyResetCode = async (req, res) => {
 
     // Check attempts
     if (verificationRecord.attempts >= verificationRecord.max_attempts) {
+      console.log('❌ Maximum attempts exceeded');
       return res.status(400).json({
         success: false,
         message: 'Maximum verification attempts exceeded. Please request a new code.',
         maxAttemptsReached: true
       });
     }
+
+    console.log(`🔄 Verifying code: ${code} against stored: ${verificationRecord.code}`);
 
     // Increment attempts
     await prisma.verificationCode.update({
@@ -393,6 +404,7 @@ export const verifyResetCode = async (req, res) => {
     // Verify code
     if (verificationRecord.code !== code) {
       const attemptsLeft = verificationRecord.max_attempts - (verificationRecord.attempts + 1);
+      console.log(`❌ Code mismatch. Attempts left: ${attemptsLeft}`);
       return res.status(400).json({
         success: false,
         message: `Invalid verification code. ${attemptsLeft} attempts remaining.`,
@@ -400,7 +412,10 @@ export const verifyResetCode = async (req, res) => {
       });
     }
 
+    console.log('✅ Code verified successfully')
+
     // Mark as verified
+    console.log('💾 Marking code as verified...');
     await prisma.verificationCode.update({
       where: { id: verificationRecord.id },
       data: { 
@@ -410,10 +425,12 @@ export const verifyResetCode = async (req, res) => {
     });
 
     // Generate reset token for the next step
+    console.log('🔑 Generating reset token...');
     const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     const tokenExpiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
 
     // Save reset token
+    console.log('💾 Saving reset token...');
     await prisma.passwordResetToken.create({
       data: {
         user_id: userId,
@@ -421,9 +438,12 @@ export const verifyResetCode = async (req, res) => {
         email: user.email,
         token: resetToken,
         code: verificationRecord.code,
-        expires_at: tokenExpiresAt
+        expires_at: tokenExpiresAt,
+        created_at: new Date()
       }
     });
+    
+    console.log('✅ Verification completed successfully');
     return res.status(200).json({
       success: true,
       message: 'Verification code confirmed. You can now reset your password.',
@@ -435,9 +455,11 @@ export const verifyResetCode = async (req, res) => {
     });
 
   } catch (error) {
+    console.error('❌ Error in verifyResetCode:', error);
     return res.status(500).json({
       success: false,
-      message: 'Internal server error. Please try again later.'
+      message: 'Internal server error. Please try again later.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

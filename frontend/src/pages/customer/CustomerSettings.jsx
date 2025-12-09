@@ -30,7 +30,11 @@ import ConfirmationModal from '../../ui/components/modal/ConfirmationModal';
 import { FormControlLabel, Checkbox } from '@mui/material';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
 import PhoneVerificationModal from '../../components/PhoneVerificationModal';
-import { formatPhilippineLicense, validatePhilippineLicense, getLicenseValidationError } from '../../utils/licenseFormatter';
+import {
+  formatPhilippineLicense,
+  validatePhilippineLicense,
+  getLicenseValidationError,
+} from '../../utils/licenseFormatter';
 
 export default function CustomerSettings() {
   // ✅ Added Snackbar state
@@ -449,11 +453,14 @@ export default function CustomerSettings() {
         const customer = await getCustomerById(user?.id);
         if (customer) {
           // Check if customer has a license
-          const hasLicense = customer.driver_license_id !== null && customer.driver_license !== null;
+          const hasLicense =
+            customer.driver_license_id !== null &&
+            customer.driver_license !== null;
           setHasNoLicense(!hasLicense);
 
           const licenseNo = customer.driver_license?.driver_license_no || '';
-          const licenseRestrictions = customer.driver_license?.restrictions || '';
+          const licenseRestrictions =
+            customer.driver_license?.restrictions || '';
           const licenseExpiration = customer.driver_license?.expiry_date || '';
           const licenseImage =
             customer.driver_license?.dl_img_url ||
@@ -611,7 +618,9 @@ export default function CustomerSettings() {
 
     // Validate required fields
     if (!draftLicenseNo || !draftLicenseExpiration || !draftLicenseImage) {
-      setSuccessMessage('All license fields are required (License Number, Expiry Date, and License Image)');
+      setSuccessMessage(
+        'All license fields are required (License Number, Expiry Date, and License Image)'
+      );
       setShowSuccess(true);
       return;
     }
@@ -628,7 +637,9 @@ export default function CustomerSettings() {
         // Upload image first
         const uploadedImageUrl = await uploadLicenseImage();
         if (!uploadedImageUrl) {
-          setSuccessMessage('Failed to upload license image. Please try again.');
+          setSuccessMessage(
+            'Failed to upload license image. Please try again.'
+          );
           setShowSuccess(true);
           setSavingLicense(false);
           return;
@@ -653,7 +664,7 @@ export default function CustomerSettings() {
           setIsEditingLicense(false);
           setHasNoLicense(false); // Customer now has a license
           setOpenLicenseSaveModal(false);
-          setSuccessMessage('Driver\'s license added successfully!');
+          setSuccessMessage("Driver's license added successfully!");
           setShowSuccess(true);
         } else {
           setSuccessMessage(result.error || 'Failed to add license');
@@ -665,7 +676,9 @@ export default function CustomerSettings() {
         const licenseId = customer?.driver_license?.license_id;
 
         if (!licenseId) {
-          setSuccessMessage('License ID not found. Please refresh and try again.');
+          setSuccessMessage(
+            'License ID not found. Please refresh and try again.'
+          );
           setShowSuccess(true);
           setSavingLicense(false);
           return;
@@ -676,7 +689,9 @@ export default function CustomerSettings() {
         if (draftLicenseImage) {
           uploadedImageUrl = await uploadLicenseImage();
           if (!uploadedImageUrl) {
-            setSuccessMessage('Failed to upload license image. Please try again.');
+            setSuccessMessage(
+              'Failed to upload license image. Please try again.'
+            );
             setShowSuccess(true);
             setSavingLicense(false);
             return;
@@ -705,7 +720,9 @@ export default function CustomerSettings() {
 
         if (response.ok) {
           setLicenseNo(result.driver_license_no || draftLicenseNo);
-          setLicenseRestrictions(result.restrictions || updateData.restrictions);
+          setLicenseRestrictions(
+            result.restrictions || updateData.restrictions
+          );
           setLicenseExpiration(result.expiry_date || updateData.expiry_date);
           setLicenseImage(result.dl_img_url || uploadedImageUrl);
           setDraftLicenseImage(null);
@@ -1083,7 +1100,7 @@ export default function CustomerSettings() {
                                   right: 40,
                                   backgroundColor: '#fff',
                                   boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                                  '&:hover': { backgroundColor: '#f5f5f5' },
+                                  '&:hover': { backgroundColor: '#1565c0' },
                                 }}
                               >
                                 <EditIcon />
@@ -1544,12 +1561,23 @@ export default function CustomerSettings() {
                                 py: 4,
                               }}
                             >
-                              <BadgeIcon sx={{ fontSize: 80, color: '#c10007', opacity: 0.5 }} />
+                              <BadgeIcon
+                                sx={{
+                                  fontSize: 80,
+                                  color: '#c10007',
+                                  opacity: 0.5,
+                                }}
+                              />
                               <Typography variant="h6" color="text.secondary">
                                 No Driver's License on Record
                               </Typography>
-                              <Typography variant="body2" color="text.secondary" textAlign="center">
-                                You haven't added your driver's license yet. Add one to enable self-drive bookings.
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                textAlign="center"
+                              >
+                                You haven't added your driver's license yet. Add
+                                one to enable self-drive bookings.
                               </Typography>
                               <Button
                                 variant="contained"
@@ -1577,8 +1605,12 @@ export default function CustomerSettings() {
                                 <IconButton
                                   onClick={() => {
                                     setDraftLicenseNo(licenseNo);
-                                    setDraftLicenseRestrictions(licenseRestrictions);
-                                    setDraftLicenseExpiration(licenseExpiration);
+                                    setDraftLicenseRestrictions(
+                                      licenseRestrictions
+                                    );
+                                    setDraftLicenseExpiration(
+                                      licenseExpiration
+                                    );
                                     setPreviewLicenseImage(null);
                                     setDraftLicenseImage(null);
                                     setIsEditingLicense(true);
@@ -1589,13 +1621,13 @@ export default function CustomerSettings() {
                                     right: 50,
                                     backgroundColor: '#fff',
                                     boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                                    '&:hover': { backgroundColor: '#f5f5f5' },
+                                    '&:hover': { backgroundColor: '#1565c0' },
                                   }}
                                 >
                                   <EditIcon />
                                 </IconButton>
                               )}
-                              
+
                               {/* Left Side - License Details */}
                               <Box
                                 sx={{
@@ -1611,20 +1643,30 @@ export default function CustomerSettings() {
                                       label="License No *"
                                       value={draftLicenseNo}
                                       onChange={(e) => {
-                                        const formatted = formatPhilippineLicense(e.target.value);
+                                        const formatted =
+                                          formatPhilippineLicense(
+                                            e.target.value
+                                          );
                                         setDraftLicenseNo(formatted);
                                       }}
                                       fullWidth
                                       required
                                       placeholder="N01-23-456789"
                                       helperText="Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)"
-                                      error={draftLicenseNo && !validatePhilippineLicense(draftLicenseNo)}
+                                      error={
+                                        draftLicenseNo &&
+                                        !validatePhilippineLicense(
+                                          draftLicenseNo
+                                        )
+                                      }
                                     />
                                     <TextField
                                       label="Restrictions"
                                       value={draftLicenseRestrictions}
                                       onChange={(e) =>
-                                        setDraftLicenseRestrictions(e.target.value)
+                                        setDraftLicenseRestrictions(
+                                          e.target.value
+                                        )
                                       }
                                       fullWidth
                                       placeholder="e.g., 1, 2, 3"
@@ -1633,7 +1675,9 @@ export default function CustomerSettings() {
                                       label="Expiration Date *"
                                       value={draftLicenseExpiration}
                                       onChange={(e) =>
-                                        setDraftLicenseExpiration(e.target.value)
+                                        setDraftLicenseExpiration(
+                                          e.target.value
+                                        )
                                       }
                                       type="date"
                                       InputLabelProps={{ shrink: true }}
@@ -1646,13 +1690,16 @@ export default function CustomerSettings() {
                                     <Typography sx={{ fontWeight: 700 }}>
                                       License No:{' '}
                                       <span style={{ fontWeight: 400 }}>
-                                        {typeof licenseNo === 'string' ? licenseNo : 'N/A'}
+                                        {typeof licenseNo === 'string'
+                                          ? licenseNo
+                                          : 'N/A'}
                                       </span>
                                     </Typography>
                                     <Typography sx={{ fontWeight: 700 }}>
                                       Restrictions:{' '}
                                       <span style={{ fontWeight: 400 }}>
-                                        {typeof licenseRestrictions === 'string' && licenseRestrictions
+                                        {typeof licenseRestrictions ===
+                                          'string' && licenseRestrictions
                                           ? licenseRestrictions
                                           : 'None'}
                                       </span>
@@ -1661,14 +1708,16 @@ export default function CustomerSettings() {
                                       Expiration Date:{' '}
                                       <span style={{ fontWeight: 400 }}>
                                         {licenseExpiration
-                                          ? new Date(licenseExpiration).toISOString().split('T')[0]
+                                          ? new Date(licenseExpiration)
+                                              .toISOString()
+                                              .split('T')[0]
                                           : 'N/A'}
                                       </span>
                                     </Typography>
                                   </>
                                 )}
                               </Box>
-                              
+
                               {/* Right Side - License Image */}
                               <Box
                                 sx={{
@@ -1693,12 +1742,16 @@ export default function CustomerSettings() {
                                       borderRadius: '12px',
                                       boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
                                       objectFit: 'contain',
-                                      cursor: isEditingLicense ? 'default' : 'pointer',
+                                      cursor: isEditingLicense
+                                        ? 'default'
+                                        : 'pointer',
                                       transition: 'transform 0.2s ease',
                                       opacity: licenseImageUploading ? 0.5 : 1,
                                     }}
                                     onClick={() =>
-                                      !isEditingLicense && !hasNoLicense && setOpenLicenseModal(true)
+                                      !isEditingLicense &&
+                                      !hasNoLicense &&
+                                      setOpenLicenseModal(true)
                                     }
                                   />
                                   {/* Upload/Change/Remove Buttons (Only in Edit Mode) */}
@@ -1722,7 +1775,9 @@ export default function CustomerSettings() {
                                             startIcon={<PhotoCamera />}
                                             disabled={savingLicense}
                                           >
-                                            {previewLicenseImage ? 'Change Image' : 'Upload Image *'}
+                                            {previewLicenseImage
+                                              ? 'Change Image'
+                                              : 'Upload Image *'}
                                             <input
                                               type="file"
                                               accept="image/jpeg,image/jpg,image/png,image/webp"
@@ -1750,7 +1805,7 @@ export default function CustomerSettings() {
                                   )}
                                 </Box>
                               </Box>
-                              
+
                               {/* Save / Cancel Buttons (centered at bottom) */}
                               {isEditingLicense && (
                                 <Box
@@ -1770,17 +1825,27 @@ export default function CustomerSettings() {
                                     variant="contained"
                                     color="primary"
                                     startIcon={<SaveIcon />}
-                                    onClick={() => setOpenLicenseSaveModal(true)}
-                                    disabled={savingLicense || licenseImageUploading}
+                                    onClick={() =>
+                                      setOpenLicenseSaveModal(true)
+                                    }
+                                    disabled={
+                                      savingLicense || licenseImageUploading
+                                    }
                                   >
-                                    {hasNoLicense ? 'Add License' : 'Save Changes'}
+                                    {hasNoLicense
+                                      ? 'Add License'
+                                      : 'Save Changes'}
                                   </Button>
                                   <Button
                                     variant="outlined"
                                     color="inherit"
                                     startIcon={<CloseIcon />}
-                                    onClick={() => setOpenLicenseCancelModal(true)}
-                                    disabled={savingLicense || licenseImageUploading}
+                                    onClick={() =>
+                                      setOpenLicenseCancelModal(true)
+                                    }
+                                    disabled={
+                                      savingLicense || licenseImageUploading
+                                    }
                                   >
                                     Cancel
                                   </Button>
@@ -1891,8 +1956,10 @@ export default function CustomerSettings() {
         onClose={() => setOpenLicenseSaveModal(false)}
         onConfirm={handleLicenseSaveConfirm}
         options={{
-          title: hasNoLicense ? 'Confirm Add License' : 'Confirm License Changes',
-          message: hasNoLicense 
+          title: hasNoLicense
+            ? 'Confirm Add License'
+            : 'Confirm License Changes',
+          message: hasNoLicense
             ? 'Please review your license information before adding it to the database.'
             : 'Please review your license changes before saving to the database.',
           confirmText: hasNoLicense ? 'Add License' : 'Save Changes',
@@ -1900,14 +1967,36 @@ export default function CustomerSettings() {
           confirmColor: 'primary',
           changes: hasNoLicense
             ? [
-                { field: 'License No', from: 'None', to: draftLicenseNo || 'Not provided' },
-                { field: 'Restrictions', from: 'None', to: draftLicenseRestrictions || 'None' },
-                { field: 'Expiration Date', from: 'None', to: draftLicenseExpiration || 'Not provided' },
-                { field: 'License Image', from: 'None', to: draftLicenseImage ? 'Uploaded' : 'Not uploaded' },
+                {
+                  field: 'License No',
+                  from: 'None',
+                  to: draftLicenseNo || 'Not provided',
+                },
+                {
+                  field: 'Restrictions',
+                  from: 'None',
+                  to: draftLicenseRestrictions || 'None',
+                },
+                {
+                  field: 'Expiration Date',
+                  from: 'None',
+                  to: draftLicenseExpiration || 'Not provided',
+                },
+                {
+                  field: 'License Image',
+                  from: 'None',
+                  to: draftLicenseImage ? 'Uploaded' : 'Not uploaded',
+                },
               ]
             : [
                 ...(draftLicenseNo !== licenseNo
-                  ? [{ field: 'License No', from: licenseNo || 'None', to: draftLicenseNo }]
+                  ? [
+                      {
+                        field: 'License No',
+                        from: licenseNo || 'None',
+                        to: draftLicenseNo,
+                      },
+                    ]
                   : []),
                 ...(draftLicenseRestrictions !== licenseRestrictions
                   ? [
@@ -1928,7 +2017,13 @@ export default function CustomerSettings() {
                     ]
                   : []),
                 ...(draftLicenseImage
-                  ? [{ field: 'License Image', from: 'Current', to: 'New upload' }]
+                  ? [
+                      {
+                        field: 'License Image',
+                        from: 'Current',
+                        to: 'New upload',
+                      },
+                    ]
                   : []),
               ],
           loading: savingLicense,

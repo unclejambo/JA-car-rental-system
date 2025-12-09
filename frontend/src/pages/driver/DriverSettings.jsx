@@ -36,7 +36,11 @@ import { HiCog8Tooth } from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
 import { updateLicense } from '../../store/license'; // same approach as CustomerSettings
-import { formatPhilippineLicense, validatePhilippineLicense, getLicenseValidationError } from '../../utils/licenseFormatter';
+import {
+  formatPhilippineLicense,
+  validatePhilippineLicense,
+  getLicenseValidationError,
+} from '../../utils/licenseFormatter';
 
 export default function DriverSettings() {
   // Tabs
@@ -170,7 +174,12 @@ export default function DriverSettings() {
 
       // license fields (defensive)
       setLicenseId(data.license_id || data.license?.license_id || null);
-      setLicenseNumber(data.license_number || data.driver_license?.driver_license_no || data.license?.driver_license_no || '');
+      setLicenseNumber(
+        data.license_number ||
+          data.driver_license?.driver_license_no ||
+          data.license?.driver_license_no ||
+          ''
+      );
       setLicenseRestrictions(
         data.license_restrictions ||
           data.driver_license?.restrictions ||
@@ -1123,7 +1132,7 @@ export default function DriverSettings() {
                                 backgroundColor: '#fff',
                                 boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                                 zIndex: 30,
-                                '&:hover': { backgroundColor: '#f5f5f5' },
+                                '&:hover': { backgroundColor: '#1565c0' },
                               }}
                             >
                               <EditIcon />
@@ -1545,10 +1554,10 @@ export default function DriverSettings() {
                               position: 'absolute',
                               top: 12,
                               right: { xs: 8, sm: 50 },
-                              backgroundColor: '#1976d2',
-                              color: '#fff',
+                              backgroundColor: '#fff',
+
                               boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                              '&:hover': { 
+                              '&:hover': {
                                 backgroundColor: '#1565c0',
                                 transform: 'scale(1.05)',
                               },
@@ -1574,13 +1583,18 @@ export default function DriverSettings() {
                                 label="License No"
                                 value={draftLicenseNo}
                                 onChange={(e) => {
-                                  const formatted = formatPhilippineLicense(e.target.value);
+                                  const formatted = formatPhilippineLicense(
+                                    e.target.value
+                                  );
                                   setDraftLicenseNo(formatted);
                                 }}
                                 fullWidth
                                 placeholder="N01-23-456789"
                                 helperText="Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)"
-                                error={draftLicenseNo && !validatePhilippineLicense(draftLicenseNo)}
+                                error={
+                                  draftLicenseNo &&
+                                  !validatePhilippineLicense(draftLicenseNo)
+                                }
                               />
                               <TextField
                                 label="Restrictions"
@@ -1603,27 +1617,33 @@ export default function DriverSettings() {
                             </>
                           ) : (
                             <>
-                              <TextField
-                                label="License No"
-                                value={licenseNumber}
-                                fullWidth
-                                placeholder="N01-23-456789"
-                                InputProps={{ readOnly: true }}
-                              />
-                              <TextField
-                                label="Restrictions"
-                                value={licenseRestrictions}
-                                fullWidth
-                                InputProps={{ readOnly: true }}
-                              />
-                              <TextField
-                                label="Expiration Date"
-                                value={licenseExpiration ? new Date(licenseExpiration).toISOString().split('T')[0] : ''}
-                                type="date"
-                                InputLabelProps={{ shrink: true }}
-                                fullWidth
-                                InputProps={{ readOnly: true }}
-                              />
+                              <Typography sx={{ fontWeight: 700 }}>
+                                License No:{' '}
+                                <span style={{ fontWeight: 400 }}>
+                                  {typeof licenseNumber === 'string'
+                                    ? licenseNumber
+                                    : 'N/A'}
+                                </span>
+                              </Typography>
+                              <Typography sx={{ fontWeight: 700 }}>
+                                Restrictions:{' '}
+                                <span style={{ fontWeight: 400 }}>
+                                  {typeof licenseRestrictions === 'string' &&
+                                  licenseRestrictions
+                                    ? licenseRestrictions
+                                    : 'None'}
+                                </span>
+                              </Typography>
+                              <Typography sx={{ fontWeight: 700 }}>
+                                Expiration Date:{' '}
+                                <span style={{ fontWeight: 400 }}>
+                                  {licenseExpiration
+                                    ? new Date(licenseExpiration)
+                                        .toISOString()
+                                        .split('T')[0]
+                                    : 'N/A'}
+                                </span>
+                              </Typography>
                             </>
                           )}
                         </Box>

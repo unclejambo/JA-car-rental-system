@@ -869,20 +869,6 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         await onBookingSuccess(bookingData);
       }
 
-      // Show success message with payment information
-      const deadlineInfo = formatPaymentDeadline();
-      const successMessage =
-        `🎉 Booking created successfully!\n\n` +
-        `🚗 Vehicle: ${car.make} ${car.model}\n` +
-        `📅 Rental Period: ${formData.startDate} to ${formData.endDate}\n` +
-        `💰 Total Amount: ₱${calculateTotalCost().toLocaleString()}\n\n` +
-        `⚠️ IMPORTANT PAYMENT INFORMATION:\n` +
-        `${deadlineInfo.message}\n` +
-        `⏰ Payment Deadline: ${deadlineInfo.deadline}\n\n` +
-        `💡 Your booking is confirmed but requires payment to secure the vehicle.\n` +
-        `📱 You can make payment through the booking details in your dashboard.`;
-
-      alert(successMessage);
       onClose();
     } catch (error) {
       setError('Failed to submit booking. Please try again.');

@@ -19,7 +19,7 @@ import SuccessModal from '../ui/components/modal/SuccessModal.jsx';
 import RegisterTermsAndConditionsModal from '../ui/modals/RegisterTermsAndConditionsModal.jsx';
 import PhoneVerificationModal from '../components/PhoneVerificationModal.jsx';
 import { useAuth } from '../hooks/useAuth.js';
-import { formatPhilippineLicense, validatePhilippineLicense } from '../utils/licenseFormatter';
+import { formatPhilippineLicense, validatePhilippineLicense, formatPhilippinePhone, validatePhilippinePhone, displayPhilippinePhone } from '../utils/licenseFormatter';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
@@ -113,6 +113,20 @@ const RegisterPage = () => {
     }
   };
 
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhilippinePhone(e.target.value);
+    setFormData((prev) => ({
+      ...prev,
+      contactNumber: formatted,
+    }));
+    // Validate the format and set error if invalid
+    if (formatted && !validatePhilippinePhone(formatted)) {
+      setErrors((prev) => ({ ...prev, contactNumber: 'Invalid phone format. Expected: 9XXXXXXXXX (10 digits starting with 9)' }));
+    } else {
+      setErrors((prev) => ({ ...prev, contactNumber: undefined }));
+    }
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files?.[0] ?? null;
     if (!file) {
@@ -189,6 +203,11 @@ const RegisterPage = () => {
         throw new Error('All required fields must be provided');
       }
 
+      // Validate phone number format
+      if (!validatePhilippinePhone(contactNumber?.trim())) {
+        throw new Error('Invalid phone number format. Please enter a valid Philippine mobile number (9XXXXXXXXX)');
+      }
+
       // Validate license fields only if user has a license
       if (hasDriverLicense === 'yes') {
         if (!licenseNumber?.trim() || !licenseExpiry?.trim() || !licenseFile) {
@@ -247,6 +266,8 @@ const RegisterPage = () => {
       }
 
       // 2) Send OTP to phone number for verification
+      // Send in full international format: +639XXXXXXXXX
+      const fullPhoneNumber = `+63${contactNumber.trim()}`;
       const otpUrl = new URL(
         '/api/phone-verification/send-otp',
         BASE
@@ -255,7 +276,7 @@ const RegisterPage = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phoneNumber: contactNumber.trim(),
+          phoneNumber: fullPhoneNumber,
           purpose: 'registration',
         }),
       });
@@ -274,7 +295,7 @@ const RegisterPage = () => {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         address: address.trim(),
-        contactNumber: contactNumber.trim(),
+        contactNumber: fullPhoneNumber,
         fb_link: fb_link.trim(),
         hasDriverLicense: hasDriverLicense,
         licenseNumber: hasDriverLicense === 'yes' ? licenseNumber.trim() : null,
@@ -336,7 +357,7 @@ const RegisterPage = () => {
   };
 
   // Handle phone verification error
-  const handlePhoneVerificationError = (error) => {
+  const handlePhoneVerificationError = (_error) => {
     setServerError('Phone verification failed. Please try again.');
     setPendingRegistrationData(null);
   };
@@ -647,16 +668,19 @@ const RegisterPage = () => {
                 id="contactNumber"
                 name="contactNumber"
                 label="CONTACT NUMBER"
-                value={formData.contactNumber}
-                onChange={onChange}
+                value={formData.contactNumber ? displayPhilippinePhone(formData.contactNumber) : ''}
+                onChange={handlePhoneChange}
                 type="text"
-                placeholder="Enter your contact number"
+                placeholder="09XX XXX XXXX"
                 fullWidth
                 variant="outlined"
                 size="medium"
                 required
                 error={!!errors.contactNumber}
-                helperText={errors.contactNumber}
+                helperText={errors.contactNumber || 'Format: +63 9XX XXX XXXX (Philippine mobile number)'}
+                inputProps={{
+                  maxLength: 18, // Allow space for display format: +63 9XX XXX XXXX
+                }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     backgroundColor: 'rgba(229, 231, 235, 0.8)',
@@ -864,7 +888,7 @@ const RegisterPage = () => {
                   value={formData.restrictions}
                   onChange={onChange}
                   type="text"
-                  placeholder="CODE (optional)"
+                  placeholder="CODE"
                   fullWidth
                   variant="outlined"
                   size="medium"

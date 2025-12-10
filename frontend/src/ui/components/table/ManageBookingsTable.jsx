@@ -943,7 +943,7 @@ const ManageBookingsTable = ({
           }
 
           // Pending - light orange background
-          if (bookingStatus === 'pending' && !isPay) {
+          if (bookingStatus === 'pending' && !isPaid) {
             return 'row-awaiting-payment';
           }
 

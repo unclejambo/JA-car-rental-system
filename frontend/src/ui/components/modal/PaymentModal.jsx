@@ -24,7 +24,13 @@ import {
   Step,
   StepLabel,
 } from '@mui/material';
-import { HiX, HiCurrencyDollar, HiQrcode, HiCash, HiDownload } from 'react-icons/hi';
+import {
+  HiX,
+  HiCurrencyDollar,
+  HiQrcode,
+  HiCash,
+  HiDownload,
+} from 'react-icons/hi';
 import { useAuth } from '../../../hooks/useAuth';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
 
@@ -119,6 +125,12 @@ export default function PaymentModal({
     // For GCash payments, validate amount and reference
     if (!paymentData.amount || parseFloat(paymentData.amount) <= 0) {
       setError('Please enter a valid payment amount');
+      return false;
+    }
+
+    // Validate minimum payment amount of 1000
+    if (parseFloat(paymentData.amount) < 1000) {
+      setError('Payment amount must be at least ₱1,000');
       return false;
     }
 
@@ -438,10 +450,12 @@ export default function PaymentModal({
                       }
                       required
                       InputProps={{
-                        startAdornment: <Typography sx={{ mr: 1 }}>₱</Typography>,
+                        startAdornment: (
+                          <Typography sx={{ mr: 1 }}>₱</Typography>
+                        ),
                       }}
-                      inputProps={{ min: 1, max: getRemainingBalance() }}
-                      helperText={`Outstanding balance: ₱${getRemainingBalance().toLocaleString()}`}
+                      inputProps={{ min: 1000, max: getRemainingBalance() }}
+                      helperText={`Outstanding balance: ₱${getRemainingBalance().toLocaleString()} (Minimum: ₱1,000)`}
                       sx={{ width: '100%' }}
                     />
                   </Box>

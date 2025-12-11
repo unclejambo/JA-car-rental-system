@@ -53,6 +53,50 @@ function AdminDashboard() {
 
   const API_BASE = getApiBase().replace(/\/$/, '');
 
+  // Helper function to check if booking is a release candidate
+  const isReleaseCandidate = (row) => {
+    try {
+      const status = (row.status || row.booking_status || '')
+        .toString()
+        .toLowerCase();
+      if (status !== 'confirmed') return false;
+      const pickup = row.pickup_time || row.start_date || row.startDate;
+      if (!pickup) return false;
+      const pickupTime = new Date(pickup);
+      const now = new Date();
+      const diff = pickupTime - now;
+      const oneHourBefore = -60 * 60 * 1000;
+      // within 1 hour before pickup or already passed
+      return diff <= 60 * 60 * 1000 && diff >= oneHourBefore;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // Helper function to check if booking is a return candidate
+  const isReturnCandidate = (row) => {
+    try {
+      const status = (row.status || row.booking_status || '')
+        .toString()
+        .toLowerCase();
+      if (status === 'completed') return true;
+      // if in progress but end date/time passed
+      if (
+        status === 'in progress' ||
+        status === 'in_progress' ||
+        status === 'ongoing'
+      ) {
+        const end = row.end_date || row.endDate || row.dropoff_time;
+        if (!end) return false;
+        const endTime = new Date(end);
+        return endTime <= new Date();
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
+
   // Helper function to get relative date label
   const getRelativeDateLabel = (date) => {
     const today = new Date();
@@ -105,49 +149,17 @@ function AdminDashboard() {
         }),
       ]);
 
-      // Get current time
-      const now = new Date();
-      const oneHourBefore = new Date(now.getTime() - 60 * 60 * 1000);
-      const oneHourAfter = new Date(now.getTime() + 60 * 60 * 1000);
-
-      // Filter For Release bookings (confirmed, start_date within 1 hour window or overdue)
+      // Filter For Release bookings using release candidate logic
       const forRelease = Array.isArray(schedules)
         ? schedules
-            .filter((schedule) => {
-              const status = schedule.booking_status?.toLowerCase();
-              if (status !== 'confirmed') return false;
-
-              const startDate = new Date(schedule.start_date);
-              // Include items within 1 hour window or overdue (past 1 hour after)
-              return startDate >= oneHourBefore;
-            })
+            .filter((schedule) => isReleaseCandidate(schedule))
             .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
         : [];
 
-      // Filter For Return bookings (any active booking that has started and needs to be returned)
+      // Filter For Return bookings using return candidate logic
       const forReturn = Array.isArray(schedules)
         ? schedules
-            .filter((schedule) => {
-              const status = (schedule.status || schedule.booking_status || '')
-                .toString()
-                .toLowerCase()
-                .trim();
-
-              // Exclude these statuses (same as AdminSchedulePage)
-              if (
-                status === 'pending' ||
-                status === 'cancelled' ||
-                status === 'completed'
-              ) {
-                return false;
-              }
-
-              const endDate = new Date(schedule.end_date);
-              const startDate = new Date(schedule.start_date);
-              // Only show if the booking has started (startDate is in the past)
-              // and the end date is within 1 hour or overdue
-              return startDate <= now && endDate >= oneHourBefore;
-            })
+            .filter((schedule) => isReturnCandidate(schedule))
             .sort((a, b) => new Date(a.end_date) - new Date(b.end_date))
         : [];
 
@@ -299,15 +311,34 @@ function AdminDashboard() {
                       FOR RELEASE
                     </Typography>
                   </Box>
-                  <Chip
-                    label={`${dashboardData.forRelease.length} Upcoming`}
-                    sx={{
-                      bgcolor: '#c10007',
-                      color: 'white',
-                      fontWeight: 'bold',
-                    }}
-                    size="small"
-                  />
+                  {(() => {
+                    const now = new Date();
+                    const upcoming = dashboardData.forRelease.filter(
+                      (b) => new Date(b.start_date) >= now
+                    ).length;
+                    const overdue = dashboardData.forRelease.filter(
+                      (b) => new Date(b.start_date) < now
+                    ).length;
+                    const label =
+                      upcoming > 0 && overdue > 0
+                        ? `${upcoming} Upcoming, ${overdue} Overdue`
+                        : upcoming > 0
+                          ? `${upcoming} Upcoming`
+                          : overdue > 0
+                            ? `${overdue} Overdue`
+                            : '0';
+                    return (
+                      <Chip
+                        label={label}
+                        sx={{
+                          bgcolor: overdue > 0 ? '#ff9800' : '#c10007',
+                          color: 'white',
+                          fontWeight: 'bold',
+                        }}
+                        size="small"
+                      />
+                    );
+                  })()}
                 </Box>
                 <Divider
                   sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
@@ -323,13 +354,14 @@ function AdminDashboard() {
                       overflowX: 'auto',
                     }}
                   >
-                    <Table size="small">
+                    <Table size="small" sx={{ borderCollapse: 'separate' }}>
                       <TableHead>
                         <TableRow sx={{ bgcolor: '#fafafa' }}>
                           <TableCell
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             Customer
@@ -338,6 +370,7 @@ function AdminDashboard() {
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             Car
@@ -346,6 +379,7 @@ function AdminDashboard() {
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             Release Time
@@ -354,6 +388,7 @@ function AdminDashboard() {
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             Status
@@ -363,14 +398,9 @@ function AdminDashboard() {
                       <TableBody>
                         {dashboardData.forRelease.map((booking) => {
                           const now = new Date();
-                          const oneHourAfter = new Date(
-                            now.getTime() + 60 * 60 * 1000
-                          );
                           const startDate = new Date(booking.start_date);
-                          const isOverdue =
-                            startDate < now &&
-                            startDate <
-                              new Date(now.getTime() - 60 * 60 * 1000);
+                          // Overdue if pickup time has passed
+                          const isOverdue = startDate < now;
 
                           return (
                             <TableRow
@@ -415,7 +445,7 @@ function AdminDashboard() {
                                 }}
                               >
                                 {new Date(
-                                  booking.start_date
+                                  booking.pickup_time || booking.start_date
                                 ).toLocaleTimeString('en-US', {
                                   hour: '2-digit',
                                   minute: '2-digit',
@@ -525,11 +555,34 @@ function AdminDashboard() {
                       FOR RETURN
                     </Typography>
                   </Box>
-                  <Chip
-                    label={`${dashboardData.forReturn.length} Upcoming`}
-                    sx={{ bgcolor: '#000', color: 'white', fontWeight: 'bold' }}
-                    size="small"
-                  />
+                  {(() => {
+                    const now = new Date();
+                    const upcoming = dashboardData.forReturn.filter(
+                      (b) => new Date(b.end_date) >= now
+                    ).length;
+                    const overdue = dashboardData.forReturn.filter(
+                      (b) => new Date(b.end_date) < now
+                    ).length;
+                    const label =
+                      upcoming > 0 && overdue > 0
+                        ? `${upcoming} Upcoming, ${overdue} Overdue`
+                        : upcoming > 0
+                          ? `${upcoming} Upcoming`
+                          : overdue > 0
+                            ? `${overdue} Overdue`
+                            : '0';
+                    return (
+                      <Chip
+                        label={label}
+                        sx={{
+                          bgcolor: overdue > 0 ? '#ff9800' : '#000',
+                          color: 'white',
+                          fontWeight: 'bold',
+                        }}
+                        size="small"
+                      />
+                    );
+                  })()}
                 </Box>
                 <Divider
                   sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
@@ -545,13 +598,14 @@ function AdminDashboard() {
                       overflowX: 'auto',
                     }}
                   >
-                    <Table size="small">
+                    <Table size="small" sx={{ borderCollapse: 'separate' }}>
                       <TableHead>
                         <TableRow sx={{ bgcolor: '#fafafa' }}>
                           <TableCell
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             Customer
@@ -560,6 +614,7 @@ function AdminDashboard() {
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             Car
@@ -568,6 +623,7 @@ function AdminDashboard() {
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             Return Time
@@ -576,6 +632,7 @@ function AdminDashboard() {
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             Status
@@ -585,20 +642,16 @@ function AdminDashboard() {
                       <TableBody>
                         {dashboardData.forReturn.map((booking) => {
                           const now = new Date();
-                          const oneHourAfter = new Date(
-                            now.getTime() + 60 * 60 * 1000
-                          );
                           const endDate = new Date(booking.end_date);
-                          const isOverdue =
-                            endDate < now &&
-                            endDate < new Date(now.getTime() - 60 * 60 * 1000);
+                          // Overdue if return time has passed
+                          const isOverdue = endDate < now;
 
                           return (
                             <TableRow
                               key={booking.booking_id}
                               sx={{
                                 '&:hover': { bgcolor: '#f5f5f5' },
-                                bgcolor: isOverdue ? '#ffe6e6' : '#f5f5f5',
+                                bgcolor: isOverdue ? '#ffe6e6' : '#fff5f5',
                               }}
                             >
                               <TableCell
@@ -635,13 +688,12 @@ function AdminDashboard() {
                                   fontWeight: isOverdue ? 600 : 400,
                                 }}
                               >
-                                {new Date(booking.end_date).toLocaleTimeString(
-                                  'en-US',
-                                  {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  }
-                                )}
+                                {new Date(
+                                  booking.dropoff_time || booking.end_date
+                                ).toLocaleTimeString('en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
                               </TableCell>
                               <TableCell
                                 sx={{

@@ -1261,6 +1261,13 @@ export default function DriverSettings() {
                                   size="small"
                                   fullWidth
                                   required
+                                  disabled
+                                  sx={{
+                                    '& .MuiInputBase-input.Mui-disabled': {
+                                      WebkitTextFillColor: '#666',
+                                      cursor: 'not-allowed',
+                                    },
+                                  }}
                                 />
                                 <TextField
                                   label="Last Name"
@@ -1270,6 +1277,13 @@ export default function DriverSettings() {
                                   size="small"
                                   fullWidth
                                   required
+                                  disabled
+                                  sx={{
+                                    '& .MuiInputBase-input.Mui-disabled': {
+                                      WebkitTextFillColor: '#666',
+                                      cursor: 'not-allowed',
+                                    },
+                                  }}
                                 />
                               </Box>
                             ) : (
@@ -1396,8 +1410,16 @@ export default function DriverSettings() {
                                     value={draft.username || ''}
                                     onChange={handleChange}
                                     size="small"
-                                    sx={{ flex: 1, background: 'transparent' }}
+                                    sx={{
+                                      flex: 1,
+                                      background: 'transparent',
+                                      '& .MuiInputBase-input.Mui-disabled': {
+                                        WebkitTextFillColor: '#666',
+                                        cursor: 'not-allowed',
+                                      },
+                                    }}
                                     fullWidth
+                                    disabled
                                     required
                                   />
                                 ) : (
@@ -1595,6 +1617,13 @@ export default function DriverSettings() {
                                   draftLicenseNo &&
                                   !validatePhilippineLicense(draftLicenseNo)
                                 }
+                                disabled
+                                sx={{
+                                  '& .MuiInputBase-input.Mui-disabled': {
+                                    WebkitTextFillColor: '#666',
+                                    cursor: 'not-allowed',
+                                  },
+                                }}
                               />
                               <TextField
                                 label="Restrictions"

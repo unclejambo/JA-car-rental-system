@@ -17,6 +17,7 @@ import Header from '../../ui/components/Header';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Loading from '../../ui/components/Loading';
 import ConfirmationModal from '../../ui/components/modal/ConfirmationModal';
+import SaveCancelModal from '../../ui/components/modal/SaveCancelModal';
 import { HiCog8Tooth } from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
@@ -28,6 +29,7 @@ export default function AdminSettings() {
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [openInfoCancelModal, setOpenInfoCancelModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -106,6 +108,11 @@ export default function AdminSettings() {
     setProfileImage(null);
     setImagePreview(profile.profileImageUrl || '');
     setIsEditing(false);
+  };
+
+  const handleCancelConfirm = () => {
+    handleCancel();
+    setOpenInfoCancelModal(false);
   };
 
   const handleChange = (e) => {
@@ -272,7 +279,6 @@ export default function AdminSettings() {
       formData.append('userId', profile.adminId || 'unknown');
       formData.append('userType', 'admin');
 
-
       const response = await authenticatedFetch(
         `${API_BASE}/api/storage/profile-images`,
         {
@@ -297,7 +303,6 @@ export default function AdminSettings() {
       if (!imageUrl) {
         throw new Error('No image URL returned from upload');
       }
-
 
       // Update the preview immediately
       setImagePreview(imageUrl);
@@ -341,17 +346,7 @@ export default function AdminSettings() {
       return;
     }
 
-    const changes = getChanges();
-
-    // Check if there are any changes (including profile image)
-    const hasProfileImageChange = profileImage !== null;
-    const hasFormChanges = changes.length > 0;
-
-    if (!hasProfileImageChange && !hasFormChanges) {
-      setError('No changes detected');
-      return;
-    }
-
+    // Always show confirmation modal, even if no changes
     setShowConfirmModal(true);
   };
 
@@ -450,7 +445,6 @@ export default function AdminSettings() {
         userType: result.data.user_type || '',
         profileImageUrl: result.data.profile_img_url || '',
       };
-
 
       setImagePreview(result.data.profile_img_url || '');
       setProfileImage(null);
@@ -766,6 +760,13 @@ export default function AdminSettings() {
                               size="small"
                               fullWidth
                               required
+                              disabled
+                              sx={{
+                                '& .MuiInputBase-input.Mui-disabled': {
+                                  WebkitTextFillColor: '#666',
+                                  cursor: 'not-allowed',
+                                },
+                              }}
                             />
                             <TextField
                               label="Last Name"
@@ -775,6 +776,13 @@ export default function AdminSettings() {
                               size="small"
                               fullWidth
                               required
+                              disabled
+                              sx={{
+                                '& .MuiInputBase-input.Mui-disabled': {
+                                  WebkitTextFillColor: '#666',
+                                  cursor: 'not-allowed',
+                                },
+                              }}
                             />
                           </Box>
                         ) : (
@@ -898,6 +906,15 @@ export default function AdminSettings() {
                               name="username"
                               value={draft.username || ''}
                               onChange={handleChange}
+                              disabled
+                              sx={{
+                                flex: 1,
+                                background: 'transparent',
+                                '& .MuiInputBase-input.Mui-disabled': {
+                                  WebkitTextFillColor: '#666',
+                                  cursor: 'not-allowed',
+                                },
+                              }}
                               size="small"
                               sx={{ flex: 1, background: 'transparent' }}
                               fullWidth={true}
@@ -996,7 +1013,7 @@ export default function AdminSettings() {
                               color="inherit"
                               size="small"
                               startIcon={<CloseIcon />}
-                              onClick={handleCancel}
+                              onClick={() => setOpenInfoCancelModal(true)}
                               sx={{ width: { xs: '100%', md: '100%' } }}
                             >
                               Cancel
@@ -1028,6 +1045,14 @@ export default function AdminSettings() {
           loading: saving,
           showWarning: true,
         }}
+      />
+
+      {/* Cancel Confirmation Modal */}
+      <SaveCancelModal
+        open={openInfoCancelModal}
+        onClose={() => setOpenInfoCancelModal(false)}
+        onConfirm={handleCancelConfirm}
+        type="cancel"
       />
 
       {/* Success Message */}

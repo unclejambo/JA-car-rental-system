@@ -1244,6 +1244,13 @@ export default function CustomerSettings() {
                                       onChange={handleChange}
                                       size="small"
                                       fullWidth
+                                      disabled
+                                      sx={{
+                                        '& .MuiInputBase-input.Mui-disabled': {
+                                          WebkitTextFillColor: '#666',
+                                          cursor: 'not-allowed',
+                                        },
+                                      }}
                                     />
                                     <TextField
                                       label="Last Name"
@@ -1252,6 +1259,13 @@ export default function CustomerSettings() {
                                       onChange={handleChange}
                                       size="small"
                                       fullWidth
+                                      disabled
+                                      sx={{
+                                        '& .MuiInputBase-input.Mui-disabled': {
+                                          WebkitTextFillColor: '#666',
+                                          cursor: 'not-allowed',
+                                        },
+                                      }}
                                     />
                                   </Box>
                                 ) : (
@@ -1388,8 +1402,14 @@ export default function CustomerSettings() {
                                         sx={{
                                           flex: 1,
                                           background: 'transparent',
+                                          '& .MuiInputBase-input.Mui-disabled':
+                                            {
+                                              WebkitTextFillColor: '#666',
+                                              cursor: 'not-allowed',
+                                            },
                                         }}
                                         fullWidth
+                                        disabled
                                       />
                                     ) : (
                                       <Typography sx={{ flex: 1, pl: 2 }}>
@@ -1659,6 +1679,13 @@ export default function CustomerSettings() {
                                           draftLicenseNo
                                         )
                                       }
+                                      disabled
+                                      sx={{
+                                        '& .MuiInputBase-input.Mui-disabled': {
+                                          WebkitTextFillColor: '#666',
+                                          cursor: 'not-allowed',
+                                        },
+                                      }}
                                     />
                                     <TextField
                                       label="Restrictions"

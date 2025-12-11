@@ -8,11 +8,20 @@ import {
   Typography,
 } from '@mui/material';
 import { HiInboxIn } from 'react-icons/hi';
-
-// use Vite env var, fallback to localhost; remove trailing slash if present
-const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL;
+import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
+import { useMemo } from 'react';
 
 const ManageUserTable = ({ activeTab, rows, loading }) => {
+  // Create authenticated fetch function
+  const authFetch = useMemo(
+    () =>
+      createAuthenticatedFetch(() => {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+      }),
+    []
+  );
+  const API_BASE = getApiBase().replace(/\/$/, '');
   const isSmallScreen = useMediaQuery('(max-width:600px)');
 
   // Custom empty state overlay
@@ -222,19 +231,19 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
           let endpoint = '';
           switch (activeTab) {
             case 'CUSTOMER':
-              endpoint = `${API_BASE}/customers/${params.id}`;
+              endpoint = `${API_BASE}/api/customers/${params.id}`;
               break;
             case 'DRIVER':
               endpoint = `${API_BASE}/drivers/${params.id}`;
               break;
             case 'STAFF':
-              // For staff/admin, we don't allow status changes via dropdown
-              return;
+              endpoint = `${API_BASE}/admins/${params.id}`;
+              break;
             default:
-              endpoint = `${API_BASE}/customers/${params.id}`;
+              endpoint = `${API_BASE}/api/customers/${params.id}`;
           }
 
-          const response = await fetch(endpoint, {
+          const response = await authFetch(endpoint, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: bodyStatus }),
@@ -249,7 +258,9 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
 
           // update only the status cell in the grid with the display label
           params.api.updateRows([{ id: params.id, status: newStatusLabel }]);
-        } catch (error) {}
+        } catch (error) {
+          console.error('Failed to update status:', error);
+        }
       };
 
       // normalize value so boolean, "Active"/"active" all display correctly

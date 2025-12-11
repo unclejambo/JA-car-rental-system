@@ -40,42 +40,86 @@ export default function AdminSchedulePage() {
     setShowGPSModal(true);
   };
 
+  const isReleaseCandidate = (row) => {
+    try {
+      const status = (row.status || row.booking_status || '')
+        .toString()
+        .toLowerCase();
+      if (status !== 'confirmed') return false;
+      const pickup =
+        row.pickup_time || row.start_date || row.startDate || row.pickup_time;
+      if (!pickup) return false;
+      const pickupTime = new Date(pickup);
+      const now = new Date();
+      const diff = pickupTime - now;
+      const oneHourBefore = -60 * 60 * 1000; // 1 hour before in milliseconds
+      // within 1 hour before pickup or already passed
+      return diff <= 60 * 60 * 1000 && diff >= oneHourBefore;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const isReturnCandidate = (row) => {
+    try {
+      const status = (row.status || row.booking_status || '')
+        .toString()
+        .toLowerCase();
+      if (status === 'completed') return true;
+      // if in progress but end date/time passed
+      if (
+        status === 'in progress' ||
+        status === 'in_progress' ||
+        status === 'ongoing'
+      ) {
+        const end = row.end_date || row.endDate || row.dropoff_time;
+        if (!end) return false;
+        const endTime = new Date(end);
+        return endTime <= new Date();
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
+
   const getCounts = () => {
     if (!schedule || schedule.length === 0) {
       return { CONFIRMED: 0, 'IN PROGRESS': 0, RELEASE: 0, RETURN: 0 };
     }
 
-    const confirmed = schedule.filter((row) => {
-      const status = (row.status || row.booking_status || '')
-        .toString()
-        .toLowerCase()
-        .trim();
-      return status === 'confirmed';
+    const base = schedule.filter((row) => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase().trim();
+      if (row.customer_name?.toLowerCase().includes(query)) return true;
+      if (row.start_date?.toLowerCase().includes(query)) return true;
+      if (row.end_date?.toLowerCase().includes(query)) return true;
+      if (row.pickup_location?.toLowerCase().includes(query)) return true;
+      if (row.dropoff_location?.toLowerCase().includes(query)) return true;
+      if (row.pickup_time?.toLowerCase().includes(query)) return true;
+      if (row.dropoff_time?.toLowerCase().includes(query)) return true;
+      if (row.status?.toLowerCase().includes(query)) return true;
+      if (row.booking_id?.toString().includes(query)) return true;
+      return false;
+    });
+
+    const confirmed = base.filter((r) => {
+      const s = (r.status || r.booking_status || '').toString().toLowerCase();
+      // exclude release or return candidates from confirmed list
+      if (isReleaseCandidate(r) || isReturnCandidate(r)) return false;
+      return s === 'confirmed';
     }).length;
 
-    const inProgress = schedule.filter((row) => {
-      const status = (row.status || row.booking_status || '')
-        .toString()
-        .toLowerCase()
-        .trim();
-      return status === 'in progress';
+    const inProgress = base.filter((r) => {
+      const s = (r.status || r.booking_status || '').toString().toLowerCase();
+      // Exclude return candidates (ended/completed) from In Progress
+      if (isReturnCandidate(r)) return false;
+      return s === 'in progress' || s === 'in_progress' || s === 'ongoing';
     }).length;
 
-    const release = schedule.filter((row) => {
-      const status = (row.status || row.booking_status || '')
-        .toString()
-        .toLowerCase()
-        .trim();
-      return status === 'release';
-    }).length;
+    const release = base.filter((r) => isReleaseCandidate(r)).length;
 
-    const returnCount = schedule.filter((row) => {
-      const status = (row.status || row.booking_status || '')
-        .toString()
-        .toLowerCase()
-        .trim();
-      return status === 'return';
-    }).length;
+    const returnCount = base.filter((r) => isReturnCandidate(r)).length;
 
     return {
       CONFIRMED: confirmed,
@@ -88,89 +132,55 @@ export default function AdminSchedulePage() {
   const getFilteredSchedule = () => {
     if (!schedule || schedule.length === 0) return [];
 
-    // Filter by active tab first
-    let filteredByTab = schedule;
-
-    switch (activeTab) {
-      case 'CONFIRMED':
-        filteredByTab = schedule.filter((row) => {
-          const status = (row.status || row.booking_status || '')
-            .toString()
-            .toLowerCase()
-            .trim();
-          return status === 'confirmed';
-        });
-        break;
-
-      case 'IN PROGRESS':
-        filteredByTab = schedule.filter((row) => {
-          const status = (row.status || row.booking_status || '')
-            .toString()
-            .toLowerCase()
-            .trim();
-          return status === 'in progress';
-        });
-        break;
-
-      case 'RELEASE':
-        filteredByTab = schedule.filter((row) => {
-          const status = (row.status || row.booking_status || '')
-            .toString()
-            .toLowerCase()
-            .trim();
-          return status === 'release';
-        });
-        break;
-
-      case 'RETURN':
-        filteredByTab = schedule.filter((row) => {
-          const status = (row.status || row.booking_status || '')
-            .toString()
-            .toLowerCase()
-            .trim();
-          return status === 'return';
-        });
-        break;
-
-      default:
-        filteredByTab = schedule;
+    // First apply search filter
+    let filtered = schedule;
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = schedule.filter((row) => {
+        if (row.customer_name?.toLowerCase().includes(query)) return true;
+        if (row.start_date?.toLowerCase().includes(query)) return true;
+        if (row.end_date?.toLowerCase().includes(query)) return true;
+        if (row.pickup_location?.toLowerCase().includes(query)) return true;
+        if (row.dropoff_location?.toLowerCase().includes(query)) return true;
+        if (row.pickup_time?.toLowerCase().includes(query)) return true;
+        if (row.dropoff_time?.toLowerCase().includes(query)) return true;
+        if (row.status?.toLowerCase().includes(query)) return true;
+        if (row.booking_id?.toString().includes(query)) return true;
+        return false;
+      });
     }
 
-    // Then filter by search query
-    if (!searchQuery) return filteredByTab;
+    // Then filter by active tab
+    switch (activeTab) {
+      case 'CONFIRMED':
+        return filtered.filter((r) => {
+          const s = (r.status || r.booking_status || '')
+            .toString()
+            .toLowerCase();
+          // exclude release or return candidates from confirmed list
+          if (isReleaseCandidate(r) || isReturnCandidate(r)) return false;
+          return s === 'confirmed';
+        });
 
-    const query = searchQuery.toLowerCase().trim();
+      case 'IN PROGRESS':
+        return filtered.filter((r) => {
+          const s = (r.status || r.booking_status || '')
+            .toString()
+            .toLowerCase();
+          // Exclude return candidates (ended/completed) from In Progress
+          if (isReturnCandidate(r)) return false;
+          return s === 'in progress' || s === 'in_progress' || s === 'ongoing';
+        });
 
-    return filteredByTab.filter((row) => {
-      // Search by customer name
-      if (row.customer_name?.toLowerCase().includes(query)) return true;
+      case 'RELEASE':
+        return filtered.filter((r) => isReleaseCandidate(r));
 
-      // Search by start date
-      if (row.start_date?.toLowerCase().includes(query)) return true;
+      case 'RETURN':
+        return filtered.filter((r) => isReturnCandidate(r));
 
-      // Search by end date
-      if (row.end_date?.toLowerCase().includes(query)) return true;
-
-      // Search by pickup location
-      if (row.pickup_location?.toLowerCase().includes(query)) return true;
-
-      // Search by dropoff location
-      if (row.dropoff_location?.toLowerCase().includes(query)) return true;
-
-      // Search by pickup time
-      if (row.pickup_time?.toLowerCase().includes(query)) return true;
-
-      // Search by dropoff time
-      if (row.dropoff_time?.toLowerCase().includes(query)) return true;
-
-      // Search by status
-      if (row.status?.toLowerCase().includes(query)) return true;
-
-      // Search by booking_id
-      if (row.booking_id?.toString().includes(query)) return true;
-
-      return false;
-    });
+      default:
+        return filtered;
+    }
   };
 
   const fetchScheduleData = async () => {

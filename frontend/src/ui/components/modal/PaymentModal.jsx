@@ -24,7 +24,13 @@ import {
   Step,
   StepLabel,
 } from '@mui/material';
-import { HiX, HiCurrencyDollar, HiQrcode, HiCash, HiDownload } from 'react-icons/hi';
+import {
+  HiX,
+  HiCurrencyDollar,
+  HiQrcode,
+  HiCash,
+  HiDownload,
+} from 'react-icons/hi';
 import { useAuth } from '../../../hooks/useAuth';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
 
@@ -111,14 +117,25 @@ export default function PaymentModal({
   };
 
   const validatePaymentDetails = () => {
-    // For Cash payments, amount is automatically set, skip validation
+    // For Cash payments, validate amount
     if (paymentData.payment_method === 'Cash') {
-      return true; // Cash payments just show instructions, always valid
+      const amount = parseFloat(paymentData.amount);
+      if (amount < 1000) {
+        setError('Minimum payment amount is ₱1,000');
+        return false;
+      }
+      return true;
     }
 
     // For GCash payments, validate amount and reference
     if (!paymentData.amount || parseFloat(paymentData.amount) <= 0) {
       setError('Please enter a valid payment amount');
+      return false;
+    }
+
+    const amount = parseFloat(paymentData.amount);
+    if (amount < 1000) {
+      setError('Minimum payment amount is ₱1,000');
       return false;
     }
 
@@ -438,10 +455,16 @@ export default function PaymentModal({
                       }
                       required
                       InputProps={{
-                        startAdornment: <Typography sx={{ mr: 1 }}>₱</Typography>,
+                        startAdornment: (
+                          <Typography sx={{ mr: 1 }}>₱</Typography>
+                        ),
                       }}
-                      inputProps={{ min: 1, max: getRemainingBalance() }}
-                      helperText={`Outstanding balance: ₱${getRemainingBalance().toLocaleString()}`}
+                      inputProps={{ min: 1000, max: getRemainingBalance() }}
+                      helperText={`Minimum payment: ₱1,000 | Outstanding balance: ₱${getRemainingBalance().toLocaleString()}`}
+                      error={
+                        parseFloat(paymentData.amount) > 0 &&
+                        parseFloat(paymentData.amount) < 1000
+                      }
                       sx={{ width: '100%' }}
                     />
                   </Box>

@@ -32,6 +32,7 @@ import {
   BookOnline,
   Cancel,
   Extension,
+  NotificationsActive,
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import AdminSideBar from '../../ui/components/AdminSideBar';
@@ -48,9 +49,97 @@ function AdminDashboard() {
     availableCars: [],
     bookingRequests: [],
     extensionCancellationRequests: [],
+    notifications: [],
   });
 
   const API_BASE = getApiBase().replace(/\/$/, '');
+
+  // Helper functions for Release/Return detection
+  const isReleaseCandidate = (schedule) => {
+    try {
+      const status = (schedule.status || schedule.booking_status || '')
+        .toString()
+        .toLowerCase();
+      if (status !== 'confirmed') return false;
+      const pickup =
+        schedule.pickup_time || schedule.start_date || schedule.startDate;
+      if (!pickup) return false;
+      const pickupTime = new Date(pickup);
+      const now = new Date();
+      const diff = pickupTime - now;
+      // Within 1 hour before pickup
+      return diff <= 60 * 60 * 1000 && diff >= 0;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const isReturnCandidate = (schedule) => {
+    try {
+      const status = (schedule.status || schedule.booking_status || '')
+        .toString()
+        .toLowerCase();
+      if (status === 'completed') return true;
+      // if in progress but end date/time passed
+      if (
+        status === 'in progress' ||
+        status === 'in_progress' ||
+        status === 'ongoing'
+      ) {
+        const end =
+          schedule.end_date || schedule.endDate || schedule.dropoff_time;
+        if (!end) return false;
+        const endTime = new Date(end);
+        return endTime <= new Date();
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // Check for return notifications (within 1 hour before dropoff)
+  const isReturnNotification = (schedule) => {
+    try {
+      const status = (schedule.status || schedule.booking_status || '')
+        .toString()
+        .toLowerCase();
+      // Only notify for in-progress bookings
+      if (
+        status !== 'in progress' &&
+        status !== 'in_progress' &&
+        status !== 'ongoing'
+      ) {
+        return false;
+      }
+      const end =
+        schedule.end_date || schedule.endDate || schedule.dropoff_time;
+      if (!end) return false;
+      const endTime = new Date(end);
+      const now = new Date();
+      const diff = endTime - now;
+      // Within 1 hour before dropoff
+      return diff <= 60 * 60 * 1000 && diff >= 0;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // Check if a notification is overdue
+  const isNotificationOverdue = (schedule, type) => {
+    try {
+      const time =
+        type === 'RELEASE'
+          ? schedule.pickup_time || schedule.start_date
+          : schedule.end_date || schedule.dropoff_time;
+      if (!time) return false;
+      const eventTime = new Date(time);
+      const now = new Date();
+      return eventTime < now;
+    } catch (e) {
+      return false;
+    }
+  };
 
   // Helper function to get relative date label
   const getRelativeDateLabel = (date) => {
@@ -145,6 +234,36 @@ function AdminDashboard() {
             .slice(0, 2)
         : [];
 
+      // Compute notifications for Release and Return candidates (1 hour window)
+      const notifications = Array.isArray(schedules)
+        ? schedules
+            .filter(
+              (s) =>
+                isReleaseCandidate(s) ||
+                isReturnNotification(s) ||
+                isNotificationOverdue(
+                  s,
+                  isReleaseCandidate(s) ? 'RELEASE' : 'RETURN'
+                )
+            )
+            .map((s) => {
+              const type = isReleaseCandidate(s) ? 'RELEASE' : 'RETURN';
+              return {
+                type: type,
+                booking_id: s.booking_id,
+                customer_name: s.customer_name,
+                car_model: s.car_model,
+                time:
+                  type === 'RELEASE'
+                    ? s.pickup_time || s.start_date
+                    : s.end_date || s.dropoff_time,
+                status: s.booking_status,
+                isOverdue: isNotificationOverdue(s, type),
+              };
+            })
+            .slice(0, 5) // Limit to 5 most recent notifications
+        : [];
+
       setDashboardData({
         mostRentedCar:
           Array.isArray(carsUtilization) && carsUtilization.length > 0
@@ -157,6 +276,7 @@ function AdminDashboard() {
         availableCars: Array.isArray(availableCars) ? availableCars : [],
         bookingRequests,
         extensionCancellationRequests,
+        notifications,
       });
     } catch (error) {
     } finally {
@@ -231,7 +351,7 @@ function AdminDashboard() {
             flexDirection: { xs: 'column', md: 'row' },
           }}
         >
-          {/* Most Rented Car */}
+          {/* Notifications */}
           <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
             <Card
               sx={{
@@ -244,171 +364,219 @@ function AdminDashboard() {
                 <Box
                   sx={{
                     display: 'flex',
-                    gap: 1,
-                    alignItems: 'start',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     mb: { xs: 1.5, md: 2 },
                   }}
                 >
-                  <Avatar
+                  <Box
                     sx={{
-                      bgcolor: '#c10007',
-                      width: { xs: 40, md: 48 },
-                      height: { xs: 40, md: 48 },
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: { xs: 0.5, md: 1 },
                     }}
                   >
-                    <DirectionsCar sx={{ fontSize: { xs: 20, md: 24 } }} />
-                  </Avatar>
-                  <Box>
+                    <NotificationsActive
+                      sx={{ color: '#c10007', fontSize: { xs: 24, md: 28 } }}
+                    />
                     <Typography
                       variant="h6"
                       sx={{
                         fontWeight: 'bold',
-                        mb: 0.5,
-                        fontSize: { xs: '1.125rem', md: '1.25rem' },
-                        color: '#000',
+                        fontSize: { xs: '1rem', md: '1.25rem' },
                       }}
                     >
-                      MOST RENTED CAR
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontSize: { xs: '0.75rem', md: '0.875rem' },
-                        color: 'text.secondary',
-                      }}
-                    >
-                      LAST 30 DAYS
+                      NOTIFICATIONS
                     </Typography>
                   </Box>
+                  <Chip
+                    label={`${dashboardData.notifications.length} Active`}
+                    sx={{
+                      bgcolor: '#c10007',
+                      color: 'white',
+                      fontWeight: 'bold',
+                    }}
+                    size="small"
+                  />
                 </Box>
+                <Divider
+                  sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
+                />
 
-                {dashboardData.mostRentedCar ? (
-                  <>
-                    {/* Car Image */}
-                    {dashboardData.mostRentedCar.carImgUrl ? (
-                      <Box
+                {dashboardData.notifications.length > 0 ? (
+                  <List
+                    sx={{
+                      py: 0,
+                      maxHeight: { xs: 250, md: 280 },
+                      overflow: 'auto',
+                    }}
+                  >
+                    {dashboardData.notifications.map((notif, index) => (
+                      <ListItem
+                        key={`${notif.booking_id}-${notif.type}`}
                         sx={{
+                          bgcolor: notif.isOverdue
+                            ? '#fff3cd'
+                            : notif.type === 'RELEASE'
+                              ? '#fff5f5'
+                              : '#f0f4ff',
+                          borderRadius: 1,
+                          mb:
+                            index < dashboardData.notifications.length - 1
+                              ? 1
+                              : 0,
+                          border: notif.isOverdue
+                            ? '1px solid #ffc107'
+                            : notif.type === 'RELEASE'
+                              ? '1px solid #ffcccb'
+                              : '1px solid #cce5ff',
+                          p: { xs: 1, md: 1.25 },
                           display: 'flex',
                           alignItems: 'center',
-                          gap: { xs: 1, md: 2 },
+                          justifyContent: 'space-between',
                         }}
                       >
                         <Box
                           sx={{
-                            width: '50%',
-                            height: { xs: 140, md: 180 },
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                            mb: { xs: 0.5, md: 1 },
-                            border: '2px solid #e0e0e0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            flex: 1,
                           }}
                         >
-                          <img
-                            src={dashboardData.mostRentedCar.carImgUrl}
-                            alt={`${dashboardData.mostRentedCar.make} ${dashboardData.mostRentedCar.model}`}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.parentElement.style.display = 'none';
-                            }}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                            }}
+                          <ListItemAvatar>
+                            <Avatar
+                              sx={{
+                                bgcolor: notif.isOverdue
+                                  ? '#ffc107'
+                                  : notif.type === 'RELEASE'
+                                    ? '#c10007'
+                                    : '#2196f3',
+                                width: { xs: 36, md: 40 },
+                                height: { xs: 36, md: 40 },
+                              }}
+                            >
+                              {notif.type === 'RELEASE' ? (
+                                <Event sx={{ fontSize: { xs: 18, md: 20 } }} />
+                              ) : (
+                                <CarRental
+                                  sx={{ fontSize: { xs: 18, md: 20 } }}
+                                />
+                              )}
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={
+                              <Box>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    fontWeight: 'bold',
+                                    fontSize: { xs: '0.875rem', md: '1rem' },
+                                  }}
+                                >
+                                  {notif.type === 'RELEASE'
+                                    ? 'RELEASE'
+                                    : 'RETURN'}{' '}
+                                  - {notif.customer_name}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    fontSize: { xs: '0.7rem', md: '0.8rem' },
+                                    color: 'text.secondary',
+                                  }}
+                                >
+                                  {notif.car_model}
+                                </Typography>
+                              </Box>
+                            }
+                            secondary={
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontSize: { xs: '0.7rem', md: '0.8rem' },
+                                  color: notif.isOverdue
+                                    ? '#d32f2f'
+                                    : notif.type === 'RELEASE'
+                                      ? '#c10007'
+                                      : '#2196f3',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {notif.isOverdue
+                                  ? '⚠️ OVERDUE'
+                                  : notif.type === 'RELEASE'
+                                    ? 'Pickup in ~1 hour'
+                                    : 'Return in ~1 hour'}
+                              </Typography>
+                            }
                           />
                         </Box>
-                        <Box>
-                          <Typography
-                            variant="h5"
+                        {notif.isOverdue && (
+                          <Box
                             sx={{
-                              fontWeight: 'bold',
-                              fontSize: { xs: '1.25rem', md: '1.5rem' },
-                              color: '#000',
-                              mb: 0.5,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 0.5,
+                              ml: 1,
+                              px: 1.5,
+                              py: 0.5,
+                              bgcolor: '#ffebee',
+                              borderRadius: '4px',
+                              border: '1px solid #f44336',
+                              flexShrink: 0,
                             }}
                           >
-                            {dashboardData.mostRentedCar.make}{' '}
-                            {dashboardData.mostRentedCar.model}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              mb: 0.5,
-                              fontSize: { xs: '0.875rem', md: '1rem' },
-                              color: 'text.secondary',
-                            }}
-                          >
-                            {dashboardData.mostRentedCar.year || 'N/A'} •{' '}
-                            {dashboardData.mostRentedCar.carType || 'N/A'}
-                          </Typography>
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              fontWeight: 'bold',
-                              fontSize: { xs: '0.875rem', md: '.975rem' },
-                              color: '#c10007',
-                              mb: 0.5,
-                            }}
-                          >
-                            {dashboardData.mostRentedCar.bookingCount} BOOKINGS
-                          </Typography>
-                        </Box>
-                      </Box>
-                    ) : (
-                      <Box
-                        sx={{
-                          width: '100%',
-                          height: { xs: 180, md: 220 },
-                          borderRadius: 2,
-                          mb: { xs: 1.5, md: 2 },
-                          border: '2px solid #e0e0e0',
-                          bgcolor: '#f5f5f5',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <DirectionsCar
-                          sx={{
-                            fontSize: { xs: 80, md: 100 },
-                            color: '#c0c0c0',
-                          }}
-                        />
-                      </Box>
-                    )}
-
-                    {/* Car Details */}
-                    <Box>
-                      <Divider sx={{ my: { xs: 0.75, md: 1 } }} />
-                      <Button
-                        component={Link}
-                        to="/report-analytics"
-                        state={{ primaryView: 'topCars' }}
-                        variant="contained"
-                        fullWidth
-                        sx={{
-                          bgcolor: '#c10007',
-                          color: 'white',
-                          '&:hover': { bgcolor: '#a00006' },
-                          py: { xs: 0.5, md: 1 },
-                        }}
-                      >
-                        View Analytics
-                      </Button>
-                    </Box>
-                  </>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                fontSize: { xs: '0.65rem', md: '0.75rem' },
+                                fontWeight: 'bold',
+                                color: '#d32f2f',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.3,
+                              }}
+                            >
+                              ⚠️ OVERDUE
+                            </Typography>
+                          </Box>
+                        )}
+                      </ListItem>
+                    ))}
+                  </List>
                 ) : (
                   <Typography
+                    variant="body1"
+                    color="text.secondary"
                     sx={{
-                      my: { xs: 2, md: 3 },
-                      fontSize: { xs: '0.875rem', md: '1rem' },
-                      color: 'text.secondary',
                       textAlign: 'center',
+                      py: { xs: 2, md: 3 },
+                      fontSize: { xs: '0.875rem', md: '1rem' },
                     }}
                   >
-                    No data available
+                    No incoming notifications
                   </Typography>
                 )}
+
+                <Button
+                  component={Link}
+                  to="/schedule"
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    mt: { xs: 1.5, md: 2 },
+                    borderColor: '#c10007',
+                    color: '#c10007',
+                    '&:hover': {
+                      borderColor: '#a00006',
+                      bgcolor: 'rgba(193, 0, 7, 0.04)',
+                    },
+                    py: { xs: 1, md: 1.5 },
+                  }}
+                >
+                  View Schedule
+                </Button>
               </CardContent>
             </Card>
           </Grid>

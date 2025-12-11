@@ -1,9 +1,10 @@
 import AdminSideBar from '../../ui/components/AdminSideBar.jsx';
 import Header from '../../ui/components/Header';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Button } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 import { HiCalendarDays, HiMagnifyingGlass } from 'react-icons/hi2';
 import AdminScheduleTable from '../../ui/components/table/AdminScheduleTable';
+import { Tabs, Tab } from '@mui/material';
 import SearchBar from '../../ui/components/SearchBar';
 import Loading from '../../ui/components/Loading';
 import ReleaseModal from '../../ui/components/modal/ReleaseModal.jsx';
@@ -17,6 +18,7 @@ export default function AdminSchedulePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('CONFIRMED');
 
   const [showReleaseModal, setShowReleaseModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -26,6 +28,49 @@ export default function AdminSchedulePage() {
   const handleReleaseClick = (reservation) => {
     setSelectedReservation(reservation);
     setShowReleaseModal(true);
+  };
+
+  const fetchScheduleData = async () => {
+    setLoading(true);
+    const authFetch = createAuthenticatedFetch(() => {
+      localStorage.removeItem('authToken');
+      window.location.href = '/login';
+    });
+    const API_BASE = getApiBase().replace(/\/$/, '');
+    try {
+      const res = await authFetch(`${API_BASE}/schedules`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) {
+        throw new Error(
+          `Failed to fetch schedules: ${res.status} ${res.statusText}`
+        );
+      }
+      const response_data = await res.json();
+      const data = Array.isArray(response_data)
+        ? response_data
+        : response_data.data || [];
+
+      const filtered = Array.isArray(data)
+        ? data.filter((r) => {
+            const status = (r.status || r.booking_status || '')
+              .toString()
+              .toLowerCase()
+              .trim();
+            return (
+              status !== 'pending' &&
+              status !== 'cancelled' &&
+              status !== 'completed'
+            );
+          })
+        : [];
+
+      setSchedule(filtered);
+    } catch (error) {
+      setSchedule([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleReturnClick = (reservation) => {
@@ -46,89 +91,98 @@ export default function AdminSchedulePage() {
     const query = searchQuery.toLowerCase().trim();
 
     return schedule.filter((row) => {
-      // Search by customer name
       if (row.customer_name?.toLowerCase().includes(query)) return true;
-
-      // Search by start date
       if (row.start_date?.toLowerCase().includes(query)) return true;
-
-      // Search by end date
       if (row.end_date?.toLowerCase().includes(query)) return true;
-
-      // Search by pickup location
       if (row.pickup_location?.toLowerCase().includes(query)) return true;
-
-      // Search by dropoff location
       if (row.dropoff_location?.toLowerCase().includes(query)) return true;
-
-      // Search by pickup time
       if (row.pickup_time?.toLowerCase().includes(query)) return true;
-
-      // Search by dropoff time
       if (row.dropoff_time?.toLowerCase().includes(query)) return true;
-
-      // Search by status
       if (row.status?.toLowerCase().includes(query)) return true;
-
-      // Search by booking_id
       if (row.booking_id?.toString().includes(query)) return true;
-
       return false;
     });
-  };
-
-  const fetchScheduleData = async () => {
-    setLoading(true);
-    const authFetch = createAuthenticatedFetch(() => {
-      localStorage.removeItem('authToken');
-      window.location.href = '/login';
-    });
-    const API_BASE = getApiBase().replace(/\/$/, '');
-    try {
-      const res = await authFetch(`${API_BASE}/schedules`, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!res.ok) {
-        throw new Error(
-          `Failed to fetch schedules: ${res.status} ${res.statusText}`
-        );
-      }
-      const response_data = await res.json();
-      // Handle paginated response - extract data array
-      const data = Array.isArray(response_data)
-        ? response_data
-        : response_data.data || [];
-
-      // Show all bookings regardless of status or payment_status
-      // This includes Confirmed, In Progress, and Unpaid bookings
-      // Filter OUT bookings with status: Pending, Cancelled, or Completed
-      // This shows Confirmed, In Progress, and other active statuses (including unpaid extensions)
-      const filtered = Array.isArray(data)
-        ? data.filter((r) => {
-            const status = (r.status || r.booking_status || '')
-              .toString()
-              .toLowerCase()
-              .trim();
-            // Exclude these statuses
-            return (
-              status !== 'pending' &&
-              status !== 'cancelled' &&
-              status !== 'completed'
-            );
-          })
-        : [];
-
-      setSchedule(filtered);
-    } catch (error) {
-      setSchedule([]); // fallback to empty list so UI can render
-    } finally {
-      setLoading(false);
-    }
   };
 
   useEffect(() => {
     fetchScheduleData();
   }, []);
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
+
+  const isReleaseCandidate = (row) => {
+    try {
+      const status = (row.status || row.booking_status || '')
+        .toString()
+        .toLowerCase();
+      if (status !== 'confirmed') return false;
+      const pickup =
+        row.pickup_time || row.start_date || row.startDate || row.pickup_time;
+      if (!pickup) return false;
+      const pickupTime = new Date(pickup);
+      const now = new Date();
+      const diff = pickupTime - now;
+      // within 1 hour before pickup
+      return diff <= 60 * 60 * 1000 && diff >= 0;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const isReturnCandidate = (row) => {
+    try {
+      const status = (row.status || row.booking_status || '')
+        .toString()
+        .toLowerCase();
+      if (status === 'completed') return true;
+      // if in progress but end date/time passed
+      if (
+        status === 'in progress' ||
+        status === 'in_progress' ||
+        status === 'ongoing'
+      ) {
+        const end = row.end_date || row.endDate || row.dropoff_time;
+        if (!end) return false;
+        const endTime = new Date(end);
+        return endTime <= new Date();
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const getTabFilteredSchedule = (tab = activeTab) => {
+    const base = getFilteredSchedule();
+    switch (tab) {
+      case 'CONFIRMED':
+        return base.filter((r) => {
+          const s = (r.status || r.booking_status || '')
+            .toString()
+            .toLowerCase();
+          // exclude release or return candidates from confirmed list
+          if (isReleaseCandidate(r) || isReturnCandidate(r)) return false;
+          return s === 'confirmed';
+        });
+      case 'IN_PROGRESS':
+        return base.filter((r) => {
+          const s = (r.status || r.booking_status || '')
+            .toString()
+            .toLowerCase();
+          // Exclude return candidates (ended/completed) from In Progress
+          if (isReturnCandidate(r)) return false;
+          return s === 'in progress' || s === 'in_progress' || s === 'ongoing';
+        });
+      case 'RELEASE':
+        return base.filter((r) => isReleaseCandidate(r));
+      case 'RETURN':
+        return base.filter((r) => isReturnCandidate(r));
+      default:
+        return base;
+    }
+  };
 
   if (error) {
     return (
@@ -290,13 +344,147 @@ export default function AdminSchedulePage() {
                 overflow: 'hidden',
               }}
             >
-              <AdminScheduleTable
-                rows={getFilteredSchedule()}
-                loading={loading}
-                onOpenRelease={handleReleaseClick}
-                onOpenReturn={handleReturnClick}
-                onOpenGPS={handleGPSClick}
-              />
+              {
+                // compute counts for labels
+              }
+              {(() => {
+                const confirmedCount =
+                  getTabFilteredSchedule('CONFIRMED').length;
+                const inProgressCount =
+                  getTabFilteredSchedule('IN_PROGRESS').length;
+                const releaseCount = getTabFilteredSchedule('RELEASE').length;
+                const returnCount = getTabFilteredSchedule('RETURN').length;
+
+                const tabs = [
+                  {
+                    key: 'CONFIRMED',
+                    label: 'Confirmed',
+                    count: confirmedCount,
+                  },
+                  {
+                    key: 'IN_PROGRESS',
+                    label: 'In Progress',
+                    count: inProgressCount,
+                  },
+                  {
+                    key: 'RELEASE',
+                    label: 'Release',
+                    count: releaseCount,
+                  },
+                  {
+                    key: 'RETURN',
+                    label: 'Return',
+                    count: returnCount,
+                  },
+                ];
+
+                return (
+                  <>
+                    <Box
+                      sx={{
+                        mb: 3,
+                        display: 'flex',
+                        justifyContent: 'flex-start',
+                        gap: 0.4,
+                        width: '100%',
+                      }}
+                    >
+                      {tabs.map((tab, idx) => (
+                        <Button
+                          key={tab.key}
+                          variant={
+                            activeTab === tab.key ? 'contained' : 'outlined'
+                          }
+                          onClick={() => handleTabChange(null, tab.key)}
+                          sx={{
+                            flex: 1,
+                            minWidth: 0,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            boxShadow: 0,
+                            borderRadius: 0,
+                            borderTopLeftRadius: idx === 0 ? '8px' : 0,
+                            borderTopRightRadius:
+                              idx === tabs.length - 1 ? '8px' : 0,
+                            color: activeTab === tab.key ? '#fff' : '#333',
+                            backgroundColor:
+                              activeTab === tab.key ? '#c10007' : '#d9d9d9',
+                            borderColor: '#ccc',
+                            textTransform: 'none',
+                            fontWeight: activeTab === tab.key ? 600 : 400,
+                            cursor:
+                              activeTab === tab.key ? 'default' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 1,
+                            '&:hover': {
+                              backgroundColor:
+                                activeTab === tab.key ? '#c10007' : '#4a4a4a',
+                              borderColor:
+                                activeTab === tab.key ? '#4a4a4a' : '#999',
+                              color: activeTab === tab.key ? '#fff' : '#fff',
+                              boxShadow: 'none',
+                            },
+                            '&:active': {
+                              backgroundColor:
+                                activeTab === tab.key ? '#c10007' : '#d0d0d0',
+                              transition:
+                                activeTab === tab.key
+                                  ? 'none'
+                                  : 'all 0.2s ease',
+                            },
+                            '&:focus': {
+                              outline: 'none',
+                              boxShadow:
+                                activeTab === tab.key
+                                  ? 'none'
+                                  : '0 0 0 3px rgba(0, 0, 0, 0.1)',
+                            },
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                            }}
+                          >
+                            <Box component="span">{tab.label}</Box>
+                            {tab.count > 0 && (
+                              <Box
+                                component="span"
+                                sx={{
+                                  height: '20px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#fff',
+                                  color: '#c10007',
+                                  px: 1,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  borderRadius: '4px',
+                                }}
+                              >
+                                {tab.count}
+                              </Box>
+                            )}
+                          </Box>
+                        </Button>
+                      ))}
+                    </Box>
+
+                    <AdminScheduleTable
+                      rows={getTabFilteredSchedule()}
+                      loading={loading}
+                      onOpenRelease={handleReleaseClick}
+                      onOpenReturn={handleReturnClick}
+                      onOpenGPS={handleGPSClick}
+                    />
+                  </>
+                );
+              })()}
             </Box>
           </Box>
         </Box>

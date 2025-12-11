@@ -272,7 +272,6 @@ export default function AdminSettings() {
       formData.append('userId', profile.adminId || 'unknown');
       formData.append('userType', 'admin');
 
-
       const response = await authenticatedFetch(
         `${API_BASE}/api/storage/profile-images`,
         {
@@ -297,7 +296,6 @@ export default function AdminSettings() {
       if (!imageUrl) {
         throw new Error('No image URL returned from upload');
       }
-
 
       // Update the preview immediately
       setImagePreview(imageUrl);
@@ -450,7 +448,6 @@ export default function AdminSettings() {
         userType: result.data.user_type || '',
         profileImageUrl: result.data.profile_img_url || '',
       };
-
 
       setImagePreview(result.data.profile_img_url || '');
       setProfileImage(null);
@@ -766,6 +763,7 @@ export default function AdminSettings() {
                               size="small"
                               fullWidth
                               required
+                              disabled
                             />
                             <TextField
                               label="Last Name"
@@ -775,6 +773,7 @@ export default function AdminSettings() {
                               size="small"
                               fullWidth
                               required
+                              disabled
                             />
                           </Box>
                         ) : (

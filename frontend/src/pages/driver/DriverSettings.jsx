@@ -1261,6 +1261,7 @@ export default function DriverSettings() {
                                   size="small"
                                   fullWidth
                                   required
+                                  disabled
                                 />
                                 <TextField
                                   label="Last Name"
@@ -1270,6 +1271,7 @@ export default function DriverSettings() {
                                   size="small"
                                   fullWidth
                                   required
+                                  disabled
                                 />
                               </Box>
                             ) : (
@@ -1399,6 +1401,7 @@ export default function DriverSettings() {
                                     sx={{ flex: 1, background: 'transparent' }}
                                     fullWidth
                                     required
+                                    disabled
                                   />
                                 ) : (
                                   <Typography sx={{ flex: 1, pl: 2 }}>
@@ -1595,6 +1598,7 @@ export default function DriverSettings() {
                                   draftLicenseNo &&
                                   !validatePhilippineLicense(draftLicenseNo)
                                 }
+                                disabled
                               />
                               <TextField
                                 label="Restrictions"

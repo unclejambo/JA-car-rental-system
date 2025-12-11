@@ -22,7 +22,7 @@ import {
   Avatar,
   IconButton,
   Divider,
-  Chip
+  Chip,
 } from '@mui/material';
 import { HiX, HiCheck } from 'react-icons/hi';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
@@ -30,10 +30,18 @@ import { useAuth } from '../../../hooks/useAuth';
 
 const API_BASE = getApiBase();
 
-export default function EditBookingModal({ open, onClose, booking, onBookingUpdated }) {
+export default function EditBookingModal({
+  open,
+  onClose,
+  booking,
+  onBookingUpdated,
+}) {
   const { logout } = useAuth();
-  const authenticatedFetch = React.useMemo(() => createAuthenticatedFetch(logout), [logout]);
-  
+  const authenticatedFetch = React.useMemo(
+    () => createAuthenticatedFetch(logout),
+    [logout]
+  );
+
   const [serviceType, setServiceType] = useState('delivery'); // 'delivery' or 'pickup'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,7 +50,7 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
   const [missingFields, setMissingFields] = useState([]);
   const [hasDriverLicense, setHasDriverLicense] = useState(true); // Assume true initially
   const [customerData, setCustomerData] = useState(null);
-  
+
   const [formData, setFormData] = useState({
     purpose: '',
     customPurpose: '',
@@ -58,12 +66,13 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
   // Fetch customer data to check driver license
   const fetchCustomerData = async () => {
     try {
-      const response = await authenticatedFetch(`${API_BASE}/customers/me`);
+      const response = await authenticatedFetch(`${API_BASE}/api/customers/me`);
       if (response.ok) {
         const data = await response.json();
         setCustomerData(data);
         // Check if customer has driver license
-        const hasLicense = data.driver_license_no && data.driver_license_no.trim() !== '';
+        const hasLicense =
+          data.driver_license_no && data.driver_license_no.trim() !== '';
         setHasDriverLicense(hasLicense);
       }
     } catch (error) {
@@ -75,77 +84,87 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
   // Initialize form with booking data
   useEffect(() => {
     if (booking && open) {
-      
       // Fetch customer data for license check
       fetchCustomerData();
-      
-      const isDelivery = booking.deliver_loc && booking.deliver_loc.trim() !== '';
-      
+
+      const isDelivery =
+        booking.deliver_loc && booking.deliver_loc.trim() !== '';
+
       // Determine the purpose - check if it matches predefined values
-      const predefinedPurposes = ['Travel', 'Vehicle Replacement', 'Local Transportation', 'Specialize Needs', 'One-Way Rental', 'Others'];
+      const predefinedPurposes = [
+        'Travel',
+        'Vehicle Replacement',
+        'Local Transportation',
+        'Specialize Needs',
+        'One-Way Rental',
+        'Others',
+      ];
       const bookingPurpose = booking.purpose || '';
       const isPredefined = predefinedPurposes.includes(bookingPurpose);
-      
+
       // Extract time from database timestamps
       // Times are stored as UTC but represent Philippine time (UTC+8)
       // When we retrieve them, we need to convert back to Philippine time
       let pickupTimeFormatted = '';
       let dropoffTimeFormatted = '';
-      
+
       if (booking.pickup_time) {
         const pickupDate = new Date(booking.pickup_time);
-        
+
         // Convert UTC to Philippine time by adding 8 hours
         const utcHours = pickupDate.getUTCHours();
         const utcMinutes = pickupDate.getUTCMinutes();
-        
+
         // Add 8 hours for Philippine timezone
         let phHours = utcHours + 8;
         let phMinutes = utcMinutes;
-        
+
         // Handle day overflow (if adding 8 hours goes past midnight)
         if (phHours >= 24) {
           phHours -= 24;
         }
-        
+
         pickupTimeFormatted = `${String(phHours).padStart(2, '0')}:${String(phMinutes).padStart(2, '0')}`;
       }
-      
+
       if (booking.dropoff_time) {
         const dropoffDate = new Date(booking.dropoff_time);
-        
+
         // Convert UTC to Philippine time by adding 8 hours
         const utcHours = dropoffDate.getUTCHours();
         const utcMinutes = dropoffDate.getUTCMinutes();
-        
+
         // Add 8 hours for Philippine timezone
         let phHours = utcHours + 8;
         let phMinutes = utcMinutes;
-        
+
         // Handle day overflow (if adding 8 hours goes past midnight)
         if (phHours >= 24) {
           phHours -= 24;
         }
-        
+
         dropoffTimeFormatted = `${String(phHours).padStart(2, '0')}:${String(phMinutes).padStart(2, '0')}`;
       }
-      
+
       setFormData({
         purpose: isPredefined ? bookingPurpose : 'Others',
         customPurpose: !isPredefined && bookingPurpose ? bookingPurpose : '',
-        startDate: booking.start_date ? new Date(booking.start_date).toISOString().split('T')[0] : '',
-        endDate: booking.end_date ? new Date(booking.end_date).toISOString().split('T')[0] : '',
+        startDate: booking.start_date
+          ? new Date(booking.start_date).toISOString().split('T')[0]
+          : '',
+        endDate: booking.end_date
+          ? new Date(booking.end_date).toISOString().split('T')[0]
+          : '',
         pickupTime: pickupTimeFormatted,
         dropoffTime: dropoffTimeFormatted,
         deliveryLocation: booking.deliver_loc || '',
         dropoffLocation: booking.dropoff_loc || '',
         selectedDriver: booking.drivers_id ? booking.drivers_id.toString() : '',
       });
-      
-      
+
       setServiceType(isDelivery ? 'delivery' : 'pickup');
       setIsSelfService(booking.isSelfDriver !== false);
-      
+
       fetchDrivers();
     }
   }, [booking, open]);
@@ -156,9 +175,13 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
       if (response.ok) {
         const response_data = await response.json();
         // Handle paginated response - extract data array
-        const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
+        const data = Array.isArray(response_data)
+          ? response_data
+          : response_data.data || [];
         // Filter out driver ID 1 (DEFAULT FOR SELFDRIVE) from customer-facing list
-        const filteredDrivers = data.filter(driver => driver.drivers_id !== 1 && driver.driver_id !== 1);
+        const filteredDrivers = data.filter(
+          (driver) => driver.drivers_id !== 1 && driver.driver_id !== 1
+        );
         setDrivers(filteredDrivers || []);
       }
     } catch (error) {
@@ -171,8 +194,14 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
   };
 
   const validateForm = () => {
-    const requiredFields = ['purpose', 'startDate', 'endDate', 'pickupTime', 'dropoffTime'];
-    
+    const requiredFields = [
+      'purpose',
+      'startDate',
+      'endDate',
+      'pickupTime',
+      'dropoffTime',
+    ];
+
     if (serviceType === 'delivery') {
       requiredFields.push('deliveryLocation', 'dropoffLocation');
     }
@@ -189,7 +218,7 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
       return false;
     }
 
-    const missing = requiredFields.filter(field => !formData[field]);
+    const missing = requiredFields.filter((field) => !formData[field]);
     setMissingFields(missing);
 
     if (missing.length > 0) {
@@ -217,16 +246,23 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
     // Validate dropoff time (must be between 7:00 AM - 12:00 AM midnight)
     // Pickup time has NO restrictions (24/7 available)
     if (formData.dropoffTime) {
-      const [dropoffHour, dropoffMinute] = formData.dropoffTime.split(':').map(Number);
+      const [dropoffHour, dropoffMinute] = formData.dropoffTime
+        .split(':')
+        .map(Number);
       const dropoffTimeInMinutes = dropoffHour * 60 + dropoffMinute;
       const minTime = 7 * 60; // 7:00 AM
       const maxTime = 24 * 60; // 12:00 AM (midnight) - 24:00 = 00:00
 
       // Allow 00:00 (midnight) as valid dropoff time
       const isMidnight = dropoffHour === 0 && dropoffMinute === 0;
-      
-      if (!isMidnight && (dropoffTimeInMinutes < minTime || dropoffTimeInMinutes >= maxTime)) {
-        setError('Drop-off time must be between 7:00 AM and 12:00 AM (midnight)');
+
+      if (
+        !isMidnight &&
+        (dropoffTimeInMinutes < minTime || dropoffTimeInMinutes >= maxTime)
+      ) {
+        setError(
+          'Drop-off time must be between 7:00 AM and 12:00 AM (midnight)'
+        );
         setMissingFields(['dropoffTime']);
         return false;
       }
@@ -234,8 +270,12 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
 
     // Validate dropoff time is after pickup time
     if (formData.pickupTime && formData.dropoffTime) {
-      const [pickupHour, pickupMinute] = formData.pickupTime.split(':').map(Number);
-      const [dropoffHour, dropoffMinute] = formData.dropoffTime.split(':').map(Number);
+      const [pickupHour, pickupMinute] = formData.pickupTime
+        .split(':')
+        .map(Number);
+      const [dropoffHour, dropoffMinute] = formData.dropoffTime
+        .split(':')
+        .map(Number);
       const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
       const dropoffTimeInMinutes = dropoffHour * 60 + dropoffMinute;
 
@@ -249,17 +289,31 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
     // Validate same-day booking: 3-hour minimum gap between booking time and pickup time
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const bookingDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-    
+    const bookingDate = new Date(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      startDate.getDate()
+    );
+
     if (bookingDate.getTime() === today.getTime() && formData.pickupTime) {
       // Same day booking
-      const [pickupHour, pickupMinute] = formData.pickupTime.split(':').map(Number);
-      const pickupDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), pickupHour, pickupMinute);
-      const threeHoursFromNow = new Date(now.getTime() + (3 * 60 * 60 * 1000));
+      const [pickupHour, pickupMinute] = formData.pickupTime
+        .split(':')
+        .map(Number);
+      const pickupDateTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        pickupHour,
+        pickupMinute
+      );
+      const threeHoursFromNow = new Date(now.getTime() + 3 * 60 * 60 * 1000);
 
       if (pickupDateTime < threeHoursFromNow) {
         const minPickupTime = `${String(threeHoursFromNow.getHours()).padStart(2, '0')}:${String(threeHoursFromNow.getMinutes()).padStart(2, '0')}`;
-        setError(`Same-day booking requires at least 3 hours notice. Earliest pickup time: ${minPickupTime}`);
+        setError(
+          `Same-day booking requires at least 3 hours notice. Earliest pickup time: ${minPickupTime}`
+        );
         setMissingFields(['pickupTime']);
         return false;
       }
@@ -277,27 +331,35 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
     setError('');
 
     try {
-      
       // Send times in HH:MM format as expected by backend
       const updateData = {
-        purpose: formData.purpose === 'Others' ? formData.customPurpose : formData.purpose,
+        purpose:
+          formData.purpose === 'Others'
+            ? formData.customPurpose
+            : formData.purpose,
         start_date: formData.startDate,
         end_date: formData.endDate,
         pickup_time: formData.pickupTime, // Already in HH:MM format
         dropoff_time: formData.dropoffTime, // Already in HH:MM format
-        pickup_loc: serviceType === 'pickup' ? 'J&A Car Rental Office' : formData.deliveryLocation,
+        pickup_loc:
+          serviceType === 'pickup'
+            ? 'J&A Car Rental Office'
+            : formData.deliveryLocation,
         dropoff_loc: formData.dropoffLocation,
-        deliver_loc: serviceType === 'delivery' ? formData.deliveryLocation : '',
+        deliver_loc:
+          serviceType === 'delivery' ? formData.deliveryLocation : '',
         isSelfDriver: isSelfService,
         drivers_id: isSelfService ? null : parseInt(formData.selectedDriver),
       };
-      
 
-      const response = await authenticatedFetch(`${API_BASE}/bookings/${booking.booking_id}/update`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData),
-      });
+      const response = await authenticatedFetch(
+        `${API_BASE}/bookings/${booking.booking_id}/update`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -305,11 +367,11 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
       }
 
       const result = await response.json();
-      
+
       if (onBookingUpdated) {
         onBookingUpdated(result);
       }
-      
+
       handleClose();
     } catch (error) {
       setError(error.message || 'Failed to update booking. Please try again.');
@@ -321,10 +383,10 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
   const handleClose = () => {
     setError('');
     setMissingFields([]);
-    
+
     // Ensure body scroll is restored when modal closes
     document.body.style.overflow = 'unset';
-    
+
     onClose();
   };
 
@@ -336,31 +398,33 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
   }, []);
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose} 
-      maxWidth="md" 
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
       fullWidth
-      PaperProps={{ 
-        sx: { 
+      PaperProps={{
+        sx: {
           maxHeight: '90vh',
           display: 'flex',
-          flexDirection: 'column'
-        } 
+          flexDirection: 'column',
+        },
       }}
       // Ensure proper scroll behavior
       scroll="paper"
       disableScrollLock={false}
     >
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        backgroundColor: '#c10007',
-        color: 'white',
-        py: 2,
-        flexShrink: 0
-      }}>
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: '#c10007',
+          color: 'white',
+          py: 2,
+          flexShrink: 0,
+        }}
+      >
         <Box component="span" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
           Edit Booking #{booking?.booking_id}
         </Box>
@@ -372,55 +436,88 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
       <DialogContent sx={{ p: 3, overflowY: 'auto', flexGrow: 1 }}>
         {/* Current Booking Details Card - CENTERED */}
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-          <Card sx={{ maxWidth: '800px', width: '100%', backgroundColor: '#f5f5f5' }}>
+          <Card
+            sx={{
+              maxWidth: '800px',
+              width: '100%',
+              backgroundColor: '#f5f5f5',
+            }}
+          >
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#c10007', textAlign: 'center' }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  mb: 2,
+                  fontWeight: 'bold',
+                  color: '#c10007',
+                  textAlign: 'center',
+                }}
+              >
                 Current Booking Details
               </Typography>
-              
+
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Typography variant="body2" color="text.secondary">Vehicle:</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Vehicle:
+                  </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
                     {booking?.car_details?.make} {booking?.car_details?.model}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {booking?.car_details?.year} • {booking?.car_details?.license_plate}
+                    {booking?.car_details?.year} •{' '}
+                    {booking?.car_details?.license_plate}
                   </Typography>
                 </Grid>
-                
+
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Typography variant="body2" color="text.secondary">Total Amount:</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#c10007' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Amount:
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{ fontWeight: 'bold', color: '#c10007' }}
+                  >
                     ₱{booking?.total_amount?.toLocaleString()}
                   </Typography>
                 </Grid>
-                
+
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Typography variant="body2" color="text.secondary">Booking Status:</Typography>
-                  <Chip 
-                    label={booking?.booking_status || 'Pending'} 
+                  <Typography variant="body2" color="text.secondary">
+                    Booking Status:
+                  </Typography>
+                  <Chip
+                    label={booking?.booking_status || 'Pending'}
                     size="small"
-                    sx={{ 
+                    sx={{
                       mt: 0.5,
                       fontWeight: 'bold',
-                      backgroundColor: booking?.booking_status === 'Confirmed' ? '#4caf50' : '#ff9800',
-                      color: 'white'
+                      backgroundColor:
+                        booking?.booking_status === 'Confirmed'
+                          ? '#4caf50'
+                          : '#ff9800',
+                      color: 'white',
                     }}
                   />
                 </Grid>
-                
+
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Typography variant="body2" color="text.secondary">Driver Type:</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Driver Type:
+                  </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
                     {booking?.isSelfDriver ? 'Self-Drive' : 'With Driver'}
                   </Typography>
                 </Grid>
-                
+
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Typography variant="body2" color="text.secondary">Service Type:</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Service Type:
+                  </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {booking?.deliver_loc ? 'Delivery Service' : 'Office Pickup'}
+                    {booking?.deliver_loc
+                      ? 'Delivery Service'
+                      : 'Office Pickup'}
                   </Typography>
                 </Grid>
               </Grid>
@@ -431,7 +528,10 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
         <Divider sx={{ my: 3 }} />
 
         {/* Update Booking Information - CENTERED TITLE */}
-        <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', color: '#333', textAlign: 'center' }}>
+        <Typography
+          variant="h6"
+          sx={{ mb: 3, fontWeight: 'bold', color: '#333', textAlign: 'center' }}
+        >
           Update Booking Information
         </Typography>
 
@@ -445,25 +545,34 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
           {/* Service Type Selection - CENTERED */}
           <Grid size={12}>
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: 'bold', textAlign: 'center' }}
+              >
                 Service Type *
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
               <Grid container spacing={2} sx={{ maxWidth: '600px' }}>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Card 
-                    sx={{ 
-                      cursor: 'pointer', 
-                      border: serviceType === 'delivery' ? '3px solid #c10007' : '2px solid #e0e0e0',
+                  <Card
+                    sx={{
+                      cursor: 'pointer',
+                      border:
+                        serviceType === 'delivery'
+                          ? '3px solid #c10007'
+                          : '2px solid #e0e0e0',
                       '&:hover': { borderColor: '#c10007' },
                       height: '100%',
-                      transition: 'all 0.2s'
+                      transition: 'all 0.2s',
                     }}
                     onClick={() => setServiceType('delivery')}
                   >
                     <CardContent sx={{ textAlign: 'center', p: 2 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: 'bold', mb: 1 }}
+                      >
                         🚚 Delivery Service
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
@@ -472,20 +581,26 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
                     </CardContent>
                   </Card>
                 </Grid>
-                
+
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <Card 
-                    sx={{ 
-                      cursor: 'pointer', 
-                      border: serviceType === 'pickup' ? '3px solid #c10007' : '2px solid #e0e0e0',
+                  <Card
+                    sx={{
+                      cursor: 'pointer',
+                      border:
+                        serviceType === 'pickup'
+                          ? '3px solid #c10007'
+                          : '2px solid #e0e0e0',
                       '&:hover': { borderColor: '#c10007' },
                       height: '100%',
-                      transition: 'all 0.2s'
+                      transition: 'all 0.2s',
                     }}
                     onClick={() => setServiceType('pickup')}
                   >
                     <CardContent sx={{ textAlign: 'center', p: 2 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: 'bold', mb: 1 }}
+                      >
                         🏢 Office Pickup
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
@@ -500,12 +615,24 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
 
           {/* Purpose */}
           <Grid size={12}>
-            <FormControl fullWidth required error={missingFields.includes('purpose')}>
-              <InputLabel sx={{ fontSize: '1rem' }}>Purpose of Rental</InputLabel>
+            <FormControl
+              fullWidth
+              required
+              error={missingFields.includes('purpose')}
+            >
+              <InputLabel sx={{ fontSize: '1rem' }}>
+                Purpose of Rental
+              </InputLabel>
               <Select
                 value={formData.purpose}
                 label="Purpose of Rental"
-                onChange={(e) => setFormData({ ...formData, purpose: e.target.value, customPurpose: '' })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    purpose: e.target.value,
+                    customPurpose: '',
+                  })
+                }
                 sx={{
                   '& .MuiInputBase-input': { fontSize: '1rem', py: 1.5 },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
@@ -514,8 +641,12 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
                 }}
               >
                 <MenuItem value="Travel">Travel</MenuItem>
-                <MenuItem value="Vehicle Replacement">Vehicle Replacement</MenuItem>
-                <MenuItem value="Local Transportation">Local Transportation</MenuItem>
+                <MenuItem value="Vehicle Replacement">
+                  Vehicle Replacement
+                </MenuItem>
+                <MenuItem value="Local Transportation">
+                  Local Transportation
+                </MenuItem>
                 <MenuItem value="Specialize Needs">Specialize Needs</MenuItem>
                 <MenuItem value="One-Way Rental">One-Way Rental</MenuItem>
                 <MenuItem value="Others">Others</MenuItem>
@@ -530,7 +661,9 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
                 fullWidth
                 label="Specify Purpose"
                 value={formData.customPurpose}
-                onChange={(e) => setFormData({ ...formData, customPurpose: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, customPurpose: e.target.value })
+                }
                 required
                 error={missingFields.includes('customPurpose')}
                 helperText="Please provide details about your rental purpose"
@@ -554,7 +687,9 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
               type="date"
               label="Start Date"
               value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, startDate: e.target.value })
+              }
               InputLabelProps={{ shrink: true }}
               inputProps={{ min: getMinimumDate() }}
               required
@@ -577,7 +712,9 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
               type="date"
               label="End Date"
               value={formData.endDate}
-              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, endDate: e.target.value })
+              }
               InputLabelProps={{ shrink: true }}
               inputProps={{ min: formData.startDate || getMinimumDate() }}
               required
@@ -601,15 +738,17 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
               type="time"
               label="Pickup Time (7 AM - 7 PM)"
               value={formData.pickupTime}
-              onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, pickupTime: e.target.value })
+              }
               InputLabelProps={{ shrink: true }}
               required
               error={missingFields.includes('pickupTime')}
               helperText="Office hours: 7:00 AM - 7:00 PM"
               inputProps={{
-                min: "07:00",
-                max: "19:00",
-                step: 300 // 5 minute intervals
+                min: '07:00',
+                max: '19:00',
+                step: 300, // 5 minute intervals
               }}
               sx={{
                 '& .MuiInputLabel-root': { fontSize: '1rem' },
@@ -629,15 +768,17 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
               type="time"
               label="Drop-off Time (7 AM - 7 PM)"
               value={formData.dropoffTime}
-              onChange={(e) => setFormData({ ...formData, dropoffTime: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, dropoffTime: e.target.value })
+              }
               InputLabelProps={{ shrink: true }}
               required
               error={missingFields.includes('dropoffTime')}
               helperText="Office hours: 7:00 AM - 7:00 PM"
               inputProps={{
-                min: "07:00",
-                max: "19:00",
-                step: 300 // 5 minute intervals
+                min: '07:00',
+                max: '19:00',
+                step: 300, // 5 minute intervals
               }}
               sx={{
                 '& .MuiInputLabel-root': { fontSize: '1rem' },
@@ -659,7 +800,12 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
                   fullWidth
                   label="Pickup Location (Delivery Address)"
                   value={formData.deliveryLocation}
-                  onChange={(e) => setFormData({ ...formData, deliveryLocation: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      deliveryLocation: e.target.value,
+                    })
+                  }
                   required
                   error={missingFields.includes('deliveryLocation')}
                   multiline
@@ -681,7 +827,12 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
                   fullWidth
                   label="Drop-off Location (Return Address)"
                   value={formData.dropoffLocation}
-                  onChange={(e) => setFormData({ ...formData, dropoffLocation: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      dropoffLocation: e.target.value,
+                    })
+                  }
                   required
                   error={missingFields.includes('dropoffLocation')}
                   multiline
@@ -704,7 +855,8 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Alert severity="info">
                   <Typography variant="body2">
-                    <strong>Pickup Location:</strong><br />
+                    <strong>Pickup Location:</strong>
+                    <br />
                     J&A Car Rental Office
                   </Typography>
                 </Alert>
@@ -712,7 +864,8 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Alert severity="info">
                   <Typography variant="body2">
-                    <strong>Drop-off Location:</strong><br />
+                    <strong>Drop-off Location:</strong>
+                    <br />
                     J&A Car Rental Office
                   </Typography>
                 </Alert>
@@ -729,7 +882,9 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
                   onChange={(e) => {
                     // Check if customer has driver license before allowing self-drive
                     if (e.target.checked && !hasDriverLicense) {
-                      setError('You must have a driver\'s license on file to use self-drive service. Please update your profile.');
+                      setError(
+                        "You must have a driver's license on file to use self-drive service. Please update your profile."
+                      );
                       return;
                     }
                     setIsSelfService(e.target.checked);
@@ -744,40 +899,70 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
                   <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
                     Self-Drive Service
                     {!hasDriverLicense && (
-                      <Typography component="span" variant="caption" color="error" sx={{ ml: 1 }}>
+                      <Typography
+                        component="span"
+                        variant="caption"
+                        color="error"
+                        sx={{ ml: 1 }}
+                      >
                         🔒 (Driver's license required)
                       </Typography>
                     )}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {isSelfService ? 'You will drive the vehicle yourself' : 'A driver will be assigned'}
+                    {isSelfService
+                      ? 'You will drive the vehicle yourself'
+                      : 'A driver will be assigned'}
                   </Typography>
                 </Box>
               }
             />
 
             {!isSelfService && (
-              <FormControl fullWidth sx={{ mt: 2 }} required error={missingFields.includes('selectedDriver')}>
+              <FormControl
+                fullWidth
+                sx={{ mt: 2 }}
+                required
+                error={missingFields.includes('selectedDriver')}
+              >
                 <InputLabel>Select Driver</InputLabel>
                 <Select
                   value={formData.selectedDriver}
                   label="Select Driver"
-                  onChange={(e) => setFormData({ ...formData, selectedDriver: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, selectedDriver: e.target.value })
+                  }
                 >
                   {drivers.length === 0 ? (
                     <MenuItem disabled>No drivers available</MenuItem>
                   ) : (
                     drivers.map((driver) => (
-                      <MenuItem key={driver.drivers_id} value={driver.drivers_id.toString()}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                          <Avatar sx={{ width: 32, height: 32, bgcolor: '#c10007' }}>
-                            {driver.first_name?.[0]}{driver.last_name?.[0]}
+                      <MenuItem
+                        key={driver.drivers_id}
+                        value={driver.drivers_id.toString()}
+                      >
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            width: '100%',
+                          }}
+                        >
+                          <Avatar
+                            sx={{ width: 32, height: 32, bgcolor: '#c10007' }}
+                          >
+                            {driver.first_name?.[0]}
+                            {driver.last_name?.[0]}
                           </Avatar>
                           <Box sx={{ flexGrow: 1 }}>
                             <Typography variant="body1">
                               {driver.first_name} {driver.last_name}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
                               License: {driver.license_number}
                             </Typography>
                           </Box>
@@ -792,39 +977,41 @@ export default function EditBookingModal({ open, onClose, booking, onBookingUpda
         </Grid>
       </DialogContent>
 
-      <DialogActions sx={{ 
-        p: 3, 
-        backgroundColor: '#f5f5f5', 
-        gap: 2, 
-        flexShrink: 0,
-        flexDirection: { xs: 'column', sm: 'row' }
-      }}>
+      <DialogActions
+        sx={{
+          p: 3,
+          backgroundColor: '#f5f5f5',
+          gap: 2,
+          flexShrink: 0,
+          flexDirection: { xs: 'column', sm: 'row' },
+        }}
+      >
         <Button
           onClick={handleClose}
           disabled={loading}
           variant="outlined"
           fullWidth
-          sx={{ 
+          sx={{
             borderColor: '#c10007',
             color: '#c10007',
             '&:hover': {
               borderColor: '#a50006',
-              backgroundColor: 'rgba(193, 0, 7, 0.04)'
-            }
+              backgroundColor: 'rgba(193, 0, 7, 0.04)',
+            },
           }}
         >
           Cancel
         </Button>
-        
+
         <Button
           variant="contained"
           onClick={handleSubmit}
           disabled={loading}
           fullWidth
           startIcon={loading ? <CircularProgress size={20} /> : <HiCheck />}
-          sx={{ 
+          sx={{
             backgroundColor: '#c10007',
-            '&:hover': { backgroundColor: '#a50006' }
+            '&:hover': { backgroundColor: '#a50006' },
           }}
         >
           {loading ? 'Updating...' : 'Update Booking'}

@@ -1244,6 +1244,7 @@ export default function CustomerSettings() {
                                       onChange={handleChange}
                                       size="small"
                                       fullWidth
+                                      disabled
                                     />
                                     <TextField
                                       label="Last Name"
@@ -1252,6 +1253,7 @@ export default function CustomerSettings() {
                                       onChange={handleChange}
                                       size="small"
                                       fullWidth
+                                      disabled
                                     />
                                   </Box>
                                 ) : (
@@ -1390,6 +1392,7 @@ export default function CustomerSettings() {
                                           background: 'transparent',
                                         }}
                                         fullWidth
+                                        disabled
                                       />
                                     ) : (
                                       <Typography sx={{ flex: 1, pl: 2 }}>
@@ -1659,6 +1662,7 @@ export default function CustomerSettings() {
                                           draftLicenseNo
                                         )
                                       }
+                                      disabled
                                     />
                                     <TextField
                                       label="Restrictions"

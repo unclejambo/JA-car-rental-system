@@ -9,6 +9,7 @@ import SearchBar from '../../ui/components/SearchBar';
 import Loading from '../../ui/components/Loading';
 import AddStaffModal from '../../ui/components/modal/AddStaffModal';
 import AddDriverModal from '../../ui/components/modal/AddDriverModal';
+import AddCustomerModal from '../../ui/components/modal/AddCustomerModal';
 import { HiOutlineUserGroup } from 'react-icons/hi2';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -24,12 +25,16 @@ export default function AdminManageUser() {
 
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showAddDriverModal, setShowAddDriverModal] = useState(false);
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
 
   const openAddStaffModal = () => setShowAddStaffModal(true);
   const closeAddStaffModal = () => setShowAddStaffModal(false);
 
   const openAddDriverModal = () => setShowAddDriverModal(true);
   const closeAddDriverModal = () => setShowAddDriverModal(false);
+
+  const openAddCustomerModal = () => setShowAddCustomerModal(true);
+  const closeAddCustomerModal = () => setShowAddCustomerModal(false);
 
   // create auth-aware fetch and API base with useMemo to prevent infinite loops
   const authFetch = useMemo(
@@ -77,9 +82,11 @@ export default function AdminManageUser() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const response_data = await response.json();
-        
+
         // Handle paginated response - extract data array
-        const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
+        const data = Array.isArray(response_data)
+          ? response_data
+          : response_data.data || [];
 
         let formattedData = [];
 
@@ -195,18 +202,27 @@ export default function AdminManageUser() {
     fetchData('DRIVER');
   }, [fetchData]);
 
+  const handleCustomerSuccess = useCallback(() => {
+    fetchData('CUSTOMER');
+  }, [fetchData]);
+
   return (
     <Box sx={{ display: 'flex' }}>
       <title>Manage Users</title>
-      <AddStaffModal 
-        show={showAddStaffModal} 
+      <AddStaffModal
+        show={showAddStaffModal}
         onClose={closeAddStaffModal}
         onSuccess={handleStaffSuccess}
       />
-      <AddDriverModal 
-        show={showAddDriverModal} 
+      <AddDriverModal
+        show={showAddDriverModal}
         onClose={closeAddDriverModal}
         onSuccess={handleDriverSuccess}
+      />
+      <AddCustomerModal
+        show={showAddCustomerModal}
+        onClose={closeAddCustomerModal}
+        onSuccess={handleCustomerSuccess}
       />
 
       <Header onMenuClick={() => setMobileOpen(true)} />
@@ -305,6 +321,39 @@ export default function AdminManageUser() {
                 </Typography>
 
                 {/* Hide Add buttons for staff users */}
+                {activeTab === 'CUSTOMER' && (
+                  <Button
+                    variant="outlined"
+                    startIcon={
+                      <AddIcon
+                        sx={{
+                          width: { xs: '14px', md: '18px' },
+                          height: { xs: '14px', md: '18px' },
+                          mt: '-3px',
+                        }}
+                      />
+                    }
+                    onClick={openAddCustomerModal}
+                    sx={{
+                      color: '#fff',
+                      p: 1,
+                      height: { xs: 26, md: 30 },
+                      fontSize: { xs: '.7rem', md: '.875rem' },
+                      border: 'none',
+                      backgroundColor: '#c10007',
+                      minWidth: 150,
+                      '&:hover': {
+                        backgroundColor: '#a00006',
+                        color: '#fff',
+                        fontWeight: 600,
+                        borderColor: '#4a4a4a',
+                        boxShadow: 'none',
+                      },
+                    }}
+                  >
+                    Add New {activeTab}
+                  </Button>
+                )}
                 {userRole !== 'staff' && activeTab === 'STAFF' && (
                   <Button
                     variant="outlined"

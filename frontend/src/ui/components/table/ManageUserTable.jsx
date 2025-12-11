@@ -7,13 +7,17 @@ import {
   Skeleton,
   Typography,
 } from '@mui/material';
+import { getApiBase, createAuthenticatedFetch } from '../../../utils/api';
+import { useAuth } from '../../../hooks/useAuth';
 import { HiInboxIn } from 'react-icons/hi';
 
-// use Vite env var, fallback to localhost; remove trailing slash if present
-const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL;
+// Use helper to determine API base URL
+const API_BASE = getApiBase();
 
 const ManageUserTable = ({ activeTab, rows, loading }) => {
   const isSmallScreen = useMediaQuery('(max-width:600px)');
+  const { logout } = useAuth();
+  const authenticatedFetch = createAuthenticatedFetch(logout);
 
   // Custom empty state overlay
   const NoRowsOverlay = () => {
@@ -215,29 +219,35 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
 
       const handleStatusChange = async (e) => {
         const newStatusLabel = e.target.value; // 'Active' | 'Inactive'
-        const bodyStatus = newStatusLabel.toLowerCase(); // send 'active'|'inactive' (backend normalizes)
+        const lowerStatus = newStatusLabel.toLowerCase();
 
         try {
-          // Determine the correct API endpoint based on activeTab
+          // Determine the correct API endpoint and payload based on activeTab
           let endpoint = '';
+          let body = {};
           switch (activeTab) {
             case 'CUSTOMER':
-              endpoint = `${API_BASE}/customers/${params.id}`;
+              endpoint = `${API_BASE}/api/customers/${params.id}`;
+              body = { status: lowerStatus };
               break;
             case 'DRIVER':
               endpoint = `${API_BASE}/drivers/${params.id}`;
+              body = { status: lowerStatus };
               break;
             case 'STAFF':
-              // For staff/admin, we don't allow status changes via dropdown
-              return;
+              endpoint = `${API_BASE}/admins/${params.id}`;
+              // admin API expects boolean isActive
+              body = { isActive: lowerStatus === 'active' };
+              break;
             default:
-              endpoint = `${API_BASE}/customers/${params.id}`;
+              endpoint = `${API_BASE}/api/customers/${params.id}`;
+              body = { status: lowerStatus };
           }
 
-          const response = await fetch(endpoint, {
+          const response = await authenticatedFetch(endpoint, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: bodyStatus }),
+            body: JSON.stringify(body),
           });
 
           const json = await response.json().catch(() => null);
@@ -249,7 +259,9 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
 
           // update only the status cell in the grid with the display label
           params.api.updateRows([{ id: params.id, status: newStatusLabel }]);
-        } catch (error) {}
+        } catch (error) {
+          console.error('Failed to update status:', error);
+        }
       };
 
       // normalize value so boolean, "Active"/"active" all display correctly

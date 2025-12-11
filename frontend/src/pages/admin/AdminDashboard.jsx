@@ -357,7 +357,7 @@ function AdminDashboard() {
               sx={{
                 boxShadow: 2,
                 height: '100%',
-                minHeight: { xs: 'auto', md: 300 },
+                minHeight: { xs: 'auto', md: 450 },
               }}
             >
               <CardContent sx={{ p: { xs: 2, md: 3 } }}>
@@ -407,7 +407,7 @@ function AdminDashboard() {
                   <List
                     sx={{
                       py: 0,
-                      maxHeight: { xs: 250, md: 280 },
+                      maxHeight: { xs: 300, md: 400 },
                       overflow: 'auto',
                     }}
                   >
@@ -581,195 +581,7 @@ function AdminDashboard() {
             </Card>
           </Grid>
 
-          {/* Top Customers Table */}
-          <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
-            <Card
-              sx={{
-                boxShadow: 2,
-                height: '100%',
-                minHeight: { xs: 'auto', md: 300 },
-              }}
-            >
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: { xs: 1.5, md: 2 },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: { xs: 0.5, md: 1 },
-                    }}
-                  >
-                    <Person
-                      sx={{ color: '#000', fontSize: { xs: 24, md: 28 } }}
-                    />
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 'bold',
-                        fontSize: { xs: '1.125rem', md: '1.25rem' },
-                      }}
-                    >
-                      TOP CUSTOMERS
-                    </Typography>
-                  </Box>
-                  <Chip
-                    label="LAST 30 DAYS"
-                    sx={{ bgcolor: '#000', color: 'white', fontWeight: 'bold' }}
-                    size="small"
-                  />
-                </Box>
-                <Divider
-                  sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
-                />
-
-                {dashboardData.topCustomers.length > 0 ? (
-                  <TableContainer
-                    component={Paper}
-                    sx={{
-                      boxShadow: 0,
-                      border: '1px solid #e0e0e0',
-                      overflowX: 'auto',
-                    }}
-                  >
-                    <Table>
-                      <TableHead>
-                        <TableRow sx={{ bgcolor: '#fafafa' }}>
-                          <TableCell
-                            sx={{
-                              fontWeight: 'bold',
-                              fontSize: { xs: '0.875rem', md: '1rem' },
-                            }}
-                          >
-                            Rank
-                          </TableCell>
-                          <TableCell
-                            sx={{
-                              fontWeight: 'bold',
-                              fontSize: { xs: '0.875rem', md: '1rem' },
-                            }}
-                          >
-                            Customer Name
-                          </TableCell>
-                          <TableCell
-                            align="right"
-                            sx={{
-                              fontWeight: 'bold',
-                              fontSize: { xs: '0.875rem', md: '1rem' },
-                            }}
-                          >
-                            Total Bookings
-                          </TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {dashboardData.topCustomers.map((customer, index) => (
-                          <TableRow
-                            key={customer.customerId}
-                            sx={{
-                              '&:hover': { bgcolor: '#f5f5f5' },
-                              bgcolor: index === 0 ? '#fff5f5' : 'inherit',
-                            }}
-                          >
-                            <TableCell
-                              sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
-                            >
-                              <Chip
-                                label={`#${index + 1}`}
-                                size="small"
-                                sx={{
-                                  bgcolor:
-                                    index === 0
-                                      ? '#c10007'
-                                      : index === 1
-                                        ? '#666'
-                                        : '#999',
-                                  color: 'white',
-                                  fontWeight: 'bold',
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell
-                              sx={{
-                                fontSize: { xs: '0.875rem', md: '1rem' },
-                                fontWeight: index === 0 ? 600 : 400,
-                              }}
-                            >
-                              {customer.fullName}
-                            </TableCell>
-                            <TableCell
-                              align="right"
-                              sx={{
-                                fontSize: { xs: '0.875rem', md: '1rem' },
-                                fontWeight: index === 0 ? 600 : 400,
-                                color: index === 0 ? '#c10007' : 'inherit',
-                              }}
-                            >
-                              {customer.bookingCount}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                ) : (
-                  <Typography
-                    variant="body1"
-                    color="text.secondary"
-                    sx={{
-                      textAlign: 'center',
-                      py: { xs: 2, md: 3 },
-                      fontSize: { xs: '0.875rem', md: '1rem' },
-                    }}
-                  >
-                    No customer data available
-                  </Typography>
-                )}
-
-                <Button
-                  component={Link}
-                  to="/report-analytics"
-                  state={{ primaryView: 'topCustomers' }}
-                  variant="outlined"
-                  fullWidth
-                  sx={{
-                    mt: { xs: 1.5, md: 2 },
-                    borderColor: '#000',
-                    color: '#000',
-                    '&:hover': {
-                      borderColor: '#333',
-                      bgcolor: 'rgba(0, 0, 0, 0.04)',
-                    },
-                    py: { xs: 1, md: 1.5 },
-                  }}
-                >
-                  View All Top Customers
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Middle Section - Schedule & Available Cars */}
-        <Grid
-          container
-          spacing={{ xs: 0, md: 2 }}
-          sx={{
-            mb: { xs: 1, md: 2 },
-            px: { xs: 2, md: 0 },
-            display: 'flex',
-            justifyContent: { xs: 'center', md: 'space-between' },
-            gap: { xs: 2, md: 1 },
-            flexDirection: { xs: 'column', md: 'row' },
-          }}
-        >
-          {/* Weekly Schedule Table */}
+          {/* Active Bookings */}
           <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
             <Card
               sx={{
@@ -933,7 +745,7 @@ function AdminDashboard() {
                       fontSize: { xs: '0.875rem', md: '1rem' },
                     }}
                   >
-                    No schedules for this week
+                    No active bookings this week
                   </Typography>
                 )}
 
@@ -953,153 +765,19 @@ function AdminDashboard() {
                     py: { xs: 1, md: 1.5 },
                   }}
                 >
-                  View All Schedules
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Available Cars */}
-          <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
-            <Card
-              sx={{
-                height: '100%',
-                flex: 1,
-                minWidth: 0,
-                boxShadow: 2,
-                minHeight: { xs: 'auto', md: 450 },
-              }}
-            >
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: { xs: 1.5, md: 2 },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: { xs: 0.5, md: 1 },
-                    }}
-                  >
-                    <CarRental
-                      sx={{ color: '#000', fontSize: { xs: 20, md: 24 } }}
-                    />
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 'bold',
-                        fontSize: { xs: '1rem', md: '1.25rem' },
-                      }}
-                    >
-                      AVAILABLE CARS
-                    </Typography>
-                  </Box>
-                  <Chip
-                    label={`${dashboardData.availableCars.length} Cars`}
-                    sx={{ bgcolor: '#000', color: 'white', fontWeight: 'bold' }}
-                    size="small"
-                  />
-                </Box>
-                <Divider
-                  sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
-                />
-
-                {dashboardData.availableCars.length > 0 ? (
-                  <List
-                    sx={{
-                      py: 0,
-                      maxHeight: { xs: 250, md: 300 },
-                      overflow: 'auto',
-                    }}
-                  >
-                    {dashboardData.availableCars.map((car, index) => (
-                      <ListItem
-                        key={car.car_id}
-                        sx={{
-                          bgcolor: '#f9f9f9',
-                          borderRadius: 1,
-                          mb:
-                            index < dashboardData.availableCars.length - 1
-                              ? 1
-                              : 0,
-                          border: '1px solid #e0e0e0',
-                          p: { xs: 0.85, md: 1.25 },
-                        }}
-                      >
-                        <ListItemAvatar>
-                          <Avatar
-                            sx={{
-                              bgcolor: '#000',
-                              width: { xs: 36, md: 40 },
-                              height: { xs: 36, md: 40 },
-                            }}
-                          >
-                            <DirectionsCar
-                              sx={{ fontSize: { xs: 18, md: 20 } }}
-                            />
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={`${car.make} ${car.model}`}
-                          secondary={`${car.year} - ${car.car_type || 'N/A'}`}
-                          primaryTypographyProps={{
-                            fontSize: { xs: '0.875rem', md: '1rem' },
-                            fontWeight: 500,
-                          }}
-                          secondaryTypographyProps={{
-                            fontSize: { xs: '0.75rem', md: '0.875rem' },
-                          }}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                ) : (
-                  <Typography
-                    variant="body1"
-                    color="text.secondary"
-                    sx={{
-                      textAlign: 'center',
-                      py: { xs: 2, md: 3 },
-                      fontSize: { xs: '0.875rem', md: '1rem' },
-                    }}
-                  >
-                    No available cars
-                  </Typography>
-                )}
-
-                <Button
-                  component={Link}
-                  to="/manage-car"
-                  variant="outlined"
-                  fullWidth
-                  sx={{
-                    mt: { xs: 1.5, md: 2 },
-                    borderColor: '#000',
-                    color: '#000',
-                    '&:hover': {
-                      borderColor: '#333',
-                      bgcolor: 'rgba(0, 0, 0, 0.04)',
-                    },
-                    py: { xs: 1, md: 1.5 },
-                  }}
-                >
-                  More Details
+                  View Full Schedule
                 </Button>
               </CardContent>
             </Card>
           </Grid>
         </Grid>
 
-        {/* Bottom Section - Requests */}
+        {/* Middle Section - Requests */}
         <Grid
           container
           spacing={{ xs: 0, md: 2 }}
           sx={{
+            mb: { xs: 1, md: 2 },
             px: { xs: 2, md: 0 },
             display: 'flex',
             justifyContent: { xs: 'center', md: 'space-between' },
@@ -1109,7 +787,7 @@ function AdminDashboard() {
         >
           {/* Booking Requests */}
           <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
-            <Card sx={{ boxShadow: 2, minHeight: { xs: 'auto', md: 400 } }}>
+            <Card sx={{ boxShadow: 2, minHeight: { xs: 'auto', md: 450 } }}>
               <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                 <Box
                   sx={{
@@ -1154,7 +832,13 @@ function AdminDashboard() {
                 />
 
                 {dashboardData.bookingRequests.length > 0 ? (
-                  <List sx={{ py: 0 }}>
+                  <List
+                    sx={{
+                      py: 0,
+                      maxHeight: { xs: 300, md: 400 },
+                      overflow: 'auto',
+                    }}
+                  >
                     {dashboardData.bookingRequests.map((booking, index) => (
                       <ListItem
                         key={booking.booking_id}
@@ -1234,7 +918,7 @@ function AdminDashboard() {
 
           {/* Extension/Cancellation Requests */}
           <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
-            <Card sx={{ boxShadow: 2, minHeight: { xs: 'auto', md: 400 } }}>
+            <Card sx={{ boxShadow: 2, minHeight: { xs: 'auto', md: 450 } }}>
               <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                 <Box
                   sx={{
@@ -1275,7 +959,13 @@ function AdminDashboard() {
                 />
 
                 {dashboardData.extensionCancellationRequests.length > 0 ? (
-                  <List sx={{ py: 0 }}>
+                  <List
+                    sx={{
+                      py: 0,
+                      maxHeight: { xs: 300, md: 400 },
+                      overflow: 'auto',
+                    }}
+                  >
                     {dashboardData.extensionCancellationRequests.map(
                       (booking, index) => (
                         <ListItem
@@ -1345,6 +1035,154 @@ function AdminDashboard() {
                 <Button
                   component={Link}
                   to="/manage-booking"
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    mt: { xs: 1.5, md: 2 },
+                    borderColor: '#000',
+                    color: '#000',
+                    '&:hover': {
+                      borderColor: '#333',
+                      bgcolor: 'rgba(0, 0, 0, 0.04)',
+                    },
+                    py: { xs: 1, md: 1.5 },
+                  }}
+                >
+                  More Details
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Bottom Section - Available Cars */}
+        <Grid
+          container
+          spacing={{ xs: 0, md: 2 }}
+          sx={{
+            px: { xs: 2, md: 0 },
+            display: 'flex',
+            justifyContent: { xs: 'center', md: 'space-between' },
+            gap: { xs: 2, md: 1 },
+            flexDirection: { xs: 'column', md: 'row' },
+          }}
+        >
+          {/* Available Cars */}
+          <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
+            <Card
+              sx={{
+                height: '100%',
+                flex: 1,
+                minWidth: 0,
+                boxShadow: 2,
+                minHeight: { xs: 'auto', md: 450 },
+              }}
+            >
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: { xs: 1.5, md: 2 },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: { xs: 0.5, md: 1 },
+                    }}
+                  >
+                    <CarRental
+                      sx={{ color: '#000', fontSize: { xs: 20, md: 24 } }}
+                    />
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 'bold',
+                        fontSize: { xs: '1rem', md: '1.25rem' },
+                      }}
+                    >
+                      AVAILABLE CARS
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={`${dashboardData.availableCars.length} Cars`}
+                    sx={{ bgcolor: '#000', color: 'white', fontWeight: 'bold' }}
+                    size="small"
+                  />
+                </Box>
+                <Divider
+                  sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
+                />
+
+                {dashboardData.availableCars.length > 0 ? (
+                  <List
+                    sx={{
+                      py: 0,
+                      maxHeight: { xs: 300, md: 400 },
+                      overflow: 'auto',
+                    }}
+                  >
+                    {dashboardData.availableCars.map((car, index) => (
+                      <ListItem
+                        key={car.car_id}
+                        sx={{
+                          bgcolor: '#f9f9f9',
+                          borderRadius: 1,
+                          mb:
+                            index < dashboardData.availableCars.length - 1
+                              ? 1
+                              : 0,
+                          border: '1px solid #e0e0e0',
+                          p: { xs: 0.85, md: 1.25 },
+                        }}
+                      >
+                        <ListItemAvatar>
+                          <Avatar
+                            sx={{
+                              bgcolor: '#000',
+                              width: { xs: 36, md: 40 },
+                              height: { xs: 36, md: 40 },
+                            }}
+                          >
+                            <DirectionsCar
+                              sx={{ fontSize: { xs: 18, md: 20 } }}
+                            />
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={`${car.make} ${car.model}`}
+                          secondary={`${car.year} - ${car.car_type || 'N/A'}`}
+                          primaryTypographyProps={{
+                            fontSize: { xs: '0.875rem', md: '1rem' },
+                            fontWeight: 500,
+                          }}
+                          secondaryTypographyProps={{
+                            fontSize: { xs: '0.75rem', md: '0.875rem' },
+                          }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                ) : (
+                  <Typography
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{
+                      textAlign: 'center',
+                      py: { xs: 2, md: 3 },
+                      fontSize: { xs: '0.875rem', md: '1rem' },
+                    }}
+                  >
+                    No available cars
+                  </Typography>
+                )}
+
+                <Button
+                  component={Link}
+                  to="/manage-car"
                   variant="outlined"
                   fullWidth
                   sx={{

@@ -19,7 +19,13 @@ import SuccessModal from '../ui/components/modal/SuccessModal.jsx';
 import RegisterTermsAndConditionsModal from '../ui/modals/RegisterTermsAndConditionsModal.jsx';
 import PhoneVerificationModal from '../components/PhoneVerificationModal.jsx';
 import { useAuth } from '../hooks/useAuth.js';
-import { formatPhilippineLicense, validatePhilippineLicense, formatPhilippinePhone, validatePhilippinePhone, displayPhilippinePhone } from '../utils/licenseFormatter';
+import {
+  formatPhilippineLicense,
+  validatePhilippineLicense,
+  formatPhilippinePhone,
+  validatePhilippinePhone,
+  displayPhilippinePhone,
+} from '../utils/licenseFormatter';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
@@ -58,7 +64,7 @@ const RegisterPage = () => {
     lastName: '',
     address: '',
     contactNumber: '',
-    fb_link: '',
+    validIdFile: null,
     hasDriverLicense: '', // 'yes' or 'no'
     licenseNumber: '',
     licenseExpiry: '',
@@ -80,9 +86,9 @@ const RegisterPage = () => {
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     let processedValue = type === 'checkbox' ? checked : value;
-    
+
     // Convert date values to yyyy-MM-dd format for HTML date inputs
     if (type === 'date' && value) {
       const date = new Date(value);
@@ -91,7 +97,7 @@ const RegisterPage = () => {
         processedValue = date.toISOString().split('T')[0];
       }
     }
-    
+
     setFormData((prev) => ({
       ...prev,
       [name]: processedValue,
@@ -107,7 +113,11 @@ const RegisterPage = () => {
     }));
     // Validate the format and set error if invalid
     if (formatted && !validatePhilippineLicense(formatted)) {
-      setErrors((prev) => ({ ...prev, licenseNumber: 'Invalid license format. Expected: NXX-YY-ZZZZZZ (e.g., N01-23-456789)' }));
+      setErrors((prev) => ({
+        ...prev,
+        licenseNumber:
+          'Invalid license format. Expected: NXX-YY-ZZZZZZ (e.g., N01-23-456789)',
+      }));
     } else {
       setErrors((prev) => ({ ...prev, licenseNumber: undefined }));
     }
@@ -121,7 +131,11 @@ const RegisterPage = () => {
     }));
     // Validate the format and set error if invalid
     if (formatted && !validatePhilippinePhone(formatted)) {
-      setErrors((prev) => ({ ...prev, contactNumber: 'Invalid phone format. Expected: 9XXXXXXXXX (10 digits starting with 9)' }));
+      setErrors((prev) => ({
+        ...prev,
+        contactNumber:
+          'Invalid phone format. Expected: 9XXXXXXXXX (10 digits starting with 9)',
+      }));
     } else {
       setErrors((prev) => ({ ...prev, contactNumber: undefined }));
     }
@@ -158,6 +172,40 @@ const RegisterPage = () => {
     }
   };
 
+  const handleValidIdFileChange = (e) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) {
+      setFormData((p) => ({ ...p, validIdFile: null }));
+      return;
+    }
+
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      setErrors((prev) => ({
+        ...prev,
+        validIdFile: 'Unsupported file type. Please upload PNG, JPG, or JPEG.',
+      }));
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setErrors((prev) => ({
+        ...prev,
+        validIdFile: 'File exceeds 5MB limit.',
+      }));
+      return;
+    }
+
+    setFormData((prev) => ({ ...prev, validIdFile: file }));
+    setErrors((prev) => ({ ...prev, validIdFile: undefined }));
+  };
+
+  const removeValidIdFile = () => {
+    setFormData((p) => ({ ...p, validIdFile: null }));
+    const validIdInput = document.getElementById('validIdFile');
+    if (validIdInput) {
+      validIdInput.value = '';
+    }
+  };
+
   const handleCloseSuccess = () => {
     setShowSuccess(false);
     navigate('/login');
@@ -177,7 +225,7 @@ const RegisterPage = () => {
         lastName,
         address,
         contactNumber,
-        fb_link,
+        validIdFile,
         hasDriverLicense,
         licenseNumber,
         licenseExpiry,
@@ -196,7 +244,7 @@ const RegisterPage = () => {
         !lastName?.trim() ||
         !address?.trim() ||
         !contactNumber?.trim() ||
-        !fb_link?.trim() ||
+        !validIdFile ||
         !hasDriverLicense ||
         !agreeTerms
       ) {
@@ -205,17 +253,23 @@ const RegisterPage = () => {
 
       // Validate phone number format
       if (!validatePhilippinePhone(contactNumber?.trim())) {
-        throw new Error('Invalid phone number format. Please enter a valid Philippine mobile number (9XXXXXXXXX)');
+        throw new Error(
+          'Invalid phone number format. Please enter a valid Philippine mobile number (9XXXXXXXXX)'
+        );
       }
 
       // Validate license fields only if user has a license
       if (hasDriverLicense === 'yes') {
         if (!licenseNumber?.trim() || !licenseExpiry?.trim() || !licenseFile) {
-          throw new Error('Please provide driver license number, expiry date, and image');
+          throw new Error(
+            'Please provide driver license number, expiry date, and image'
+          );
         }
         // Validate license format
         if (!validatePhilippineLicense(licenseNumber.trim())) {
-          throw new Error('Invalid license format. Expected: NXX-YY-ZZZZZZ (e.g., N01-23-456789)');
+          throw new Error(
+            'Invalid license format. Expected: NXX-YY-ZZZZZZ (e.g., N01-23-456789)'
+          );
         }
       }
 
@@ -229,16 +283,50 @@ const RegisterPage = () => {
         import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL
       ).replace(/\/+$/, '');
 
-      // 1) Upload license image only if user has a license
+      // 1) Upload Valid ID image (required)
+      let valid_id_url = null;
+      const validIdUploadUrl = new URL(
+        '/api/storage/valid-ids',
+        BASE
+      ).toString();
+      const validIdFd = new FormData();
+      validIdFd.append('file', validIdFile);
+      validIdFd.append('username', username.trim());
+
+      const validIdUploadRes = await fetch(validIdUploadUrl, {
+        method: 'POST',
+        body: validIdFd,
+      });
+
+      const validIdUploadJson = await validIdUploadRes.json();
+
+      if (!validIdUploadRes.ok) {
+        throw new Error(
+          validIdUploadJson?.message ||
+            validIdUploadJson?.error ||
+            'Valid ID upload failed'
+        );
+      }
+
+      valid_id_url =
+        validIdUploadJson.filePath ||
+        validIdUploadJson.path ||
+        validIdUploadJson.url ||
+        validIdUploadJson.publicUrl;
+
+      if (!valid_id_url) {
+        throw new Error('Valid ID upload succeeded but no URL returned');
+      }
+
+      // 2) Upload license image only if user has a license
       let dl_img_url = null;
-      
+
       if (hasDriverLicense === 'yes') {
         const uploadUrl = new URL('/api/storage/licenses', BASE).toString();
         const uploadFd = new FormData();
         uploadFd.append('file', licenseFile);
         uploadFd.append('licenseNumber', licenseNumber.trim());
         uploadFd.append('username', username.trim());
-
 
         const uploadRes = await fetch(uploadUrl, {
           method: 'POST',
@@ -265,7 +353,7 @@ const RegisterPage = () => {
         }
       }
 
-      // 2) Send OTP to phone number for verification
+      // 3) Send OTP to phone number for verification
       // Send in full international format: +639XXXXXXXXX
       const fullPhoneNumber = `+63${contactNumber.trim()}`;
       const otpUrl = new URL(
@@ -296,13 +384,16 @@ const RegisterPage = () => {
         lastName: lastName.trim(),
         address: address.trim(),
         contactNumber: fullPhoneNumber,
-        fb_link: fb_link.trim(),
+        valid_id_url: valid_id_url,
         hasDriverLicense: hasDriverLicense,
         licenseNumber: hasDriverLicense === 'yes' ? licenseNumber.trim() : null,
         // Ensure date is in yyyy-MM-dd format (not ISO string with time)
-        licenseExpiry: hasDriverLicense === 'yes' && licenseExpiry ? 
-          new Date(licenseExpiry).toISOString().split('T')[0] : null,
-        restrictions: hasDriverLicense === 'yes' ? (restrictions?.trim() || '') : null,
+        licenseExpiry:
+          hasDriverLicense === 'yes' && licenseExpiry
+            ? new Date(licenseExpiry).toISOString().split('T')[0]
+            : null,
+        restrictions:
+          hasDriverLicense === 'yes' ? restrictions?.trim() || '' : null,
         dl_img_url: dl_img_url,
         agreeTerms: true,
       });
@@ -668,7 +759,11 @@ const RegisterPage = () => {
                 id="contactNumber"
                 name="contactNumber"
                 label="CONTACT NUMBER"
-                value={formData.contactNumber ? displayPhilippinePhone(formData.contactNumber) : ''}
+                value={
+                  formData.contactNumber
+                    ? displayPhilippinePhone(formData.contactNumber)
+                    : ''
+                }
                 onChange={handlePhoneChange}
                 type="text"
                 placeholder="09XX XXX XXXX"
@@ -677,7 +772,10 @@ const RegisterPage = () => {
                 size="medium"
                 required
                 error={!!errors.contactNumber}
-                helperText={errors.contactNumber || 'Format: +63 9XX XXX XXXX (Philippine mobile number)'}
+                helperText={
+                  errors.contactNumber ||
+                  'Format: +63 9XX XXX XXXX (Philippine mobile number)'
+                }
                 inputProps={{
                   maxLength: 18, // Allow space for display format: +63 9XX XXX XXXX
                 }}
@@ -699,44 +797,104 @@ const RegisterPage = () => {
               />
             </Box>
 
-            {/* Facebook Link */}
+            {/* Valid ID Upload */}
             <Box sx={{ mb: 2 }}>
-              <TextField
-                id="fb_link"
-                name="fb_link"
-                label="FACEBOOK LINK"
-                value={formData.fb_link}
-                onChange={onChange}
-                type="text"
-                placeholder="Enter your Facebook profile link"
-                fullWidth
-                variant="outlined"
-                size="medium"
-                required
-                error={!!errors.fb_link}
-                helperText={errors.fb_link}
+              <Typography
                 sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(229, 231, 235, 0.8)',
-                    '& fieldset': {
-                      borderColor: 'rgba(156, 163, 175, 0.5)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(156, 163, 175, 0.8)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '0.875rem',
-                    fontWeight: '600',
-                  },
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  color: 'rgba(55, 65, 81, 1)',
+                  mb: 1,
                 }}
-              />
+              >
+                UPLOAD 1 VALID ID *
+              </Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  component="label"
+                  startIcon={<FaUpload />}
+                  sx={{
+                    textTransform: 'none',
+                    borderColor: 'rgba(156, 163, 175, 0.5)',
+                    color: 'rgba(55, 65, 81, 1)',
+                    '&:hover': {
+                      borderColor: 'rgba(156, 163, 175, 0.8)',
+                      backgroundColor: 'rgba(229, 231, 235, 0.3)',
+                    },
+                  }}
+                >
+                  Choose File
+                  <input
+                    type="file"
+                    id="validIdFile"
+                    accept="image/png,image/jpeg,image/jpg"
+                    onChange={handleValidIdFileChange}
+                    hidden
+                    required
+                  />
+                </Button>
+                {formData.validIdFile && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography
+                      sx={{
+                        fontSize: '0.875rem',
+                        color: 'rgba(55, 65, 81, 0.8)',
+                      }}
+                    >
+                      {formData.validIdFile.name}
+                    </Typography>
+                    <Button
+                      size="small"
+                      onClick={removeValidIdFile}
+                      sx={{
+                        textTransform: 'none',
+                        minWidth: 'auto',
+                        color: 'error.main',
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+              {errors.validIdFile && (
+                <Typography
+                  sx={{
+                    color: 'error.main',
+                    fontSize: '0.75rem',
+                    mt: 0.5,
+                  }}
+                >
+                  {errors.validIdFile}
+                </Typography>
+              )}
+              <Typography
+                sx={{
+                  fontSize: '0.75rem',
+                  color: 'rgba(107, 114, 128, 1)',
+                  mt: 0.5,
+                }}
+              >
+                Accepted formats: PNG, JPG, JPEG (Max 5MB)
+              </Typography>
             </Box>
 
             {/* Driver's License Question */}
             <Box sx={{ mb: 3 }}>
-              <FormControl component="fieldset" required error={!!errors.hasDriverLicense}>
-                <FormLabel 
+              <FormControl
+                component="fieldset"
+                required
+                error={!!errors.hasDriverLicense}
+              >
+                <FormLabel
                   component="legend"
                   sx={{
                     fontSize: '0.875rem',
@@ -820,7 +978,10 @@ const RegisterPage = () => {
                   size="medium"
                   required
                   error={!!errors.licenseNumber}
-                  helperText={errors.licenseNumber || 'Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)'}
+                  helperText={
+                    errors.licenseNumber ||
+                    'Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)'
+                  }
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       backgroundColor: 'rgba(229, 231, 235, 0.8)',
@@ -948,52 +1109,52 @@ const RegisterPage = () => {
                   >
                     {formData.licenseFile ? 'Change file' : 'Upload License ID'}
 
-                  {formData.licenseFile && (
-                    <Box
-                      sx={{
-                        mt: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
+                    {formData.licenseFile && (
+                      <Box
                         sx={{
-                          fontSize: '0.875rem',
-                          color: 'rgba(75, 85, 99, 1)',
-                          flex: 1,
+                          mt: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
                         }}
                       >
-                        {formData.licenseFile.name}
-                      </Typography>
-                      <Button
-                        type="button"
-                        onClick={removeFile}
-                        variant="text"
-                        color="error"
-                        size="small"
-                        sx={{
-                          fontSize: '0.875rem',
-                          textDecoration: 'underline',
-                          minWidth: 'auto',
-                        }}
-                      >
-                        Remove
-                      </Button>
-                    </Box>
-                  )}
-                </Button>
-              </Box>
-              {errors.licenseFile && (
-                <Typography
-                  variant="body2"
-                  color="error"
-                  sx={{ fontSize: '0.75rem', mt: 1 }}
-                >
-                  {errors.licenseFile}
-                </Typography>
-              )}
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: '0.875rem',
+                            color: 'rgba(75, 85, 99, 1)',
+                            flex: 1,
+                          }}
+                        >
+                          {formData.licenseFile.name}
+                        </Typography>
+                        <Button
+                          type="button"
+                          onClick={removeFile}
+                          variant="text"
+                          color="error"
+                          size="small"
+                          sx={{
+                            fontSize: '0.875rem',
+                            textDecoration: 'underline',
+                            minWidth: 'auto',
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </Box>
+                    )}
+                  </Button>
+                </Box>
+                {errors.licenseFile && (
+                  <Typography
+                    variant="body2"
+                    color="error"
+                    sx={{ fontSize: '0.75rem', mt: 1 }}
+                  >
+                    {errors.licenseFile}
+                  </Typography>
+                )}
               </Box>
             )}
 

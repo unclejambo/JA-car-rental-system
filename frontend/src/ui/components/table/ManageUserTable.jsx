@@ -105,9 +105,9 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
   const tabSpecificColumns = {
     CUSTOMER: [
       {
-        field: 'fb_link',
-        headerName: 'SocMed Link',
-        flex: 1.2,
+        field: 'valid_id_url',
+        headerName: 'Valid ID',
+        flex: 1,
         minWidth: 80,
         renderCell: (params) => {
           const url = params.value;
@@ -124,7 +124,7 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
                 fontWeight: 500,
               }}
             >
-              Link
+              View ID
             </a>
           );
         },

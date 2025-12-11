@@ -175,8 +175,8 @@ export default function AdminManageUser() {
       // Search by driver license number (for CUSTOMER and DRIVER tabs)
       if (row.driver_license_no?.toLowerCase().includes(query)) return true;
 
-      // Search by fb_link (for CUSTOMER tab)
-      if (row.fb_link?.toLowerCase().includes(query)) return true;
+      // Search by valid_id_url (for CUSTOMER tab)
+      if (row.valid_id_url?.toLowerCase().includes(query)) return true;
 
       return false;
     });

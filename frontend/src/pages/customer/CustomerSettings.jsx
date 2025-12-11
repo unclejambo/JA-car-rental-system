@@ -1333,25 +1333,6 @@ export default function CustomerSettings() {
                                     </Typography>
                                   </>
                                 )}
-                                {isEditing ? (
-                                  <TextField
-                                    label="Social Media Link"
-                                    name="socialMediaLink"
-                                    value={draft.socialMediaLink}
-                                    onChange={handleChange}
-                                    size="small"
-                                    fullWidth
-                                    placeholder="Facebook, Instagram, etc."
-                                  />
-                                ) : (
-                                  <Typography sx={{ fontWeight: 700 }}>
-                                    Social Media Link:{' '}
-                                    <span style={{ fontWeight: 400 }}>
-                                      {profile.socialMediaLink ||
-                                        'Not provided'}
-                                    </span>
-                                  </Typography>
-                                )}
                               </Box>
                               <Box
                                 sx={{

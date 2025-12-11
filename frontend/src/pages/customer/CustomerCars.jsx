@@ -49,6 +49,7 @@ function CustomerCars() {
     useState(0);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [bookingStatusMap, setBookingStatusMap] = useState({});
 
   // Filter states
   const [seatFilter, setSeatFilter] = useState('');
@@ -109,6 +110,81 @@ function CustomerCars() {
 
     loadCars();
   }, []); // Remove dependencies that cause re-renders
+
+  // Load booking flags per car so we can surface "View Availability" even for future bookings
+  useEffect(() => {
+    if (!cars.length) return;
+
+    let isMounted = true;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const fetchBookingFlags = async () => {
+      try {
+        const results = await Promise.all(
+          cars.map(async (car) => {
+            try {
+              const response = await authenticatedFetch(
+                `${API_BASE}/cars/${car.car_id}/unavailable-periods`
+              );
+
+              if (!response.ok) {
+                return { carId: car.car_id, hasActiveBooking: false };
+              }
+
+              const data = await response.json();
+              const periods = data?.unavailable_periods || [];
+              const activeBookingStatuses = [
+                'pending',
+                'confirmed',
+                'in progress',
+              ];
+
+              const hasActiveBooking = periods.some((period) => {
+                if (period.is_maintenance) return false;
+
+                const status = String(period.booking_status || '')
+                  .toLowerCase()
+                  .trim();
+
+                if (!activeBookingStatuses.includes(status)) return false;
+
+                const endDate = new Date(period.end_date);
+                endDate.setHours(0, 0, 0, 0);
+
+                return endDate >= today; // current or future booking blocks availability
+              });
+
+              return { carId: car.car_id, hasActiveBooking };
+            } catch (error) {
+              return { carId: car.car_id, hasActiveBooking: false };
+            }
+          })
+        );
+
+        if (!isMounted) return;
+
+        const bookingMap = results.reduce(
+          (acc, { carId, hasActiveBooking }) => {
+            acc[carId] = hasActiveBooking;
+            return acc;
+          },
+          {}
+        );
+
+        setBookingStatusMap(bookingMap);
+      } catch (error) {
+        if (!isMounted) return;
+        setBookingStatusMap({});
+      }
+    };
+
+    fetchBookingFlags();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [API_BASE, authenticatedFetch, cars]);
 
   // Filter cars based on selected filters
   useEffect(() => {
@@ -252,8 +328,44 @@ function CustomerCars() {
   };
 
   // Get status color and text
-  const getStatusInfo = (status) => {
+  const getStatusInfo = (status, hasActiveBooking = false) => {
     const normalizedStatus = String(status || '').toLowerCase();
+    const isMaintenance =
+      normalizedStatus.includes('maint') ||
+      normalizedStatus.includes('maintenance');
+    const isRented =
+      normalizedStatus.includes('rent') || normalizedStatus === 'rented';
+    const isBooked = (!isMaintenance && hasActiveBooking) || isRented;
+
+    if (isMaintenance) {
+      return {
+        label: 'Maintenance',
+        color: '#f44336',
+        textColor: 'white',
+        canBook: false,
+        isBooked: false,
+      };
+    }
+
+    if (isRented) {
+      return {
+        label: 'Rented',
+        color: '#ffeb3b',
+        textColor: 'black',
+        canBook: true,
+        isBooked: true,
+      };
+    }
+
+    if (isBooked) {
+      return {
+        label: 'Booked',
+        color: '#ffeb3b',
+        textColor: 'black',
+        canBook: true,
+        isBooked: true,
+      };
+    }
 
     if (
       normalizedStatus.includes('available') ||
@@ -264,35 +376,17 @@ function CustomerCars() {
         color: '#4caf50',
         textColor: 'white',
         canBook: true,
-      };
-    } else if (
-      normalizedStatus.includes('maint') ||
-      normalizedStatus.includes('maintenance')
-    ) {
-      return {
-        label: 'Maintenance',
-        color: '#f44336', // Changed to red
-        textColor: 'white',
-        canBook: false,
-      };
-    } else if (
-      normalizedStatus.includes('rent') ||
-      normalizedStatus === 'rented'
-    ) {
-      return {
-        label: 'Rented',
-        color: '#ffeb3b', // Changed to yellow
-        textColor: 'black', // Changed text color to black for better contrast on yellow
-        canBook: true,
-      }; // Can still book but will be queued
-    } else {
-      return {
-        label: status || 'Unknown',
-        color: '#9e9e9e',
-        textColor: 'white',
-        canBook: false,
+        isBooked: false,
       };
     }
+
+    return {
+      label: status || 'Unknown',
+      color: '#9e9e9e',
+      textColor: 'white',
+      canBook: false,
+      isBooked: false,
+    };
   };
 
   return (
@@ -705,7 +799,11 @@ function CustomerCars() {
                       }}
                     >
                       {filteredCars.map((car) => {
-                        const statusInfo = getStatusInfo(car.car_status);
+                        const hasActiveBooking = !!bookingStatusMap[car.car_id];
+                        const statusInfo = getStatusInfo(
+                          car.car_status,
+                          hasActiveBooking
+                        );
                         const isUnderMaintenance = car.car_status
                           ?.toLowerCase()
                           .includes('maint');
@@ -804,7 +902,8 @@ function CustomerCars() {
                                     color="text.secondary"
                                     sx={{ mb: 1 }}
                                   >
-                                    {car.year} • {car.no_of_seat} seats • {car.isManual ? 'Manual' : 'Automatic'}
+                                    {car.year} • {car.no_of_seat} seats •{' '}
+                                    {car.isManual ? 'Manual' : 'Automatic'}
                                   </Typography>
 
                                   {/* Plate Number */}
@@ -856,9 +955,7 @@ function CustomerCars() {
                                       ?.toLowerCase()
                                       .includes('maint')}
                                     sx={{
-                                      backgroundColor: car.car_status
-                                        ?.toLowerCase()
-                                        .includes('rent')
+                                      backgroundColor: statusInfo.isBooked
                                         ? '#ff9800'
                                         : '#c10007',
                                       color: '#fff',
@@ -867,9 +964,7 @@ function CustomerCars() {
                                       borderRadius: 2,
                                       textTransform: 'none',
                                       '&:hover': {
-                                        backgroundColor: car.car_status
-                                          ?.toLowerCase()
-                                          .includes('rent')
+                                        backgroundColor: statusInfo.isBooked
                                           ? '#f57c00'
                                           : '#a50006',
                                       },
@@ -883,9 +978,7 @@ function CustomerCars() {
                                       ?.toLowerCase()
                                       .includes('maint')
                                       ? 'Under Maintenance'
-                                      : car.car_status
-                                            ?.toLowerCase()
-                                            .includes('rent')
+                                      : statusInfo.isBooked
                                         ? 'Book Now (View Availability)'
                                         : 'Book Now'}
                                   </Button>

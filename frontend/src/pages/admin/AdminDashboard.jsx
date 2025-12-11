@@ -32,6 +32,7 @@ import {
   BookOnline,
   Cancel,
   Extension,
+  Warning,
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import AdminSideBar from '../../ui/components/AdminSideBar';
@@ -42,8 +43,8 @@ function AdminDashboard() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
-    mostRentedCar: null,
-    topCustomers: [],
+    forRelease: [],
+    forReturn: [],
     weekSchedules: [],
     availableCars: [],
     bookingRequests: [],
@@ -88,19 +89,7 @@ function AdminDashboard() {
       });
 
       // Fetch all data in parallel
-      const [
-        carsUtilization,
-        topCustomers,
-        schedules,
-        availableCars,
-        allBookings,
-      ] = await Promise.all([
-        authFetch(`${API_BASE}/analytics/cars/utilization?period=30`).then(
-          (r) => (r.ok ? r.json() : [])
-        ),
-        authFetch(`${API_BASE}/analytics/customers/top?period=30`).then((r) =>
-          r.ok ? r.json() : []
-        ),
+      const [schedules, availableCars, allBookings] = await Promise.all([
         authFetch(`${API_BASE}/schedules`).then(async (r) => {
           if (!r.ok) return [];
           const data = await r.json();
@@ -115,6 +104,52 @@ function AdminDashboard() {
           return Array.isArray(data) ? data : data.data || [];
         }),
       ]);
+
+      // Get current time
+      const now = new Date();
+      const oneHourBefore = new Date(now.getTime() - 60 * 60 * 1000);
+      const oneHourAfter = new Date(now.getTime() + 60 * 60 * 1000);
+
+      // Filter For Release bookings (confirmed, start_date within 1 hour window or overdue)
+      const forRelease = Array.isArray(schedules)
+        ? schedules
+            .filter((schedule) => {
+              const status = schedule.booking_status?.toLowerCase();
+              if (status !== 'confirmed') return false;
+
+              const startDate = new Date(schedule.start_date);
+              // Include items within 1 hour window or overdue (past 1 hour after)
+              return startDate >= oneHourBefore;
+            })
+            .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
+        : [];
+
+      // Filter For Return bookings (any active booking that has started and needs to be returned)
+      const forReturn = Array.isArray(schedules)
+        ? schedules
+            .filter((schedule) => {
+              const status = (schedule.status || schedule.booking_status || '')
+                .toString()
+                .toLowerCase()
+                .trim();
+
+              // Exclude these statuses (same as AdminSchedulePage)
+              if (
+                status === 'pending' ||
+                status === 'cancelled' ||
+                status === 'completed'
+              ) {
+                return false;
+              }
+
+              const endDate = new Date(schedule.end_date);
+              const startDate = new Date(schedule.start_date);
+              // Only show if the booking has started (startDate is in the past)
+              // and the end date is within 1 hour or overdue
+              return startDate <= now && endDate >= oneHourBefore;
+            })
+            .sort((a, b) => new Date(a.end_date) - new Date(b.end_date))
+        : [];
 
       // Filter schedules with 'Confirmed' and 'In Progress' statuses
       const weekSchedules = Array.isArray(schedules)
@@ -146,13 +181,8 @@ function AdminDashboard() {
         : [];
 
       setDashboardData({
-        mostRentedCar:
-          Array.isArray(carsUtilization) && carsUtilization.length > 0
-            ? carsUtilization[0]
-            : null,
-        topCustomers: Array.isArray(topCustomers)
-          ? topCustomers.slice(0, 5)
-          : [],
+        forRelease,
+        forReturn,
         weekSchedules,
         availableCars: Array.isArray(availableCars) ? availableCars : [],
         bookingRequests,
@@ -218,7 +248,7 @@ function AdminDashboard() {
           minHeight: '100vh',
         }}
       >
-        {/* Top Section - Featured Content */}
+        {/* For Release and For Return Section */}
         <Grid
           container
           spacing={{ xs: 0, md: 2 }}
@@ -231,189 +261,7 @@ function AdminDashboard() {
             flexDirection: { xs: 'column', md: 'row' },
           }}
         >
-          {/* Most Rented Car */}
-          <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
-            <Card
-              sx={{
-                boxShadow: 2,
-                height: '100%',
-                minHeight: { xs: 'auto', md: 300 },
-              }}
-            >
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    gap: 1,
-                    alignItems: 'start',
-                    mb: { xs: 1.5, md: 2 },
-                  }}
-                >
-                  <Avatar
-                    sx={{
-                      bgcolor: '#c10007',
-                      width: { xs: 40, md: 48 },
-                      height: { xs: 40, md: 48 },
-                    }}
-                  >
-                    <DirectionsCar sx={{ fontSize: { xs: 20, md: 24 } }} />
-                  </Avatar>
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 'bold',
-                        mb: 0.5,
-                        fontSize: { xs: '1.125rem', md: '1.25rem' },
-                        color: '#000',
-                      }}
-                    >
-                      MOST RENTED CAR
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontSize: { xs: '0.75rem', md: '0.875rem' },
-                        color: 'text.secondary',
-                      }}
-                    >
-                      LAST 30 DAYS
-                    </Typography>
-                  </Box>
-                </Box>
-
-                {dashboardData.mostRentedCar ? (
-                  <>
-                    {/* Car Image */}
-                    {dashboardData.mostRentedCar.carImgUrl ? (
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: { xs: 1, md: 2 },
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: '50%',
-                            height: { xs: 140, md: 180 },
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                            mb: { xs: 0.5, md: 1 },
-                            border: '2px solid #e0e0e0',
-                          }}
-                        >
-                          <img
-                            src={dashboardData.mostRentedCar.carImgUrl}
-                            alt={`${dashboardData.mostRentedCar.make} ${dashboardData.mostRentedCar.model}`}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.parentElement.style.display = 'none';
-                            }}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                            }}
-                          />
-                        </Box>
-                        <Box>
-                          <Typography
-                            variant="h5"
-                            sx={{
-                              fontWeight: 'bold',
-                              fontSize: { xs: '1.25rem', md: '1.5rem' },
-                              color: '#000',
-                              mb: 0.5,
-                            }}
-                          >
-                            {dashboardData.mostRentedCar.make}{' '}
-                            {dashboardData.mostRentedCar.model}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              mb: 0.5,
-                              fontSize: { xs: '0.875rem', md: '1rem' },
-                              color: 'text.secondary',
-                            }}
-                          >
-                            {dashboardData.mostRentedCar.year || 'N/A'} •{' '}
-                            {dashboardData.mostRentedCar.carType || 'N/A'}
-                          </Typography>
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              fontWeight: 'bold',
-                              fontSize: { xs: '0.875rem', md: '.975rem' },
-                              color: '#c10007',
-                              mb: 0.5,
-                            }}
-                          >
-                            {dashboardData.mostRentedCar.bookingCount} BOOKINGS
-                          </Typography>
-                        </Box>
-                      </Box>
-                    ) : (
-                      <Box
-                        sx={{
-                          width: '100%',
-                          height: { xs: 180, md: 220 },
-                          borderRadius: 2,
-                          mb: { xs: 1.5, md: 2 },
-                          border: '2px solid #e0e0e0',
-                          bgcolor: '#f5f5f5',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <DirectionsCar
-                          sx={{
-                            fontSize: { xs: 80, md: 100 },
-                            color: '#c0c0c0',
-                          }}
-                        />
-                      </Box>
-                    )}
-
-                    {/* Car Details */}
-                    <Box>
-                      <Divider sx={{ my: { xs: 0.75, md: 1 } }} />
-                      <Button
-                        component={Link}
-                        to="/report-analytics"
-                        state={{ primaryView: 'topCars' }}
-                        variant="contained"
-                        fullWidth
-                        sx={{
-                          bgcolor: '#c10007',
-                          color: 'white',
-                          '&:hover': { bgcolor: '#a00006' },
-                          py: { xs: 0.5, md: 1 },
-                        }}
-                      >
-                        View Analytics
-                      </Button>
-                    </Box>
-                  </>
-                ) : (
-                  <Typography
-                    sx={{
-                      my: { xs: 2, md: 3 },
-                      fontSize: { xs: '0.875rem', md: '1rem' },
-                      color: 'text.secondary',
-                      textAlign: 'center',
-                    }}
-                  >
-                    No data available
-                  </Typography>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Top Customers Table */}
+          {/* For Release */}
           <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
             <Card
               sx={{
@@ -438,8 +286,8 @@ function AdminDashboard() {
                       gap: { xs: 0.5, md: 1 },
                     }}
                   >
-                    <Person
-                      sx={{ color: '#000', fontSize: { xs: 24, md: 28 } }}
+                    <CarRental
+                      sx={{ color: '#c10007', fontSize: { xs: 20, md: 24 } }}
                     />
                     <Typography
                       variant="h6"
@@ -448,12 +296,16 @@ function AdminDashboard() {
                         fontSize: { xs: '1.125rem', md: '1.25rem' },
                       }}
                     >
-                      TOP CUSTOMERS
+                      FOR RELEASE
                     </Typography>
                   </Box>
                   <Chip
-                    label="LAST 30 DAYS"
-                    sx={{ bgcolor: '#000', color: 'white', fontWeight: 'bold' }}
+                    label={`${dashboardData.forRelease.length} Upcoming`}
+                    sx={{
+                      bgcolor: '#c10007',
+                      color: 'white',
+                      fontWeight: 'bold',
+                    }}
                     size="small"
                   />
                 </Box>
@@ -461,92 +313,141 @@ function AdminDashboard() {
                   sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
                 />
 
-                {dashboardData.topCustomers.length > 0 ? (
+                {dashboardData.forRelease.length > 0 ? (
                   <TableContainer
                     component={Paper}
                     sx={{
                       boxShadow: 0,
                       border: '1px solid #e0e0e0',
+                      maxHeight: { xs: 250, md: 300 },
                       overflowX: 'auto',
                     }}
                   >
-                    <Table>
+                    <Table size="small">
                       <TableHead>
                         <TableRow sx={{ bgcolor: '#fafafa' }}>
                           <TableCell
                             sx={{
                               fontWeight: 'bold',
-                              fontSize: { xs: '0.875rem', md: '1rem' },
+                              fontSize: { xs: '0.75rem', md: '0.875rem' },
                             }}
                           >
-                            Rank
+                            Customer
                           </TableCell>
                           <TableCell
                             sx={{
                               fontWeight: 'bold',
-                              fontSize: { xs: '0.875rem', md: '1rem' },
+                              fontSize: { xs: '0.75rem', md: '0.875rem' },
                             }}
                           >
-                            Customer Name
+                            Car
                           </TableCell>
                           <TableCell
-                            align="right"
                             sx={{
                               fontWeight: 'bold',
-                              fontSize: { xs: '0.875rem', md: '1rem' },
+                              fontSize: { xs: '0.75rem', md: '0.875rem' },
                             }}
                           >
-                            Total Bookings
+                            Release Time
+                          </TableCell>
+                          <TableCell
+                            sx={{
+                              fontWeight: 'bold',
+                              fontSize: { xs: '0.75rem', md: '0.875rem' },
+                            }}
+                          >
+                            Status
                           </TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {dashboardData.topCustomers.map((customer, index) => (
-                          <TableRow
-                            key={customer.customerId}
-                            sx={{
-                              '&:hover': { bgcolor: '#f5f5f5' },
-                              bgcolor: index === 0 ? '#fff5f5' : 'inherit',
-                            }}
-                          >
-                            <TableCell
-                              sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
+                        {dashboardData.forRelease.map((booking) => {
+                          const now = new Date();
+                          const oneHourAfter = new Date(
+                            now.getTime() + 60 * 60 * 1000
+                          );
+                          const startDate = new Date(booking.start_date);
+                          const isOverdue =
+                            startDate < now &&
+                            startDate <
+                              new Date(now.getTime() - 60 * 60 * 1000);
+
+                          return (
+                            <TableRow
+                              key={booking.booking_id}
+                              sx={{
+                                '&:hover': { bgcolor: '#f5f5f5' },
+                                bgcolor: isOverdue ? '#ffe6e6' : '#fff5f5',
+                              }}
                             >
-                              <Chip
-                                label={`#${index + 1}`}
-                                size="small"
+                              <TableCell
                                 sx={{
-                                  bgcolor:
-                                    index === 0
-                                      ? '#c10007'
-                                      : index === 1
-                                        ? '#666'
-                                        : '#999',
-                                  color: 'white',
-                                  fontWeight: 'bold',
+                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
                                 }}
-                              />
-                            </TableCell>
-                            <TableCell
-                              sx={{
-                                fontSize: { xs: '0.875rem', md: '1rem' },
-                                fontWeight: index === 0 ? 600 : 400,
-                              }}
-                            >
-                              {customer.fullName}
-                            </TableCell>
-                            <TableCell
-                              align="right"
-                              sx={{
-                                fontSize: { xs: '0.875rem', md: '1rem' },
-                                fontWeight: index === 0 ? 600 : 400,
-                                color: index === 0 ? '#c10007' : 'inherit',
-                              }}
-                            >
-                              {customer.bookingCount}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                              >
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  {isOverdue && (
+                                    <Warning
+                                      sx={{ fontSize: 16, color: '#ff9800' }}
+                                    />
+                                  )}
+                                  {booking.customer_name || 'N/A'}
+                                </Box>
+                              </TableCell>
+                              <TableCell
+                                sx={{
+                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                }}
+                              >
+                                {booking.car_model || 'N/A'}
+                              </TableCell>
+                              <TableCell
+                                sx={{
+                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                  color: isOverdue ? '#d32f2f' : 'inherit',
+                                  fontWeight: isOverdue ? 600 : 400,
+                                }}
+                              >
+                                {new Date(
+                                  booking.start_date
+                                ).toLocaleTimeString('en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </TableCell>
+                              <TableCell
+                                sx={{
+                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                }}
+                              >
+                                <Chip
+                                  label={isOverdue ? 'OVERDUE' : 'UPCOMING'}
+                                  size="small"
+                                  icon={
+                                    isOverdue ? (
+                                      <Warning
+                                        sx={{ fontSize: '14px !important' }}
+                                      />
+                                    ) : undefined
+                                  }
+                                  sx={{
+                                    bgcolor: isOverdue ? '#ff9800' : '#4caf50',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.65rem',
+                                    height: 20,
+                                  }}
+                                />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </TableContainer>
@@ -560,14 +461,235 @@ function AdminDashboard() {
                       fontSize: { xs: '0.875rem', md: '1rem' },
                     }}
                   >
-                    No customer data available
+                    No upcoming releases
                   </Typography>
                 )}
 
                 <Button
                   component={Link}
-                  to="/report-analytics"
-                  state={{ primaryView: 'topCustomers' }}
+                  to="/schedule"
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    mt: { xs: 1.5, md: 2 },
+                    borderColor: '#c10007',
+                    color: '#c10007',
+                    '&:hover': {
+                      borderColor: '#a00006',
+                      bgcolor: 'rgba(193, 0, 7, 0.04)',
+                    },
+                    py: { xs: 0.5, md: 1 },
+                  }}
+                >
+                  View All Releases
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* For Return */}
+          <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
+            <Card
+              sx={{
+                boxShadow: 2,
+                height: '100%',
+                minHeight: { xs: 'auto', md: 300 },
+              }}
+            >
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: { xs: 1.5, md: 2 },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: { xs: 0.5, md: 1 },
+                    }}
+                  >
+                    <Event
+                      sx={{ color: '#000', fontSize: { xs: 20, md: 24 } }}
+                    />
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 'bold',
+                        fontSize: { xs: '1.125rem', md: '1.25rem' },
+                      }}
+                    >
+                      FOR RETURN
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={`${dashboardData.forReturn.length} Upcoming`}
+                    sx={{ bgcolor: '#000', color: 'white', fontWeight: 'bold' }}
+                    size="small"
+                  />
+                </Box>
+                <Divider
+                  sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
+                />
+
+                {dashboardData.forReturn.length > 0 ? (
+                  <TableContainer
+                    component={Paper}
+                    sx={{
+                      boxShadow: 0,
+                      border: '1px solid #e0e0e0',
+                      maxHeight: { xs: 250, md: 300 },
+                      overflowX: 'auto',
+                    }}
+                  >
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: '#fafafa' }}>
+                          <TableCell
+                            sx={{
+                              fontWeight: 'bold',
+                              fontSize: { xs: '0.75rem', md: '0.875rem' },
+                            }}
+                          >
+                            Customer
+                          </TableCell>
+                          <TableCell
+                            sx={{
+                              fontWeight: 'bold',
+                              fontSize: { xs: '0.75rem', md: '0.875rem' },
+                            }}
+                          >
+                            Car
+                          </TableCell>
+                          <TableCell
+                            sx={{
+                              fontWeight: 'bold',
+                              fontSize: { xs: '0.75rem', md: '0.875rem' },
+                            }}
+                          >
+                            Return Time
+                          </TableCell>
+                          <TableCell
+                            sx={{
+                              fontWeight: 'bold',
+                              fontSize: { xs: '0.75rem', md: '0.875rem' },
+                            }}
+                          >
+                            Status
+                          </TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {dashboardData.forReturn.map((booking) => {
+                          const now = new Date();
+                          const oneHourAfter = new Date(
+                            now.getTime() + 60 * 60 * 1000
+                          );
+                          const endDate = new Date(booking.end_date);
+                          const isOverdue =
+                            endDate < now &&
+                            endDate < new Date(now.getTime() - 60 * 60 * 1000);
+
+                          return (
+                            <TableRow
+                              key={booking.booking_id}
+                              sx={{
+                                '&:hover': { bgcolor: '#f5f5f5' },
+                                bgcolor: isOverdue ? '#ffe6e6' : '#f5f5f5',
+                              }}
+                            >
+                              <TableCell
+                                sx={{
+                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  {isOverdue && (
+                                    <Warning
+                                      sx={{ fontSize: 16, color: '#ff9800' }}
+                                    />
+                                  )}
+                                  {booking.customer_name || 'N/A'}
+                                </Box>
+                              </TableCell>
+                              <TableCell
+                                sx={{
+                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                }}
+                              >
+                                {booking.car_model || 'N/A'}
+                              </TableCell>
+                              <TableCell
+                                sx={{
+                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                  color: isOverdue ? '#d32f2f' : 'inherit',
+                                  fontWeight: isOverdue ? 600 : 400,
+                                }}
+                              >
+                                {new Date(booking.end_date).toLocaleTimeString(
+                                  'en-US',
+                                  {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  }
+                                )}
+                              </TableCell>
+                              <TableCell
+                                sx={{
+                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
+                                }}
+                              >
+                                <Chip
+                                  label={isOverdue ? 'OVERDUE' : 'UPCOMING'}
+                                  size="small"
+                                  icon={
+                                    isOverdue ? (
+                                      <Warning
+                                        sx={{ fontSize: '14px !important' }}
+                                      />
+                                    ) : undefined
+                                  }
+                                  sx={{
+                                    bgcolor: isOverdue ? '#ff9800' : '#4caf50',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.65rem',
+                                    height: 20,
+                                  }}
+                                />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Typography
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{
+                      textAlign: 'center',
+                      py: { xs: 2, md: 3 },
+                      fontSize: { xs: '0.875rem', md: '1rem' },
+                    }}
+                  >
+                    No upcoming returns
+                  </Typography>
+                )}
+
+                <Button
+                  component={Link}
+                  to="/schedule"
                   variant="outlined"
                   fullWidth
                   sx={{
@@ -578,17 +700,17 @@ function AdminDashboard() {
                       borderColor: '#333',
                       bgcolor: 'rgba(0, 0, 0, 0.04)',
                     },
-                    py: { xs: 1, md: 1.5 },
+                    py: { xs: 0.5, md: 1 },
                   }}
                 >
-                  View All Top Customers
+                  View All Returns
                 </Button>
               </CardContent>
             </Card>
           </Grid>
         </Grid>
 
-        {/* Middle Section - Schedule & Available Cars */}
+        {/* Schedule & Available Cars */}
         <Grid
           container
           spacing={{ xs: 0, md: 2 }}

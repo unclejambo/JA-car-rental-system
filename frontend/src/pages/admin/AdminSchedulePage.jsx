@@ -9,6 +9,7 @@ import Loading from '../../ui/components/Loading';
 import ReleaseModal from '../../ui/components/modal/ReleaseModal.jsx';
 import ReturnModal from '../../ui/components/modal/ReturnModal.jsx';
 import GPSTrackingModal from '../../ui/components/modal/GPSTrackingModal.jsx';
+import ScheduleHeader from '../../ui/components/header/ScheduleHeader';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 
 export default function AdminSchedulePage() {
@@ -17,6 +18,7 @@ export default function AdminSchedulePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('CONFIRMED');
 
   const [showReleaseModal, setShowReleaseModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -38,14 +40,108 @@ export default function AdminSchedulePage() {
     setShowGPSModal(true);
   };
 
+  const getCounts = () => {
+    if (!schedule || schedule.length === 0) {
+      return { CONFIRMED: 0, 'IN PROGRESS': 0, RELEASE: 0, RETURN: 0 };
+    }
+
+    const confirmed = schedule.filter((row) => {
+      const status = (row.status || row.booking_status || '')
+        .toString()
+        .toLowerCase()
+        .trim();
+      return status === 'confirmed';
+    }).length;
+
+    const inProgress = schedule.filter((row) => {
+      const status = (row.status || row.booking_status || '')
+        .toString()
+        .toLowerCase()
+        .trim();
+      return status === 'in progress';
+    }).length;
+
+    const release = schedule.filter((row) => {
+      const status = (row.status || row.booking_status || '')
+        .toString()
+        .toLowerCase()
+        .trim();
+      return status === 'release';
+    }).length;
+
+    const returnCount = schedule.filter((row) => {
+      const status = (row.status || row.booking_status || '')
+        .toString()
+        .toLowerCase()
+        .trim();
+      return status === 'return';
+    }).length;
+
+    return {
+      CONFIRMED: confirmed,
+      'IN PROGRESS': inProgress,
+      RELEASE: release,
+      RETURN: returnCount,
+    };
+  };
+
   const getFilteredSchedule = () => {
     if (!schedule || schedule.length === 0) return [];
 
-    if (!searchQuery) return schedule;
+    // Filter by active tab first
+    let filteredByTab = schedule;
+
+    switch (activeTab) {
+      case 'CONFIRMED':
+        filteredByTab = schedule.filter((row) => {
+          const status = (row.status || row.booking_status || '')
+            .toString()
+            .toLowerCase()
+            .trim();
+          return status === 'confirmed';
+        });
+        break;
+
+      case 'IN PROGRESS':
+        filteredByTab = schedule.filter((row) => {
+          const status = (row.status || row.booking_status || '')
+            .toString()
+            .toLowerCase()
+            .trim();
+          return status === 'in progress';
+        });
+        break;
+
+      case 'RELEASE':
+        filteredByTab = schedule.filter((row) => {
+          const status = (row.status || row.booking_status || '')
+            .toString()
+            .toLowerCase()
+            .trim();
+          return status === 'release';
+        });
+        break;
+
+      case 'RETURN':
+        filteredByTab = schedule.filter((row) => {
+          const status = (row.status || row.booking_status || '')
+            .toString()
+            .toLowerCase()
+            .trim();
+          return status === 'return';
+        });
+        break;
+
+      default:
+        filteredByTab = schedule;
+    }
+
+    // Then filter by search query
+    if (!searchQuery) return filteredByTab;
 
     const query = searchQuery.toLowerCase().trim();
 
-    return schedule.filter((row) => {
+    return filteredByTab.filter((row) => {
       // Search by customer name
       if (row.customer_name?.toLowerCase().includes(query)) return true;
 
@@ -214,6 +310,12 @@ export default function AdminSchedulePage() {
             flexDirection: 'column',
           }}
         >
+          <ScheduleHeader
+            activeTab={activeTab}
+            onTabChange={(tab) => setActiveTab(tab)}
+            counts={getCounts()}
+          />
+
           <Box
             sx={{
               flexGrow: 1,

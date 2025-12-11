@@ -5,7 +5,7 @@ import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { HiInboxIn } from 'react-icons/hi';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { bookingAPI, paymentAPI } from '../../../utils/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,6 +23,59 @@ const ManageBookingsTable = ({
     message: '',
     severity: 'success',
   });
+  const [autoProcessedBookings, setAutoProcessedBookings] = useState(new Set());
+
+  // Auto-confirm bookings where payment is >= 1000 (isPay === true)
+  useEffect(() => {
+    if (!rows || rows.length === 0 || activeTab !== 'BOOKINGS') {
+      return;
+    }
+
+    // Find bookings that need auto-confirmation
+    const bookingsToAutoConfirm = rows.filter((row) => {
+      const isPaid =
+        row.isPay === true || row.isPay === 'true' || row.isPay === 'TRUE';
+      const bookingStatus = row.booking_status?.toLowerCase();
+
+      // Only auto-confirm PENDING or CONFIRMED bookings with payment submitted
+      // and haven't been auto-processed yet
+      return (
+        isPaid &&
+        (bookingStatus === 'pending' || bookingStatus === 'confirmed') &&
+        !autoProcessedBookings.has(row.actualBookingId)
+      );
+    });
+
+    // Auto-confirm each booking that meets criteria
+    if (bookingsToAutoConfirm.length > 0) {
+      bookingsToAutoConfirm.forEach(async (booking) => {
+        // Mark as processed to prevent duplicate calls
+        setAutoProcessedBookings((prev) =>
+          new Set(prev).add(booking.actualBookingId)
+        );
+
+        // Call handleConfirm without user interaction
+        try {
+          const result = await bookingAPI.confirmBooking(
+            booking.actualBookingId,
+            logout
+          );
+
+          // Refresh data if callback provided
+          if (onDataChange && typeof onDataChange === 'function') {
+            onDataChange();
+          }
+        } catch (error) {
+          // Silently fail - user doesn't need to see auto-confirmation errors
+          console.error(
+            'Auto-confirmation failed for booking:',
+            booking.actualBookingId,
+            error
+          );
+        }
+      });
+    }
+  }, [rows, activeTab, autoProcessedBookings, onDataChange]);
 
   // Custom empty state overlay
   const NoRowsOverlay = () => {
@@ -396,116 +449,6 @@ const ManageBookingsTable = ({
           );
         },
       },
-      {
-        field: 'request_type',
-        headerName: 'Request Type',
-        flex: 2,
-        minWidth: 200,
-        resizable: true,
-        renderCell: (params) => {
-          const isPaid =
-            params.row.isPay === true ||
-            params.row.isPay === 'true' ||
-            params.row.isPay === 'TRUE';
-          const bookingStatus = params.row.booking_status?.toLowerCase();
-
-          // Payment submitted - awaiting admin confirmation
-          if (
-            isPaid &&
-            (bookingStatus === 'pending' || bookingStatus === 'confirmed')
-          ) {
-            return (
-              <Box
-                sx={{
-                  fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
-                  color: '#2e7d32',
-                  fontWeight: 500,
-                  lineHeight: 1.3,
-                  wordBreak: 'break-word',
-                  whiteSpace: 'normal',
-                  py: 0.5,
-                }}
-              >
-                ✅ Payment submitted - Confirm to activate booking
-              </Box>
-            );
-          }
-
-          // Confirmed booking - actively being used
-          if (bookingStatus === 'confirmed' && !isPaid) {
-            return (
-              <Box
-                sx={{
-                  fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
-                  color: '#1976d2',
-                  fontWeight: 500,
-                  lineHeight: 1.3,
-                  wordBreak: 'break-word',
-                  whiteSpace: 'normal',
-                  py: 0.5,
-                }}
-              >
-                🚗 Active booking - Car currently rented
-              </Box>
-            );
-          }
-
-          // In Progress - ongoing rental
-          if (bookingStatus === 'in progress') {
-            return (
-              <Box
-                sx={{
-                  fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
-                  color: '#9c27b0',
-                  fontWeight: 500,
-                  lineHeight: 1.3,
-                  wordBreak: 'break-word',
-                  whiteSpace: 'normal',
-                  py: 0.5,
-                }}
-              >
-                🔄 Ongoing rental - In use by customer
-              </Box>
-            );
-          }
-
-          // Pending - awaiting customer payment
-          if (bookingStatus === 'pending' && !isPaid) {
-            return (
-              <Box
-                sx={{
-                  fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
-                  color: '#ed6c02',
-                  fontWeight: 500,
-                  lineHeight: 1.3,
-                  wordBreak: 'break-word',
-                  whiteSpace: 'normal',
-                  py: 0.5,
-                }}
-              >
-                � Request Type (Please Check to Confirm Booking)
-              </Box>
-            );
-          }
-
-          // Default fallback
-          return (
-            <Box
-              sx={{
-                fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
-                color: '#757575',
-                fontWeight: 500,
-                lineHeight: 1.3,
-                wordBreak: 'break-word',
-                whiteSpace: 'normal',
-                py: 0.5,
-              }}
-            >
-              📋 {bookingStatus || 'Unknown status'}
-            </Box>
-          );
-        },
-      },
     ],
     CANCELLATION: [
       {
@@ -640,6 +583,13 @@ const ManageBookingsTable = ({
         params.row.isPay === 'true' ||
         params.row.isPay === 'TRUE';
 
+      // Check if this booking is auto-accepted (iPay true + pending/confirmed status)
+      // These bookings don't need manual action buttons anymore
+      const bookingStatus = params.row.booking_status?.toLowerCase();
+      const isAutoAccepted =
+        shouldShowPaymentButtons &&
+        (bookingStatus === 'pending' || bookingStatus === 'confirmed');
+
       return (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
           {/* BOOKINGS TAB - View details and payment buttons */}
@@ -659,8 +609,8 @@ const ManageBookingsTable = ({
                 <MoreHorizIcon fontSize="small" />
               </IconButton>
 
-              {/* Show payment buttons only when isPay is true */}
-              {shouldShowPaymentButtons && (
+              {/* Show payment buttons only when isPay is true AND not auto-accepted */}
+              {shouldShowPaymentButtons && !isAutoAccepted && (
                 <>
                   <IconButton
                     size="small"

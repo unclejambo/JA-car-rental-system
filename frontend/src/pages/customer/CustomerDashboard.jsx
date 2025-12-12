@@ -281,54 +281,62 @@ function CustomerDashboard() {
               <Grid item xs={12} md={6} lg={7} xl={7} sx={{ flex: { md: 1 } }}>
                 <Card
                   sx={{
-                    boxShadow: 2,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                     height: '100%',
                     minHeight: { xs: 'auto', lg: 500 },
+                    borderRadius: 3,
+                    overflow: 'hidden',
                   }}
                 >
-                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                  {/* Gradient Header */}
+                  <Box
+                    sx={{
+                      background:
+                        'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+                      p: { xs: 2, md: 2.5 },
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'start',
-                        mb: { xs: 1.5, md: 2 },
-                      }}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
                     >
-                      <Box>
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            fontWeight: 'bold',
-                            mb: 0.5,
-                            fontSize: { xs: '1.125rem', md: '1.25rem' },
-                            color: '#000',
-                          }}
-                        >
-                          SCHEDULE
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontSize: { xs: '0.75rem', md: '0.875rem' },
-                            color: 'text.secondary',
-                          }}
-                        >
-                          TODAY
-                        </Typography>
-                      </Box>
                       <Avatar
                         sx={{
-                          bgcolor: '#c10007',
+                          bgcolor: 'rgba(255, 255, 255, 0.2)',
                           width: { xs: 40, md: 48 },
                           height: { xs: 40, md: 48 },
                         }}
                       >
-                        <Schedule sx={{ fontSize: { xs: 20, md: 24 } }} />
+                        <Schedule
+                          sx={{ fontSize: { xs: 20, md: 24 }, color: '#fff' }}
+                        />
                       </Avatar>
+                      <Box>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 700,
+                            color: '#fff',
+                            fontSize: { xs: '1.125rem', md: '1.25rem' },
+                          }}
+                        >
+                          Today's Schedule
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            fontSize: { xs: '0.75rem', md: '0.875rem' },
+                          }}
+                        >
+                          Your rentals for today
+                        </Typography>
+                      </Box>
                     </Box>
-                    <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
-
+                  </Box>
+                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                     {dashboardData.todaySchedule &&
                     dashboardData.todaySchedule.length > 0 ? (
                       <TableContainer
@@ -462,54 +470,62 @@ function CustomerDashboard() {
               <Grid item xs={12} md={6} lg={5} xl={5} sx={{ flex: { md: 1 } }}>
                 <Card
                   sx={{
-                    boxShadow: 2,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                     height: '100%',
                     minHeight: { xs: 'auto', lg: 500 },
+                    borderRadius: 3,
+                    overflow: 'hidden',
                   }}
                 >
-                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                  {/* Gradient Header */}
+                  <Box
+                    sx={{
+                      background:
+                        'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)',
+                      p: { xs: 2, md: 2.5 },
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'start',
-                        mb: { xs: 1.5, md: 2 },
-                      }}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
                     >
-                      <Box>
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            fontWeight: 'bold',
-                            mb: 0.5,
-                            fontSize: { xs: '1.125rem', md: '1.25rem' },
-                            color: '#000',
-                          }}
-                        >
-                          MY BOOKINGS
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontSize: { xs: '0.75rem', md: '0.875rem' },
-                            color: 'text.secondary',
-                          }}
-                        >
-                          RECENT BOOKINGS
-                        </Typography>
-                      </Box>
                       <Avatar
                         sx={{
-                          bgcolor: '#000',
+                          bgcolor: 'rgba(255, 255, 255, 0.2)',
                           width: { xs: 40, md: 48 },
                           height: { xs: 40, md: 48 },
                         }}
                       >
-                        <BookOnline sx={{ fontSize: { xs: 20, md: 24 } }} />
+                        <BookOnline
+                          sx={{ fontSize: { xs: 20, md: 24 }, color: '#fff' }}
+                        />
                       </Avatar>
+                      <Box>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 700,
+                            color: '#fff',
+                            fontSize: { xs: '1.125rem', md: '1.25rem' },
+                          }}
+                        >
+                          My Bookings
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            fontSize: { xs: '0.75rem', md: '0.875rem' },
+                          }}
+                        >
+                          Recent bookings
+                        </Typography>
+                      </Box>
                     </Box>
-                    <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
-
+                  </Box>
+                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                     {dashboardData.myBookings &&
                     dashboardData.myBookings.length > 0 ? (
                       <List
@@ -624,50 +640,63 @@ function CustomerDashboard() {
             >
               {/* Unpaid Settlements */}
               <Grid item xs={12} md={6} lg={6} xl={6} sx={{ flex: { md: 1 } }}>
-                <Card sx={{ boxShadow: 2, minHeight: { xs: 'auto', md: 450 } }}>
-                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                <Card
+                  sx={{
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    minHeight: { xs: 'auto', md: 450 },
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* Gradient Header */}
+                  <Box
+                    sx={{
+                      background:
+                        'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+                      p: { xs: 2, md: 2.5 },
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'start',
-                        mb: { xs: 1.5, md: 2 },
-                      }}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
                     >
-                      <Box>
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            fontWeight: 'bold',
-                            mb: 0.5,
-                            fontSize: { xs: '1.125rem', md: '1.25rem' },
-                            color: '#000',
-                          }}
-                        >
-                          UNPAID
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontSize: { xs: '0.75rem', md: '0.875rem' },
-                            color: 'text.secondary',
-                          }}
-                        >
-                          SETTLEMENTS
-                        </Typography>
-                      </Box>
                       <Avatar
                         sx={{
-                          bgcolor: '#c10007',
+                          bgcolor: 'rgba(255, 255, 255, 0.2)',
                           width: { xs: 40, md: 48 },
                           height: { xs: 40, md: 48 },
                         }}
                       >
-                        <Payment sx={{ fontSize: { xs: 20, md: 24 } }} />
+                        <Payment
+                          sx={{ fontSize: { xs: 20, md: 24 }, color: '#fff' }}
+                        />
                       </Avatar>
+                      <Box>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 700,
+                            color: '#fff',
+                            fontSize: { xs: '1.125rem', md: '1.25rem' },
+                          }}
+                        >
+                          Unpaid Settlements
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            fontSize: { xs: '0.75rem', md: '0.875rem' },
+                          }}
+                        >
+                          Pending payments
+                        </Typography>
+                      </Box>
                     </Box>
-                    <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
-
+                  </Box>
+                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                     {dashboardData.unpaidSettlements &&
                     dashboardData.unpaidSettlements.length > 0 ? (
                       <List sx={{ py: 0 }}>
@@ -751,50 +780,63 @@ function CustomerDashboard() {
 
               {/* Favorite Car */}
               <Grid item xs={12} md={6} lg={6} xl={6} sx={{ flex: { md: 1 } }}>
-                <Card sx={{ boxShadow: 2, minHeight: { xs: 'auto', md: 450 } }}>
-                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                <Card
+                  sx={{
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    minHeight: { xs: 'auto', md: 450 },
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* Gradient Header */}
+                  <Box
+                    sx={{
+                      background:
+                        'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)',
+                      p: { xs: 2, md: 2.5 },
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'start',
-                        mb: { xs: 1.5, md: 2 },
-                      }}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
                     >
-                      <Box>
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            fontWeight: 'bold',
-                            mb: 0.5,
-                            fontSize: { xs: '1.125rem', md: '1.25rem' },
-                            color: '#000',
-                          }}
-                        >
-                          FAVORITE CAR
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontSize: { xs: '0.75rem', md: '0.875rem' },
-                            color: 'text.secondary',
-                          }}
-                        >
-                          MOST BOOKED
-                        </Typography>
-                      </Box>
                       <Avatar
                         sx={{
-                          bgcolor: '#000',
+                          bgcolor: 'rgba(255, 255, 255, 0.2)',
                           width: { xs: 40, md: 48 },
                           height: { xs: 40, md: 48 },
                         }}
                       >
-                        <Favorite sx={{ fontSize: { xs: 20, md: 24 } }} />
+                        <Favorite
+                          sx={{ fontSize: { xs: 20, md: 24 }, color: '#fff' }}
+                        />
                       </Avatar>
+                      <Box>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 700,
+                            color: '#fff',
+                            fontSize: { xs: '1.125rem', md: '1.25rem' },
+                          }}
+                        >
+                          Favorite Car
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            fontSize: { xs: '0.75rem', md: '0.875rem' },
+                          }}
+                        >
+                          Most booked vehicle
+                        </Typography>
+                      </Box>
                     </Box>
-                    <Divider sx={{ mb: { xs: 1.5, md: 2 } }} />
-
+                  </Box>
+                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                     {dashboardData.favoriteCar ? (
                       <>
                         {/* Car Image */}

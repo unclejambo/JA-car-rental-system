@@ -473,47 +473,92 @@ export default function DriverSchedule() {
             {/* Page Header */}
             {!(loading && schedules === null) && (
               <>
-                <Box sx={{ mb: 3 }}>
+                <Box
+                  sx={{
+                    background:
+                      'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+                    borderRadius: 3,
+                    p: { xs: 2, md: 3 },
+                    mb: 3,
+                    boxShadow: '0 4px 12px rgba(193, 0, 7, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 2,
+                  }}
+                >
                   <Box
                     sx={{
                       display: 'flex',
-                      justifyContent: 'space-between',
                       alignItems: 'center',
-                      mb: 1,
+                      gap: 2,
+                      flex: 1,
                     }}
                   >
-                    <Typography
-                      variant="h6"
+                    <Box
                       sx={{
-                        fontWeight: 'bold',
-                        color: '#c10007',
+                        bgcolor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        p: { xs: 1.5, md: 2 },
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      <HiCalendar size={24} style={{ marginRight: '8px' }} />
-                      Driver Schedule
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      startIcon={<HiRefresh />}
-                      onClick={fetchData}
-                      disabled={loading}
-                      sx={{
-                        borderColor: '#c10007',
-                        color: '#c10007',
-                        '&:hover': {
-                          borderColor: '#a50006',
-                          backgroundColor: '#fff5f5',
-                        },
-                      }}
-                    >
-                      Refresh
-                    </Button>
+                      <HiCalendar
+                        style={{
+                          fontSize: '2rem',
+                          color: '#fff',
+                        }}
+                      />
+                    </Box>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography
+                        variant="h4"
+                        component="h1"
+                        sx={{
+                          fontWeight: 700,
+                          color: '#fff',
+                          fontSize: {
+                            xs: '1.25rem',
+                            sm: '1.5rem',
+                            md: '1.75rem',
+                          },
+                          mb: 0.5,
+                        }}
+                      >
+                        Driver Schedule
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: 'rgba(255, 255, 255, 0.9)',
+                          fontSize: { xs: '0.875rem', md: '1rem' },
+                        }}
+                      >
+                        View your assigned and completed driving schedules
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Typography variant="body1" color="text.secondary">
-                    View your assigned and completed driving schedules
-                  </Typography>
+                  {/* Refresh Button */}
+                  <Button
+                    variant="outlined"
+                    startIcon={<HiRefresh />}
+                    onClick={fetchData}
+                    disabled={loading}
+                    sx={{
+                      borderColor: '#fff',
+                      color: '#fff',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      '&:hover': {
+                        borderColor: '#fff',
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      },
+                    }}
+                  >
+                    Refresh
+                  </Button>
                 </Box>
 
                 {/* Tabs with Counts */}

@@ -18,7 +18,16 @@ import AdminSideBar from '../../ui/components/AdminSideBar';
 import Loading from '../../ui/components/Loading';
 import ConfirmationModal from '../../ui/components/modal/ConfirmationModal';
 import SaveCancelModal from '../../ui/components/modal/SaveCancelModal';
-import { HiCog8Tooth } from 'react-icons/hi2';
+import {
+  HiCog8Tooth,
+  HiUser,
+  HiMapPin,
+  HiEnvelope,
+  HiPhone,
+  HiIdentification,
+  HiLockClosed,
+  HiShieldCheck,
+} from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
@@ -558,28 +567,42 @@ export default function AdminSettings() {
               width: '100%',
               display: 'flex',
               flexDirection: 'column',
-              backgroundColor: '#f9f9f9',
-              p: { xs: 1, sm: 2, md: 2, lg: 2 },
-              boxShadow:
-                '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 4px 0 6px -1px rgba(0, 0, 0, 0.1), -4px 0 6px -1px rgba(0, 0, 0, 0.1)',
+              backgroundColor: '#f5f5f5',
+              p: { xs: 1, sm: 2, md: 3 },
               overflow: 'hidden',
               height: 'auto',
               boxSizing: 'border-box',
             }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography
-                variant="h4"
-                component="h1"
-                sx={{
-                  fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' },
-                  color: '#000',
-                }}
-              >
-                <HiCog8Tooth
-                  style={{ verticalAlign: '-3px', marginRight: '5px' }}
-                />
-                SETTINGS
+            {/* Modern Gradient Header */}
+            <Box
+              sx={{
+                background: 'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+                borderRadius: 3,
+                p: 3,
+                mb: 3,
+                color: '#fff',
+                boxShadow: '0 4px 12px rgba(193, 0, 7, 0.3)',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <HiCog8Tooth size={32} style={{ marginRight: '12px' }} />
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontSize: {
+                      xs: '1.5rem',
+                      sm: '2rem',
+                      md: '2.125rem',
+                    },
+                    fontWeight: 'bold',
+                  }}
+                >
+                  Admin Settings
+                </Typography>
+              </Box>
+              <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                Manage your admin profile and credentials
               </Typography>
             </Box>
             <Box
@@ -599,11 +622,11 @@ export default function AdminSettings() {
                   minWidth: '100%',
                   maxWidth: 900,
                   bgcolor: '#ffffff',
-                  borderRadius: 2,
-                  p: 2,
-                  pb: isEditing ? 1 : 2,
-                  boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
-                  border: '2px solid #e6e6e6',
+                  borderRadius: 3,
+                  p: { xs: 2, md: 3 },
+                  pb: isEditing ? 2 : 3,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  border: '1px solid #e0e0e0',
                   position: 'relative',
                 }}
               >
@@ -736,290 +759,521 @@ export default function AdminSettings() {
 
                     {/* Right: Details */}
                     <Box sx={{ flex: 1, pl: { xs: 0, md: 6 }, width: '100%' }}>
-                      <Box
-                        sx={{
-                          mb: 2,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 1,
-                        }}
-                      >
-                        {isEditing ? (
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              gap: 1,
-                              flexDirection: { xs: 'column', md: 'row' },
-                            }}
-                          >
-                            <TextField
-                              label="First Name"
-                              name="firstName"
-                              value={draft.firstName || ''}
-                              onChange={handleChange}
-                              size="small"
-                              fullWidth
-                              required
-                              disabled
-                              sx={{
-                                '& .MuiInputBase-input.Mui-disabled': {
-                                  WebkitTextFillColor: '#666',
-                                  cursor: 'not-allowed',
-                                },
-                              }}
-                            />
-                            <TextField
-                              label="Last Name"
-                              name="lastName"
-                              value={draft.lastName || ''}
-                              onChange={handleChange}
-                              size="small"
-                              fullWidth
-                              required
-                              disabled
-                              sx={{
-                                '& .MuiInputBase-input.Mui-disabled': {
-                                  WebkitTextFillColor: '#666',
-                                  cursor: 'not-allowed',
-                                },
-                              }}
-                            />
-                          </Box>
-                        ) : (
-                          <Typography sx={{ fontWeight: 700 }}>
-                            First Name:{' '}
-                            <span style={{ fontWeight: 400 }}>
-                              {profile.firstName || 'N/A'}
-                            </span>
-                          </Typography>
-                        )}
-
-                        {!isEditing && (
-                          <Typography sx={{ fontWeight: 700 }}>
-                            Last Name:{' '}
-                            <span style={{ fontWeight: 400 }}>
-                              {profile.lastName || 'N/A'}
-                            </span>
-                          </Typography>
-                        )}
-
-                        {isEditing ? (
-                          <TextField
-                            label="Address"
-                            name="address"
-                            value={draft.address || ''}
-                            onChange={handleChange}
-                            size="small"
-                            fullWidth
-                            sx={{ mt: 1 }}
-                          />
-                        ) : (
-                          <Typography sx={{ fontWeight: 700 }}>
-                            Address:{' '}
-                            <span style={{ fontWeight: 400 }}>
-                              {profile.address || 'N/A'}
-                            </span>
-                          </Typography>
-                        )}
-
-                        {isEditing ? (
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              gap: 1,
-                              flexDirection: { xs: 'column', md: 'row' },
-                              mt: 1,
-                            }}
-                          >
-                            <TextField
-                              label="Email"
-                              name="email"
-                              type="email"
-                              value={draft.email || ''}
-                              onChange={handleChange}
-                              size="small"
-                              fullWidth
-                              required
-                            />
-                            <TextField
-                              label="Contact Number"
-                              name="contactNo"
-                              value={draft.contactNo || ''}
-                              onChange={handleChange}
-                              size="small"
-                              fullWidth
-                              placeholder="e.g., 09123456789"
-                            />
-                          </Box>
-                        ) : (
-                          <>
-                            <Typography sx={{ fontWeight: 700 }}>
-                              Email:{' '}
-                              <span style={{ fontWeight: 400 }}>
-                                {profile.email || 'N/A'}
-                              </span>
-                            </Typography>
-                            <Typography sx={{ fontWeight: 700 }}>
-                              Contact Number:{' '}
-                              <span style={{ fontWeight: 400 }}>
-                                {profile.contactNo || 'N/A'}
-                              </span>
-                            </Typography>
-                          </>
-                        )}
-
-                        {!isEditing && (
-                          <Typography sx={{ fontWeight: 700 }}>
-                            User Type:{' '}
-                            <span
-                              style={{
-                                fontWeight: 400,
-                                textTransform: 'capitalize',
-                              }}
-                            >
-                              {profile.userType || 'N/A'}
-                            </span>
-                          </Typography>
-                        )}
-                      </Box>
-
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 2,
-                          width: { xs: '100%', md: '70%' },
-                        }}
-                      >
+                      {/* Personal Information Section */}
+                      <Box sx={{ mb: 3 }}>
                         <Box
                           sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            bgcolor: '#e9e9e9',
-                            borderRadius: 4,
-                            p: 1.2,
+                            mb: 2,
+                            pb: 1,
+                            borderBottom: '2px solid #f0f0f0',
+                          }}
+                        >
+                          <HiUser
+                            size={24}
+                            color="#c10007"
+                            style={{ marginRight: '8px' }}
+                          />
+                          <Typography
+                            variant="h6"
+                            sx={{ fontWeight: 600, color: '#c10007' }}
+                          >
+                            Personal Information
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 2,
                           }}
                         >
                           {isEditing ? (
-                            <TextField
-                              label="Username"
-                              name="username"
-                              value={draft.username || ''}
-                              onChange={handleChange}
-                              disabled
-                              sx={{
-                                flex: 1,
-                                background: 'transparent',
-                                '& .MuiInputBase-input.Mui-disabled': {
-                                  WebkitTextFillColor: '#666',
-                                  cursor: 'not-allowed',
-                                },
-                              }}
-                              size="small"
-                              sx={{ flex: 1, background: 'transparent' }}
-                              fullWidth={true}
-                              required
-                            />
-                          ) : (
-                            <Typography sx={{ flex: 1, pl: 2 }}>
-                              <strong>Username:</strong>{' '}
-                              {profile.username || 'N/A'}
-                            </Typography>
-                          )}
-                        </Box>
-
-                        {isEditing && (
-                          <Box
-                            sx={{
-                              mt: 2,
-                              p: 2,
-                              bgcolor: '#f5f5f5',
-                              borderRadius: 2,
-                            }}
-                          >
-                            <Typography
-                              variant="subtitle2"
-                              sx={{ mb: 2, fontWeight: 600 }}
-                            >
-                              Change Password (Optional)
-                            </Typography>
                             <Box
                               sx={{
                                 display: 'flex',
-                                flexDirection: 'column',
                                 gap: 2,
+                                flexDirection: { xs: 'column', md: 'row' },
                               }}
                             >
                               <TextField
-                                label="Current Password"
-                                type="password"
-                                value={passwordData.currentPassword}
-                                onChange={handlePasswordChange}
-                                name="currentPassword"
+                                label="First Name"
+                                name="firstName"
+                                value={draft.firstName || ''}
+                                onChange={handleChange}
                                 size="small"
                                 fullWidth
+                                required
+                                disabled
+                                sx={{
+                                  '& .MuiInputBase-input.Mui-disabled': {
+                                    WebkitTextFillColor: '#666',
+                                    cursor: 'not-allowed',
+                                  },
+                                }}
                               />
                               <TextField
-                                label="New Password"
-                                type="password"
-                                value={passwordData.newPassword}
-                                onChange={handlePasswordChange}
-                                name="newPassword"
+                                label="Last Name"
+                                name="lastName"
+                                value={draft.lastName || ''}
+                                onChange={handleChange}
                                 size="small"
                                 fullWidth
-                                helperText="Leave blank to keep current password"
-                              />
-                              <TextField
-                                label="Confirm New Password"
-                                type="password"
-                                value={passwordData.confirmPassword}
-                                onChange={handlePasswordChange}
-                                name="confirmPassword"
-                                size="small"
-                                fullWidth
+                                required
+                                disabled
+                                sx={{
+                                  '& .MuiInputBase-input.Mui-disabled': {
+                                    WebkitTextFillColor: '#666',
+                                    cursor: 'not-allowed',
+                                  },
+                                }}
                               />
                             </Box>
-                          </Box>
-                        )}
+                          ) : (
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                gap: 3,
+                                flexDirection: { xs: 'column', md: 'row' },
+                              }}
+                            >
+                              <Box sx={{ flex: 1 }}>
+                                <Typography
+                                  variant="caption"
+                                  sx={{ color: '#666', fontSize: '0.75rem' }}
+                                >
+                                  First Name
+                                </Typography>
+                                <Typography
+                                  sx={{ fontWeight: 600, fontSize: '1rem' }}
+                                >
+                                  {profile.firstName || 'N/A'}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ flex: 1 }}>
+                                <Typography
+                                  variant="caption"
+                                  sx={{ color: '#666', fontSize: '0.75rem' }}
+                                >
+                                  Last Name
+                                </Typography>
+                                <Typography
+                                  sx={{ fontWeight: 600, fontSize: '1rem' }}
+                                >
+                                  {profile.lastName || 'N/A'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          )}
 
-                        {error && (
-                          <Alert severity="error" sx={{ mt: 2 }}>
-                            {error}
-                          </Alert>
-                        )}
+                          {isEditing ? (
+                            <TextField
+                              label="Address"
+                              name="address"
+                              value={draft.address || ''}
+                              onChange={handleChange}
+                              size="small"
+                              fullWidth
+                              InputProps={{
+                                startAdornment: (
+                                  <HiMapPin
+                                    size={20}
+                                    color="#666"
+                                    style={{ marginRight: '8px' }}
+                                  />
+                                ),
+                              }}
+                            />
+                          ) : (
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{ color: '#666', fontSize: '0.75rem' }}
+                              >
+                                Address
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1,
+                                }}
+                              >
+                                <HiMapPin size={18} color="#666" />
+                                <Typography
+                                  sx={{ fontWeight: 600, fontSize: '1rem' }}
+                                >
+                                  {profile.address || 'N/A'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          )}
+                        </Box>
+                      </Box>
 
-                        {isEditing && (
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              flexDirection: { xs: 'column', md: 'row' },
-                              gap: 1,
-                              width: '100%',
-                              mt: 2,
-                            }}
+                      {/* Contact Information Section */}
+                      <Box sx={{ mb: 3 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            mb: 2,
+                            pb: 1,
+                            borderBottom: '2px solid #f0f0f0',
+                          }}
+                        >
+                          <HiPhone
+                            size={24}
+                            color="#c10007"
+                            style={{ marginRight: '8px' }}
+                          />
+                          <Typography
+                            variant="h6"
+                            sx={{ fontWeight: 600, color: '#c10007' }}
                           >
-                            <Button
-                              variant="contained"
-                              color="primary"
-                              size="small"
-                              startIcon={<SaveIcon />}
-                              onClick={handleSaveClick}
-                              sx={{ width: { xs: '100%', md: '100%' } }}
+                            Contact Information
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 2,
+                          }}
+                        >
+                          {isEditing ? (
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                gap: 2,
+                                flexDirection: { xs: 'column', md: 'row' },
+                              }}
                             >
-                              Save Changes
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              color="inherit"
-                              size="small"
-                              startIcon={<CloseIcon />}
-                              onClick={() => setOpenInfoCancelModal(true)}
-                              sx={{ width: { xs: '100%', md: '100%' } }}
+                              <TextField
+                                label="Email"
+                                name="email"
+                                type="email"
+                                value={draft.email || ''}
+                                onChange={handleChange}
+                                size="small"
+                                fullWidth
+                                required
+                                InputProps={{
+                                  startAdornment: (
+                                    <HiEnvelope
+                                      size={20}
+                                      color="#666"
+                                      style={{ marginRight: '8px' }}
+                                    />
+                                  ),
+                                }}
+                              />
+                              <TextField
+                                label="Contact Number"
+                                name="contactNo"
+                                value={draft.contactNo || ''}
+                                onChange={handleChange}
+                                size="small"
+                                fullWidth
+                                placeholder="e.g., 09123456789"
+                                InputProps={{
+                                  startAdornment: (
+                                    <HiPhone
+                                      size={20}
+                                      color="#666"
+                                      style={{ marginRight: '8px' }}
+                                    />
+                                  ),
+                                }}
+                              />
+                            </Box>
+                          ) : (
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                gap: 3,
+                                flexDirection: { xs: 'column', md: 'row' },
+                              }}
                             >
-                              Cancel
-                            </Button>
-                          </Box>
-                        )}
+                              <Box sx={{ flex: 1 }}>
+                                <Typography
+                                  variant="caption"
+                                  sx={{ color: '#666', fontSize: '0.75rem' }}
+                                >
+                                  Email
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                  }}
+                                >
+                                  <HiEnvelope size={18} color="#666" />
+                                  <Typography
+                                    sx={{ fontWeight: 600, fontSize: '1rem' }}
+                                  >
+                                    {profile.email || 'N/A'}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                              <Box sx={{ flex: 1 }}>
+                                <Typography
+                                  variant="caption"
+                                  sx={{ color: '#666', fontSize: '0.75rem' }}
+                                >
+                                  Contact Number
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                  }}
+                                >
+                                  <HiPhone size={18} color="#666" />
+                                  <Typography
+                                    sx={{ fontWeight: 600, fontSize: '1rem' }}
+                                  >
+                                    {profile.contactNo || 'N/A'}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </Box>
+                          )}
+
+                          {!isEditing && (
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{ color: '#666', fontSize: '0.75rem' }}
+                              >
+                                User Type
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1,
+                                }}
+                              >
+                                <HiShieldCheck size={18} color="#666" />
+                                <Typography
+                                  sx={{
+                                    fontWeight: 600,
+                                    fontSize: '1rem',
+                                    textTransform: 'capitalize',
+                                  }}
+                                >
+                                  {profile.userType || 'N/A'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          )}
+                        </Box>
+                      </Box>
+
+                      {/* Account Security Section */}
+                      <Box sx={{ mb: 2 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            mb: 2,
+                            pb: 1,
+                            borderBottom: '2px solid #f0f0f0',
+                          }}
+                        >
+                          <HiLockClosed
+                            size={24}
+                            color="#c10007"
+                            style={{ marginRight: '8px' }}
+                          />
+                          <Typography
+                            variant="h6"
+                            sx={{ fontWeight: 600, color: '#c10007' }}
+                          >
+                            Account Security
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 2,
+                          }}
+                        >
+                          {!isEditing && (
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{ color: '#666', fontSize: '0.75rem' }}
+                              >
+                                Username
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1,
+                                }}
+                              >
+                                <HiIdentification size={18} color="#666" />
+                                <Typography
+                                  sx={{ fontWeight: 600, fontSize: '1rem' }}
+                                >
+                                  {profile.username || 'N/A'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          )}
+                          {isEditing && (
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: '#666',
+                                  fontSize: '0.75rem',
+                                  mb: 0.5,
+                                  display: 'block',
+                                }}
+                              >
+                                Username
+                              </Typography>
+                              <TextField
+                                name="username"
+                                value={draft.username || ''}
+                                onChange={handleChange}
+                                disabled
+                                size="small"
+                                fullWidth
+                                sx={{
+                                  '& .MuiInputBase-input.Mui-disabled': {
+                                    WebkitTextFillColor: '#666',
+                                    cursor: 'not-allowed',
+                                  },
+                                }}
+                                InputProps={{
+                                  startAdornment: (
+                                    <HiIdentification
+                                      size={20}
+                                      color="#666"
+                                      style={{ marginRight: '8px' }}
+                                    />
+                                  ),
+                                }}
+                              />
+                            </Box>
+                          )}
+
+                          {isEditing && (
+                            <Box
+                              sx={{
+                                mt: 2,
+                                p: 2.5,
+                                bgcolor: '#f8f9fa',
+                                borderRadius: 2,
+                                border: '1px solid #e0e0e0',
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  mb: 2,
+                                }}
+                              >
+                                <HiLockClosed
+                                  size={20}
+                                  color="#c10007"
+                                  style={{ marginRight: '8px' }}
+                                />
+                                <Typography
+                                  variant="subtitle2"
+                                  sx={{ fontWeight: 600, color: '#c10007' }}
+                                >
+                                  Change Password (Optional)
+                                </Typography>
+                              </Box>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 2,
+                                }}
+                              >
+                                <TextField
+                                  label="Current Password"
+                                  type="password"
+                                  value={passwordData.currentPassword}
+                                  onChange={handlePasswordChange}
+                                  name="currentPassword"
+                                  size="small"
+                                  fullWidth
+                                />
+                                <TextField
+                                  label="New Password"
+                                  type="password"
+                                  value={passwordData.newPassword}
+                                  onChange={handlePasswordChange}
+                                  name="newPassword"
+                                  size="small"
+                                  fullWidth
+                                  helperText="Leave blank to keep current password"
+                                />
+                                <TextField
+                                  label="Confirm New Password"
+                                  type="password"
+                                  value={passwordData.confirmPassword}
+                                  onChange={handlePasswordChange}
+                                  name="confirmPassword"
+                                  size="small"
+                                  fullWidth
+                                />
+                              </Box>
+                            </Box>
+                          )}
+
+                          {error && (
+                            <Alert severity="error" sx={{ mt: 2 }}>
+                              {error}
+                            </Alert>
+                          )}
+
+                          {isEditing && (
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: { xs: 'column', md: 'row' },
+                                gap: 1,
+                                width: '100%',
+                                mt: 2,
+                              }}
+                            >
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                size="small"
+                                startIcon={<SaveIcon />}
+                                onClick={handleSaveClick}
+                                sx={{ width: { xs: '100%', md: '100%' } }}
+                              >
+                                Save Changes
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                color="inherit"
+                                size="small"
+                                startIcon={<CloseIcon />}
+                                onClick={() => setOpenInfoCancelModal(true)}
+                                sx={{ width: { xs: '100%', md: '100%' } }}
+                              >
+                                Cancel
+                              </Button>
+                            </Box>
+                          )}
+                        </Box>
                       </Box>
                     </Box>
                   </Box>

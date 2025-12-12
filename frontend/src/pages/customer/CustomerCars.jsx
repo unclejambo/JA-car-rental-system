@@ -369,55 +369,82 @@ function CustomerCars() {
             {!loading && !error && (
               <Box
                 sx={{
+                  background:
+                    'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+                  borderRadius: 3,
+                  p: { xs: 2, md: 3 },
+                  mb: { xs: 2.5, sm: 3 },
+                  boxShadow: '0 4px 12px rgba(193, 0, 7, 0.15)',
                   display: 'flex',
-                  alignItems: { xs: 'flex-start', sm: 'center' },
+                  alignItems: 'center',
                   justifyContent: 'space-between',
                   flexWrap: 'wrap',
-                  gap: { xs: 1, sm: 2 },
-                  mb: { xs: 2.5, sm: 3 }, // spacing below header
+                  gap: 2,
                 }}
               >
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography
-                    variant="h4"
-                    component="h1"
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    flex: 1,
+                  }}
+                >
+                  <Box
                     sx={{
-                      fontWeight: 'bold',
-                      color: '#c10007',
-                      fontSize: { xs: '1.15rem', sm: '1.4rem', md: '1.6rem' },
-                      minWidth: 0,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      borderRadius: '50%',
+                      p: { xs: 1.5, md: 2 },
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
                     <HiMiniTruck
                       style={{
-                        verticalAlign: '-3px',
-                        marginRight: '8px',
-                        fontSize: '1.1em',
+                        fontSize: '2rem',
+                        color: '#fff',
                       }}
                     />
-                    J and A Cars
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ fontSize: { xs: '0.75rem', sm: '1rem' }, mt: 0.5 }}
-                  >
-                    {
-                      filteredCars.filter(
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography
+                      variant="h4"
+                      component="h1"
+                      sx={{
+                        fontWeight: 700,
+                        color: '#fff',
+                        fontSize: {
+                          xs: '1.25rem',
+                          sm: '1.5rem',
+                          md: '1.75rem',
+                        },
+                        mb: 0.5,
+                      }}
+                    >
+                      J and A Cars
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontSize: { xs: '0.875rem', md: '1rem' },
+                      }}
+                    >
+                      {
+                        filteredCars.filter(
+                          (car) => car.car_status?.toLowerCase() === 'available'
+                        ).length
+                      }{' '}
+                      car
+                      {filteredCars.filter(
                         (car) => car.car_status?.toLowerCase() === 'available'
-                      ).length
-                    }{' '}
-                    car
-                    {filteredCars.filter(
-                      (car) => car.car_status?.toLowerCase() === 'available'
-                    ).length !== 1
-                      ? 's'
-                      : ''}{' '}
-                    available and ready for rental
-                  </Typography>
+                      ).length !== 1
+                        ? 's'
+                        : ''}{' '}
+                      available and ready for rental
+                    </Typography>
+                  </Box>
                 </Box>
 
                 <Button
@@ -804,7 +831,8 @@ function CustomerCars() {
                                     color="text.secondary"
                                     sx={{ mb: 1 }}
                                   >
-                                    {car.year} • {car.no_of_seat} seats • {car.isManual ? 'Manual' : 'Automatic'}
+                                    {car.year} • {car.no_of_seat} seats •{' '}
+                                    {car.isManual ? 'Manual' : 'Automatic'}
                                   </Typography>
 
                                   {/* Plate Number */}

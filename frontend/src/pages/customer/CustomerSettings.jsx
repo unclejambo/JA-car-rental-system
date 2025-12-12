@@ -12,6 +12,7 @@ import {
   Snackbar,
   Alert,
   CircularProgress,
+  Stack,
 } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import BadgeIcon from '@mui/icons-material/Badge';
@@ -21,7 +22,18 @@ import CloseIcon from '@mui/icons-material/Close';
 import Header from '../../ui/components/Header';
 import CustomerSideBar from '../../ui/components/CustomerSideBar';
 import Loading from '../../ui/components/Loading';
-import { HiCog8Tooth } from 'react-icons/hi2';
+import {
+  HiCog8Tooth,
+  HiUser,
+  HiMapPin,
+  HiEnvelope,
+  HiPhone,
+  HiCake,
+  HiIdentification,
+  HiLink,
+  HiLockClosed,
+  HiBell,
+} from 'react-icons/hi2';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import { useCustomerStore } from '../../store/customer';
 import SaveCancelModal from '../../ui/components/modal/SaveCancelModal';
@@ -931,10 +943,8 @@ export default function CustomerSettings() {
                 width: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                backgroundColor: '#f9f9f9',
-                p: { xs: 1, sm: 2, md: 2, lg: 2 },
-                boxShadow:
-                  '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 4px 0 6px -1px rgba(0, 0, 0, 0.1), -4px 0 6px -1px rgba(0, 0, 0, 0.1)',
+                backgroundColor: '#f5f5f5',
+                p: { xs: 1, sm: 2, md: 3 },
                 overflow: 'hidden',
                 height: 'auto',
                 boxSizing: 'border-box',
@@ -949,44 +959,37 @@ export default function CustomerSettings() {
 
               {!loading && (
                 <>
+                  {/* Modern Gradient Header */}
                   <Box
-                    sx={{ display: 'flex', justifyContent: 'space-between' }}
+                    sx={{
+                      background:
+                        'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+                      borderRadius: 3,
+                      p: 3,
+                      mb: 3,
+                      color: '#fff',
+                      boxShadow: '0 4px 12px rgba(193, 0, 7, 0.3)',
+                    }}
                   >
-                    {/* Page Header */}
-                    <Box sx={{ mb: 3 }}>
-                      <Box
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <HiCog8Tooth size={32} style={{ marginRight: '12px' }} />
+                      <Typography
+                        variant="h4"
                         sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          mb: 1,
+                          fontSize: {
+                            xs: '1.5rem',
+                            sm: '2rem',
+                            md: '2.125rem',
+                          },
+                          fontWeight: 'bold',
                         }}
                       >
-                        <Typography
-                          variant="h4"
-                          sx={{
-                            fontSize: {
-                              xs: '1.5rem',
-                              sm: '2rem',
-                              md: '2.125rem',
-                            },
-                            fontWeight: 'bold',
-                            color: '#c10007',
-                          }}
-                        >
-                          <HiCog8Tooth
-                            style={{
-                              verticalAlign: '-3px',
-                              marginRight: '8px',
-                            }}
-                          />
-                          Account Settings
-                        </Typography>
-                      </Box>
-                      <Typography variant="body1" color="text.secondary">
-                        Manage your profile and license information
+                        Account Settings
                       </Typography>
                     </Box>
+                    <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                      Manage your profile and license information
+                    </Typography>
                   </Box>
                   <Box
                     sx={{
@@ -1058,11 +1061,11 @@ export default function CustomerSettings() {
                       sx={{
                         maxWidth: '100%',
                         bgcolor: '#ffffff',
-                        borderRadius: 2,
-                        p: 2,
-                        pb: isEditing ? 1 : 2,
-                        boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
-                        border: '2px solid #e6e6e6',
+                        borderRadius: 3,
+                        p: { xs: 2, md: 3 },
+                        pb: isEditing ? 2 : 3,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        border: '1px solid #e0e0e0',
                         position: 'relative',
                       }}
                     >
@@ -1081,13 +1084,9 @@ export default function CustomerSettings() {
                           {/* Edit / Save controls */}
                           <Box
                             sx={{
-                              position: { xs: 'relative', md: 'relative' },
-                              top: { md: 12 },
-                              right: { md: 12 },
-                              zIndex: 30,
+                              position: 'relative',
                               display: 'flex',
                               justifyContent: 'flex-end',
-
                               mb: { xs: 1, md: 0 },
                             }}
                           >
@@ -1096,10 +1095,11 @@ export default function CustomerSettings() {
                                 onClick={handleEditToggle}
                                 sx={{
                                   position: 'absolute',
-                                  top: 10,
-                                  right: 40,
+                                  top: { xs: -8, md: -10 },
+                                  right: { xs: 8, md: 40 },
                                   backgroundColor: '#fff',
                                   boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                                  zIndex: 30,
                                   '&:hover': { backgroundColor: '#1565c0' },
                                 }}
                               >
@@ -1218,268 +1218,596 @@ export default function CustomerSettings() {
                                 width: '100%',
                               }}
                             >
-                              <Box
-                                sx={{
-                                  mb: 2,
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: 1,
-                                }}
-                              >
-                                {isEditing ? (
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      gap: 1,
-                                      flexDirection: {
-                                        xs: 'column',
-                                        md: 'row',
-                                      },
-                                    }}
-                                  >
-                                    <TextField
-                                      label="First Name"
-                                      name="firstName"
-                                      value={draft.firstName}
-                                      onChange={handleChange}
-                                      size="small"
-                                      fullWidth
-                                      disabled
-                                      sx={{
-                                        '& .MuiInputBase-input.Mui-disabled': {
-                                          WebkitTextFillColor: '#666',
-                                          cursor: 'not-allowed',
-                                        },
-                                      }}
-                                    />
-                                    <TextField
-                                      label="Last Name"
-                                      name="lastName"
-                                      value={draft.lastName}
-                                      onChange={handleChange}
-                                      size="small"
-                                      fullWidth
-                                      disabled
-                                      sx={{
-                                        '& .MuiInputBase-input.Mui-disabled': {
-                                          WebkitTextFillColor: '#666',
-                                          cursor: 'not-allowed',
-                                        },
-                                      }}
-                                    />
-                                  </Box>
-                                ) : (
-                                  <Typography sx={{ fontWeight: 700 }}>
-                                    First Name:{' '}
-                                    <span style={{ fontWeight: 400 }}>
-                                      {profile.firstName}
-                                    </span>
-                                  </Typography>
-                                )}
-                                {!isEditing && (
-                                  <Typography sx={{ fontWeight: 700 }}>
-                                    Last Name:{' '}
-                                    <span style={{ fontWeight: 400 }}>
-                                      {profile.lastName}
-                                    </span>
-                                  </Typography>
-                                )}
-                                {isEditing ? (
-                                  <TextField
-                                    label="Address"
-                                    name="address"
-                                    value={draft.address}
-                                    onChange={handleChange}
-                                    size="small"
-                                    fullWidth
+                              {/* Personal Information Section */}
+                              <Box sx={{ mb: 3 }}>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    mb: 2,
+                                    pb: 1,
+                                    borderBottom: '2px solid #f0f0f0',
+                                  }}
+                                >
+                                  <HiUser
+                                    size={24}
+                                    color="#c10007"
+                                    style={{ marginRight: '8px' }}
                                   />
-                                ) : (
-                                  <Typography sx={{ fontWeight: 700 }}>
-                                    Address:{' '}
-                                    <span style={{ fontWeight: 400 }}>
-                                      {profile.address}
-                                    </span>
-                                  </Typography>
-                                )}
-                                {isEditing ? (
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      gap: 1,
-                                      flexDirection: {
-                                        xs: 'column',
-                                        md: 'row',
-                                      },
-                                    }}
+                                  <Typography
+                                    variant="h6"
+                                    sx={{ fontWeight: 600, color: '#c10007' }}
                                   >
-                                    <TextField
-                                      label="Email"
-                                      name="email"
-                                      value={draft.email}
-                                      onChange={handleChange}
-                                      size="small"
-                                      fullWidth
-                                    />
-                                    <TextField
-                                      label="Contact Number"
-                                      name="contactNumber"
-                                      value={draft.contactNumber}
-                                      onChange={handleChange}
-                                      size="small"
-                                      fullWidth
-                                    />
-                                  </Box>
-                                ) : (
-                                  <>
-                                    <Typography sx={{ fontWeight: 700 }}>
-                                      Email:{' '}
-                                      <span style={{ fontWeight: 400 }}>
-                                        {profile.email}
-                                      </span>
-                                    </Typography>
-                                    <Typography sx={{ fontWeight: 700 }}>
-                                      Contact Number:{' '}
-                                      <span style={{ fontWeight: 400 }}>
-                                        {profile.contactNumber}
-                                      </span>
-                                    </Typography>
-                                  </>
-                                )}
-                                {isEditing ? (
-                                  <TextField
-                                    label="Social Media Link"
-                                    name="socialMediaLink"
-                                    value={draft.socialMediaLink}
-                                    onChange={handleChange}
-                                    size="small"
-                                    fullWidth
-                                    placeholder="Facebook, Instagram, etc."
-                                  />
-                                ) : (
-                                  <Typography sx={{ fontWeight: 700 }}>
-                                    Social Media Link:{' '}
-                                    <span style={{ fontWeight: 400 }}>
-                                      {profile.socialMediaLink ||
-                                        'Not provided'}
-                                    </span>
+                                    Personal Information
                                   </Typography>
-                                )}
-                              </Box>
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: 2,
-                                  width: { xs: '100%', md: '70%' },
-                                }}
-                              >
+                                </Box>
                                 <Box
                                   sx={{
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: 1,
+                                    gap: 2,
                                   }}
                                 >
-                                  {/* Username */}
-                                  <Typography sx={{ fontWeight: 700 }}>
-                                    Username:
-                                  </Typography>
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      bgcolor: '#e9e9e9',
-                                      borderRadius: 4,
-                                      p: 1.2,
-                                    }}
-                                  >
-                                    {isEditing ? (
+                                  {isEditing ? (
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        gap: 2,
+                                        flexDirection: {
+                                          xs: 'column',
+                                          md: 'row',
+                                        },
+                                      }}
+                                    >
                                       <TextField
-                                        name="username"
-                                        value={draft.username}
+                                        label="First Name"
+                                        name="firstName"
+                                        value={draft.firstName}
                                         onChange={handleChange}
                                         size="small"
+                                        fullWidth
+                                        disabled
                                         sx={{
-                                          flex: 1,
-                                          background: 'transparent',
                                           '& .MuiInputBase-input.Mui-disabled':
                                             {
                                               WebkitTextFillColor: '#666',
                                               cursor: 'not-allowed',
                                             },
                                         }}
+                                      />
+                                      <TextField
+                                        label="Last Name"
+                                        name="lastName"
+                                        value={draft.lastName}
+                                        onChange={handleChange}
+                                        size="small"
                                         fullWidth
                                         disabled
+                                        sx={{
+                                          '& .MuiInputBase-input.Mui-disabled':
+                                            {
+                                              WebkitTextFillColor: '#666',
+                                              cursor: 'not-allowed',
+                                            },
+                                        }}
                                       />
-                                    ) : (
-                                      <Typography sx={{ flex: 1, pl: 2 }}>
-                                        {profile.username}
-                                      </Typography>
-                                    )}
-                                  </Box>
-
-                                  {/* Password change area (only during edit) */}
-                                  {isEditing && (
+                                    </Box>
+                                  ) : (
                                     <Box
                                       sx={{
-                                        mt: 2,
-                                        p: 2,
-                                        bgcolor: '#f5f5f5',
-                                        borderRadius: 2,
+                                        display: 'flex',
+                                        gap: 3,
+                                        flexDirection: {
+                                          xs: 'column',
+                                          md: 'row',
+                                        },
                                       }}
                                     >
+                                      <Box sx={{ flex: 1 }}>
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            color: '#666',
+                                            fontSize: '0.75rem',
+                                          }}
+                                        >
+                                          First Name
+                                        </Typography>
+                                        <Typography
+                                          sx={{
+                                            fontWeight: 600,
+                                            fontSize: '1rem',
+                                          }}
+                                        >
+                                          {profile.firstName}
+                                        </Typography>
+                                      </Box>
+                                      <Box sx={{ flex: 1 }}>
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            color: '#666',
+                                            fontSize: '0.75rem',
+                                          }}
+                                        >
+                                          Last Name
+                                        </Typography>
+                                        <Typography
+                                          sx={{
+                                            fontWeight: 600,
+                                            fontSize: '1rem',
+                                          }}
+                                        >
+                                          {profile.lastName}
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                  )}
+                                  {isEditing ? (
+                                    <TextField
+                                      label="Address"
+                                      name="address"
+                                      value={draft.address}
+                                      onChange={handleChange}
+                                      size="small"
+                                      fullWidth
+                                      InputProps={{
+                                        startAdornment: (
+                                          <HiMapPin
+                                            size={20}
+                                            color="#666"
+                                            style={{ marginRight: '8px' }}
+                                          />
+                                        ),
+                                      }}
+                                    />
+                                  ) : (
+                                    <Box>
                                       <Typography
-                                        variant="subtitle2"
-                                        sx={{ mb: 2, fontWeight: 600 }}
+                                        variant="caption"
+                                        sx={{
+                                          color: '#666',
+                                          fontSize: '0.75rem',
+                                        }}
                                       >
-                                        Change Password (Optional)
+                                        Address
                                       </Typography>
                                       <Box
                                         sx={{
                                           display: 'flex',
-                                          flexDirection: 'column',
-                                          gap: 2,
+                                          alignItems: 'center',
+                                          gap: 1,
                                         }}
                                       >
-                                        <TextField
-                                          label="Current Password"
-                                          type="password"
-                                          name="currentPassword"
-                                          value={passwordData.currentPassword}
-                                          onChange={handlePasswordChange}
-                                          size="small"
-                                          fullWidth
-                                        />
-                                        <TextField
-                                          label="New Password"
-                                          type="password"
-                                          name="newPassword"
-                                          value={passwordData.newPassword}
-                                          onChange={handlePasswordChange}
-                                          size="small"
-                                          fullWidth
-                                          helperText="Leave blank to keep current password"
-                                        />
-                                        <TextField
-                                          label="Confirm New Password"
-                                          type="password"
-                                          name="confirmPassword"
-                                          value={passwordData.confirmPassword}
-                                          onChange={handlePasswordChange}
-                                          size="small"
-                                          fullWidth
-                                        />
+                                        <HiMapPin size={18} color="#666" />
+                                        <Typography
+                                          sx={{
+                                            fontWeight: 600,
+                                            fontSize: '1rem',
+                                          }}
+                                        >
+                                          {profile.address}
+                                        </Typography>
                                       </Box>
                                     </Box>
                                   )}
                                 </Box>
+                              </Box>
+
+                              {/* Contact Information Section */}
+                              <Box sx={{ mb: 3 }}>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    mb: 2,
+                                    pb: 1,
+                                    borderBottom: '2px solid #f0f0f0',
+                                  }}
+                                >
+                                  <HiPhone
+                                    size={24}
+                                    color="#c10007"
+                                    style={{ marginRight: '8px' }}
+                                  />
+                                  <Typography
+                                    variant="h6"
+                                    sx={{ fontWeight: 600, color: '#c10007' }}
+                                  >
+                                    Contact Information
+                                  </Typography>
+                                </Box>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 2,
+                                  }}
+                                >
+                                  {isEditing ? (
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        gap: 2,
+                                        flexDirection: {
+                                          xs: 'column',
+                                          md: 'row',
+                                        },
+                                      }}
+                                    >
+                                      <TextField
+                                        label="Email"
+                                        name="email"
+                                        value={draft.email}
+                                        onChange={handleChange}
+                                        size="small"
+                                        fullWidth
+                                        InputProps={{
+                                          startAdornment: (
+                                            <HiEnvelope
+                                              size={20}
+                                              color="#666"
+                                              style={{ marginRight: '8px' }}
+                                            />
+                                          ),
+                                        }}
+                                      />
+                                      <TextField
+                                        label="Contact Number"
+                                        name="contactNumber"
+                                        value={draft.contactNumber}
+                                        onChange={handleChange}
+                                        size="small"
+                                        fullWidth
+                                        InputProps={{
+                                          startAdornment: (
+                                            <HiPhone
+                                              size={20}
+                                              color="#666"
+                                              style={{ marginRight: '8px' }}
+                                            />
+                                          ),
+                                        }}
+                                      />
+                                    </Box>
+                                  ) : (
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        gap: 3,
+                                        flexDirection: {
+                                          xs: 'column',
+                                          md: 'row',
+                                        },
+                                      }}
+                                    >
+                                      <Box sx={{ flex: 1 }}>
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            color: '#666',
+                                            fontSize: '0.75rem',
+                                          }}
+                                        >
+                                          Email
+                                        </Typography>
+                                        <Box
+                                          sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                          }}
+                                        >
+                                          <HiEnvelope size={18} color="#666" />
+                                          <Typography
+                                            sx={{
+                                              fontWeight: 600,
+                                              fontSize: '1rem',
+                                            }}
+                                          >
+                                            {profile.email}
+                                          </Typography>
+                                        </Box>
+                                      </Box>
+                                      <Box sx={{ flex: 1 }}>
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            color: '#666',
+                                            fontSize: '0.75rem',
+                                          }}
+                                        >
+                                          Contact Number
+                                        </Typography>
+                                        <Box
+                                          sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                          }}
+                                        >
+                                          <HiPhone size={18} color="#666" />
+                                          <Typography
+                                            sx={{
+                                              fontWeight: 600,
+                                              fontSize: '1rem',
+                                            }}
+                                          >
+                                            {profile.contactNumber}
+                                          </Typography>
+                                        </Box>
+                                      </Box>
+                                    </Box>
+                                  )}
+                                  {isEditing ? (
+                                    <TextField
+                                      label="Social Media Link"
+                                      name="socialMediaLink"
+                                      value={draft.socialMediaLink}
+                                      onChange={handleChange}
+                                      size="small"
+                                      fullWidth
+                                      placeholder="Facebook, Instagram, etc."
+                                      InputProps={{
+                                        startAdornment: (
+                                          <HiLink
+                                            size={20}
+                                            color="#666"
+                                            style={{ marginRight: '8px' }}
+                                          />
+                                        ),
+                                      }}
+                                    />
+                                  ) : (
+                                    <Box>
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          color: '#666',
+                                          fontSize: '0.75rem',
+                                        }}
+                                      >
+                                        Social Media Link
+                                      </Typography>
+                                      <Box
+                                        sx={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: 1,
+                                        }}
+                                      >
+                                        <HiLink size={18} color="#666" />
+                                        <Typography
+                                          sx={{
+                                            fontWeight: 600,
+                                            fontSize: '1rem',
+                                          }}
+                                        >
+                                          {profile.socialMediaLink ||
+                                            'Not provided'}
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                  )}
+                                </Box>
+                              </Box>
+
+                              {/* Account Security Section */}
+                              <Box sx={{ mb: 2 }}>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    mb: 2,
+                                    pb: 1,
+                                    borderBottom: '2px solid #f0f0f0',
+                                  }}
+                                >
+                                  <HiLockClosed
+                                    size={24}
+                                    color="#c10007"
+                                    style={{ marginRight: '8px' }}
+                                  />
+                                  <Typography
+                                    variant="h6"
+                                    sx={{ fontWeight: 600, color: '#c10007' }}
+                                  >
+                                    Account Security
+                                  </Typography>
+                                </Box>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 2,
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: 1,
+                                    }}
+                                  >
+                                    {/* Username */}
+                                    {!isEditing && (
+                                      <Box>
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            color: '#666',
+                                            fontSize: '0.75rem',
+                                          }}
+                                        >
+                                          Username
+                                        </Typography>
+                                        <Box
+                                          sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                          }}
+                                        >
+                                          <HiIdentification
+                                            size={18}
+                                            color="#666"
+                                          />
+                                          <Typography
+                                            sx={{
+                                              fontWeight: 600,
+                                              fontSize: '1rem',
+                                            }}
+                                          >
+                                            {profile.username}
+                                          </Typography>
+                                        </Box>
+                                      </Box>
+                                    )}
+                                    {isEditing && (
+                                      <Box>
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            color: '#666',
+                                            fontSize: '0.75rem',
+                                            mb: 0.5,
+                                            display: 'block',
+                                          }}
+                                        >
+                                          Username
+                                        </Typography>
+                                        <TextField
+                                          name="username"
+                                          value={draft.username}
+                                          onChange={handleChange}
+                                          size="small"
+                                          fullWidth
+                                          disabled
+                                          sx={{
+                                            '& .MuiInputBase-input.Mui-disabled':
+                                              {
+                                                WebkitTextFillColor: '#666',
+                                                cursor: 'not-allowed',
+                                              },
+                                          }}
+                                          InputProps={{
+                                            startAdornment: (
+                                              <HiIdentification
+                                                size={20}
+                                                color="#666"
+                                                style={{ marginRight: '8px' }}
+                                              />
+                                            ),
+                                          }}
+                                        />
+                                      </Box>
+                                    )}
+
+                                    {/* Password change area (only during edit) */}
+                                    {isEditing && (
+                                      <Box
+                                        sx={{
+                                          mt: 2,
+                                          p: 2.5,
+                                          bgcolor: '#f8f9fa',
+                                          borderRadius: 2,
+                                          border: '1px solid #e0e0e0',
+                                        }}
+                                      >
+                                        <Box
+                                          sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            mb: 2,
+                                          }}
+                                        >
+                                          <HiLockClosed
+                                            size={20}
+                                            color="#c10007"
+                                            style={{ marginRight: '8px' }}
+                                          />
+                                          <Typography
+                                            variant="subtitle2"
+                                            sx={{
+                                              fontWeight: 600,
+                                              color: '#c10007',
+                                            }}
+                                          >
+                                            Change Password (Optional)
+                                          </Typography>
+                                        </Box>
+                                        <Box
+                                          sx={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: 2,
+                                          }}
+                                        >
+                                          <TextField
+                                            label="Current Password"
+                                            type="password"
+                                            name="currentPassword"
+                                            value={passwordData.currentPassword}
+                                            onChange={handlePasswordChange}
+                                            size="small"
+                                            fullWidth
+                                          />
+                                          <TextField
+                                            label="New Password"
+                                            type="password"
+                                            name="newPassword"
+                                            value={passwordData.newPassword}
+                                            onChange={handlePasswordChange}
+                                            size="small"
+                                            fullWidth
+                                            helperText="Leave blank to keep current password"
+                                          />
+                                          <TextField
+                                            label="Confirm New Password"
+                                            type="password"
+                                            name="confirmPassword"
+                                            value={passwordData.confirmPassword}
+                                            onChange={handlePasswordChange}
+                                            size="small"
+                                            fullWidth
+                                          />
+                                        </Box>
+                                      </Box>
+                                    )}
+                                  </Box>
+                                </Box>
+                              </Box>
+
+                              {/* Notification Preferences Section */}
+                              <Box sx={{ mb: 2 }}>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    mb: 2,
+                                    pb: 1,
+                                    borderBottom: '2px solid #f0f0f0',
+                                  }}
+                                >
+                                  <HiBell
+                                    size={24}
+                                    color="#c10007"
+                                    style={{ marginRight: '8px' }}
+                                  />
+                                  <Typography
+                                    variant="h6"
+                                    sx={{ fontWeight: 600, color: '#c10007' }}
+                                  >
+                                    Notification Preferences
+                                  </Typography>
+                                </Box>
                                 {/* CheckBox */}
                                 <Box
                                   sx={{
-                                    mt: 2,
                                     display: 'flex',
                                     flexDirection: 'column',
                                     gap: 0,
+                                    pl: 1,
                                   }}
                                 >
                                   <FormControlLabel
@@ -1517,6 +1845,10 @@ export default function CustomerSettings() {
                                   <Box
                                     sx={{
                                       display: 'flex',
+                                      justifyContent: {
+                                        xs: 'stretch',
+                                        md: 'center',
+                                      },
                                       flexDirection: {
                                         xs: 'column',
                                         md: 'row',
@@ -1527,24 +1859,34 @@ export default function CustomerSettings() {
                                     }}
                                   >
                                     <Button
-                                      variant="contained"
-                                      color="primary"
-                                      size="small"
-                                      startIcon={<SaveIcon />}
-                                      onClick={() => setShowConfirmModal(true)}
-                                    >
-                                      Save Changes
-                                    </Button>
-                                    <Button
                                       variant="outlined"
-                                      color="inherit"
-                                      size="small"
                                       startIcon={<CloseIcon />}
                                       onClick={() =>
                                         setOpenInfoCancelModal(true)
                                       }
+                                      sx={{
+                                        borderColor: '#999',
+                                        color: '#666',
+                                        order: { xs: 2, md: 1 },
+                                        '&:hover': {
+                                          borderColor: '#666',
+                                          bgcolor: 'rgba(0, 0, 0, 0.04)',
+                                        },
+                                      }}
                                     >
                                       Cancel
+                                    </Button>
+                                    <Button
+                                      variant="contained"
+                                      startIcon={<SaveIcon />}
+                                      onClick={() => setShowConfirmModal(true)}
+                                      sx={{
+                                        bgcolor: '#c10007',
+                                        order: { xs: 1, md: 2 },
+                                        '&:hover': { bgcolor: '#a50006' },
+                                      }}
+                                    >
+                                      Save Changes
                                     </Button>
                                   </Box>
                                 )}
@@ -1562,10 +1904,6 @@ export default function CustomerSettings() {
                             position: 'relative',
                             overflow: 'hidden',
                             bgcolor: 'transparent',
-                            display: 'flex',
-                            flexDirection: { xs: 'column', md: 'row' },
-                            gap: 4,
-                            minHeight: '230px',
                           }}
                         >
                           {/* Show "Add License" button if customer has no license and not editing */}
@@ -1578,7 +1916,10 @@ export default function CustomerSettings() {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: 2,
-                                py: 4,
+                                py: 6,
+                                bgcolor: '#f8f9fa',
+                                borderRadius: 3,
+                                border: '2px dashed #e0e0e0',
                               }}
                             >
                               <BadgeIcon
@@ -1588,13 +1929,17 @@ export default function CustomerSettings() {
                                   opacity: 0.5,
                                 }}
                               />
-                              <Typography variant="h6" color="text.secondary">
+                              <Typography
+                                variant="h6"
+                                sx={{ fontWeight: 600, color: '#333' }}
+                              >
                                 No Driver's License on Record
                               </Typography>
                               <Typography
                                 variant="body2"
                                 color="text.secondary"
                                 textAlign="center"
+                                sx={{ maxWidth: 400 }}
                               >
                                 You haven't added your driver's license yet. Add
                                 one to enable self-drive bookings.
@@ -1602,6 +1947,7 @@ export default function CustomerSettings() {
                               <Button
                                 variant="contained"
                                 color="primary"
+                                startIcon={<BadgeIcon />}
                                 onClick={() => {
                                   setDraftLicenseNo('');
                                   setDraftLicenseRestrictions('');
@@ -1610,7 +1956,11 @@ export default function CustomerSettings() {
                                   setDraftLicenseImage(null);
                                   setIsEditingLicense(true);
                                 }}
-                                sx={{ mt: 2 }}
+                                sx={{
+                                  mt: 2,
+                                  bgcolor: '#c10007',
+                                  '&:hover': { bgcolor: '#a50006' },
+                                }}
                               >
                                 Add Driver's License
                               </Button>
@@ -1637,10 +1987,11 @@ export default function CustomerSettings() {
                                   }}
                                   sx={{
                                     position: 'absolute',
-                                    top: 12,
-                                    right: 50,
+                                    top: { xs: -8, md: 12 },
+                                    right: { xs: 8, md: 50 },
                                     backgroundColor: '#fff',
                                     boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                                    zIndex: 10,
                                     '&:hover': { backgroundColor: '#1565c0' },
                                   }}
                                 >
@@ -1648,224 +1999,326 @@ export default function CustomerSettings() {
                                 </IconButton>
                               )}
 
-                              {/* Left Side - License Details */}
-                              <Box
-                                sx={{
-                                  flex: 1,
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: 2,
-                                }}
-                              >
-                                {isEditingLicense ? (
-                                  <>
-                                    <TextField
-                                      label="License No *"
-                                      value={draftLicenseNo}
-                                      onChange={(e) => {
-                                        const formatted =
-                                          formatPhilippineLicense(
-                                            e.target.value
-                                          );
-                                        setDraftLicenseNo(formatted);
-                                      }}
-                                      fullWidth
-                                      required
-                                      placeholder="N01-23-456789"
-                                      helperText="Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)"
-                                      error={
-                                        draftLicenseNo &&
-                                        !validatePhilippineLicense(
-                                          draftLicenseNo
-                                        )
-                                      }
-                                      disabled
-                                      sx={{
-                                        '& .MuiInputBase-input.Mui-disabled': {
-                                          WebkitTextFillColor: '#666',
-                                          cursor: 'not-allowed',
-                                        },
-                                      }}
-                                    />
-                                    <TextField
-                                      label="Restrictions"
-                                      value={draftLicenseRestrictions}
-                                      onChange={(e) =>
-                                        setDraftLicenseRestrictions(
-                                          e.target.value
-                                        )
-                                      }
-                                      fullWidth
-                                      placeholder="e.g., 1, 2, 3"
-                                    />
-                                    <TextField
-                                      label="Expiration Date *"
-                                      value={draftLicenseExpiration}
-                                      onChange={(e) =>
-                                        setDraftLicenseExpiration(
-                                          e.target.value
-                                        )
-                                      }
-                                      type="date"
-                                      InputLabelProps={{ shrink: true }}
-                                      fullWidth
-                                      required
-                                    />
-                                  </>
-                                ) : (
-                                  <>
-                                    <Typography sx={{ fontWeight: 700 }}>
-                                      License No:{' '}
-                                      <span style={{ fontWeight: 400 }}>
-                                        {typeof licenseNo === 'string'
-                                          ? licenseNo
-                                          : 'N/A'}
-                                      </span>
-                                    </Typography>
-                                    <Typography sx={{ fontWeight: 700 }}>
-                                      Restrictions:{' '}
-                                      <span style={{ fontWeight: 400 }}>
-                                        {typeof licenseRestrictions ===
-                                          'string' && licenseRestrictions
-                                          ? licenseRestrictions
-                                          : 'None'}
-                                      </span>
-                                    </Typography>
-                                    <Typography sx={{ fontWeight: 700 }}>
-                                      Expiration Date:{' '}
-                                      <span style={{ fontWeight: 400 }}>
-                                        {licenseExpiration
-                                          ? new Date(licenseExpiration)
-                                              .toISOString()
-                                              .split('T')[0]
-                                          : 'N/A'}
-                                      </span>
-                                    </Typography>
-                                  </>
-                                )}
-                              </Box>
-
-                              {/* Right Side - License Image */}
-                              <Box
-                                sx={{
-                                  flex: 1,
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  alignItems: 'center',
-                                  gap: 2,
-                                }}
-                              >
-                                <Box sx={{ position: 'relative' }}>
-                                  <img
-                                    src={
-                                      isEditingLicense && previewLicenseImage
-                                        ? previewLicenseImage
-                                        : licenseImage
-                                    }
-                                    alt="License"
-                                    style={{
-                                      maxWidth: '300px',
-                                      maxHeight: '200px',
-                                      borderRadius: '12px',
-                                      boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                                      objectFit: 'contain',
-                                      cursor: isEditingLicense
-                                        ? 'default'
-                                        : 'pointer',
-                                      transition: 'transform 0.2s ease',
-                                      opacity: licenseImageUploading ? 0.5 : 1,
+                              {/* License Information Section */}
+                              <Box sx={{ mb: 3 }}>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    mb: 2,
+                                    pb: 1,
+                                    borderBottom: '2px solid #f0f0f0',
+                                  }}
+                                >
+                                  <BadgeIcon
+                                    sx={{
+                                      mr: 1,
+                                      color: '#c10007',
+                                      fontSize: 28,
                                     }}
-                                    onClick={() =>
-                                      !isEditingLicense &&
-                                      !hasNoLicense &&
-                                      setOpenLicenseModal(true)
-                                    }
                                   />
-                                  {/* Upload/Change/Remove Buttons (Only in Edit Mode) */}
-                                  {isEditingLicense && (
+                                  <Typography
+                                    variant="h6"
+                                    sx={{ fontWeight: 600, color: '#c10007' }}
+                                  >
+                                    License Information
+                                  </Typography>
+                                </Box>
+
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    flexDirection: { xs: 'column', md: 'row' },
+                                    gap: 3,
+                                  }}
+                                >
+                                  {/* Left Side - License Details */}
+                                  <Box
+                                    sx={{
+                                      flex: 1,
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: 2,
+                                    }}
+                                  >
+                                    {isEditingLicense ? (
+                                      <>
+                                        <TextField
+                                          label="License Number *"
+                                          value={draftLicenseNo}
+                                          onChange={(e) => {
+                                            const formatted =
+                                              formatPhilippineLicense(
+                                                e.target.value
+                                              );
+                                            setDraftLicenseNo(formatted);
+                                          }}
+                                          fullWidth
+                                          required
+                                          placeholder="N01-23-456789"
+                                          helperText="Format: NXX-YY-ZZZZZZ (e.g., N01-23-456789)"
+                                          error={
+                                            draftLicenseNo &&
+                                            !validatePhilippineLicense(
+                                              draftLicenseNo
+                                            )
+                                          }
+                                          disabled
+                                          sx={{
+                                            '& .MuiInputBase-input.Mui-disabled':
+                                              {
+                                                WebkitTextFillColor: '#666',
+                                                cursor: 'not-allowed',
+                                              },
+                                          }}
+                                          InputProps={{
+                                            startAdornment: (
+                                              <BadgeIcon
+                                                sx={{ mr: 1, color: '#666' }}
+                                              />
+                                            ),
+                                          }}
+                                        />
+                                        <TextField
+                                          label="Restrictions"
+                                          value={draftLicenseRestrictions}
+                                          onChange={(e) =>
+                                            setDraftLicenseRestrictions(
+                                              e.target.value
+                                            )
+                                          }
+                                          fullWidth
+                                          placeholder="e.g., 1, 2, 3"
+                                        />
+                                        <TextField
+                                          label="Expiration Date *"
+                                          value={draftLicenseExpiration}
+                                          onChange={(e) =>
+                                            setDraftLicenseExpiration(
+                                              e.target.value
+                                            )
+                                          }
+                                          type="date"
+                                          InputLabelProps={{ shrink: true }}
+                                          fullWidth
+                                          required
+                                        />
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Box>
+                                          <Typography
+                                            variant="caption"
+                                            sx={{
+                                              color: '#666',
+                                              fontSize: '0.75rem',
+                                            }}
+                                          >
+                                            License Number
+                                          </Typography>
+                                          <Box
+                                            sx={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: 1,
+                                            }}
+                                          >
+                                            <BadgeIcon
+                                              sx={{
+                                                fontSize: 18,
+                                                color: '#666',
+                                              }}
+                                            />
+                                            <Typography
+                                              sx={{
+                                                fontWeight: 600,
+                                                fontSize: '1rem',
+                                              }}
+                                            >
+                                              {typeof licenseNo === 'string'
+                                                ? licenseNo
+                                                : 'N/A'}
+                                            </Typography>
+                                          </Box>
+                                        </Box>
+                                        <Box>
+                                          <Typography
+                                            variant="caption"
+                                            sx={{
+                                              color: '#666',
+                                              fontSize: '0.75rem',
+                                            }}
+                                          >
+                                            Restrictions
+                                          </Typography>
+                                          <Typography
+                                            sx={{
+                                              fontWeight: 600,
+                                              fontSize: '1rem',
+                                            }}
+                                          >
+                                            {typeof licenseRestrictions ===
+                                              'string' && licenseRestrictions
+                                              ? licenseRestrictions
+                                              : 'None'}
+                                          </Typography>
+                                        </Box>
+                                        <Box>
+                                          <Typography
+                                            variant="caption"
+                                            sx={{
+                                              color: '#666',
+                                              fontSize: '0.75rem',
+                                            }}
+                                          >
+                                            Expiration Date
+                                          </Typography>
+                                          <Typography
+                                            sx={{
+                                              fontWeight: 600,
+                                              fontSize: '1rem',
+                                            }}
+                                          >
+                                            {licenseExpiration
+                                              ? new Date(licenseExpiration)
+                                                  .toISOString()
+                                                  .split('T')[0]
+                                              : 'N/A'}
+                                          </Typography>
+                                        </Box>
+                                      </>
+                                    )}
+                                  </Box>
+
+                                  {/* Right Side - License Image */}
+                                  <Box
+                                    sx={{
+                                      flex: 1,
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      gap: 2,
+                                    }}
+                                  >
                                     <Box
                                       sx={{
-                                        mt: 2,
-                                        display: 'flex',
-                                        gap: 1,
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
+                                        position: 'relative',
+                                        border: '2px solid #e0e0e0',
+                                        borderRadius: 3,
+                                        p: 1,
+                                        bgcolor: '#f8f9fa',
                                       }}
                                     >
-                                      {licenseImageUploading ? (
-                                        <CircularProgress size={24} />
-                                      ) : (
-                                        <>
-                                          <Button
-                                            variant="contained"
-                                            component="label"
-                                            startIcon={<PhotoCamera />}
-                                            disabled={savingLicense}
-                                          >
-                                            {previewLicenseImage
-                                              ? 'Change Image'
-                                              : 'Upload Image *'}
-                                            <input
-                                              type="file"
-                                              accept="image/jpeg,image/jpg,image/png,image/webp"
-                                              hidden
-                                              onChange={handleLicenseFileChange}
-                                            />
-                                          </Button>
-                                          {previewLicenseImage && (
+                                      <img
+                                        src={
+                                          isEditingLicense &&
+                                          previewLicenseImage
+                                            ? previewLicenseImage
+                                            : licenseImage
+                                        }
+                                        alt="License"
+                                        style={{
+                                          maxWidth: '300px',
+                                          maxHeight: '200px',
+                                          borderRadius: '8px',
+                                          boxShadow:
+                                            '0 2px 8px rgba(0,0,0,0.1)',
+                                          objectFit: 'contain',
+                                          cursor: isEditingLicense
+                                            ? 'default'
+                                            : 'pointer',
+                                          transition: 'transform 0.2s ease',
+                                          opacity: licenseImageUploading
+                                            ? 0.5
+                                            : 1,
+                                        }}
+                                        onClick={() =>
+                                          !isEditingLicense &&
+                                          !hasNoLicense &&
+                                          setOpenLicenseModal(true)
+                                        }
+                                      />
+                                    </Box>
+
+                                    {/* Upload/Change/Remove Buttons (Only in Edit Mode) */}
+                                    {isEditingLicense && (
+                                      <Stack
+                                        direction="column"
+                                        spacing={1.5}
+                                        sx={{ width: '100%', maxWidth: 300 }}
+                                      >
+                                        {licenseImageUploading ? (
+                                          <CircularProgress size={24} />
+                                        ) : (
+                                          <>
                                             <Button
                                               variant="outlined"
-                                              color="error"
-                                              size="small"
-                                              onClick={() => {
-                                                setDraftLicenseImage(null);
-                                                setPreviewLicenseImage(null);
-                                              }}
+                                              component="label"
+                                              startIcon={<PhotoCamera />}
                                               disabled={savingLicense}
+                                              fullWidth
+                                              sx={{
+                                                borderColor: '#c10007',
+                                                color: '#c10007',
+                                                '&:hover': {
+                                                  borderColor: '#a50006',
+                                                  bgcolor:
+                                                    'rgba(193, 0, 7, 0.04)',
+                                                },
+                                              }}
                                             >
-                                              Remove
+                                              {previewLicenseImage
+                                                ? 'Change Image'
+                                                : 'Upload Image *'}
+                                              <input
+                                                type="file"
+                                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                                hidden
+                                                onChange={
+                                                  handleLicenseFileChange
+                                                }
+                                              />
                                             </Button>
-                                          )}
-                                        </>
-                                      )}
-                                    </Box>
-                                  )}
+                                            {previewLicenseImage && (
+                                              <Button
+                                                variant="outlined"
+                                                color="error"
+                                                fullWidth
+                                                onClick={() => {
+                                                  setDraftLicenseImage(null);
+                                                  setPreviewLicenseImage(null);
+                                                }}
+                                                disabled={savingLicense}
+                                              >
+                                                Remove Image
+                                              </Button>
+                                            )}
+                                          </>
+                                        )}
+                                      </Stack>
+                                    )}
+                                  </Box>
                                 </Box>
                               </Box>
 
-                              {/* Save / Cancel Buttons (centered at bottom) */}
+                              {/* Save / Cancel Buttons */}
                               {isEditingLicense && (
                                 <Box
                                   sx={{
-                                    position: { xs: 'static', md: 'absolute' },
-                                    mt: { xs: 3, md: 0 },
-                                    bottom: { md: 10 },
-                                    left: { md: '50%' },
-                                    transform: { md: 'translateX(-50%)' },
                                     display: 'flex',
-                                    justifyContent: 'center',
+                                    justifyContent: {
+                                      xs: 'stretch',
+                                      md: 'center',
+                                    },
+                                    flexDirection: { xs: 'column', md: 'row' },
                                     gap: 2,
-                                    width: { xs: '100%', md: 'auto' },
+                                    pt: 3,
+                                    mt: 3,
+                                    borderTop: '2px solid #f0f0f0',
                                   }}
                                 >
                                   <Button
-                                    variant="contained"
-                                    color="primary"
-                                    startIcon={<SaveIcon />}
-                                    onClick={() =>
-                                      setOpenLicenseSaveModal(true)
-                                    }
-                                    disabled={
-                                      savingLicense || licenseImageUploading
-                                    }
-                                  >
-                                    {hasNoLicense
-                                      ? 'Add License'
-                                      : 'Save Changes'}
-                                  </Button>
-                                  <Button
                                     variant="outlined"
-                                    color="inherit"
                                     startIcon={<CloseIcon />}
                                     onClick={() =>
                                       setOpenLicenseCancelModal(true)
@@ -1873,8 +2326,36 @@ export default function CustomerSettings() {
                                     disabled={
                                       savingLicense || licenseImageUploading
                                     }
+                                    sx={{
+                                      borderColor: '#999',
+                                      color: '#666',
+                                      order: { xs: 2, md: 1 },
+                                      '&:hover': {
+                                        borderColor: '#666',
+                                        bgcolor: 'rgba(0, 0, 0, 0.04)',
+                                      },
+                                    }}
                                   >
                                     Cancel
+                                  </Button>
+                                  <Button
+                                    variant="contained"
+                                    startIcon={<SaveIcon />}
+                                    onClick={() =>
+                                      setOpenLicenseSaveModal(true)
+                                    }
+                                    disabled={
+                                      savingLicense || licenseImageUploading
+                                    }
+                                    sx={{
+                                      bgcolor: '#c10007',
+                                      order: { xs: 1, md: 2 },
+                                      '&:hover': { bgcolor: '#a50006' },
+                                    }}
+                                  >
+                                    {hasNoLicense
+                                      ? 'Add License'
+                                      : 'Save Changes'}
                                   </Button>
                                 </Box>
                               )}

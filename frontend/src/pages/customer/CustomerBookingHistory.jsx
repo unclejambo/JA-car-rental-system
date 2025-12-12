@@ -13,12 +13,27 @@ import {
   Card,
   CardContent,
   Button,
+  Paper,
+  Stack,
+  Chip,
+  Divider,
 } from '@mui/material';
 import { HiRefresh } from 'react-icons/hi';
-import { HiOutlineClipboardDocumentCheck, HiCreditCard } from 'react-icons/hi2';
+import {
+  HiOutlineClipboardDocumentCheck,
+  HiCreditCard,
+  HiCalendarDays,
+  HiClock,
+  HiTruck,
+  HiCheckCircle,
+  HiXCircle,
+  HiCurrencyDollar,
+  HiEye,
+  HiReceiptPercent,
+  HiDocumentText,
+} from 'react-icons/hi2';
 import Loading from '../../ui/components/Loading';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
-import CustomerBookingHistoryTable from '../../ui/components/table/CustomerBookingHistoryTable';
 import CustomerPaymentHistoryTable from '../../ui/components/table/CustomerPaymentHistoryTable';
 import BookingDetailsModal from '../../ui/components/modal/BookingDetailsModal';
 
@@ -57,6 +72,535 @@ function EmptyState({ icon: Icon, title, message }) {
         </Typography>
       </CardContent>
     </Card>
+  );
+}
+
+// Booking Card Component
+function BookingCard({ booking, onViewBooking }) {
+  const formatDate = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const getDayOfWeek = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+  };
+
+  const getMonthDay = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.getDate();
+  };
+
+  const isCompleted = booking.booking_status === 'Completed';
+  const isCancelled = booking.booking_status === 'Cancelled';
+  const statusColor = isCompleted
+    ? '#4caf50'
+    : isCancelled
+      ? '#f44336'
+      : '#757575';
+  const statusBg = isCompleted
+    ? '#e8f5e9'
+    : isCancelled
+      ? '#ffebee'
+      : '#f5f5f5';
+
+  const displayDate = isCompleted
+    ? booking.completion_date
+    : isCancelled
+      ? booking.cancellation_date
+      : booking.booking_date;
+
+  return (
+    <Paper
+      elevation={3}
+      sx={{
+        p: 2.5,
+        mb: 2,
+        borderRadius: 3,
+        border: `2px solid ${statusColor}`,
+        backgroundColor: '#fff',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          boxShadow: '0 8px 24px rgba(193, 0, 7, 0.15)',
+          transform: 'translateY(-2px)',
+        },
+      }}
+    >
+      <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3}>
+        {/* Date Badge */}
+        <Box
+          sx={{
+            minWidth: { xs: '100%', lg: 120 },
+            display: 'flex',
+            flexDirection: { xs: 'row', lg: 'column' },
+            alignItems: 'center',
+            justifyContent: { xs: 'space-between', lg: 'center' },
+            gap: { xs: 2, lg: 1.5 },
+          }}
+        >
+          <Box
+            sx={{
+              width: { xs: 80, lg: 100 },
+              height: { xs: 80, lg: 100 },
+              borderRadius: 2,
+              background: `linear-gradient(135deg, ${statusColor} 0%, ${statusColor}dd 100%)`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              boxShadow: `0 4px 12px ${statusColor}50`,
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.9 }}
+            >
+              {getDayOfWeek(displayDate)}
+            </Typography>
+            <Typography variant="h4" sx={{ fontWeight: 'bold', lineHeight: 1 }}>
+              {getMonthDay(displayDate)}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{ fontSize: '0.65rem', opacity: 0.9 }}
+            >
+              {displayDate
+                ? new Date(displayDate).toLocaleDateString('en-US', {
+                    month: 'short',
+                  })
+                : ''}
+            </Typography>
+          </Box>
+
+          <Chip
+            label={booking.booking_status}
+            icon={
+              isCompleted ? (
+                <HiCheckCircle size={16} />
+              ) : isCancelled ? (
+                <HiXCircle size={16} />
+              ) : null
+            }
+            sx={{
+              bgcolor: statusBg,
+              color: statusColor,
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              border: `1px solid ${statusColor}`,
+              height: 28,
+            }}
+          />
+        </Box>
+
+        <Divider
+          orientation="vertical"
+          flexItem
+          sx={{ display: { xs: 'none', lg: 'block' } }}
+        />
+
+        {/* Details Section */}
+        <Box sx={{ flex: 1 }}>
+          <Stack spacing={2}>
+            {/* Car Model & Booking Date */}
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ flex: 1 }}
+              >
+                <HiTruck size={20} color="#c10007" />
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: '#666', fontSize: '0.7rem' }}
+                  >
+                    Vehicle
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {booking.car_model || 'N/A'}
+                  </Typography>
+                </Box>
+              </Stack>
+
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ flex: 1 }}
+              >
+                <HiCalendarDays size={20} color="#666" />
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: '#666', fontSize: '0.7rem' }}
+                  >
+                    Booked On
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {formatDate(booking.booking_date)}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Stack>
+
+            {/* Completion/Cancellation Date & Amount */}
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              {isCompleted && booking.completion_date && (
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ flex: 1 }}
+                >
+                  <HiCheckCircle size={20} color="#4caf50" />
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: '#666', fontSize: '0.7rem' }}
+                    >
+                      Completed On
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {formatDate(booking.completion_date)}
+                    </Typography>
+                  </Box>
+                </Stack>
+              )}
+
+              {isCancelled && booking.cancellation_date && (
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ flex: 1 }}
+                >
+                  <HiXCircle size={20} color="#f44336" />
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: '#666', fontSize: '0.7rem' }}
+                    >
+                      Cancelled On
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {formatDate(booking.cancellation_date)}
+                    </Typography>
+                  </Box>
+                </Stack>
+              )}
+
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ flex: 1 }}
+              >
+                <HiCurrencyDollar size={20} color="#666" />
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: '#666', fontSize: '0.7rem' }}
+                  >
+                    Amount
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    ₱
+                    {booking.amount
+                      ? Number(booking.amount).toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })
+                      : '0.00'}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Stack>
+
+            {/* View Details Button */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<HiEye />}
+                onClick={() => onViewBooking(booking)}
+                sx={{
+                  borderColor: '#c10007',
+                  color: '#c10007',
+                  '&:hover': {
+                    borderColor: '#a50006',
+                    backgroundColor: '#fff5f5',
+                  },
+                }}
+              >
+                View Details
+              </Button>
+            </Box>
+          </Stack>
+        </Box>
+      </Stack>
+    </Paper>
+  );
+}
+
+// Payment Card Component
+function PaymentCard({ payment }) {
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const getDayOfWeek = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+  };
+
+  const getMonthDay = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return '';
+    return d.getDate();
+  };
+
+  const getPaymentMethodColor = (method) => {
+    const methodLower = (method || '').toLowerCase();
+    if (methodLower.includes('gcash')) return '#007dfe';
+    if (methodLower.includes('cash')) return '#4caf50';
+    if (methodLower.includes('bank')) return '#ff9800';
+    return '#757575';
+  };
+
+  const methodColor = getPaymentMethodColor(payment.paymentMethod);
+
+  return (
+    <Paper
+      elevation={3}
+      sx={{
+        p: 2.5,
+        mb: 2,
+        borderRadius: 3,
+        border: `2px solid ${methodColor}`,
+        backgroundColor: '#fff',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          boxShadow: '0 8px 24px rgba(193, 0, 7, 0.15)',
+          transform: 'translateY(-2px)',
+        },
+      }}
+    >
+      <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3}>
+        {/* Date Badge */}
+        <Box
+          sx={{
+            minWidth: { xs: '100%', lg: 120 },
+            display: 'flex',
+            flexDirection: { xs: 'row', lg: 'column' },
+            alignItems: 'center',
+            justifyContent: { xs: 'space-between', lg: 'center' },
+            gap: { xs: 2, lg: 1.5 },
+          }}
+        >
+          <Box
+            sx={{
+              width: { xs: 80, lg: 100 },
+              height: { xs: 80, lg: 100 },
+              borderRadius: 2,
+              background: `linear-gradient(135deg, ${methodColor} 0%, ${methodColor}dd 100%)`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              boxShadow: `0 4px 12px ${methodColor}50`,
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.9 }}
+            >
+              {getDayOfWeek(payment.paidDate)}
+            </Typography>
+            <Typography variant="h4" sx={{ fontWeight: 'bold', lineHeight: 1 }}>
+              {getMonthDay(payment.paidDate)}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{ fontSize: '0.65rem', opacity: 0.9 }}
+            >
+              {payment.paidDate
+                ? new Date(payment.paidDate).toLocaleDateString('en-US', {
+                    month: 'short',
+                  })
+                : ''}
+            </Typography>
+          </Box>
+
+          <Chip
+            label={payment.paymentMethod || 'N/A'}
+            icon={<HiCreditCard size={16} />}
+            sx={{
+              bgcolor: `${methodColor}20`,
+              color: methodColor,
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              border: `1px solid ${methodColor}`,
+              height: 28,
+            }}
+          />
+        </Box>
+
+        <Divider
+          orientation="vertical"
+          flexItem
+          sx={{ display: { xs: 'none', lg: 'block' } }}
+        />
+
+        {/* Details Section */}
+        <Box sx={{ flex: 1 }}>
+          <Stack spacing={2}>
+            {/* Transaction ID & Date */}
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ flex: 1 }}
+              >
+                <HiReceiptPercent size={20} color="#c10007" />
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: '#666', fontSize: '0.7rem' }}
+                  >
+                    Transaction ID
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    #{payment.transactionId || 'N/A'}
+                  </Typography>
+                </Box>
+              </Stack>
+
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ flex: 1 }}
+              >
+                <HiCalendarDays size={20} color="#666" />
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: '#666', fontSize: '0.7rem' }}
+                  >
+                    Payment Date
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {formatDate(payment.paidDate)}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Stack>
+
+            {/* Description */}
+            <Stack direction="row" spacing={1} alignItems="flex-start">
+              <HiDocumentText
+                size={20}
+                color="#666"
+                style={{ marginTop: '2px' }}
+              />
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: '#666', fontSize: '0.7rem' }}
+                >
+                  Description
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {payment.description || 'N/A'}
+                </Typography>
+              </Box>
+            </Stack>
+
+            {/* Reference No & Amount */}
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              {payment.referenceNo && (
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ flex: 1 }}
+                >
+                  <HiDocumentText size={20} color="#666" />
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: '#666', fontSize: '0.7rem' }}
+                    >
+                      Reference No
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {payment.referenceNo}
+                    </Typography>
+                  </Box>
+                </Stack>
+              )}
+
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ flex: 1 }}
+              >
+                <HiCurrencyDollar size={20} color="#4caf50" />
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: '#666', fontSize: '0.7rem' }}
+                  >
+                    Amount Paid
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      color: '#4caf50',
+                    }}
+                  >
+                    ₱
+                    {payment.totalAmount
+                      ? Number(payment.totalAmount).toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })
+                      : '0.00'}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Stack>
+          </Stack>
+        </Box>
+      </Stack>
+    </Paper>
   );
 }
 
@@ -346,51 +890,92 @@ function CustomerBookingHistory() {
             {/* Page Header */}
             {!(loading && (bookings === null || payments === null)) && (
               <>
-                <Box sx={{ mb: 3 }}>
+                <Box
+                  sx={{
+                    background:
+                      'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+                    borderRadius: 3,
+                    p: { xs: 2, md: 3 },
+                    mb: 3,
+                    boxShadow: '0 4px 12px rgba(193, 0, 7, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 2,
+                  }}
+                >
                   <Box
                     sx={{
                       display: 'flex',
-                      justifyContent: 'space-between',
                       alignItems: 'center',
-                      mb: 1,
+                      gap: 2,
+                      flex: 1,
                     }}
                   >
-                    <Typography
-                      variant="h4"
+                    <Box
                       sx={{
-                        fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
-                        fontWeight: 'bold',
-                        color: '#c10007',
+                        bgcolor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        p: { xs: 1.5, md: 2 },
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
                       <HiOutlineClipboardDocumentCheck
-                        size={32}
-                        style={{ marginRight: '8px' }}
+                        style={{
+                          fontSize: '2rem',
+                          color: '#fff',
+                        }}
                       />
-                      Booking History
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      startIcon={<HiRefresh />}
-                      onClick={fetchData}
-                      disabled={loading}
-                      sx={{
-                        borderColor: '#c10007',
-                        color: '#c10007',
-                        '&:hover': {
-                          borderColor: '#a50006',
-                          backgroundColor: '#fff5f5',
-                        },
-                      }}
-                    >
-                      Refresh
-                    </Button>
+                    </Box>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography
+                        variant="h4"
+                        component="h1"
+                        sx={{
+                          fontWeight: 700,
+                          color: '#fff',
+                          fontSize: {
+                            xs: '1.25rem',
+                            sm: '1.5rem',
+                            md: '1.75rem',
+                          },
+                          mb: 0.5,
+                        }}
+                      >
+                        Booking History
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: 'rgba(255, 255, 255, 0.9)',
+                          fontSize: { xs: '0.875rem', md: '1rem' },
+                        }}
+                      >
+                        View your past bookings and payments
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Typography variant="body1" color="text.secondary">
-                    View your past bookings and payments
-                  </Typography>
+                  {/* Refresh Button */}
+                  <Button
+                    variant="outlined"
+                    startIcon={<HiRefresh />}
+                    onClick={fetchData}
+                    disabled={loading}
+                    sx={{
+                      borderColor: '#fff',
+                      color: '#fff',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      '&:hover': {
+                        borderColor: '#fff',
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      },
+                    }}
+                  >
+                    Refresh
+                  </Button>
                 </Box>
 
                 {/* Tabs */}
@@ -497,11 +1082,15 @@ function CustomerBookingHistory() {
                 {/* Tab Panels */}
                 <TabPanel value={activeTab} index={0}>
                   {filteredBookings && filteredBookings.length > 0 ? (
-                    <CustomerBookingHistoryTable
-                      bookings={filteredBookings}
-                      loading={loading}
-                      onViewBooking={handleViewBooking}
-                    />
+                    <Box>
+                      {filteredBookings.map((booking) => (
+                        <BookingCard
+                          key={booking.booking_id}
+                          booking={booking}
+                          onViewBooking={handleViewBooking}
+                        />
+                      ))}
+                    </Box>
                   ) : bookingSearchQuery ? (
                     <EmptyState
                       icon={HiOutlineClipboardDocumentCheck}
@@ -519,10 +1108,14 @@ function CustomerBookingHistory() {
 
                 <TabPanel value={activeTab} index={1}>
                   {filteredPayments && filteredPayments.length > 0 ? (
-                    <CustomerPaymentHistoryTable
-                      payments={filteredPayments}
-                      loading={loading}
-                    />
+                    <Box>
+                      {filteredPayments.map((payment) => (
+                        <PaymentCard
+                          key={payment.transactionId}
+                          payment={payment}
+                        />
+                      ))}
+                    </Box>
                   ) : paymentSearchQuery ? (
                     <EmptyState
                       icon={HiCreditCard}

@@ -238,7 +238,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
             title: 'New Booking Request',
             message: `${booking.customer_name || 'Customer'} - ${booking.car_model || 'Car'}`,
             timestamp: new Date(booking.booking_date),
-            link: '/manage-booking',
+            link: '/manage-booking?tab=BOOKINGS',
           });
         });
 
@@ -255,7 +255,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
             timestamp: new Date(
               booking.updated_at || booking.booking_date || Date.now()
             ),
-            link: '/manage-booking',
+            link: '/manage-booking?tab=CANCELLATION',
           });
         });
 
@@ -272,7 +272,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
             timestamp: new Date(
               booking.updated_at || booking.booking_date || Date.now()
             ),
-            link: '/manage-booking',
+            link: '/manage-booking?tab=EXTENSION',
           });
         });
 

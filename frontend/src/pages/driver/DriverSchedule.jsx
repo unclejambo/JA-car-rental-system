@@ -10,13 +10,336 @@ import {
   Card,
   CardContent,
   Button,
+  Paper,
+  Stack,
+  Chip,
+  Divider,
   Tabs,
   Tab,
 } from '@mui/material';
 import { HiRefresh } from 'react-icons/hi';
-import { HiCalendar, HiCalendarDays } from 'react-icons/hi2';
-import DriverScheduleTable from '../../ui/components/table/DriverScheduleTable';
+import {
+  HiCalendarDays,
+  HiClock,
+  HiMapPin,
+  HiTruck,
+  HiUser,
+  HiPhone,
+  HiCalendar,
+} from 'react-icons/hi2';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
+
+function ScheduleCard({ schedule }) {
+  const formatDate = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return String(iso);
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const formatTime = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return String(iso);
+    return d.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const getStatusColor = (status) => {
+    const s = (status || '').toString().toLowerCase().trim();
+    if (s === 'confirmed')
+      return { bg: '#e3f2fd', text: '#1976d2', border: '#1976d2' };
+    if (s === 'in progress' || s === 'ongoing')
+      return { bg: '#fff3e0', text: '#f57c00', border: '#f57c00' };
+    if (s === 'completed')
+      return { bg: '#e8f5e9', text: '#2e7d32', border: '#2e7d32' };
+    if (s === 'cancelled' || s === 'canceled')
+      return { bg: '#ffebee', text: '#d32f2f', border: '#d32f2f' };
+    return { bg: '#f5f5f5', text: '#757575', border: '#757575' };
+  };
+
+  const getDayOfWeek = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString('en-US', { weekday: 'short' });
+  };
+
+  const getMonthDay = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.getDate();
+  };
+
+  const status = schedule.booking_status || schedule.status || 'N/A';
+  const statusColors = getStatusColor(status);
+  const carModel = schedule.car_model || 'Vehicle';
+  const customerName = schedule.customer_name || 'N/A';
+  const startDate = schedule.start_date || schedule.startDate;
+  const endDate = schedule.end_date || schedule.endDate;
+  const pickupTime = schedule.pickup_time || schedule.pickupTime || startDate;
+  const dropoffTime = schedule.dropoff_time || schedule.dropoffTime || endDate;
+  const pickupLoc = schedule.pickup_loc || schedule.pickup_location || 'N/A';
+  const dropoffLoc =
+    schedule.dropoff_loc ||
+    schedule.dropoff_location ||
+    schedule.drop_location ||
+    'N/A';
+
+  return (
+    <Paper
+      elevation={2}
+      sx={{
+        p: 2.5,
+        mb: 2,
+        borderRadius: 3,
+        border: `2px solid ${statusColors.border}`,
+        backgroundColor: '#fff',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          boxShadow: '0 8px 24px rgba(193, 0, 7, 0.15)',
+          transform: 'translateY(-2px)',
+        },
+      }}
+    >
+      <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3}>
+        {/* Date Badge & Status */}
+        <Box
+          sx={{
+            minWidth: { xs: '100%', lg: 120 },
+            display: 'flex',
+            flexDirection: { xs: 'row', lg: 'column' },
+            alignItems: 'center',
+            justifyContent: { xs: 'space-between', lg: 'center' },
+            gap: { xs: 2, lg: 1.5 },
+          }}
+        >
+          <Box
+            sx={{
+              width: { xs: 80, lg: 100 },
+              height: { xs: 80, lg: 100 },
+              borderRadius: 2,
+              background: 'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              boxShadow: '0 4px 12px rgba(193, 0, 7, 0.3)',
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.9 }}
+            >
+              {getDayOfWeek(startDate)}
+            </Typography>
+            <Typography variant="h4" sx={{ fontWeight: 'bold', lineHeight: 1 }}>
+              {getMonthDay(startDate)}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{ fontSize: '0.65rem', opacity: 0.9 }}
+            >
+              {new Date(startDate).toLocaleDateString('en-US', {
+                month: 'short',
+              })}
+            </Typography>
+          </Box>
+
+          <Chip
+            label={status}
+            sx={{
+              bgcolor: statusColors.bg,
+              color: statusColors.text,
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              border: `1px solid ${statusColors.border}`,
+              height: 28,
+            }}
+          />
+        </Box>
+
+        <Divider
+          orientation="vertical"
+          flexItem
+          sx={{ display: { xs: 'none', lg: 'block' } }}
+        />
+
+        {/* Details Section */}
+        <Box sx={{ flex: 1 }}>
+          {/* Customer & Car */}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ mb: 2 }}
+          >
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{ flex: 1 }}
+            >
+              <HiUser size={20} color="#666" />
+              <Box>
+                <Typography
+                  variant="caption"
+                  sx={{ color: '#666', fontSize: '0.7rem' }}
+                >
+                  Customer
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {customerName}
+                </Typography>
+              </Box>
+            </Stack>
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{ flex: 1 }}
+            >
+              <HiTruck size={20} color="#c10007" />
+              <Box>
+                <Typography
+                  variant="caption"
+                  sx={{ color: '#666', fontSize: '0.7rem' }}
+                >
+                  Vehicle
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 600, color: '#c10007' }}
+                >
+                  {carModel}
+                </Typography>
+              </Box>
+            </Stack>
+          </Stack>
+
+          <Divider sx={{ my: 2 }} />
+
+          {/* Timeline */}
+          <Stack spacing={2}>
+            {/* Pickup */}
+            <Box>
+              <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    bgcolor: '#4caf50',
+                    mt: 0.5,
+                    boxShadow: '0 0 0 4px rgba(76, 175, 80, 0.2)',
+                  }}
+                />
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: '#666',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      fontSize: '0.7rem',
+                    }}
+                  >
+                    Pickup
+                  </Typography>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={{ xs: 0.5, sm: 2 }}
+                    sx={{ mt: 0.5 }}
+                  >
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <HiClock size={16} color="#666" />
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {formatDate(startDate)} • {formatTime(pickupTime)}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <HiMapPin size={16} color="#666" />
+                      <Typography variant="body2" sx={{ color: '#666' }}>
+                        {pickupLoc}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </Box>
+              </Stack>
+            </Box>
+
+            {/* Connection Line */}
+            <Box sx={{ pl: 0.6 }}>
+              <Box
+                sx={{
+                  width: 2,
+                  height: 30,
+                  bgcolor: '#e0e0e0',
+                  borderRadius: 1,
+                }}
+              />
+            </Box>
+
+            {/* Dropoff */}
+            <Box>
+              <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    bgcolor: '#f44336',
+                    mt: 0.5,
+                    boxShadow: '0 0 0 4px rgba(244, 67, 54, 0.2)',
+                  }}
+                />
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: '#666',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      fontSize: '0.7rem',
+                    }}
+                  >
+                    Drop-off
+                  </Typography>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={{ xs: 0.5, sm: 2 }}
+                    sx={{ mt: 0.5 }}
+                  >
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <HiClock size={16} color="#666" />
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {formatDate(endDate)} • {formatTime(dropoffTime)}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <HiMapPin size={16} color="#666" />
+                      <Typography variant="body2" sx={{ color: '#666' }}>
+                        {dropoffLoc}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </Box>
+              </Stack>
+            </Box>
+          </Stack>
+        </Box>
+      </Stack>
+    </Paper>
+  );
+}
 
 function EmptyState({ icon: Icon, title, message }) {
   return (
@@ -267,7 +590,14 @@ export default function DriverSchedule() {
                             message="You don’t have any active schedules at the moment."
                           />
                         ) : (
-                          <DriverScheduleTable schedules={activeSchedules} />
+                          <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+                            {activeSchedules.map((item, index) => (
+                              <ScheduleCard
+                                key={item.booking_id || item.id || index}
+                                schedule={item}
+                              />
+                            ))}
+                          </Box>
                         )}
                       </>
                     )}
@@ -281,7 +611,14 @@ export default function DriverSchedule() {
                             message="You don’t have any completed or cancelled schedules yet."
                           />
                         ) : (
-                          <DriverScheduleTable schedules={historySchedules} />
+                          <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+                            {historySchedules.map((item, index) => (
+                              <ScheduleCard
+                                key={item.booking_id || item.id || index}
+                                schedule={item}
+                              />
+                            ))}
+                          </Box>
                         )}
                       </>
                     )}

@@ -1,5 +1,10 @@
 import prisma from "../config/prisma.js";
-import { getPaginationParams, getSortingParams, buildPaginationResponse, getSearchParam } from '../utils/pagination.js';
+import {
+  getPaginationParams,
+  getSortingParams,
+  buildPaginationResponse,
+  getSearchParam,
+} from "../utils/pagination.js";
 
 /**
  * Get all schedules with pagination (admin/general use)
@@ -9,7 +14,7 @@ export const getSchedules = async (req, res) => {
   try {
     // Get pagination parameters
     const { page, pageSize, skip } = getPaginationParams(req);
-    const { sortBy, sortOrder } = getSortingParams(req, 'start_date', 'desc');
+    const { sortBy, sortOrder } = getSortingParams(req, "start_date", "desc");
     const search = getSearchParam(req);
 
     // Build where clause for filtering
@@ -17,17 +22,17 @@ export const getSchedules = async (req, res) => {
       // Filter to show only Confirmed and In Progress bookings
       // Exclude Pending, Completed, and Cancelled bookings
       booking_status: {
-        in: ['Confirmed', 'In Progress']
-      }
+        in: ["Confirmed", "In Progress"],
+      },
     };
 
     // Search filter (customer name or car model)
     if (search) {
       where.OR = [
-        { customer: { first_name: { contains: search, mode: 'insensitive' } } },
-        { customer: { last_name: { contains: search, mode: 'insensitive' } } },
-        { car: { make: { contains: search, mode: 'insensitive' } } },
-        { car: { model: { contains: search, mode: 'insensitive' } } },
+        { customer: { first_name: { contains: search, mode: "insensitive" } } },
+        { customer: { last_name: { contains: search, mode: "insensitive" } } },
+        { car: { make: { contains: search, mode: "insensitive" } } },
+        { car: { model: { contains: search, mode: "insensitive" } } },
       ];
     }
 
@@ -61,10 +66,16 @@ export const getSchedules = async (req, res) => {
         payment_status: true,
         balance: true,
         customer: {
-          select: { first_name: true, last_name: true },
+          select: { first_name: true, last_name: true, contact_no: true },
         },
         car: {
-          select: { car_id: true, make: true, model: true, hasGPS: true, license_plate: true },
+          select: {
+            car_id: true,
+            make: true,
+            model: true,
+            hasGPS: true,
+            license_plate: true,
+          },
         },
       },
     });
@@ -77,6 +88,7 @@ export const getSchedules = async (req, res) => {
       customer_name: `${s.customer?.first_name ?? ""} ${
         s.customer?.last_name ?? ""
       }`.trim(),
+      contact_no: s.customer?.contact_no || null,
       start_date: s.start_date,
       pickup_time: s.pickup_time,
       pickup_loc: s.pickup_loc,
@@ -168,7 +180,7 @@ export const getMySchedules = async (req, res) => {
 
     // Get pagination parameters
     const { page, pageSize, skip } = getPaginationParams(req);
-    const { sortBy, sortOrder } = getSortingParams(req, 'start_date', 'desc');
+    const { sortBy, sortOrder } = getSortingParams(req, "start_date", "desc");
 
     // Build where clause
     const where = { customer_id: Number(customerId) };
@@ -239,7 +251,7 @@ export const getMyDriverSchedules = async (req, res) => {
 
     // Get pagination parameters
     const { page, pageSize, skip } = getPaginationParams(req);
-    const { sortBy, sortOrder } = getSortingParams(req, 'start_date', 'desc');
+    const { sortBy, sortOrder } = getSortingParams(req, "start_date", "desc");
 
     // Build where clause
     const where = { drivers_id: Number(driverId) };

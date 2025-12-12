@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Box, Typography, Button } from '@mui/material';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
@@ -12,11 +13,23 @@ import BookingDetailsModal from '../../ui/components/modal/BookingDetailsModal';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 
 export default function AdminBookingPage() {
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('BOOKINGS');
+
+  // Check for tab query parameter
+  const getInitialTab = () => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && ['BOOKINGS', 'CANCELLATION', 'EXTENSION'].includes(tab)) {
+      return tab;
+    }
+    return 'BOOKINGS';
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [showManageFeesModal, setShowManageFeesModal] = useState(false);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -28,7 +41,7 @@ export default function AdminBookingPage() {
   const openBookingDetailsModal = async (booking) => {
     setShowBookingDetailsModal(true);
     setSelectedBooking(booking); // Set initial data to prevent flash of empty content
-    
+
     // Fetch complete booking data with all car details
     try {
       const authFetch = createAuthenticatedFetch(() => {
@@ -36,8 +49,10 @@ export default function AdminBookingPage() {
         window.location.href = '/login';
       });
       const API_BASE = getApiBase().replace(/\/$/, '');
-      
-      const response = await authFetch(`${API_BASE}/bookings/${booking.booking_id}`);
+
+      const response = await authFetch(
+        `${API_BASE}/bookings/${booking.booking_id}`
+      );
       if (response.ok) {
         const completeBooking = await response.json();
         setSelectedBooking(completeBooking);

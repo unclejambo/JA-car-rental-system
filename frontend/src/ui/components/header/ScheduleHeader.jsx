@@ -71,7 +71,7 @@ const ScheduleHeader = ({
           }}
         >
           {tab}
-          {counts[tab] !== undefined && (
+          {counts[tab] !== undefined && counts[tab] > 0 && (
             <Chip
               label={counts[tab]}
               size="small"

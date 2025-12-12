@@ -170,11 +170,9 @@ export default function ReleaseModal({
       const imageTypes = ['id1', 'id2', 'front', 'back', 'right', 'left'];
       const uploadPromises = [];
 
-
       for (const imageType of imageTypes) {
         const imageData = formData.images[imageType];
         if (imageData.file) {
-
           const formDataUpload = new FormData();
           formDataUpload.append('image', imageData.file);
           formDataUpload.append('image_type', imageType);
@@ -197,7 +195,6 @@ export default function ReleaseModal({
           customerFirstName = customerFirstName.replace(/[^a-zA-Z0-9]/g, '');
 
           formDataUpload.append('customer_first_name', customerFirstName);
-
 
           const uploadPromise = authFetch(
             `${API_BASE}/releases/${releaseId}/images`,
@@ -269,6 +266,8 @@ export default function ReleaseModal({
         if (onSuccess) {
           await onSuccess();
         }
+        // Trigger notification refresh
+        window.dispatchEvent(new Event('refreshNotifications'));
       }, 1500);
     } catch (error) {
       setError(error.message || 'Failed to process release');

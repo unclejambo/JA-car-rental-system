@@ -269,6 +269,8 @@ export default function ReturnModal({ show, onClose, bookingId }) {
       setSuccess('Return submitted successfully');
       setTimeout(() => {
         onClose?.();
+        // Trigger notification refresh after successful return
+        window.dispatchEvent(new Event('refreshNotifications'));
       }, 2000);
     } catch (err) {
       setError('Failed to submit return');
@@ -439,7 +441,11 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                               sx={{
                                 width: { xs: 50, sm: 80 },
                                 height: { xs: 50, sm: 80 },
-                                cursor: releaseData[imgKey] && releaseData[imgKey].trim() !== '' ? 'pointer' : 'default',
+                                cursor:
+                                  releaseData[imgKey] &&
+                                  releaseData[imgKey].trim() !== ''
+                                    ? 'pointer'
+                                    : 'default',
                                 border: '1px solid #ddd',
                                 borderRadius: 1,
                                 overflow: 'hidden',
@@ -450,12 +456,16 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                                 justifyContent: 'center',
                               }}
                               onClick={() => {
-                                if (releaseData[imgKey] && releaseData[imgKey].trim() !== '') {
+                                if (
+                                  releaseData[imgKey] &&
+                                  releaseData[imgKey].trim() !== ''
+                                ) {
                                   handleImageClick(releaseData[imgKey]);
                                 }
                               }}
                             >
-                              {releaseData[imgKey] && releaseData[imgKey].trim() !== '' ? (
+                              {releaseData[imgKey] &&
+                              releaseData[imgKey].trim() !== '' ? (
                                 <img
                                   src={releaseData[imgKey]}
                                   alt={imgKey.replace('_', ' ')}
@@ -477,18 +487,19 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                                   No Image
                                 </Typography>
                               )}
-                              {releaseData[imgKey] && releaseData[imgKey].trim() !== '' && (
-                                <ZoomInIcon
-                                  sx={{
-                                    position: 'absolute',
-                                    top: 2,
-                                    right: 2,
-                                    fontSize: 12,
-                                    color: 'white',
-                                    textShadow: '1px 1px 1px black',
-                                  }}
-                                />
-                              )}
+                              {releaseData[imgKey] &&
+                                releaseData[imgKey].trim() !== '' && (
+                                  <ZoomInIcon
+                                    sx={{
+                                      position: 'absolute',
+                                      top: 2,
+                                      right: 2,
+                                      fontSize: 12,
+                                      color: 'white',
+                                      textShadow: '1px 1px 1px black',
+                                    }}
+                                  />
+                                )}
                             </Box>
                           ))}
                         </Stack>

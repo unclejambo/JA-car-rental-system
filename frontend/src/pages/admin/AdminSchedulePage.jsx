@@ -11,19 +11,47 @@ import ReturnModal from '../../ui/components/modal/ReturnModal.jsx';
 import GPSTrackingModal from '../../ui/components/modal/GPSTrackingModal.jsx';
 import ScheduleHeader from '../../ui/components/header/ScheduleHeader';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
+import { useLocation } from 'react-router-dom';
 
 export default function AdminSchedulePage() {
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [schedule, setSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('CONFIRMED');
+
+  // Check for tab query parameter
+  const getInitialTab = () => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (
+      tab &&
+      ['CONFIRMED', 'IN PROGRESS', 'RELEASE', 'RETURN'].includes(tab)
+    ) {
+      return tab;
+    }
+    return 'CONFIRMED';
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab());
 
   const [showReleaseModal, setShowReleaseModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [showGPSModal, setShowGPSModal] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);
+
+  // Update activeTab when location changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (
+      tab &&
+      ['CONFIRMED', 'IN PROGRESS', 'RELEASE', 'RETURN'].includes(tab)
+    ) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
 
   const handleReleaseClick = (reservation) => {
     setSelectedReservation(reservation);

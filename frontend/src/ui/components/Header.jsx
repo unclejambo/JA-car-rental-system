@@ -4,6 +4,26 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { HiBars3 } from 'react-icons/hi2';
 import { useAuth } from '../../hooks/useAuth.js';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api.js';
+import {
+  Badge,
+  IconButton,
+  Popover,
+  List,
+  ListItem,
+  ListItemText,
+  Typography,
+  Box,
+  Divider,
+  Chip,
+} from '@mui/material';
+import {
+  HiBell,
+  HiBookOpen,
+  HiXCircle,
+  HiArrowsExpand,
+  HiTruck,
+  HiExclamationCircle,
+} from 'react-icons/hi';
 import '../../styles/components/header.css';
 
 function Header({ onMenuClick = null, isMenuOpen = false }) {
@@ -12,6 +32,9 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
   const [profileImageUrl, setProfileImageUrl] = useState(null);
   const [isLoadingImage, setIsLoadingImage] = useState(false);
   const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [anchorEl, setAnchorEl] = useState(null);
 
   const authenticatedFetch = useMemo(
     () => createAuthenticatedFetch(logout),
@@ -135,6 +158,237 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
     };
   }, [userRole, user]);
 
+  // Fetch notifications for admin
+  useEffect(() => {
+    if (!isAuthenticated || (userRole !== 'admin' && userRole !== 'staff')) {
+      setNotifications([]);
+      setNotificationCount(0);
+      return;
+    }
+
+    const fetchNotifications = async () => {
+      try {
+        const [schedules, allBookings] = await Promise.all([
+          authenticatedFetch(`${API_BASE}/schedules`).then(async (r) => {
+            if (!r.ok) return [];
+            const data = await r.json();
+            return Array.isArray(data) ? data : data.data || [];
+          }),
+          authenticatedFetch(`${API_BASE}/bookings`).then(async (r) => {
+            if (!r.ok) return [];
+            const data = await r.json();
+            return Array.isArray(data) ? data : data.data || [];
+          }),
+        ]);
+
+        const notificationsList = [];
+        const now = new Date();
+
+        // Helper to check if booking is release candidate
+        const isReleaseCandidate = (row) => {
+          try {
+            const status = (row.status || row.booking_status || '')
+              .toString()
+              .toLowerCase();
+            // Only show for confirmed bookings (not yet released)
+            if (status !== 'confirmed') return false;
+            const pickup = row.pickup_time || row.start_date || row.startDate;
+            if (!pickup) return false;
+            const pickupTime = new Date(pickup);
+            const diff = pickupTime - now;
+            return diff <= 60 * 60 * 1000 && diff >= -60 * 60 * 1000;
+          } catch (e) {
+            return false;
+          }
+        };
+
+        // Helper to check if booking is return candidate
+        const isReturnCandidate = (row) => {
+          try {
+            const status = (row.status || row.booking_status || '')
+              .toString()
+              .toLowerCase();
+            if (status === 'completed') return true;
+            if (
+              status === 'in progress' ||
+              status === 'in_progress' ||
+              status === 'ongoing'
+            ) {
+              const end = row.end_date || row.endDate || row.dropoff_time;
+              if (!end) return false;
+              const endTime = new Date(end);
+              return endTime <= now;
+            }
+            return false;
+          } catch (e) {
+            return false;
+          }
+        };
+
+        // Booking requests (pending)
+        const bookingRequests = allBookings.filter(
+          (booking) =>
+            booking.booking_status === 'Pending' ||
+            booking.booking_status === 'pending'
+        );
+        bookingRequests.forEach((booking) => {
+          notificationsList.push({
+            id: `booking-${booking.booking_id}`,
+            type: 'booking',
+            title: 'New Booking Request',
+            message: `${booking.customer_name || 'Customer'} - ${booking.car_model || 'Car'}`,
+            timestamp: new Date(booking.booking_date),
+            link: '/manage-booking',
+          });
+        });
+
+        // Cancellation requests (sort by most recent updated_at)
+        const cancellationRequests = allBookings.filter(
+          (booking) => booking.isCancel
+        );
+        cancellationRequests.forEach((booking) => {
+          notificationsList.push({
+            id: `cancel-${booking.booking_id}`,
+            type: 'cancellation',
+            title: 'Cancellation Request',
+            message: `${booking.customer_name || 'Customer'} - ${booking.car_model || 'Car'}`,
+            timestamp: new Date(
+              booking.updated_at || booking.booking_date || Date.now()
+            ),
+            link: '/manage-booking',
+          });
+        });
+
+        // Extension requests (sort by most recent updated_at)
+        const extensionRequests = allBookings.filter(
+          (booking) => booking.isExtend
+        );
+        extensionRequests.forEach((booking) => {
+          notificationsList.push({
+            id: `extend-${booking.booking_id}`,
+            type: 'extension',
+            title: 'Extension Request',
+            message: `${booking.customer_name || 'Customer'} - ${booking.car_model || 'Car'}`,
+            timestamp: new Date(
+              booking.updated_at || booking.booking_date || Date.now()
+            ),
+            link: '/manage-booking',
+          });
+        });
+
+        // For Release (within 1 hour of pickup)
+        const forRelease = schedules.filter((schedule) =>
+          isReleaseCandidate(schedule)
+        );
+        forRelease.forEach((schedule) => {
+          const pickupTime = new Date(
+            schedule.pickup_time || schedule.start_date
+          );
+          const isOverdue = pickupTime < now;
+          notificationsList.push({
+            id: `release-${schedule.booking_id}`,
+            type: isOverdue ? 'overdue-release' : 'release',
+            title: isOverdue ? 'Overdue Release' : 'Ready for Release',
+            message: `${schedule.customer_name || 'Customer'} - ${schedule.car_model || 'Car'}`,
+            timestamp: pickupTime,
+            link: '/schedule?tab=RELEASE',
+          });
+        });
+
+        // For Return (completed or past end time)
+        const forReturn = schedules.filter((schedule) =>
+          isReturnCandidate(schedule)
+        );
+        forReturn.forEach((schedule) => {
+          const returnTime = new Date(
+            schedule.dropoff_time || schedule.end_date
+          );
+          const isOverdue =
+            returnTime < now &&
+            schedule.booking_status?.toLowerCase() !== 'completed';
+          notificationsList.push({
+            id: `return-${schedule.booking_id}`,
+            type: isOverdue ? 'overdue-return' : 'return',
+            title: isOverdue ? 'Overdue Return' : 'Ready for Return',
+            message: `${schedule.customer_name || 'Customer'} - ${schedule.car_model || 'Car'}`,
+            timestamp: returnTime,
+            link: '/schedule?tab=RETURN',
+          });
+        });
+
+        // Sort by timestamp (newest first)
+        notificationsList.sort((a, b) => b.timestamp - a.timestamp);
+
+        setNotifications(notificationsList);
+        setNotificationCount(notificationsList.length);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    };
+
+    fetchNotifications();
+    // Refresh notifications every minute
+    const interval = setInterval(fetchNotifications, 60000);
+
+    // Listen for notification refresh events (triggered after admin actions)
+    const handleRefreshNotifications = () => {
+      fetchNotifications();
+    };
+    window.addEventListener('refreshNotifications', handleRefreshNotifications);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(
+        'refreshNotifications',
+        handleRefreshNotifications
+      );
+    };
+  }, [isAuthenticated, userRole, authenticatedFetch, API_BASE]);
+
+  const handleNotificationClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleNotificationClose = () => {
+    setAnchorEl(null);
+  };
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'booking':
+        return <HiBookOpen size={20} color="#c10007" />;
+      case 'cancellation':
+        return <HiXCircle size={20} color="#f44336" />;
+      case 'extension':
+        return <HiArrowsExpand size={20} color="#ff9800" />;
+      case 'release':
+        return <HiTruck size={20} color="#4caf50" />;
+      case 'return':
+        return <HiTruck size={20} color="#2196f3" />;
+      case 'overdue-release':
+      case 'overdue-return':
+        return <HiExclamationCircle size={20} color="#f44336" />;
+      default:
+        return <HiBell size={20} />;
+    }
+  };
+
+  const getRelativeTime = (date) => {
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  const open = Boolean(anchorEl);
+
   return (
     <header className="app-header">
       <div className="header-content">
@@ -201,6 +455,133 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
               </span>
             )}
           </Link>
+        )}
+
+        {/* Notification Bell - Only for Admin/Staff */}
+        {isAuthenticated && (userRole === 'admin' || userRole === 'staff') && (
+          <>
+            <IconButton
+              onClick={handleNotificationClick}
+              sx={{
+                color: '#fff',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+                ml: 1,
+              }}
+            >
+              <Badge badgeContent={notificationCount} color="error">
+                <HiBell size={24} />
+              </Badge>
+            </IconButton>
+
+            <Popover
+              open={open}
+              anchorEl={anchorEl}
+              onClose={handleNotificationClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              PaperProps={{
+                sx: {
+                  width: 380,
+                  maxHeight: 500,
+                  mt: 1,
+                  boxShadow: 3,
+                },
+              }}
+            >
+              <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                  Notifications
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {notificationCount} pending items
+                </Typography>
+              </Box>
+
+              {notifications.length === 0 ? (
+                <Box sx={{ p: 3, textAlign: 'center' }}>
+                  <Typography color="text.secondary">
+                    No new notifications
+                  </Typography>
+                </Box>
+              ) : (
+                <List sx={{ p: 0, maxHeight: 400, overflow: 'auto' }}>
+                  {notifications.map((notification, index) => (
+                    <Box key={notification.id}>
+                      <ListItem
+                        component={Link}
+                        to={notification.link}
+                        onClick={handleNotificationClose}
+                        sx={{
+                          cursor: 'pointer',
+                          '&:hover': { backgroundColor: '#f5f5f5' },
+                          py: 1.5,
+                          textDecoration: 'none',
+                          color: 'inherit',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            mr: 2,
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          {getNotificationIcon(notification.type)}
+                        </Box>
+                        <ListItemText
+                          primary={
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-start',
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 600, flex: 1 }}
+                              >
+                                {notification.title}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ ml: 1, whiteSpace: 'nowrap' }}
+                              >
+                                {getRelativeTime(notification.timestamp)}
+                              </Typography>
+                            </Box>
+                          }
+                          secondary={
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                display: 'block',
+                                mt: 0.5,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {notification.message}
+                            </Typography>
+                          }
+                        />
+                      </ListItem>
+                      {index < notifications.length - 1 && <Divider />}
+                    </Box>
+                  ))}
+                </List>
+              )}
+            </Popover>
+          </>
         )}
       </div>
     </header>

@@ -29,6 +29,7 @@ import {
   Payment,
   Favorite,
 } from '@mui/icons-material';
+import { HiCalendar, HiCurrencyDollar, HiCheckCircle } from 'react-icons/hi2';
 import { Link } from 'react-router-dom';
 import CustomerSideBar from '../../ui/components/CustomerSideBar';
 import Header from '../../ui/components/Header';
@@ -262,9 +263,280 @@ function CustomerDashboard() {
           </Card>
         )}
 
-        {/* Top Section - Schedule & My Bookings */}
+        {/* Welcome Header */}
         {!loading && (
           <>
+            <Box
+              sx={{
+                background: 'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+                borderRadius: 3,
+                p: { xs: 2, md: 2.5 },
+                mb: 2,
+                mx: { xs: 2, md: 0 },
+                boxShadow: '0 2px 8px rgba(193, 0, 7, 0.2)',
+              }}
+            >
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 700,
+                  color: '#fff',
+                  mb: 0.5,
+                  fontSize: { xs: '1.25rem', md: '1.5rem' },
+                }}
+              >
+                Welcome Back! 👋
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: { xs: '0.8rem', md: '0.875rem' },
+                }}
+              >
+                Here's what's happening with your rentals today
+              </Typography>
+            </Box>
+
+            {/* Stats Overview Cards */}
+            <Grid
+              container
+              spacing={{ xs: 1.5, md: 2 }}
+              sx={{
+                mb: 2,
+                px: { xs: 2, md: 0 },
+              }}
+            >
+              {/* Total Bookings Stat */}
+              <Grid item xs={6} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background:
+                      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: 2,
+                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.25)',
+                    height: '100%',
+                  }}
+                >
+                  <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 1,
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          bgcolor: 'rgba(255, 255, 255, 0.2)',
+                          width: { xs: 36, md: 42 },
+                          height: { xs: 36, md: 42 },
+                        }}
+                      >
+                        <BookOnline
+                          sx={{ color: '#fff', fontSize: { xs: 18, md: 22 } }}
+                        />
+                      </Avatar>
+                    </Box>
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        fontWeight: 700,
+                        color: '#fff',
+                        mb: 0.5,
+                        fontSize: { xs: '1.5rem', md: '2rem' },
+                      }}
+                    >
+                      {dashboardData.totalBookings}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontWeight: 500,
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                      }}
+                    >
+                      Total Bookings
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Today's Schedule Stat */}
+              <Grid item xs={6} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background:
+                      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    borderRadius: 2,
+                    boxShadow: '0 4px 12px rgba(245, 87, 108, 0.25)',
+                    height: '100%',
+                  }}
+                >
+                  <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 1,
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          bgcolor: 'rgba(255, 255, 255, 0.2)',
+                          width: { xs: 36, md: 42 },
+                          height: { xs: 36, md: 42 },
+                        }}
+                      >
+                        <HiCalendar
+                          style={{ color: '#fff', fontSize: '1.5rem' }}
+                        />
+                      </Avatar>
+                    </Box>
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        fontWeight: 700,
+                        color: '#fff',
+                        mb: 0.5,
+                        fontSize: { xs: '1.5rem', md: '2rem' },
+                      }}
+                    >
+                      {dashboardData.todaySchedule?.length || 0}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontWeight: 500,
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                      }}
+                    >
+                      Today's Rentals
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Active Bookings Stat */}
+              <Grid item xs={6} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background:
+                      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    borderRadius: 2,
+                    boxShadow: '0 4px 12px rgba(79, 172, 254, 0.25)',
+                    height: '100%',
+                  }}
+                >
+                  <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 1,
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          bgcolor: 'rgba(255, 255, 255, 0.2)',
+                          width: { xs: 36, md: 42 },
+                          height: { xs: 36, md: 42 },
+                        }}
+                      >
+                        <HiCheckCircle
+                          style={{ color: '#fff', fontSize: '1.5rem' }}
+                        />
+                      </Avatar>
+                    </Box>
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        fontWeight: 700,
+                        color: '#fff',
+                        mb: 0.5,
+                        fontSize: { xs: '1.5rem', md: '2rem' },
+                      }}
+                    >
+                      {dashboardData.myBookings?.length || 0}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontWeight: 500,
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                      }}
+                    >
+                      Active Bookings
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Pending Payments Stat */}
+              <Grid item xs={6} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background:
+                      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                    borderRadius: 2,
+                    height: '100%',
+                    boxShadow: '0 4px 12px rgba(250, 112, 154, 0.25)',
+                  }}
+                >
+                  <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 1,
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          bgcolor: 'rgba(255, 255, 255, 0.2)',
+                          width: { xs: 36, md: 42 },
+                          height: { xs: 36, md: 42 },
+                        }}
+                      >
+                        <HiCurrencyDollar
+                          style={{ color: '#fff', fontSize: '1.5rem' }}
+                        />
+                      </Avatar>
+                    </Box>
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        fontWeight: 700,
+                        color: '#fff',
+                        mb: 0.5,
+                        fontSize: { xs: '1.5rem', md: '2rem' },
+                      }}
+                    >
+                      {dashboardData.unpaidSettlements?.length || 0}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontWeight: 500,
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                      }}
+                    >
+                      Pending Payments
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+
+            {/* Top Section - Schedule & My Bookings */}
             <Grid
               container
               spacing={{ xs: 0, md: 2 }}

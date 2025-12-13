@@ -1,9 +1,22 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, Alert, Snackbar, Typography } from '@mui/material';
+import {
+  Box,
+  Alert,
+  Snackbar,
+  Typography,
+  Chip,
+  Avatar,
+  Tooltip,
+  Stack,
+} from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import PersonIcon from '@mui/icons-material/Person';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import EventIcon from '@mui/icons-material/Event';
+import PaymentIcon from '@mui/icons-material/Payment';
 import { HiInboxIn } from 'react-icons/hi';
 import { useState } from 'react';
 import { bookingAPI, paymentAPI } from '../../../utils/api';
@@ -329,51 +342,127 @@ const ManageBookingsTable = ({
   // Define columns that are common to all tabs
   const commonColumns = [
     {
-      field: 'actualBookingId', // Changed from 'id' to show actual booking ID
+      field: 'actualBookingId',
       headerName: 'ID',
-      flex: 1,
-      minWidth: 50,
+      flex: 0.6,
+      minWidth: 70,
       editable: false,
       headerAlign: 'center',
       align: 'center',
+      renderCell: (params) => (
+        <Chip
+          label={`#${params.value}`}
+          size="small"
+          sx={{
+            fontWeight: 600,
+            fontSize: '0.75rem',
+            bgcolor: '#f5f5f5',
+            border: '1px solid #e0e0e0',
+          }}
+        />
+      ),
     },
     {
       field: 'customer_name',
-      headerName: 'Customer Name',
+      headerName: 'Customer',
       flex: 1.5,
-      minWidth: 120,
+      minWidth: 140,
       editable: false,
       resizable: true,
-      headerAlign: 'center',
+      headerAlign: 'left',
+      renderCell: (params) => (
+        <Box>
+          <Typography
+            sx={{
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              color: '#1a1a1a',
+            }}
+          >
+            {params.value}
+          </Typography>
+          <Typography
+            sx={{
+              fontSize: '0.75rem',
+              color: '#757575',
+              mt: 0.3,
+            }}
+          >
+            {params.row.phone_number || ''}
+          </Typography>
+        </Box>
+      ),
     },
     {
       field: 'car_model',
-      headerName: 'Car',
-      flex: 1.5,
-      minWidth: 70,
+      headerName: 'Vehicle',
+      flex: 1.3,
+      minWidth: 130,
       editable: false,
       resizable: true,
-      headerAlign: 'center',
+      headerAlign: 'left',
+      renderCell: (params) => (
+        <Box>
+          <Typography
+            sx={{
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              color: '#1a1a1a',
+            }}
+          >
+            {params.value}
+          </Typography>
+          <Typography
+            sx={{
+              fontSize: '0.75rem',
+              color: '#757575',
+              mt: 0.3,
+            }}
+          >
+            {params.row.car_plate_number || params.row.plate_number || ''}
+          </Typography>
+        </Box>
+      ),
     },
     {
       field: 'start_date',
       headerName: 'Start Date',
-      flex: 1.5,
-      minWidth: 80,
+      flex: 1.1,
+      minWidth: 110,
       editable: false,
       resizable: true,
       headerAlign: 'center',
       align: 'center',
+      renderCell: (params) => {
+        const date = params.value?.split('T')?.[0] || params.value || '';
+        return (
+          <Typography
+            sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a' }}
+          >
+            {date}
+          </Typography>
+        );
+      },
     },
     {
       field: 'end_date',
       headerName: 'End Date',
-      flex: 1.5,
-      minWidth: 80,
+      flex: 1.1,
+      minWidth: 110,
       editable: false,
       resizable: true,
       headerAlign: 'center',
       align: 'center',
+      renderCell: (params) => {
+        const date = params.value?.split('T')?.[0] || params.value || '';
+        return (
+          <Typography
+            sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a' }}
+          >
+            {date}
+          </Typography>
+        );
+      },
     },
   ];
 
@@ -383,16 +472,27 @@ const ManageBookingsTable = ({
       {
         field: 'balance',
         headerName: 'Balance',
-        flex: 1.2,
+        flex: 0.9,
         minWidth: 100,
         resizable: false,
+        headerAlign: 'right',
+        align: 'right',
         renderCell: (params) => {
+          const balance = Number(params.value);
           return (
-            '₱' +
-            Number(params.value).toLocaleString('en-US', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })
+            <Typography
+              sx={{
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                color: balance > 0 ? '#d32f2f' : '#2e7d32',
+              }}
+            >
+              ₱
+              {balance.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </Typography>
           );
         },
       },
@@ -510,25 +610,24 @@ const ManageBookingsTable = ({
     CANCELLATION: [
       {
         field: 'request_type',
-        headerName: 'Request Type',
+        headerName: 'Status',
         flex: 2,
         minWidth: 200,
         resizable: true,
+        headerAlign: 'left',
         renderCell: (params) => {
           return (
-            <Box
+            <Chip
+              label="Cancellation Request"
+              size="small"
               sx={{
-                fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.8rem' },
-                color: '#d32f2f',
-                fontWeight: 500,
-                lineHeight: 1.3,
-                wordBreak: 'break-word',
-                whiteSpace: 'normal',
-                py: 0.5,
+                bgcolor: '#ffebee',
+                color: '#c62828',
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                border: '1px solid #ef9a9a',
               }}
-            >
-              ❌ Customer requested to cancel
-            </Box>
+            />
           );
         },
       },
@@ -850,11 +949,22 @@ const ManageBookingsTable = ({
             padding: { xs: '8px', sm: '16px', md: '16px', lg: '4px 10px' },
           },
           '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#f5f5f5',
+            backgroundColor: '#fafafa',
+            borderBottom: '2px solid #e0e0e0',
           },
           '& .MuiDataGrid-columnHeaderTitle': {
-            fontWeight: 'bold',
-            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            fontWeight: 700,
+            fontSize: { xs: '0.813rem', sm: '0.875rem' },
+            color: '#424242',
+          },
+          '& .MuiDataGrid-row': {
+            '&:hover': {
+              backgroundColor: '#f5f5f5',
+            },
+          },
+          '& .MuiDataGrid-cell': {
+            borderBottom: '1px solid #f0f0f0',
+            py: 1,
           },
           '& .MuiTablePagination-root': {
             color: '#000',

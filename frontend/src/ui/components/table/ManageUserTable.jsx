@@ -6,6 +6,7 @@ import {
   useMediaQuery,
   Skeleton,
   Typography,
+  Chip,
 } from '@mui/material';
 import { HiInboxIn } from 'react-icons/hi';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
@@ -80,29 +81,49 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
       field: 'first_name',
       headerName: 'First Name',
       flex: 1,
-      minWidth: 70,
+      minWidth: 100,
       editable: false,
+      renderCell: (params) => (
+        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+          {params.value}
+        </Typography>
+      ),
     },
     {
       field: 'last_name',
       headerName: 'Last Name',
       flex: 1,
-      minWidth: 70,
+      minWidth: 100,
       editable: false,
+      renderCell: (params) => (
+        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+          {params.value}
+        </Typography>
+      ),
     },
     {
       field: 'address',
       headerName: 'Address',
       flex: 1.5,
-      minWidth: 120,
+      minWidth: 150,
       editable: false,
+      renderCell: (params) => (
+        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+          {params.value}
+        </Typography>
+      ),
     },
     {
       field: 'contact_number',
       headerName: 'Contact #',
       flex: 1,
-      minWidth: 90,
+      minWidth: 100,
       editable: false,
+      renderCell: (params) => (
+        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+          {params.value}
+        </Typography>
+      ),
     },
   ];
 
@@ -113,10 +134,17 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         field: 'fb_link',
         headerName: 'SocMed Link',
         flex: 1.2,
-        minWidth: 80,
+        minWidth: 100,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => {
           const url = params.value;
-          if (!url) return <span>-</span>;
+          if (!url)
+            return (
+              <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                -
+              </Typography>
+            );
           return (
             <a
               href={url}
@@ -126,7 +154,8 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
               style={{
                 color: '#1976d2',
                 textDecoration: 'none',
-                fontWeight: 500,
+                fontWeight: 600,
+                fontSize: '0.875rem',
               }}
             >
               Link
@@ -138,20 +167,35 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         field: 'email',
         headerName: 'Email',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 150,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'driver_license_no',
         headerName: 'License #',
         flex: 1.2,
-        minWidth: 80,
+        minWidth: 100,
         hide: isSmallScreen,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'username',
         headerName: 'Username',
         flex: 1.2,
-        minWidth: 90,
+        minWidth: 100,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
     ],
     STAFF: [
@@ -159,13 +203,23 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         field: 'email',
         headerName: 'Email',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 150,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'username',
         headerName: 'Username',
         flex: 2,
-        minWidth: 90,
+        minWidth: 100,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
     ],
     DRIVER: [
@@ -173,22 +227,34 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         field: 'restriction',
         headerName: 'Restriction',
         flex: 1.5,
-        minWidth: 70,
+        minWidth: 100,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'expiryDate',
         headerName: 'Expiry Date',
         flex: 1.5,
-        minWidth: 80,
+        minWidth: 100,
         renderCell: (params) => (
-          <span>{formatDate(params?.row?.expiryDate ?? params?.value)}</span>
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {formatDate(params?.row?.expiryDate ?? params?.value)}
+          </Typography>
         ),
       },
       {
         field: 'username',
         headerName: 'Username',
         flex: 2,
-        minWidth: 90,
+        minWidth: 100,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
     ],
   };
@@ -277,14 +343,27 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         <Select
           value={statusLabel}
           onChange={handleStatusChange}
-          sx={{ width: 90, height: 20, fontSize: 12 }}
+          sx={{
+            width: 100,
+            height: 32,
+            fontSize: '0.8rem',
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: '#e0e0e0',
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: '#bdbdbd',
+            },
+          }}
           onClick={(e) => e.stopPropagation()}
           MenuProps={{ disableScrollLock: true }}
         >
-          <MenuItem value="Active" sx={{ fontSize: 12 }}>
+          <MenuItem value="Active" sx={{ fontSize: '0.8rem', fontWeight: 600 }}>
             Active
           </MenuItem>
-          <MenuItem value="Inactive" sx={{ fontSize: 12 }}>
+          <MenuItem
+            value="Inactive"
+            sx={{ fontSize: '0.8rem', fontWeight: 600 }}
+          >
             Inactive
           </MenuItem>
         </Select>
@@ -305,23 +384,30 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         width: '100%',
         height: '100%',
         '& .MuiDataGrid-root': {
-          backgroundColor: '#fff',
+          background:
+            'linear-gradient(135deg, rgba(193, 0, 7, 0.05) 0%, rgba(139, 0, 5, 0.06) 100%)',
           border: 'none',
           '& .MuiDataGrid-cell': {
-            fontSize: {
-              xs: '0.75rem',
-              sm: '0.875rem',
-              md: '0.875rem',
-              lg: '0.925rem',
+            fontSize: '0.875rem',
+            padding: '12px 16px',
+            borderBottom: '1px solid #f0f0f0',
+          },
+          '& .MuiDataGrid-row': {
+            '&:hover': {
+              backgroundColor: 'rgba(193, 0, 7, 0.12)',
             },
-            padding: { xs: '8px', sm: '16px', md: '16px', lg: '4px 10px' },
           },
           '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#f5f5f5',
+            backgroundColor: '#fafafa',
+            borderBottom: '2px solid #e0e0e0',
+            minHeight: '56px !important',
           },
           '& .MuiDataGrid-columnHeaderTitle': {
-            fontWeight: 'bold',
-            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            fontWeight: 700,
+            fontSize: '0.875rem',
+            color: '#424242',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
           },
           '& .MuiTablePagination-root': {
             color: '#000',
@@ -330,8 +416,8 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
             },
           },
           '& .MuiDataGrid-footerContainer': {
-            borderTop: '1px solid rgba(224, 224, 224, 1)',
-            backgroundColor: '#fff',
+            borderTop: '2px solid #e0e0e0',
+            backgroundColor: '#fafafa',
           },
           '& .MuiDataGrid-loadingOverlay': {
             backgroundColor: 'rgba(255, 255, 255, 0.8)',

@@ -1,5 +1,5 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, IconButton, Tooltip, Typography } from '@mui/material';
+import { Box, IconButton, Tooltip, Typography, Chip } from '@mui/material';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { HiInboxIn } from 'react-icons/hi';
 
@@ -49,8 +49,13 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
       field: 'customerName',
       headerName: 'Customer Name',
       flex: 1.5,
-      minWidth: 120,
+      minWidth: 140,
       editable: false,
+      renderCell: (params) => (
+        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+          {params.value}
+        </Typography>
+      ),
     },
   ];
 
@@ -61,29 +66,49 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         field: 'carModel',
         headerName: 'Car Model',
         flex: 1.5,
-        minWidth: 70,
+        minWidth: 120,
         editable: false,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'bookingDate',
         headerName: 'Booking Date',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 120,
         editable: false,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'completionDate',
         headerName: 'Completion Date',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 130,
         editable: false,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'cancellationDate',
         headerName: 'Cancellation Date',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 140,
         editable: false,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
     ],
     PAYMENT: [
@@ -91,46 +116,75 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         field: 'paymentMethod',
         headerName: 'Payment Method',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 130,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'referenceNo',
         headerName: 'Reference No',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 130,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'gCashNo',
         headerName: 'GCash No',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 110,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'totalAmount',
         headerName: 'Total Amount',
         flex: 1.5,
-        minWidth: 100,
-        renderCell: (params) => {
-          return params.value
-            ? '₱' +
+        minWidth: 120,
+        renderCell: (params) => (
+          <Typography
+            sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1976d2' }}
+          >
+            {params.value
+              ? '₱' +
                 Number(params.value).toLocaleString('en-US', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })
-            : 'N/A';
-        },
+              : 'N/A'}
+          </Typography>
+        ),
       },
       {
         field: 'paidDate',
         headerName: 'Paid Date',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 110,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'description',
         headerName: 'Description',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 130,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
     ],
     REFUND: [
@@ -138,46 +192,75 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         field: 'refundMethod',
         headerName: 'Refund Method',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 130,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'referenceNo',
         headerName: 'Reference No',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 130,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'gCashNo',
         headerName: 'GCash No',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 110,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'refundAmount',
         headerName: 'Refund Amount',
         flex: 1.5,
-        minWidth: 100,
-        renderCell: (params) => {
-          return params.value
-            ? '₱' +
+        minWidth: 130,
+        renderCell: (params) => (
+          <Typography
+            sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1976d2' }}
+          >
+            {params.value
+              ? '₱' +
                 Number(params.value).toLocaleString('en-US', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })
-            : 'N/A';
-        },
+              : 'N/A'}
+          </Typography>
+        ),
       },
       {
         field: 'refundDate',
         headerName: 'Refund Date',
         flex: 1.5,
-        minWidth: 100,
+        minWidth: 110,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'description',
         headerName: 'Description',
         flex: 1.5,
-        minWidth: 120,
+        minWidth: 130,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
     ],
   };
@@ -225,23 +308,30 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         width: '100%',
         height: '100%',
         '& .MuiDataGrid-root': {
-          backgroundColor: '#fff',
+          background:
+            'linear-gradient(135deg, rgba(193, 0, 7, 0.05) 0%, rgba(139, 0, 5, 0.06) 100%)',
           border: 'none',
           '& .MuiDataGrid-cell': {
-            fontSize: {
-              xs: '0.75rem',
-              sm: '0.875rem',
-              md: '0.875rem',
-              lg: '0.925rem',
+            fontSize: '0.875rem',
+            padding: '12px 16px',
+            borderBottom: '1px solid #f0f0f0',
+          },
+          '& .MuiDataGrid-row': {
+            '&:hover': {
+              backgroundColor: 'rgba(193, 0, 7, 0.12)',
             },
-            padding: { xs: '8px', sm: '16px', md: '16px', lg: '4px 10px' },
           },
           '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#f5f5f5',
+            backgroundColor: '#fafafa',
+            borderBottom: '2px solid #e0e0e0',
+            minHeight: '56px !important',
           },
           '& .MuiDataGrid-columnHeaderTitle': {
-            fontWeight: 'bold',
-            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            fontWeight: 700,
+            fontSize: '0.875rem',
+            color: '#424242',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
           },
           '& .MuiTablePagination-root': {
             color: '#000',
@@ -250,8 +340,8 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
             },
           },
           '& .MuiDataGrid-footerContainer': {
-            borderTop: '1px solid rgba(224, 224, 224, 1)',
-            backgroundColor: '#fff',
+            borderTop: '2px solid #e0e0e0',
+            backgroundColor: '#fafafa',
           },
         },
       }}

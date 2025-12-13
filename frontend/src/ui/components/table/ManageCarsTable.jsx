@@ -6,6 +6,7 @@ import {
   Select,
   MenuItem,
   Typography,
+  Chip,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -65,17 +66,31 @@ const ManageCarsTable = ({
       field: 'car_id',
       headerName: 'Car ID',
       flex: 1,
-      minWidth: 70,
+      minWidth: 80,
       editable: false,
-      headerAlign: 'center',
-      align: 'center',
+      renderCell: (params) => (
+        <Chip
+          label={`#${params.value}`}
+          size="small"
+          sx={{
+            backgroundColor: '#f5f5f5',
+            fontWeight: 600,
+            fontSize: '0.75rem',
+          }}
+        />
+      ),
     },
     {
       field: 'model',
       headerName: 'Model',
       flex: 1.5,
-      minWidth: 80,
+      minWidth: 120,
       editable: false,
+      renderCell: (params) => (
+        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+          {params.value}
+        </Typography>
+      ),
     },
   ];
 
@@ -88,6 +103,11 @@ const ManageCarsTable = ({
         flex: 1.5,
         minWidth: 80,
         editable: false,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'car_type',
@@ -95,6 +115,11 @@ const ManageCarsTable = ({
         flex: 1.5,
         minWidth: 80,
         editable: false,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'year',
@@ -102,6 +127,11 @@ const ManageCarsTable = ({
         flex: 1.5,
         minWidth: 80,
         editable: false,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'mileage',
@@ -109,6 +139,11 @@ const ManageCarsTable = ({
         flex: 1.5,
         minWidth: 80,
         editable: false,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'no_of_seat',
@@ -116,6 +151,11 @@ const ManageCarsTable = ({
         flex: 1.5,
         minWidth: 70,
         editable: false,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'isManual',
@@ -123,9 +163,11 @@ const ManageCarsTable = ({
         flex: 1.5,
         minWidth: 100,
         editable: false,
-        renderCell: (params) => {
-          return params.value ? 'Manual' : 'Automatic';
-        },
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value ? 'Manual' : 'Automatic'}
+          </Typography>
+        ),
       },
       {
         field: 'rent_price',
@@ -133,15 +175,19 @@ const ManageCarsTable = ({
         flex: 1.5,
         minWidth: 100,
         editable: false,
-        renderCell: (params) => {
-          return params.value
-            ? '₱' +
+        renderCell: (params) => (
+          <Typography
+            sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1976d2' }}
+          >
+            {params.value
+              ? '₱' +
                 Number(params.value).toLocaleString('en-US', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })
-            : 'N/A';
-        },
+              : 'N/A'}
+          </Typography>
+        ),
       },
       {
         field: 'license_plate',
@@ -149,12 +195,17 @@ const ManageCarsTable = ({
         flex: 1.5,
         minWidth: 100,
         editable: false,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'status',
         headerName: 'Status',
         flex: 1.5,
-        minWidth: 130,
+        minWidth: 140,
         sortable: false,
         filterable: false,
         renderCell: (params) => {
@@ -168,10 +219,18 @@ const ManageCarsTable = ({
               }}
               onChange={(e) => {
                 const newStatus = e.target.value;
-                // notify parent with the raw row
                 onStatusChange?.(params.row, newStatus);
               }}
-              sx={{ fontSize: '0.775rem', minWidth: 120 }}
+              sx={{
+                fontSize: '0.8rem',
+                minWidth: 125,
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#e0e0e0',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#bdbdbd',
+                },
+              }}
             >
               <MenuItem value="Available">Available</MenuItem>
               <MenuItem value="Rented">Rented</MenuItem>
@@ -218,16 +277,25 @@ const ManageCarsTable = ({
         flex: 1.5,
         minWidth: 100,
         renderCell: (params) => {
-          // Try multiple potential field names for start date
           const value =
             params.row.maintenance_start_date ||
             params.row.start_date ||
             params.row.startDate ||
             params.row.start;
 
-          if (!value) return 'N/A';
+          if (!value)
+            return (
+              <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                N/A
+              </Typography>
+            );
           const d = new Date(value);
-          return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+          const dateStr = isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+          return (
+            <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+              {dateStr}
+            </Typography>
+          );
         },
       },
       {
@@ -236,16 +304,25 @@ const ManageCarsTable = ({
         flex: 1.5,
         minWidth: 100,
         renderCell: (params) => {
-          // Try multiple potential field names for end date
           const value =
             params.row.maintenance_end_date ||
             params.row.end_date ||
             params.row.endDate ||
             params.row.end;
 
-          if (!value) return 'N/A';
+          if (!value)
+            return (
+              <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                N/A
+              </Typography>
+            );
           const d = new Date(value);
-          return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+          const dateStr = isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+          return (
+            <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+              {dateStr}
+            </Typography>
+          );
         },
       },
       {
@@ -253,29 +330,41 @@ const ManageCarsTable = ({
         headerName: 'Description',
         flex: 1.5,
         minWidth: 120,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'maintenance_shop_name',
-
         headerName: 'Shop Assigned',
         flex: 1.5,
         minWidth: 120,
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
       },
       {
         field: 'maintenance_cost',
-
         headerName: 'Maintenance Fee',
         flex: 1.5,
-        minWidth: 120,
-        renderCell: (params) => {
-          return params.value
-            ? '₱' +
+        minWidth: 130,
+        renderCell: (params) => (
+          <Typography
+            sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1976d2' }}
+          >
+            {params.value
+              ? '₱' +
                 Number(params.value).toLocaleString('en-US', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })
-            : 'N/A';
-        },
+              : 'N/A'}
+          </Typography>
+        ),
       },
       {
         field: 'action',
@@ -334,23 +423,30 @@ const ManageCarsTable = ({
         width: '100%',
         height: '100%',
         '& .MuiDataGrid-root': {
-          backgroundColor: '#fff',
+          background:
+            'linear-gradient(135deg, rgba(193, 0, 7, 0.05) 0%, rgba(139, 0, 5, 0.06) 100%)',
           border: 'none',
           '& .MuiDataGrid-cell': {
-            fontSize: {
-              xs: '0.75rem',
-              sm: '0.875rem',
-              md: '0.875rem',
-              lg: '0.925rem',
+            fontSize: '0.875rem',
+            padding: '12px 16px',
+            borderBottom: '1px solid #f0f0f0',
+          },
+          '& .MuiDataGrid-row': {
+            '&:hover': {
+              backgroundColor: 'rgba(193, 0, 7, 0.12)',
             },
-            padding: { xs: '8px', sm: '16px', md: '16px', lg: '4px 10px' },
           },
           '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#f5f5f5',
+            backgroundColor: '#fafafa',
+            borderBottom: '2px solid #e0e0e0',
+            minHeight: '56px !important',
           },
           '& .MuiDataGrid-columnHeaderTitle': {
-            fontWeight: 'bold',
-            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            fontWeight: 700,
+            fontSize: '0.875rem',
+            color: '#424242',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
           },
           '& .MuiTablePagination-root': {
             color: '#000',
@@ -359,8 +455,8 @@ const ManageCarsTable = ({
             },
           },
           '& .MuiDataGrid-footerContainer': {
-            borderTop: '1px solid rgba(224, 224, 224, 1)',
-            backgroundColor: '#fff',
+            borderTop: '2px solid #e0e0e0',
+            backgroundColor: '#fafafa',
           },
         },
       }}

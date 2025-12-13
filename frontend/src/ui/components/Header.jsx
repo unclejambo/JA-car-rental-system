@@ -316,8 +316,15 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
       // Sort by timestamp (newest first)
       notificationsList.sort((a, b) => b.timestamp - a.timestamp);
 
-      setNotifications(notificationsList);
-      setNotificationCount(notificationsList.length);
+      // Filter out dismissed notifications
+      const dismissedKey = `dismissedNotifications_admin_${user?.id || user?.admin_id}`;
+      const dismissed = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
+      const filteredNotifications = notificationsList.filter(
+        (n) => !dismissed.includes(n.id)
+      );
+
+      setNotifications(filteredNotifications);
+      setNotificationCount(filteredNotifications.length);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     }
@@ -457,8 +464,15 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
       // Sort by timestamp (newest first)
       notificationsList.sort((a, b) => b.timestamp - a.timestamp);
 
-      setNotifications(notificationsList);
-      setNotificationCount(notificationsList.length);
+      // Filter out dismissed notifications
+      const dismissedKey = `dismissedNotifications_customer_${user?.id || user?.customer_id}`;
+      const dismissed = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
+      const filteredNotifications = notificationsList.filter(
+        (n) => !dismissed.includes(n.id)
+      );
+
+      setNotifications(filteredNotifications);
+      setNotificationCount(filteredNotifications.length);
     } catch (error) {
       console.error('Failed to fetch customer notifications:', error);
     }
@@ -545,8 +559,15 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
       // Sort by timestamp (newest first)
       notificationsList.sort((a, b) => b.timestamp - a.timestamp);
 
-      setNotifications(notificationsList);
-      setNotificationCount(notificationsList.length);
+      // Filter out dismissed notifications
+      const dismissedKey = `dismissedNotifications_driver_${user?.id || user?.drivers_id}`;
+      const dismissed = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
+      const filteredNotifications = notificationsList.filter(
+        (n) => !dismissed.includes(n.id)
+      );
+
+      setNotifications(filteredNotifications);
+      setNotificationCount(filteredNotifications.length);
     } catch (error) {
       console.error('Failed to fetch driver notifications:', error);
     }
@@ -616,6 +637,15 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
   };
 
   const handleNotificationItemClick = (notificationId) => {
+    // Store dismissed notification ID in localStorage
+    const dismissedKey = `dismissedNotifications_${userRole}_${user?.id || user?.customer_id || user?.admin_id || user?.drivers_id}`;
+    const dismissed = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
+
+    if (!dismissed.includes(notificationId)) {
+      dismissed.push(notificationId);
+      localStorage.setItem(dismissedKey, JSON.stringify(dismissed));
+    }
+
     // Remove the clicked notification from the list
     setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
     setNotificationCount((prev) => Math.max(0, prev - 1));

@@ -947,6 +947,8 @@ const ManageBookingsTable = ({
               lg: '0.925rem',
             },
             padding: { xs: '8px', sm: '16px', md: '16px', lg: '4px 10px' },
+            borderBottom: '1px solid #f0f0f0',
+            py: 1,
           },
           '& .MuiDataGrid-columnHeaders': {
             backgroundColor: '#fafafa',
@@ -961,10 +963,6 @@ const ManageBookingsTable = ({
             '&:hover': {
               backgroundColor: '#f5f5f5',
             },
-          },
-          '& .MuiDataGrid-cell': {
-            borderBottom: '1px solid #f0f0f0',
-            py: 1,
           },
           '& .MuiTablePagination-root': {
             color: '#000',

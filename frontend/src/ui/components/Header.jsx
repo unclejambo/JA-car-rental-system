@@ -158,192 +158,394 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
     };
   }, [userRole, user]);
 
-  // Fetch notifications for admin
-  useEffect(() => {
+  // Admin notification fetching logic
+  const fetchAdminNotifications = async () => {
     if (!isAuthenticated || (userRole !== 'admin' && userRole !== 'staff')) {
       setNotifications([]);
       setNotificationCount(0);
       return;
     }
 
-    const fetchNotifications = async () => {
-      try {
-        const [schedules, allBookings] = await Promise.all([
-          authenticatedFetch(`${API_BASE}/schedules`).then(async (r) => {
-            if (!r.ok) return [];
-            const data = await r.json();
-            return Array.isArray(data) ? data : data.data || [];
-          }),
-          authenticatedFetch(`${API_BASE}/bookings`).then(async (r) => {
-            if (!r.ok) return [];
-            const data = await r.json();
-            return Array.isArray(data) ? data : data.data || [];
-          }),
-        ]);
+    try {
+      const [schedules, allBookings] = await Promise.all([
+        authenticatedFetch(`${API_BASE}/schedules`).then(async (r) => {
+          if (!r.ok) return [];
+          const data = await r.json();
+          return Array.isArray(data) ? data : data.data || [];
+        }),
+        authenticatedFetch(`${API_BASE}/bookings`).then(async (r) => {
+          if (!r.ok) return [];
+          const data = await r.json();
+          return Array.isArray(data) ? data : data.data || [];
+        }),
+      ]);
 
-        const notificationsList = [];
-        const now = new Date();
+      const notificationsList = [];
+      const now = new Date();
 
-        // Helper to check if booking is release candidate
-        const isReleaseCandidate = (row) => {
-          try {
-            const status = (row.status || row.booking_status || '')
-              .toString()
-              .toLowerCase();
-            // Only show for confirmed bookings (not yet released)
-            if (status !== 'confirmed') return false;
-            const pickup = row.pickup_time || row.start_date || row.startDate;
-            if (!pickup) return false;
-            const pickupTime = new Date(pickup);
-            const diff = pickupTime - now;
-            return diff <= 60 * 60 * 1000 && diff >= -60 * 60 * 1000;
-          } catch (e) {
-            return false;
+      // Helper to check if booking is release candidate
+      const isReleaseCandidate = (row) => {
+        try {
+          const status = (row.status || row.booking_status || '')
+            .toString()
+            .toLowerCase();
+          // Only show for confirmed bookings (not yet released)
+          if (status !== 'confirmed') return false;
+          const pickup = row.pickup_time || row.start_date || row.startDate;
+          if (!pickup) return false;
+          const pickupTime = new Date(pickup);
+          const diff = pickupTime - now;
+          return diff <= 60 * 60 * 1000 && diff >= -60 * 60 * 1000;
+        } catch (e) {
+          return false;
+        }
+      };
+
+      // Helper to check if booking is return candidate
+      const isReturnCandidate = (row) => {
+        try {
+          const status = (row.status || row.booking_status || '')
+            .toString()
+            .toLowerCase();
+          if (status === 'completed') return true;
+          if (
+            status === 'in progress' ||
+            status === 'in_progress' ||
+            status === 'ongoing'
+          ) {
+            const end = row.end_date || row.endDate || row.dropoff_time;
+            if (!end) return false;
+            const endTime = new Date(end);
+            return endTime <= now;
           }
-        };
+          return false;
+        } catch (e) {
+          return false;
+        }
+      };
 
-        // Helper to check if booking is return candidate
-        const isReturnCandidate = (row) => {
-          try {
-            const status = (row.status || row.booking_status || '')
-              .toString()
-              .toLowerCase();
-            if (status === 'completed') return true;
-            if (
-              status === 'in progress' ||
-              status === 'in_progress' ||
-              status === 'ongoing'
-            ) {
-              const end = row.end_date || row.endDate || row.dropoff_time;
-              if (!end) return false;
-              const endTime = new Date(end);
-              return endTime <= now;
-            }
-            return false;
-          } catch (e) {
-            return false;
-          }
-        };
-
-        // Booking requests (pending)
-        const bookingRequests = allBookings.filter(
-          (booking) =>
-            booking.booking_status === 'Pending' ||
-            booking.booking_status === 'pending'
-        );
-        bookingRequests.forEach((booking) => {
-          notificationsList.push({
-            id: `booking-${booking.booking_id}`,
-            type: 'booking',
-            title: 'New Booking Request',
-            message: `${booking.customer_name || 'Customer'} - ${booking.car_model || 'Car'}`,
-            timestamp: new Date(booking.booking_date),
-            link: '/manage-booking?tab=BOOKINGS',
-          });
-        });
-
-        // Cancellation requests (sort by most recent updated_at)
-        const cancellationRequests = allBookings.filter(
-          (booking) => booking.isCancel
-        );
-        cancellationRequests.forEach((booking) => {
-          notificationsList.push({
-            id: `cancel-${booking.booking_id}`,
-            type: 'cancellation',
-            title: 'Cancellation Request',
-            message: `${booking.customer_name || 'Customer'} - ${booking.car_model || 'Car'}`,
-            timestamp: new Date(
-              booking.updated_at || booking.booking_date || Date.now()
-            ),
-            link: '/manage-booking?tab=CANCELLATION',
-          });
-        });
-
-        // Extension requests (sort by most recent updated_at)
-        const extensionRequests = allBookings.filter(
-          (booking) => booking.isExtend
-        );
-        extensionRequests.forEach((booking) => {
-          notificationsList.push({
-            id: `extend-${booking.booking_id}`,
-            type: 'extension',
-            title: 'Extension Request',
-            message: `${booking.customer_name || 'Customer'} - ${booking.car_model || 'Car'}`,
-            timestamp: new Date(
-              booking.updated_at || booking.booking_date || Date.now()
-            ),
-            link: '/manage-booking?tab=EXTENSION',
-          });
-        });
-
-        // For Release (within 1 hour of pickup)
-        const forRelease = schedules.filter((schedule) =>
-          isReleaseCandidate(schedule)
-        );
-        forRelease.forEach((schedule) => {
-          const pickupTime = new Date(
-            schedule.pickup_time || schedule.start_date
-          );
-          const isOverdue = pickupTime < now;
-          notificationsList.push({
-            id: `release-${schedule.booking_id}`,
-            type: isOverdue ? 'overdue-release' : 'release',
-            title: isOverdue ? 'Overdue Release' : 'Ready for Release',
-            message: `${schedule.customer_name || 'Customer'} - ${schedule.car_model || 'Car'}`,
-            timestamp: pickupTime,
-            link: '/schedule?tab=RELEASE',
-          });
-        });
-
-        // For Return (completed or past end time)
-        const forReturn = schedules.filter((schedule) =>
-          isReturnCandidate(schedule)
-        );
-        forReturn.forEach((schedule) => {
-          const returnTime = new Date(
-            schedule.dropoff_time || schedule.end_date
-          );
-          const isOverdue =
-            returnTime < now &&
-            schedule.booking_status?.toLowerCase() !== 'completed';
-          notificationsList.push({
-            id: `return-${schedule.booking_id}`,
-            type: isOverdue ? 'overdue-return' : 'return',
-            title: isOverdue ? 'Overdue Return' : 'Ready for Return',
-            message: `${schedule.customer_name || 'Customer'} - ${schedule.car_model || 'Car'}`,
-            timestamp: returnTime,
-            link: '/schedule?tab=RETURN',
-          });
-        });
-
-        // Sort by timestamp (newest first)
-        notificationsList.sort((a, b) => b.timestamp - a.timestamp);
-
-        setNotifications(notificationsList);
-        setNotificationCount(notificationsList.length);
-      } catch (error) {
-        console.error('Failed to fetch notifications:', error);
-      }
-    };
-
-    fetchNotifications();
-    // Refresh notifications every minute
-    const interval = setInterval(fetchNotifications, 60000);
-
-    // Listen for notification refresh events (triggered after admin actions)
-    const handleRefreshNotifications = () => {
-      fetchNotifications();
-    };
-    window.addEventListener('refreshNotifications', handleRefreshNotifications);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener(
-        'refreshNotifications',
-        handleRefreshNotifications
+      // Booking requests (pending)
+      const bookingRequests = allBookings.filter(
+        (booking) =>
+          booking.booking_status === 'Pending' ||
+          booking.booking_status === 'pending'
       );
-    };
-  }, [isAuthenticated, userRole, authenticatedFetch, API_BASE]);
+      bookingRequests.forEach((booking) => {
+        notificationsList.push({
+          id: `booking-${booking.booking_id}`,
+          type: 'booking',
+          title: 'New Booking Request',
+          message: `${booking.customer_name || 'Customer'} - ${booking.car_model || 'Car'}`,
+          timestamp: new Date(booking.booking_date),
+          link: '/manage-booking?tab=BOOKINGS',
+        });
+      });
+
+      // Cancellation requests (sort by most recent updated_at)
+      const cancellationRequests = allBookings.filter(
+        (booking) => booking.isCancel
+      );
+      cancellationRequests.forEach((booking) => {
+        notificationsList.push({
+          id: `cancel-${booking.booking_id}`,
+          type: 'cancellation',
+          title: 'Cancellation Request',
+          message: `${booking.customer_name || 'Customer'} - ${booking.car_model || 'Car'}`,
+          timestamp: new Date(
+            booking.updated_at || booking.booking_date || Date.now()
+          ),
+          link: '/manage-booking?tab=CANCELLATION',
+        });
+      });
+
+      // Extension requests (sort by most recent updated_at)
+      const extensionRequests = allBookings.filter(
+        (booking) => booking.isExtend
+      );
+      extensionRequests.forEach((booking) => {
+        notificationsList.push({
+          id: `extend-${booking.booking_id}`,
+          type: 'extension',
+          title: 'Extension Request',
+          message: `${booking.customer_name || 'Customer'} - ${booking.car_model || 'Car'}`,
+          timestamp: new Date(
+            booking.updated_at || booking.booking_date || Date.now()
+          ),
+          link: '/manage-booking?tab=EXTENSION',
+        });
+      });
+
+      // For Release (within 1 hour of pickup)
+      const forRelease = schedules.filter((schedule) =>
+        isReleaseCandidate(schedule)
+      );
+      forRelease.forEach((schedule) => {
+        const pickupTime = new Date(
+          schedule.pickup_time || schedule.start_date
+        );
+        const isOverdue = pickupTime < now;
+        notificationsList.push({
+          id: `release-${schedule.booking_id}`,
+          type: isOverdue ? 'overdue-release' : 'release',
+          title: isOverdue ? 'Overdue Release' : 'Ready for Release',
+          message: `${schedule.customer_name || 'Customer'} - ${schedule.car_model || 'Car'}`,
+          timestamp: pickupTime,
+          link: '/schedule?tab=RELEASE',
+        });
+      });
+
+      // For Return (completed or past end time)
+      const forReturn = schedules.filter((schedule) =>
+        isReturnCandidate(schedule)
+      );
+      forReturn.forEach((schedule) => {
+        const returnTime = new Date(schedule.dropoff_time || schedule.end_date);
+        const isOverdue =
+          returnTime < now &&
+          schedule.booking_status?.toLowerCase() !== 'completed';
+        notificationsList.push({
+          id: `return-${schedule.booking_id}`,
+          type: isOverdue ? 'overdue-return' : 'return',
+          title: isOverdue ? 'Overdue Return' : 'Ready for Return',
+          message: `${schedule.customer_name || 'Customer'} - ${schedule.car_model || 'Car'}`,
+          timestamp: returnTime,
+          link: '/schedule?tab=RETURN',
+        });
+      });
+
+      // Sort by timestamp (newest first)
+      notificationsList.sort((a, b) => b.timestamp - a.timestamp);
+
+      setNotifications(notificationsList);
+      setNotificationCount(notificationsList.length);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  // Customer notification fetching logic
+  const fetchCustomerNotifications = async () => {
+    try {
+      const response = await authenticatedFetch(
+        `${API_BASE}/bookings/my-bookings/list`
+      );
+      if (!response.ok) return;
+
+      const bookings = await response.json();
+      const bookingsList = Array.isArray(bookings)
+        ? bookings
+        : bookings.data || [];
+
+      const notificationsList = [];
+
+      // Check for newly confirmed bookings (accepted booking requests)
+      bookingsList.forEach((booking) => {
+        // Booking accepted (status changed to Confirmed recently)
+        if (booking.booking_status === 'Confirmed' && booking.updated_at) {
+          const updatedTime = new Date(booking.updated_at);
+          const timeSinceUpdate = Date.now() - updatedTime.getTime();
+          // Show if updated within last 7 days
+          if (timeSinceUpdate < 7 * 24 * 60 * 60 * 1000) {
+            notificationsList.push({
+              id: `booking-accepted-${booking.booking_id}`,
+              type: 'booking-accepted',
+              title: 'Booking Confirmed',
+              message: `Your booking for ${booking.car_details?.display_name || 'car'} has been confirmed`,
+              timestamp: updatedTime,
+              link: '/customer-bookings',
+            });
+          }
+        }
+
+        // Booking rejected
+        if (booking.booking_status === 'Rejected' && booking.updated_at) {
+          const updatedTime = new Date(booking.updated_at);
+          const timeSinceUpdate = Date.now() - updatedTime.getTime();
+          if (timeSinceUpdate < 7 * 24 * 60 * 60 * 1000) {
+            notificationsList.push({
+              id: `booking-rejected-${booking.booking_id}`,
+              type: 'booking-rejected',
+              title: 'Booking Rejected',
+              message: `Your booking request for ${booking.car_details?.display_name || 'car'} was rejected`,
+              timestamp: updatedTime,
+              link: '/customer-bookings',
+            });
+          }
+        }
+
+        // Extension accepted
+        if (booking.isExtended && booking.updated_at) {
+          const updatedTime = new Date(booking.updated_at);
+          const timeSinceUpdate = Date.now() - updatedTime.getTime();
+          if (timeSinceUpdate < 7 * 24 * 60 * 60 * 1000) {
+            notificationsList.push({
+              id: `extension-accepted-${booking.booking_id}`,
+              type: 'extension-accepted',
+              title: 'Extension Approved',
+              message: `Your extension request for ${booking.car_details?.display_name || 'car'} has been approved`,
+              timestamp: updatedTime,
+              link: '/customer-bookings',
+            });
+          }
+        }
+
+        // Cancellation approved (status changed to Cancelled after isCancel was true)
+        if (booking.booking_status === 'Cancelled' && booking.updated_at) {
+          const updatedTime = new Date(booking.updated_at);
+          const timeSinceUpdate = Date.now() - updatedTime.getTime();
+          if (timeSinceUpdate < 7 * 24 * 60 * 60 * 1000) {
+            notificationsList.push({
+              id: `cancellation-approved-${booking.booking_id}`,
+              type: 'cancellation-approved',
+              title: 'Cancellation Approved',
+              message: `Your cancellation request for ${booking.car_details?.display_name || 'car'} has been approved`,
+              timestamp: updatedTime,
+              link: '/customer-bookings',
+            });
+          }
+        }
+
+        // Payment request accepted
+        if (booking.payment_status === 'Paid' && booking.updated_at) {
+          const updatedTime = new Date(booking.updated_at);
+          const timeSinceUpdate = Date.now() - updatedTime.getTime();
+          if (timeSinceUpdate < 7 * 24 * 60 * 60 * 1000) {
+            notificationsList.push({
+              id: `payment-confirmed-${booking.booking_id}`,
+              type: 'payment-confirmed',
+              title: 'Payment Confirmed',
+              message: `Payment for ${booking.car_details?.display_name || 'car'} has been confirmed`,
+              timestamp: updatedTime,
+              link: '/customer-bookings?tab=settlement',
+            });
+          }
+        }
+      });
+
+      // Sort by timestamp (newest first)
+      notificationsList.sort((a, b) => b.timestamp - a.timestamp);
+
+      setNotifications(notificationsList);
+      setNotificationCount(notificationsList.length);
+    } catch (error) {
+      console.error('Failed to fetch customer notifications:', error);
+    }
+  };
+
+  // Driver notification fetching logic
+  const fetchDriverNotifications = async () => {
+    try {
+      const response = await authenticatedFetch(
+        `${API_BASE}/schedules/driver/me`
+      );
+      if (!response.ok) return;
+
+      const schedules = await response.json();
+      const schedulesList = Array.isArray(schedules)
+        ? schedules
+        : schedules.data || [];
+
+      const notificationsList = [];
+
+      schedulesList.forEach((schedule) => {
+        // New assignment (recently assigned driver)
+        if (schedule.booking_status === 'Confirmed' && schedule.updated_at) {
+          const assignedTime = new Date(schedule.updated_at);
+          const timeSinceAssignment = Date.now() - assignedTime.getTime();
+          // Show if assigned within last 3 days
+          if (timeSinceAssignment < 3 * 24 * 60 * 60 * 1000) {
+            notificationsList.push({
+              id: `assigned-${schedule.booking_id}`,
+              type: 'driver-assigned',
+              title: 'New Booking Assignment',
+              message: `You've been assigned to ${schedule.car_model || 'a booking'}`,
+              timestamp: assignedTime,
+              link: '/driver-schedule',
+            });
+          }
+        }
+
+        // Cancelled booking
+        if (schedule.booking_status === 'Cancelled' && schedule.updated_at) {
+          const cancelledTime = new Date(schedule.updated_at);
+          const timeSinceCancellation = Date.now() - cancelledTime.getTime();
+          if (timeSinceCancellation < 3 * 24 * 60 * 60 * 1000) {
+            notificationsList.push({
+              id: `cancelled-${schedule.booking_id}`,
+              type: 'driver-cancelled',
+              title: 'Booking Cancelled',
+              message: `Booking for ${schedule.car_model || 'car'} has been cancelled`,
+              timestamp: cancelledTime,
+              link: '/driver-schedule',
+            });
+          }
+        }
+      });
+
+      // Sort by timestamp (newest first)
+      notificationsList.sort((a, b) => b.timestamp - a.timestamp);
+
+      setNotifications(notificationsList);
+      setNotificationCount(notificationsList.length);
+    } catch (error) {
+      console.error('Failed to fetch driver notifications:', error);
+    }
+  };
+
+  // Fetch notifications for admin, customer, and driver
+  useEffect(() => {
+    if (!isAuthenticated || !userRole) {
+      setNotifications([]);
+      setNotificationCount(0);
+      return;
+    }
+
+    // Admin/Staff notifications
+    if (userRole === 'admin' || userRole === 'staff') {
+      fetchAdminNotifications();
+      const interval = setInterval(fetchAdminNotifications, 60000);
+      window.addEventListener('refreshNotifications', fetchAdminNotifications);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener(
+          'refreshNotifications',
+          fetchAdminNotifications
+        );
+      };
+    }
+
+    // Customer notifications
+    if (userRole === 'customer') {
+      fetchCustomerNotifications();
+      const interval = setInterval(fetchCustomerNotifications, 60000);
+      window.addEventListener(
+        'refreshNotifications',
+        fetchCustomerNotifications
+      );
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener(
+          'refreshNotifications',
+          fetchCustomerNotifications
+        );
+      };
+    }
+
+    // Driver notifications
+    if (userRole === 'driver') {
+      fetchDriverNotifications();
+      const interval = setInterval(fetchDriverNotifications, 60000);
+      window.addEventListener('refreshNotifications', fetchDriverNotifications);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener(
+          'refreshNotifications',
+          fetchDriverNotifications
+        );
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, userRole]);
 
   const handleNotificationClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -355,6 +557,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
 
   const getNotificationIcon = (type) => {
     switch (type) {
+      // Admin notifications
       case 'booking':
         return <HiBookOpen size={20} color="#c10007" />;
       case 'cancellation':
@@ -368,6 +571,25 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
       case 'overdue-release':
       case 'overdue-return':
         return <HiExclamationCircle size={20} color="#f44336" />;
+
+      // Customer notifications
+      case 'booking-accepted':
+        return <HiBookOpen size={20} color="#4caf50" />;
+      case 'booking-rejected':
+        return <HiXCircle size={20} color="#f44336" />;
+      case 'extension-accepted':
+        return <HiArrowsExpand size={20} color="#4caf50" />;
+      case 'cancellation-approved':
+        return <HiXCircle size={20} color="#ff9800" />;
+      case 'payment-confirmed':
+        return <HiBookOpen size={20} color="#4caf50" />;
+
+      // Driver notifications
+      case 'driver-assigned':
+        return <HiTruck size={20} color="#4caf50" />;
+      case 'driver-cancelled':
+        return <HiXCircle size={20} color="#f44336" />;
+
       default:
         return <HiBell size={20} />;
     }
@@ -457,8 +679,8 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
           </Link>
         )}
 
-        {/* Notification Bell - Only for Admin/Staff */}
-        {isAuthenticated && (userRole === 'admin' || userRole === 'staff') && (
+        {/* Notification Bell - For Admin/Staff, Customer, and Driver */}
+        {isAuthenticated && (
           <>
             <IconButton
               onClick={handleNotificationClick}

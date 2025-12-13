@@ -343,7 +343,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
       bookingsList.forEach((booking) => {
         const carName = booking.car_details?.display_name || 'car';
 
-        // 1. Booking Approved (Confirmed)
+        // 1. Booking Approved (Confirmed) - redirect to Schedule Page
         if (booking.booking_status === 'Confirmed' && booking.updated_at) {
           const updatedTime = new Date(booking.updated_at);
           const timeSinceUpdate = now - updatedTime.getTime();
@@ -354,12 +354,12 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
               title: 'Booking Approved ✓',
               message: `Admin approved your booking for ${carName}`,
               timestamp: updatedTime,
-              link: '/customer-bookings',
+              link: '/customer-schedule',
             });
           }
         }
 
-        // 2. Booking Rejected
+        // 2. Booking Rejected - redirect to Booking History, bookings tab
         if (booking.booking_status === 'Rejected' && booking.updated_at) {
           const updatedTime = new Date(booking.updated_at);
           const timeSinceUpdate = now - updatedTime.getTime();
@@ -370,12 +370,12 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
               title: 'Booking Rejected ✗',
               message: `Your booking request for ${carName} was rejected`,
               timestamp: updatedTime,
-              link: '/customer-bookings',
+              link: '/customer-bookings?tab=bookings',
             });
           }
         }
 
-        // 3. Extension Approved
+        // 3. Extension Approved - redirect to Schedule
         if (
           booking.extension_info?.extension_status === 'approved' &&
           booking.extension_info?.approve_time
@@ -389,12 +389,12 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
               title: 'Extension Approved ✓',
               message: `Admin approved your extension request for ${carName}`,
               timestamp: approveTime,
-              link: '/customer-bookings',
+              link: '/customer-schedule',
             });
           }
         }
 
-        // 4. Extension Rejected
+        // 4. Extension Rejected - redirect to Schedule
         if (
           booking.extension_info?.extension_status === 'Rejected' &&
           booking.updated_at
@@ -408,12 +408,12 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
               title: 'Extension Rejected ✗',
               message: `Your extension request for ${carName} was rejected`,
               timestamp: updatedTime,
-              link: '/customer-bookings',
+              link: '/customer-schedule',
             });
           }
         }
 
-        // 5. Cancellation Approved
+        // 5. Cancellation Approved - redirect to Booking History, bookings tab
         if (
           booking.booking_status === 'Cancelled' &&
           booking.isCancel &&
@@ -428,12 +428,12 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
               title: 'Cancellation Approved ✓',
               message: `Admin approved your cancellation for ${carName}`,
               timestamp: updatedTime,
-              link: '/customer-bookings',
+              link: '/customer-bookings?tab=bookings',
             });
           }
         }
 
-        // 6. Payment Received/Confirmed
+        // 6. Payment Received/Confirmed - redirect to BookingHistory Payments tab
         if (booking.payment_info && booking.payment_info.length > 0) {
           booking.payment_info.forEach((payment) => {
             if (payment.paid_date) {
@@ -613,6 +613,13 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
 
   const handleNotificationClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleNotificationItemClick = (notificationId) => {
+    // Remove the clicked notification from the list
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    setNotificationCount((prev) => Math.max(0, prev - 1));
+    handleNotificationClose();
   };
 
   const getNotificationIcon = (type) => {
@@ -802,7 +809,9 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
                       <ListItem
                         component={Link}
                         to={notification.link}
-                        onClick={handleNotificationClose}
+                        onClick={() =>
+                          handleNotificationItemClick(notification.id)
+                        }
                         sx={{
                           cursor: 'pointer',
                           '&:hover': { backgroundColor: '#f5f5f5' },

@@ -13,6 +13,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
+import { Settings } from '@mui/icons-material';
 import Header from '../../ui/components/Header';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Loading from '../../ui/components/Loading';
@@ -579,31 +580,46 @@ export default function AdminSettings() {
               sx={{
                 background: 'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
                 borderRadius: 3,
-                p: 3,
+                p: { xs: 2.5, md: 3 },
                 mb: 3,
-                color: '#fff',
-                boxShadow: '0 4px 12px rgba(193, 0, 7, 0.3)',
+                boxShadow: '0 4px 12px rgba(193, 0, 7, 0.15)',
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <HiCog8Tooth size={32} style={{ marginRight: '12px' }} />
-                <Typography
-                  variant="h4"
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar
                   sx={{
-                    fontSize: {
-                      xs: '1.5rem',
-                      sm: '2rem',
-                      md: '2.125rem',
-                    },
-                    fontWeight: 'bold',
+                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    width: { xs: 56, md: 64 },
+                    height: { xs: 56, md: 64 },
                   }}
                 >
-                  Admin Settings
-                </Typography>
+                  <Settings
+                    sx={{ fontSize: { xs: 32, md: 40 }, color: '#fff' }}
+                  />
+                </Avatar>
+                <Box>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontWeight: 700,
+                      color: '#fff',
+                      fontSize: { xs: '1.5rem', md: '2rem' },
+                      mb: 0.5,
+                    }}
+                  >
+                    Admin Settings
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      fontSize: { xs: '0.875rem', md: '1rem' },
+                    }}
+                  >
+                    Manage your admin profile and credentials
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body1" sx={{ opacity: 0.9 }}>
-                Manage your admin profile and credentials
-              </Typography>
             </Box>
             <Box
               sx={{

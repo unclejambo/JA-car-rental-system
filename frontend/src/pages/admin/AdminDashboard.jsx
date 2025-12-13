@@ -260,6 +260,39 @@ function AdminDashboard() {
           minHeight: '100vh',
         }}
       >
+        {/* Welcome Header */}
+        <Box
+          sx={{
+            background: 'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+            borderRadius: 3,
+            p: { xs: 2, md: 2.5 },
+            mb: 2,
+            mx: { xs: 2, md: 0 },
+            boxShadow: '0 2px 8px rgba(193, 0, 7, 0.2)',
+          }}
+        >
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 700,
+              color: '#fff',
+              mb: 0.5,
+              fontSize: { xs: '1.25rem', md: '1.5rem' },
+            }}
+          >
+            Admin Dashboard
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontSize: { xs: '0.8rem', md: '0.875rem' },
+            }}
+          >
+            Manage bookings, schedules, and monitor your rental operations
+          </Typography>
+        </Box>
+
         {/* For Release and For Return Section */}
         <Grid
           container
@@ -277,40 +310,59 @@ function AdminDashboard() {
           <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
             <Card
               sx={{
-                boxShadow: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 height: '100%',
                 minHeight: { xs: 'auto', md: 300 },
+                borderRadius: 3,
+                overflow: 'hidden',
               }}
             >
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: { xs: 1.5, md: 2 },
-                  }}
-                >
-                  <Box
+              {/* Gradient Header */}
+              <Box
+                sx={{
+                  background:
+                    'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+                  p: { xs: 2, md: 2.5 },
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Avatar
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: { xs: 0.5, md: 1 },
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
                     }}
                   >
                     <CarRental
-                      sx={{ color: '#c10007', fontSize: { xs: 20, md: 24 } }}
+                      sx={{ fontSize: { xs: 20, md: 24 }, color: '#fff' }}
                     />
+                  </Avatar>
+                  <Box>
                     <Typography
                       variant="h6"
                       sx={{
-                        fontWeight: 'bold',
+                        fontWeight: 700,
+                        color: '#fff',
                         fontSize: { xs: '1.125rem', md: '1.25rem' },
                       }}
                     >
                       FOR RELEASE
                     </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                      }}
+                    >
+                      Pending vehicle releases
+                    </Typography>
                   </Box>
+                </Box>
+                <Box>
                   {(() => {
                     const now = new Date();
                     const upcoming = dashboardData.forRelease.filter(
@@ -331,19 +383,22 @@ function AdminDashboard() {
                       <Chip
                         label={label}
                         sx={{
-                          bgcolor: overdue > 0 ? '#ff9800' : '#c10007',
+                          bgcolor:
+                            overdue > 0
+                              ? 'rgba(255, 152, 0, 0.9)'
+                              : 'rgba(255, 255, 255, 0.2)',
                           color: 'white',
                           fontWeight: 'bold',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
                         }}
                         size="small"
                       />
                     );
                   })()}
                 </Box>
-                <Divider
-                  sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
-                />
+              </Box>
 
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                 {dashboardData.forRelease.length > 0 ? (
                   <TableContainer
                     component={Paper}
@@ -521,40 +576,59 @@ function AdminDashboard() {
           <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
             <Card
               sx={{
-                boxShadow: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 height: '100%',
                 minHeight: { xs: 'auto', md: 300 },
+                borderRadius: 3,
+                overflow: 'hidden',
               }}
             >
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: { xs: 1.5, md: 2 },
-                  }}
-                >
-                  <Box
+              {/* Gradient Header */}
+              <Box
+                sx={{
+                  background:
+                    'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)',
+                  p: { xs: 2, md: 2.5 },
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Avatar
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: { xs: 0.5, md: 1 },
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
                     }}
                   >
                     <Event
-                      sx={{ color: '#000', fontSize: { xs: 20, md: 24 } }}
+                      sx={{ fontSize: { xs: 20, md: 24 }, color: '#fff' }}
                     />
+                  </Avatar>
+                  <Box>
                     <Typography
                       variant="h6"
                       sx={{
-                        fontWeight: 'bold',
+                        fontWeight: 700,
+                        color: '#fff',
                         fontSize: { xs: '1.125rem', md: '1.25rem' },
                       }}
                     >
                       FOR RETURN
                     </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                      }}
+                    >
+                      Completed returns
+                    </Typography>
                   </Box>
+                </Box>
+                <Box>
                   {(() => {
                     const now = new Date();
                     const upcoming = dashboardData.forReturn.filter(
@@ -575,19 +649,22 @@ function AdminDashboard() {
                       <Chip
                         label={label}
                         sx={{
-                          bgcolor: overdue > 0 ? '#ff9800' : '#000',
+                          bgcolor:
+                            overdue > 0
+                              ? 'rgba(255, 152, 0, 0.9)'
+                              : 'rgba(255, 255, 255, 0.2)',
                           color: 'white',
                           fontWeight: 'bold',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
                         }}
                         size="small"
                       />
                     );
                   })()}
                 </Box>
-                <Divider
-                  sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
-                />
+              </Box>
 
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                 {dashboardData.forReturn.length > 0 ? (
                   <TableContainer
                     component={Paper}
@@ -780,53 +857,70 @@ function AdminDashboard() {
             <Card
               sx={{
                 height: '100%',
-                boxShadow: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 minHeight: { xs: 'auto', md: 450 },
+                borderRadius: 3,
+                overflow: 'hidden',
               }}
             >
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: { xs: 1.5, md: 2 },
-                  }}
-                >
-                  <Box
+              {/* Gradient Header */}
+              <Box
+                sx={{
+                  background:
+                    'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+                  p: { xs: 2, md: 2.5 },
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Avatar
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: { xs: 0.5, md: 1 },
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
                     }}
                   >
                     <Schedule
-                      sx={{ color: '#c10007', fontSize: { xs: 20, md: 24 } }}
+                      sx={{ fontSize: { xs: 20, md: 24 }, color: '#fff' }}
                     />
+                  </Avatar>
+                  <Box>
                     <Typography
                       variant="h6"
                       sx={{
-                        fontWeight: 'bold',
+                        fontWeight: 700,
+                        color: '#fff',
                         fontSize: { xs: '1rem', md: '1.25rem' },
                       }}
                     >
                       ACTIVE BOOKINGS
                     </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                      }}
+                    >
+                      Confirmed and in-progress rentals
+                    </Typography>
                   </Box>
-                  <Chip
-                    label={`${dashboardData.weekSchedules.length} Active`}
-                    sx={{
-                      bgcolor: '#c10007',
-                      color: 'white',
-                      fontWeight: 'bold',
-                    }}
-                    size="small"
-                  />
                 </Box>
-                <Divider
-                  sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
+                <Chip
+                  label={`${dashboardData.weekSchedules.length} Active`}
+                  sx={{
+                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                  }}
+                  size="small"
                 />
+              </Box>
 
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                 {dashboardData.weekSchedules.length > 0 ? (
                   <TableContainer
                     component={Paper}
@@ -972,49 +1066,70 @@ function AdminDashboard() {
                 height: '100%',
                 flex: 1,
                 minWidth: 0,
-                boxShadow: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 minHeight: { xs: 'auto', md: 450 },
+                borderRadius: 3,
+                overflow: 'hidden',
               }}
             >
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: { xs: 1.5, md: 2 },
-                  }}
-                >
-                  <Box
+              {/* Gradient Header */}
+              <Box
+                sx={{
+                  background:
+                    'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)',
+                  p: { xs: 2, md: 2.5 },
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Avatar
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: { xs: 0.5, md: 1 },
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
                     }}
                   >
                     <CarRental
-                      sx={{ color: '#000', fontSize: { xs: 20, md: 24 } }}
+                      sx={{ fontSize: { xs: 20, md: 24 }, color: '#fff' }}
                     />
+                  </Avatar>
+                  <Box>
                     <Typography
                       variant="h6"
                       sx={{
-                        fontWeight: 'bold',
+                        fontWeight: 700,
+                        color: '#fff',
                         fontSize: { xs: '1rem', md: '1.25rem' },
                       }}
                     >
                       AVAILABLE CARS
                     </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                      }}
+                    >
+                      Ready for booking
+                    </Typography>
                   </Box>
-                  <Chip
-                    label={`${dashboardData.availableCars.length} Cars`}
-                    sx={{ bgcolor: '#000', color: 'white', fontWeight: 'bold' }}
-                    size="small"
-                  />
                 </Box>
-                <Divider
-                  sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
+                <Chip
+                  label={`${dashboardData.availableCars.length} Cars`}
+                  sx={{
+                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                  }}
+                  size="small"
                 />
+              </Box>
 
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                 {dashboardData.availableCars.length > 0 ? (
                   <List
                     sx={{
@@ -1115,50 +1230,72 @@ function AdminDashboard() {
         >
           {/* Booking Requests */}
           <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
-            <Card sx={{ boxShadow: 2, minHeight: { xs: 'auto', md: 400 } }}>
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: { xs: 1.5, md: 2 },
-                  }}
-                >
-                  <Box
+            <Card
+              sx={{
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                minHeight: { xs: 'auto', md: 400 },
+                borderRadius: 3,
+                overflow: 'hidden',
+              }}
+            >
+              {/* Gradient Header */}
+              <Box
+                sx={{
+                  background:
+                    'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+                  p: { xs: 2, md: 2.5 },
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Avatar
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: { xs: 0.5, md: 1 },
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
                     }}
                   >
                     <BookOnline
-                      sx={{ color: '#c10007', fontSize: { xs: 20, md: 24 } }}
+                      sx={{ fontSize: { xs: 20, md: 24 }, color: '#fff' }}
                     />
+                  </Avatar>
+                  <Box>
                     <Typography
                       variant="h6"
                       sx={{
-                        fontWeight: 'bold',
+                        fontWeight: 700,
+                        color: '#fff',
                         fontSize: { xs: '1rem', md: '1.25rem' },
                       }}
                     >
                       BOOKING REQUESTS
                     </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                      }}
+                    >
+                      Pending approvals
+                    </Typography>
                   </Box>
-                  <Chip
-                    label={`${dashboardData.bookingRequests.length} Pending`}
-                    sx={{
-                      bgcolor: '#c10007',
-                      color: 'white',
-                      fontWeight: 'bold',
-                    }}
-                    size="small"
-                  />
                 </Box>
-                <Divider
-                  sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
+                <Chip
+                  label={`${dashboardData.bookingRequests.length} Pending`}
+                  sx={{
+                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                  }}
+                  size="small"
                 />
+              </Box>
 
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                 {dashboardData.bookingRequests.length > 0 ? (
                   <List sx={{ py: 0 }}>
                     {dashboardData.bookingRequests.map((booking, index) => (
@@ -1240,46 +1377,72 @@ function AdminDashboard() {
 
           {/* Extension/Cancellation Requests */}
           <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
-            <Card sx={{ boxShadow: 2, minHeight: { xs: 'auto', md: 400 } }}>
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: { xs: 1.5, md: 2 },
-                  }}
-                >
-                  <Box
+            <Card
+              sx={{
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                minHeight: { xs: 'auto', md: 400 },
+                borderRadius: 3,
+                overflow: 'hidden',
+              }}
+            >
+              {/* Gradient Header */}
+              <Box
+                sx={{
+                  background:
+                    'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)',
+                  p: { xs: 2, md: 2.5 },
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Avatar
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: { xs: 0.5, md: 1 },
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
                     }}
                   >
                     <Extension
-                      sx={{ color: '#000', fontSize: { xs: 20, md: 24 } }}
+                      sx={{ fontSize: { xs: 20, md: 24 }, color: '#fff' }}
                     />
+                  </Avatar>
+                  <Box>
                     <Typography
                       variant="h6"
                       sx={{
-                        fontWeight: 'bold',
+                        fontWeight: 700,
+                        color: '#fff',
                         fontSize: { xs: '1rem', md: '1.25rem' },
                       }}
                     >
                       EXTENSION/CANCELLATION
                     </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                      }}
+                    >
+                      Pending requests
+                    </Typography>
                   </Box>
-                  <Chip
-                    label={`${dashboardData.extensionCancellationRequests.length} Pending`}
-                    sx={{ bgcolor: '#000', color: 'white', fontWeight: 'bold' }}
-                    size="small"
-                  />
                 </Box>
-                <Divider
-                  sx={{ mb: { xs: 1.5, md: 2 }, borderColor: '#e0e0e0' }}
+                <Chip
+                  label={`${dashboardData.extensionCancellationRequests.length} Pending`}
+                  sx={{
+                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                  }}
+                  size="small"
                 />
+              </Box>
 
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                 {dashboardData.extensionCancellationRequests.length > 0 ? (
                   <List sx={{ py: 0 }}>
                     {dashboardData.extensionCancellationRequests.map(

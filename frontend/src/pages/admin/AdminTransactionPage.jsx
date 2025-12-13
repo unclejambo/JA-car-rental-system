@@ -7,11 +7,13 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Avatar,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import { AccountBalance } from '@mui/icons-material';
 import { FaFileCsv } from 'react-icons/fa';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
@@ -167,8 +169,7 @@ export default function AdminTransactionPage() {
       };
       setSelectedBooking(mapped);
       setShowBookingDetailsModal(true);
-    } catch (e) {
-    }
+    } catch (e) {}
   };
 
   const closeBookingDetails = () => {
@@ -321,6 +322,53 @@ export default function AdminTransactionPage() {
             flexDirection: 'column',
           }}
         >
+          {/* Welcome Header */}
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+              borderRadius: 3,
+              p: { xs: 2.5, md: 3 },
+              mb: 3,
+              boxShadow: '0 4px 12px rgba(193, 0, 7, 0.15)',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  width: { xs: 56, md: 64 },
+                  height: { xs: 56, md: 64 },
+                }}
+              >
+                <AccountBalance
+                  sx={{ fontSize: { xs: 32, md: 40 }, color: '#fff' }}
+                />
+              </Avatar>
+              <Box>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 700,
+                    color: '#fff',
+                    fontSize: { xs: '1.5rem', md: '2rem' },
+                    mb: 0.5,
+                  }}
+                >
+                  Transaction Management
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: { xs: '0.875rem', md: '1rem' },
+                  }}
+                >
+                  Financial transactions, payments, and refunds
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
           <TransactionLogsHeader
             activeTab={activeTab}
             onTabChange={setActiveTab}

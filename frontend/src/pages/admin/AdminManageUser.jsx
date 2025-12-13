@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, Avatar } from '@mui/material';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
 import AddIcon from '@mui/icons-material/Add';
+import { Person } from '@mui/icons-material';
 import ManageUserHeader from '../../ui/components/header/ManageUserHeader';
 import ManageUserTable from '../../ui/components/table/ManageUserTable';
 import SearchBar from '../../ui/components/SearchBar';
@@ -260,6 +261,51 @@ export default function AdminManageUser() {
             flexDirection: 'column',
           }}
         >
+          {/* Welcome Header */}
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+              borderRadius: 3,
+              p: { xs: 2.5, md: 3 },
+              mb: 3,
+              boxShadow: '0 4px 12px rgba(193, 0, 7, 0.15)',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  width: { xs: 56, md: 64 },
+                  height: { xs: 56, md: 64 },
+                }}
+              >
+                <Person sx={{ fontSize: { xs: 32, md: 40 }, color: '#fff' }} />
+              </Avatar>
+              <Box>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 700,
+                    color: '#fff',
+                    fontSize: { xs: '1.5rem', md: '2rem' },
+                    mb: 0.5,
+                  }}
+                >
+                  User Management
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: { xs: '0.875rem', md: '1rem' },
+                  }}
+                >
+                  Manage customers, staff, and drivers
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
           {/* Show header with filtered tabs based on user type */}
 
           {userRole !== 'staff' && (

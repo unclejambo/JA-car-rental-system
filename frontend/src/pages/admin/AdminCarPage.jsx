@@ -6,8 +6,9 @@ import EditCarModal from '../../ui/components/modal/EditCarModal.jsx';
 import MaintenanceModal from '../../ui/components/modal/MaintenanceModal.jsx';
 import ExtendMaintenanceModal from '../../ui/components/modal/EditMaintenanceModal.jsx';
 import { HiTruck, HiWrenchScrewdriver } from 'react-icons/hi2';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, Avatar } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { DirectionsCar } from '@mui/icons-material';
 import ManageCarsHeader from '../../ui/components/header/ManageCarsHeader.jsx';
 import ManageCarsTable from '../../ui/components/table/ManageCarsTable.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -86,7 +87,9 @@ export default function AdminCarPage() {
           if (response.ok) {
             const response_data = await response.json();
             // Handle paginated response - extract data array
-            const data = Array.isArray(response_data) ? response_data : (response_data.data || []);
+            const data = Array.isArray(response_data)
+              ? response_data
+              : response_data.data || [];
             setCars(data || []);
           } else {
             const errorText = await response.text();
@@ -97,7 +100,9 @@ export default function AdminCarPage() {
           if (response.ok) {
             const response_data = await response.json();
             // Handle paginated response - extract data array
-            const carsData = Array.isArray(response_data) ? response_data : (response_data.data || []);
+            const carsData = Array.isArray(response_data)
+              ? response_data
+              : response_data.data || [];
 
             // Only include cars currently set to Maintenance
             const maintenanceCars = carsData.filter((c) => {
@@ -235,8 +240,7 @@ export default function AdminCarPage() {
         setReloadTick((t) => t + 1);
       } else {
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   const handleCancelMaintenance = () => {
@@ -293,8 +297,7 @@ export default function AdminCarPage() {
         );
       } else {
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   const handleSetAvailable = async (maintenance) => {
@@ -316,7 +319,9 @@ export default function AdminCarPage() {
           const carsResponse = await authenticatedFetch(`${API_BASE}/cars`);
           const response_data = await carsResponse.json();
           // Handle paginated response - extract data array
-          const carsData = Array.isArray(response_data) ? response_data : (response_data.data || []);
+          const carsData = Array.isArray(response_data)
+            ? response_data
+            : response_data.data || [];
           setCars(carsData || []);
         } catch {
           /* ignore */
@@ -326,8 +331,7 @@ export default function AdminCarPage() {
         );
       } else {
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   const handleDelete = async (carId) => {
@@ -341,8 +345,7 @@ export default function AdminCarPage() {
           setCars(cars.filter((car) => car.car_id !== carId));
         } else {
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
   };
 
@@ -390,54 +393,51 @@ export default function AdminCarPage() {
     }
   };
 
-  const formattedData = useMemo(
-    () => {
-      // Handle paginated response - extract data array
-      const carsData = Array.isArray(cars) ? cars : (cars?.data || []);
-      
-      return carsData.map((item) => {
-        const rawStatus = String(
-          item.car_status ?? item.status ?? ''
-        ).toLowerCase();
+  const formattedData = useMemo(() => {
+    // Handle paginated response - extract data array
+    const carsData = Array.isArray(cars) ? cars : cars?.data || [];
 
-        const status =
-          rawStatus.includes('rent') ||
-          rawStatus === 'rented' ||
-          rawStatus === 'r'
-            ? 'Rented'
-            : rawStatus.includes('maint') ||
-                rawStatus.includes('maintenance') ||
-                rawStatus === 'm'
-              ? 'Maintenance'
-              : rawStatus.includes('avail') ||
-                  rawStatus === 'available' ||
-                  rawStatus === 'true' ||
-                  rawStatus === '1' ||
-                  item.is_available === true
-                ? 'Available'
-                : 'Available';
+    return carsData.map((item) => {
+      const rawStatus = String(
+        item.car_status ?? item.status ?? ''
+      ).toLowerCase();
 
-        return {
-          id: item.car_id,
-          transactionId: item.car_id,
-          car_id: item.car_id,
-          make: item.make ?? '',
-          model: item.model ?? '',
-          car_type: item.car_type ?? '',
-          year: item.year ?? '',
-          mileage: item.mileage ?? '',
-          no_of_seat: item.no_of_seat ?? item.no_of_seat,
-          rent_price: item.rent_price ?? item.rent_price,
-          license_plate: item.license_plate ?? item.license_plate,
-          image: item.car_img_url ?? item.image ?? '',
-          isManual: item.isManual ?? false,
-          status,
-          raw: item,
-        };
-      });
-    },
-    [cars]
-  );
+      const status =
+        rawStatus.includes('rent') ||
+        rawStatus === 'rented' ||
+        rawStatus === 'r'
+          ? 'Rented'
+          : rawStatus.includes('maint') ||
+              rawStatus.includes('maintenance') ||
+              rawStatus === 'm'
+            ? 'Maintenance'
+            : rawStatus.includes('avail') ||
+                rawStatus === 'available' ||
+                rawStatus === 'true' ||
+                rawStatus === '1' ||
+                item.is_available === true
+              ? 'Available'
+              : 'Available';
+
+      return {
+        id: item.car_id,
+        transactionId: item.car_id,
+        car_id: item.car_id,
+        make: item.make ?? '',
+        model: item.model ?? '',
+        car_type: item.car_type ?? '',
+        year: item.year ?? '',
+        mileage: item.mileage ?? '',
+        no_of_seat: item.no_of_seat ?? item.no_of_seat,
+        rent_price: item.rent_price ?? item.rent_price,
+        license_plate: item.license_plate ?? item.license_plate,
+        image: item.car_img_url ?? item.image ?? '',
+        isManual: item.isManual ?? false,
+        status,
+        raw: item,
+      };
+    });
+  }, [cars]);
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -511,6 +511,53 @@ export default function AdminCarPage() {
             flexDirection: 'column',
           }}
         >
+          {/* Welcome Header */}
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+              borderRadius: 3,
+              p: { xs: 2.5, md: 3 },
+              mb: 3,
+              boxShadow: '0 4px 12px rgba(193, 0, 7, 0.15)',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  width: { xs: 56, md: 64 },
+                  height: { xs: 56, md: 64 },
+                }}
+              >
+                <DirectionsCar
+                  sx={{ fontSize: { xs: 32, md: 40 }, color: '#fff' }}
+                />
+              </Avatar>
+              <Box>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 700,
+                    color: '#fff',
+                    fontSize: { xs: '1.5rem', md: '2rem' },
+                    mb: 0.5,
+                  }}
+                >
+                  Fleet Management
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: { xs: '0.875rem', md: '1rem' },
+                  }}
+                >
+                  Manage vehicles and maintenance schedules
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
           <ManageCarsHeader activeTab={activeTab} onTabChange={setActiveTab} />
           <Box
             sx={{

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, Avatar } from '@mui/material';
+import { BookOnline } from '@mui/icons-material';
 import AdminSideBar from '../../ui/components/AdminSideBar';
 import Header from '../../ui/components/Header';
 import Loading from '../../ui/components/Loading';
@@ -330,6 +331,53 @@ export default function AdminBookingPage() {
             flexDirection: 'column',
           }}
         >
+          {/* Welcome Header */}
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
+              borderRadius: 3,
+              p: { xs: 2.5, md: 3 },
+              mb: 3,
+              boxShadow: '0 4px 12px rgba(193, 0, 7, 0.15)',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  width: { xs: 56, md: 64 },
+                  height: { xs: 56, md: 64 },
+                }}
+              >
+                <BookOnline
+                  sx={{ fontSize: { xs: 32, md: 40 }, color: '#fff' }}
+                />
+              </Avatar>
+              <Box>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 700,
+                    color: '#fff',
+                    fontSize: { xs: '1.5rem', md: '2rem' },
+                    mb: 0.5,
+                  }}
+                >
+                  Booking Management
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: { xs: '0.875rem', md: '1rem' },
+                  }}
+                >
+                  Manage bookings, extensions, and cancellations
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
           <ManageBookingsHeader
             activeTab={activeTab}
             onTabChange={setActiveTab}

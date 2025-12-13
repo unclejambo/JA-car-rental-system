@@ -116,9 +116,9 @@ function BookingCard({ booking, onViewBooking }) {
       : '#f5f5f5';
 
   const displayDate = isCompleted
-    ? booking.completion_date
+    ? booking.completion_date || booking.booking_date
     : isCancelled
-      ? booking.cancellation_date
+      ? booking.cancellation_date || booking.booking_date
       : booking.booking_date;
 
   return (
@@ -280,7 +280,7 @@ function BookingCard({ booking, onViewBooking }) {
                 </Stack>
               )}
 
-              {isCancelled && booking.cancellation_date && (
+              {isCancelled && (
                 <Stack
                   direction="row"
                   spacing={1}
@@ -296,7 +296,9 @@ function BookingCard({ booking, onViewBooking }) {
                       Cancelled On
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {formatDate(booking.cancellation_date)}
+                      {formatDate(
+                        booking.cancellation_date || booking.booking_date
+                      )}
                     </Typography>
                   </Box>
                 </Stack>

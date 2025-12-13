@@ -337,88 +337,120 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
         : bookings.data || [];
 
       const notificationsList = [];
+      const now = Date.now();
+      const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
-      // Check for newly confirmed bookings (accepted booking requests)
       bookingsList.forEach((booking) => {
-        // Booking accepted (status changed to Confirmed recently)
+        const carName = booking.car_details?.display_name || 'car';
+
+        // 1. Booking Approved (Confirmed)
         if (booking.booking_status === 'Confirmed' && booking.updated_at) {
           const updatedTime = new Date(booking.updated_at);
-          const timeSinceUpdate = Date.now() - updatedTime.getTime();
-          // Show if updated within last 7 days
-          if (timeSinceUpdate < 7 * 24 * 60 * 60 * 1000) {
+          const timeSinceUpdate = now - updatedTime.getTime();
+          if (timeSinceUpdate < SEVEN_DAYS) {
             notificationsList.push({
-              id: `booking-accepted-${booking.booking_id}`,
-              type: 'booking-accepted',
-              title: 'Booking Confirmed',
-              message: `Your booking for ${booking.car_details?.display_name || 'car'} has been confirmed`,
+              id: `booking-approved-${booking.booking_id}`,
+              type: 'booking-approved',
+              title: 'Booking Approved ✓',
+              message: `Admin approved your booking for ${carName}`,
               timestamp: updatedTime,
               link: '/customer-bookings',
             });
           }
         }
 
-        // Booking rejected
+        // 2. Booking Rejected
         if (booking.booking_status === 'Rejected' && booking.updated_at) {
           const updatedTime = new Date(booking.updated_at);
-          const timeSinceUpdate = Date.now() - updatedTime.getTime();
-          if (timeSinceUpdate < 7 * 24 * 60 * 60 * 1000) {
+          const timeSinceUpdate = now - updatedTime.getTime();
+          if (timeSinceUpdate < SEVEN_DAYS) {
             notificationsList.push({
               id: `booking-rejected-${booking.booking_id}`,
               type: 'booking-rejected',
-              title: 'Booking Rejected',
-              message: `Your booking request for ${booking.car_details?.display_name || 'car'} was rejected`,
+              title: 'Booking Rejected ✗',
+              message: `Your booking request for ${carName} was rejected`,
               timestamp: updatedTime,
               link: '/customer-bookings',
             });
           }
         }
 
-        // Extension accepted
-        if (booking.isExtended && booking.updated_at) {
-          const updatedTime = new Date(booking.updated_at);
-          const timeSinceUpdate = Date.now() - updatedTime.getTime();
-          if (timeSinceUpdate < 7 * 24 * 60 * 60 * 1000) {
+        // 3. Extension Approved
+        if (
+          booking.extension_info?.extension_status === 'approved' &&
+          booking.extension_info?.approve_time
+        ) {
+          const approveTime = new Date(booking.extension_info.approve_time);
+          const timeSinceApproval = now - approveTime.getTime();
+          if (timeSinceApproval < SEVEN_DAYS) {
             notificationsList.push({
-              id: `extension-accepted-${booking.booking_id}`,
-              type: 'extension-accepted',
-              title: 'Extension Approved',
-              message: `Your extension request for ${booking.car_details?.display_name || 'car'} has been approved`,
+              id: `extension-approved-${booking.booking_id}`,
+              type: 'extension-approved',
+              title: 'Extension Approved ✓',
+              message: `Admin approved your extension request for ${carName}`,
+              timestamp: approveTime,
+              link: '/customer-bookings',
+            });
+          }
+        }
+
+        // 4. Extension Rejected
+        if (
+          booking.extension_info?.extension_status === 'Rejected' &&
+          booking.updated_at
+        ) {
+          const updatedTime = new Date(booking.updated_at);
+          const timeSinceUpdate = now - updatedTime.getTime();
+          if (timeSinceUpdate < SEVEN_DAYS) {
+            notificationsList.push({
+              id: `extension-rejected-${booking.booking_id}`,
+              type: 'extension-rejected',
+              title: 'Extension Rejected ✗',
+              message: `Your extension request for ${carName} was rejected`,
               timestamp: updatedTime,
               link: '/customer-bookings',
             });
           }
         }
 
-        // Cancellation approved (status changed to Cancelled after isCancel was true)
-        if (booking.booking_status === 'Cancelled' && booking.updated_at) {
+        // 5. Cancellation Approved
+        if (
+          booking.booking_status === 'Cancelled' &&
+          booking.isCancel &&
+          booking.updated_at
+        ) {
           const updatedTime = new Date(booking.updated_at);
-          const timeSinceUpdate = Date.now() - updatedTime.getTime();
-          if (timeSinceUpdate < 7 * 24 * 60 * 60 * 1000) {
+          const timeSinceUpdate = now - updatedTime.getTime();
+          if (timeSinceUpdate < SEVEN_DAYS) {
             notificationsList.push({
               id: `cancellation-approved-${booking.booking_id}`,
               type: 'cancellation-approved',
-              title: 'Cancellation Approved',
-              message: `Your cancellation request for ${booking.car_details?.display_name || 'car'} has been approved`,
+              title: 'Cancellation Approved ✓',
+              message: `Admin approved your cancellation for ${carName}`,
               timestamp: updatedTime,
               link: '/customer-bookings',
             });
           }
         }
 
-        // Payment request accepted
-        if (booking.payment_status === 'Paid' && booking.updated_at) {
-          const updatedTime = new Date(booking.updated_at);
-          const timeSinceUpdate = Date.now() - updatedTime.getTime();
-          if (timeSinceUpdate < 7 * 24 * 60 * 60 * 1000) {
-            notificationsList.push({
-              id: `payment-confirmed-${booking.booking_id}`,
-              type: 'payment-confirmed',
-              title: 'Payment Confirmed',
-              message: `Payment for ${booking.car_details?.display_name || 'car'} has been confirmed`,
-              timestamp: updatedTime,
-              link: '/customer-bookings?tab=settlement',
-            });
-          }
+        // 6. Payment Received/Confirmed
+        if (booking.payment_info && booking.payment_info.length > 0) {
+          booking.payment_info.forEach((payment) => {
+            if (payment.paid_date) {
+              const paidDate = new Date(payment.paid_date);
+              const timeSincePayment = now - paidDate.getTime();
+              if (timeSincePayment < SEVEN_DAYS) {
+                notificationsList.push({
+                  id: `payment-received-${payment.payment_id}`,
+                  type: 'payment-received',
+                  title: 'Payment Received ✓',
+                  message: `Admin confirmed your ₱${payment.amount?.toLocaleString()} payment for ${carName}`,
+                  timestamp: paidDate,
+                  link: '/customer-bookings?tab=settlement',
+                });
+              }
+            }
+          });
         }
       });
 
@@ -446,35 +478,63 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
         : schedules.data || [];
 
       const notificationsList = [];
+      const now = Date.now();
+      const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+      const ONE_DAY = 24 * 60 * 60 * 1000;
 
       schedulesList.forEach((schedule) => {
-        // New assignment (recently assigned driver)
+        const carName = schedule.car_model || 'a vehicle';
+        const customerName = schedule.customer_name || 'Customer';
+
+        // 1. New Assignment - Recently assigned bookings
         if (schedule.booking_status === 'Confirmed' && schedule.updated_at) {
           const assignedTime = new Date(schedule.updated_at);
-          const timeSinceAssignment = Date.now() - assignedTime.getTime();
+          const timeSinceAssignment = now - assignedTime.getTime();
           // Show if assigned within last 3 days
-          if (timeSinceAssignment < 3 * 24 * 60 * 60 * 1000) {
+          if (timeSinceAssignment < THREE_DAYS) {
             notificationsList.push({
               id: `assigned-${schedule.booking_id}`,
               type: 'driver-assigned',
-              title: 'New Booking Assignment',
-              message: `You've been assigned to ${schedule.car_model || 'a booking'}`,
+              title: 'New Assignment 🚗',
+              message: `You've been assigned to drive ${carName} for ${customerName}`,
               timestamp: assignedTime,
               link: '/driver-schedule',
             });
           }
         }
 
-        // Cancelled booking
+        // 2. Upcoming Bookings - Bookings starting within next 24 hours
+        if (
+          (schedule.booking_status === 'Confirmed' ||
+            schedule.booking_status === 'In Progress') &&
+          schedule.start_date
+        ) {
+          const startDate = new Date(schedule.start_date);
+          const timeUntilStart = startDate.getTime() - now;
+          // Show if starting within next 24 hours and hasn't started yet
+          if (timeUntilStart > 0 && timeUntilStart < ONE_DAY) {
+            const hoursUntil = Math.floor(timeUntilStart / (1000 * 60 * 60));
+            notificationsList.push({
+              id: `upcoming-${schedule.booking_id}`,
+              type: 'driver-upcoming',
+              title: 'Upcoming Booking ⏰',
+              message: `${carName} pickup in ${hoursUntil} hours - ${customerName}`,
+              timestamp: startDate,
+              link: '/driver-schedule',
+            });
+          }
+        }
+
+        // 3. Cancelled Assignment
         if (schedule.booking_status === 'Cancelled' && schedule.updated_at) {
           const cancelledTime = new Date(schedule.updated_at);
-          const timeSinceCancellation = Date.now() - cancelledTime.getTime();
-          if (timeSinceCancellation < 3 * 24 * 60 * 60 * 1000) {
+          const timeSinceCancellation = now - cancelledTime.getTime();
+          if (timeSinceCancellation < THREE_DAYS) {
             notificationsList.push({
               id: `cancelled-${schedule.booking_id}`,
               type: 'driver-cancelled',
-              title: 'Booking Cancelled',
-              message: `Booking for ${schedule.car_model || 'car'} has been cancelled`,
+              title: 'Assignment Cancelled ✗',
+              message: `Booking for ${carName} has been cancelled`,
               timestamp: cancelledTime,
               link: '/driver-schedule',
             });
@@ -573,20 +633,24 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
         return <HiExclamationCircle size={20} color="#f44336" />;
 
       // Customer notifications
-      case 'booking-accepted':
+      case 'booking-approved':
         return <HiBookOpen size={20} color="#4caf50" />;
       case 'booking-rejected':
         return <HiXCircle size={20} color="#f44336" />;
-      case 'extension-accepted':
+      case 'extension-approved':
         return <HiArrowsExpand size={20} color="#4caf50" />;
+      case 'extension-rejected':
+        return <HiArrowsExpand size={20} color="#f44336" />;
       case 'cancellation-approved':
-        return <HiXCircle size={20} color="#ff9800" />;
-      case 'payment-confirmed':
+        return <HiXCircle size={20} color="#4caf50" />;
+      case 'payment-received':
         return <HiBookOpen size={20} color="#4caf50" />;
 
       // Driver notifications
       case 'driver-assigned':
         return <HiTruck size={20} color="#4caf50" />;
+      case 'driver-upcoming':
+        return <HiExclamationCircle size={20} color="#ff9800" />;
       case 'driver-cancelled':
         return <HiXCircle size={20} color="#f44336" />;
 

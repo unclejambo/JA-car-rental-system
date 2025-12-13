@@ -75,16 +75,16 @@ export const getBookings = async (req, res) => {
       orderBy: { [sortBy]: sortOrder },
       include: {
         customer: { select: { first_name: true, last_name: true } },
-        car: { 
-          select: { 
-            make: true, 
-            model: true, 
-            year: true, 
-            license_plate: true, 
+        car: {
+          select: {
+            make: true,
+            model: true,
+            year: true,
+            license_plate: true,
             no_of_seat: true,
             car_type: true,
-            rent_price: true
-          } 
+            rent_price: true,
+          },
         },
         payments: { select: { amount: true } },
         extensions: {
@@ -151,16 +151,16 @@ export const getBookingById = async (req, res) => {
       where: { booking_id: bookingId },
       include: {
         customer: { select: { first_name: true, last_name: true } },
-        car: { 
-          select: { 
-            make: true, 
-            model: true, 
-            year: true, 
-            license_plate: true, 
+        car: {
+          select: {
+            make: true,
+            model: true,
+            year: true,
+            license_plate: true,
             no_of_seat: true,
             car_type: true,
-            rent_price: true
-          } 
+            rent_price: true,
+          },
         },
         driver: { select: { first_name: true } },
         payments: { select: { amount: true } },
@@ -253,14 +253,21 @@ export const createBookingRequest = async (req, res) => {
         purpose,
         start_date: new Date(start_date),
         end_date: new Date(end_date),
-        pickup_time: pickup_time 
+        pickup_time: pickup_time
           ? (() => {
               // If pickup_time is a time string (HH:MM), combine with start_date in Philippine timezone
-              if (typeof pickup_time === 'string' && pickup_time.includes(':') && !pickup_time.includes('T')) {
-                const [hours, minutes] = pickup_time.split(':');
-                const dateStr = start_date.split('T')[0]; // Get YYYY-MM-DD
+              if (
+                typeof pickup_time === "string" &&
+                pickup_time.includes(":") &&
+                !pickup_time.includes("T")
+              ) {
+                const [hours, minutes] = pickup_time.split(":");
+                const dateStr = start_date.split("T")[0]; // Get YYYY-MM-DD
                 // Create ISO string with Philippine timezone offset (+08:00)
-                const isoString = `${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000+08:00`;
+                const isoString = `${dateStr}T${String(hours).padStart(
+                  2,
+                  "0"
+                )}:${String(minutes).padStart(2, "0")}:00.000+08:00`;
                 return new Date(isoString);
               }
               // Otherwise treat as full datetime
@@ -371,13 +378,19 @@ export const createBooking = async (req, res) => {
     // Create ISO string with Philippine timezone offset (+08:00)
     // This explicitly tells PostgreSQL timestamptz: "This time is in Philippine timezone"
     const [pickupHour, pickupMinute] = pickupTimeStr.split(":");
-    const startDateStr = (start_date || startDate).split('T')[0]; // Get YYYY-MM-DD
-    const pickupISOString = `${startDateStr}T${String(pickupHour).padStart(2, '0')}:${String(pickupMinute).padStart(2, '0')}:00.000+08:00`;
+    const startDateStr = (start_date || startDate).split("T")[0]; // Get YYYY-MM-DD
+    const pickupISOString = `${startDateStr}T${String(pickupHour).padStart(
+      2,
+      "0"
+    )}:${String(pickupMinute).padStart(2, "0")}:00.000+08:00`;
     const pickupDateTime = new Date(pickupISOString);
 
     const [dropoffHour, dropoffMinute] = dropoffTimeStr.split(":");
-    const endDateStr = (end_date || endDate).split('T')[0]; // Get YYYY-MM-DD
-    const dropoffISOString = `${endDateStr}T${String(dropoffHour).padStart(2, '0')}:${String(dropoffMinute).padStart(2, '0')}:00.000+08:00`;
+    const endDateStr = (end_date || endDate).split("T")[0]; // Get YYYY-MM-DD
+    const dropoffISOString = `${endDateStr}T${String(dropoffHour).padStart(
+      2,
+      "0"
+    )}:${String(dropoffMinute).padStart(2, "0")}:00.000+08:00`;
     const dropoffDateTime = new Date(dropoffISOString);
 
     // Handle driver selection properly
@@ -781,8 +794,7 @@ export const deleteBooking = async (req, res) => {
           where: { car_id: booking.car_id },
           data: { car_status: "Available" },
         });
-      } catch (carUpdateError) {
-      }
+      } catch (carUpdateError) {}
     }
 
     res.status(204).send();
@@ -874,11 +886,23 @@ export const getMyBookings = async (req, res) => {
             balance: true,
           },
         },
+        extensions: {
+          select: {
+            extension_id: true,
+            extension_status: true,
+            approve_time: true,
+            new_end_date: true,
+          },
+          orderBy: {
+            extension_id: "desc",
+          },
+          take: 1,
+        },
       },
     });
 
     const shaped = bookings.map(
-      ({ customer, car, driver, payments, ...rest }) => ({
+      ({ customer, car, driver, payments, extensions, ...rest }) => ({
         ...rest,
         customer_name: `${customer?.first_name ?? ""} ${
           customer?.last_name ?? ""
@@ -906,6 +930,9 @@ export const getMyBookings = async (req, res) => {
           0,
         has_outstanding_balance:
           payments?.some((payment) => (payment.balance || 0) > 0) || false,
+        extension_info: extensions?.[0] || null,
+        has_approved_extension:
+          extensions?.[0]?.extension_status === "approved",
       })
     );
 
@@ -1089,8 +1116,7 @@ export const adminCancelBooking = async (req, res) => {
         where: { car_id: booking.car.car_id },
         data: { car_status: "Available" },
       });
-    } catch (carUpdateError) {
-    }
+    } catch (carUpdateError) {}
 
     // Create a transaction record for the cancellation
     try {
@@ -2073,8 +2099,7 @@ export const createMissingPaymentRecords = async (req, res) => {
           },
         });
         createdCount++;
-      } catch (error) {
-      }
+      } catch (error) {}
     }
 
     res.json({

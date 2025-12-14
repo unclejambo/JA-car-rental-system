@@ -293,6 +293,464 @@ function AdminDashboard() {
           </Typography>
         </Box>
 
+        {/* Today's Actions Summary */}
+        {(() => {
+          const now = new Date();
+          const startOfDay = new Date(now);
+          startOfDay.setHours(0, 0, 0, 0);
+          const endOfDay = new Date(now);
+          endOfDay.setHours(23, 59, 59, 999);
+
+          // Pickups Today = Cars scheduled for pickup today
+          const pickupsToday = (dashboardData.forRelease || []).filter((s) => {
+            const d = s.start_date || s.pickup_time;
+            if (!d) return false;
+            const dt = new Date(d);
+            return dt >= startOfDay && dt <= endOfDay;
+          }).length;
+
+          // Delivery Today = Same as Pickups (cars being delivered to customers)
+          const deliveryToday = pickupsToday;
+
+          // Release Today = Cars being released from inventory (same as pickups)
+          const releaseToday = pickupsToday;
+
+          // Returns Today = Cars scheduled for return today
+          const returnsToday = (dashboardData.forReturn || []).filter((s) => {
+            const d = s.end_date || s.dropoff_time;
+            if (!d) return false;
+            const dt = new Date(d);
+            return dt >= startOfDay && dt <= endOfDay;
+          }).length;
+
+          // Overdue Returns = Returns past due
+          const overdueReturns = (dashboardData.forReturn || []).filter((s) => {
+            const d = s.end_date || s.dropoff_time;
+            if (!d) return false;
+            return new Date(d) < now;
+          }).length;
+
+          // Pending Payments Today = Bookings with unpaid status due today
+          const pendingPaymentsToday = (
+            dashboardData.bookingRequests || []
+          ).filter((b) => {
+            const status = (
+              b.payment_status ||
+              b.booking_status ||
+              ''
+            ).toLowerCase();
+            return status.includes('pending') || status.includes('unpaid');
+          }).length;
+
+          // Cars Availability Today = Total available cars
+          const carsAvailabilityToday = Array.isArray(
+            dashboardData.availableCars
+          )
+            ? dashboardData.availableCars.length
+            : 0;
+
+          return (
+            <Grid
+              container
+              spacing={{ xs: 2, md: 2.5 }}
+              sx={{ px: { xs: 2, md: 0 }, mb: { xs: 2, md: 3 } }}
+            >
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    height: '100%',
+                    minHeight: 140,
+                  }}
+                >
+                  <CardContent
+                    sx={{
+                      p: 2.5,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                        color: '#616161',
+                        mb: 1,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Pickups Today
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: '2rem',
+                        color: '#c10007',
+                        mb: 1,
+                      }}
+                    >
+                      {pickupsToday}
+                    </Typography>
+                    <Button
+                      component={Link}
+                      to="/schedule?tab=RELEASE"
+                      size="small"
+                      variant="text"
+                      sx={{
+                        color: '#c10007',
+                        textTransform: 'none',
+                        p: 0,
+                        minWidth: 0,
+                        alignSelf: 'flex-start',
+                      }}
+                    >
+                      View Schedule →
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    height: '100%',
+                    minHeight: 140,
+                  }}
+                >
+                  <CardContent
+                    sx={{
+                      p: 2.5,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                        color: '#616161',
+                        mb: 1,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Delivery Today
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: '2rem',
+                        color: '#2e7d32',
+                        mb: 1,
+                      }}
+                    >
+                      {deliveryToday}
+                    </Typography>
+                    <Button
+                      component={Link}
+                      to="/schedule?tab=RELEASE"
+                      size="small"
+                      variant="text"
+                      sx={{
+                        color: '#2e7d32',
+                        textTransform: 'none',
+                        p: 0,
+                        minWidth: 0,
+                        alignSelf: 'flex-start',
+                      }}
+                    >
+                      View Schedule →
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    height: '100%',
+                    minHeight: 140,
+                  }}
+                >
+                  <CardContent
+                    sx={{
+                      p: 2.5,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                        color: '#616161',
+                        mb: 1,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Release Today
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: '2rem',
+                        color: '#1976d2',
+                        mb: 1,
+                      }}
+                    >
+                      {releaseToday}
+                    </Typography>
+                    <Button
+                      component={Link}
+                      to="/schedule?tab=RELEASE"
+                      size="small"
+                      variant="text"
+                      sx={{
+                        color: '#1976d2',
+                        textTransform: 'none',
+                        p: 0,
+                        minWidth: 0,
+                        alignSelf: 'flex-start',
+                      }}
+                    >
+                      View Schedule →
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    height: '100%',
+                    minHeight: 140,
+                  }}
+                >
+                  <CardContent
+                    sx={{
+                      p: 2.5,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                        color: '#616161',
+                        mb: 1,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Return Today
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: '2rem',
+                        color: '#1a1a1a',
+                        mb: 1,
+                      }}
+                    >
+                      {returnsToday}
+                    </Typography>
+                    <Button
+                      component={Link}
+                      to="/schedule?tab=RETURN"
+                      size="small"
+                      variant="text"
+                      sx={{
+                        color: '#1a1a1a',
+                        textTransform: 'none',
+                        p: 0,
+                        minWidth: 0,
+                        alignSelf: 'flex-start',
+                      }}
+                    >
+                      View Schedule →
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    height: '100%',
+                    minHeight: 140,
+                  }}
+                >
+                  <CardContent
+                    sx={{
+                      p: 2.5,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                        color: '#616161',
+                        mb: 1,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Overdue Returns
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: '2rem',
+                        color: '#d32f2f',
+                        mb: 1,
+                      }}
+                    >
+                      {overdueReturns}
+                    </Typography>
+                    <Button
+                      component={Link}
+                      to="/schedule?tab=RETURN"
+                      size="small"
+                      variant="text"
+                      sx={{
+                        color: '#d32f2f',
+                        textTransform: 'none',
+                        p: 0,
+                        minWidth: 0,
+                        alignSelf: 'flex-start',
+                      }}
+                    >
+                      Review Now →
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    height: '100%',
+                    minHeight: 140,
+                  }}
+                >
+                  <CardContent
+                    sx={{
+                      p: 2.5,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                        color: '#616161',
+                        mb: 1,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Pending Payments
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: '2rem',
+                        color: '#ed6c02',
+                        mb: 1,
+                      }}
+                    >
+                      {pendingPaymentsToday}
+                    </Typography>
+                    <Button
+                      component={Link}
+                      to="/manage-booking"
+                      size="small"
+                      variant="text"
+                      sx={{
+                        color: '#ed6c02',
+                        textTransform: 'none',
+                        p: 0,
+                        minWidth: 0,
+                        alignSelf: 'flex-start',
+                      }}
+                    >
+                      Review Payments →
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    height: '100%',
+                    minHeight: 140,
+                  }}
+                >
+                  <CardContent
+                    sx={{
+                      p: 2.5,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                        color: '#616161',
+                        mb: 1,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Cars Availability
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: '2rem',
+                        color: '#0288d1',
+                        mb: 1,
+                      }}
+                    >
+                      {carsAvailabilityToday}
+                    </Typography>
+                    <Button
+                      component={Link}
+                      to="/manage-car"
+                      size="small"
+                      variant="text"
+                      sx={{
+                        color: '#0288d1',
+                        textTransform: 'none',
+                        p: 0,
+                        minWidth: 0,
+                        alignSelf: 'flex-start',
+                      }}
+                    >
+                      View Cars →
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          );
+        })()}
+
         {/* For Release and For Return Section */}
         <Grid
           container

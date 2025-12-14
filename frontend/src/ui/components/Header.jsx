@@ -182,6 +182,10 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
 
       const notificationsList = [];
       const now = new Date();
+      const startOfDay = new Date(now);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(now);
+      endOfDay.setHours(23, 59, 59, 999);
 
       // Helper to check if booking is release candidate
       const isReleaseCandidate = (row) => {
@@ -255,6 +259,44 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
             booking.updated_at || booking.booking_date || Date.now()
           ),
           link: '/manage-booking?tab=CANCELLATION',
+        });
+      });
+
+      // Pending payments due today (unpaid or pending)
+      const pendingPaymentsToday = allBookings.filter((booking) => {
+        const status = (booking.payment_status || booking.booking_status || '')
+          .toString()
+          .toLowerCase();
+        const isPendingOrUnpaid =
+          status.includes('pending') || status.includes('unpaid');
+
+        const dueDateValue =
+          booking.start_date || booking.pickup_time || booking.booking_date;
+        if (!dueDateValue) return false;
+
+        try {
+          const dueDate = new Date(dueDateValue);
+          return (
+            isPendingOrUnpaid && dueDate >= startOfDay && dueDate <= endOfDay
+          );
+        } catch {
+          return false;
+        }
+      });
+
+      pendingPaymentsToday.forEach((booking) => {
+        notificationsList.push({
+          id: `pending-payment-${booking.booking_id}`,
+          type: 'pending-payment',
+          title: 'Pending Payment Today',
+          message: `${booking.customer_name || 'Customer'} - ${booking.car_model || 'Car'}`,
+          timestamp: new Date(
+            booking.start_date ||
+              booking.pickup_time ||
+              booking.booking_date ||
+              Date.now()
+          ),
+          link: '/manage-booking?tab=BOOKINGS',
         });
       });
 
@@ -345,10 +387,17 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
 
       const notificationsList = [];
       const now = Date.now();
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
       const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+      const ONE_DAY = 24 * 60 * 60 * 1000;
 
       bookingsList.forEach((booking) => {
         const carName = booking.car_details?.display_name || 'car';
+        const customerPickup = booking.start_date || booking.pickup_time;
+        const customerReturn = booking.end_date || booking.dropoff_time;
 
         // 1. Booking Approved (Confirmed) - redirect to Schedule Page
         if (booking.booking_status === 'Confirmed' && booking.updated_at) {
@@ -367,6 +416,87 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
         }
 
         // 2. Booking Rejected - redirect to Booking History, bookings tab
+        // 7. Release Reminder - upcoming pickup within next 24 hours
+        if (
+          (booking.booking_status === 'Confirmed' ||
+            booking.booking_status === 'In Progress') &&
+          customerPickup
+        ) {
+          const pickupTime = new Date(customerPickup);
+          const timeUntilPickup = pickupTime.getTime() - now;
+          if (timeUntilPickup > 0 && timeUntilPickup <= ONE_DAY) {
+            const hoursUntil = Math.max(
+              1,
+              Math.floor(timeUntilPickup / (1000 * 60 * 60))
+            );
+            notificationsList.push({
+              id: `customer-release-reminder-${booking.booking_id}`,
+              type: 'customer-release-reminder',
+              title: 'Pickup Reminder ⏰',
+              message: `Pickup in ${hoursUntil} hour(s) for ${carName}`,
+              timestamp: pickupTime,
+              link: '/customer-schedule',
+            });
+          }
+        }
+
+        // 8. Return Reminder - due today or overdue
+        if (customerReturn) {
+          const returnTime = new Date(customerReturn);
+          const isDueToday = returnTime >= startOfDay && returnTime <= endOfDay;
+          const isOverdue =
+            returnTime.getTime() < now &&
+            booking.booking_status !== 'Cancelled';
+          if (isOverdue) {
+            notificationsList.push({
+              id: `customer-return-overdue-${booking.booking_id}`,
+              type: 'customer-return-overdue',
+              title: 'Return Overdue ⚠️',
+              message: `Your return for ${carName} is overdue`,
+              timestamp: returnTime,
+              link: '/customer-schedule',
+            });
+          } else if (isDueToday) {
+            notificationsList.push({
+              id: `customer-return-today-${booking.booking_id}`,
+              type: 'customer-return-today',
+              title: 'Return Due Today 📅',
+              message: `Return scheduled today for ${carName}`,
+              timestamp: returnTime,
+              link: '/customer-schedule',
+            });
+          }
+        }
+
+        // 9. Pending Payment Reminder - unpaid due today
+        {
+          const statusStr = (
+            booking.payment_status ||
+            booking.booking_status ||
+            ''
+          )
+            .toString()
+            .toLowerCase();
+          const isPendingOrUnpaid =
+            statusStr.includes('pending') || statusStr.includes('unpaid');
+          const dueDateVal = customerPickup || booking.booking_date;
+          if (isPendingOrUnpaid && dueDateVal) {
+            try {
+              const dueDate = new Date(dueDateVal);
+              const isToday = dueDate >= startOfDay && dueDate <= endOfDay;
+              if (isToday) {
+                notificationsList.push({
+                  id: `customer-pending-payment-${booking.booking_id}`,
+                  type: 'customer-pending-payment',
+                  title: 'Pending Payment Today 💳',
+                  message: `Payment due today for ${carName}`,
+                  timestamp: dueDate,
+                  link: '/customer-history?tab=payments',
+                });
+              }
+            } catch {}
+          }
+        }
         if (booking.booking_status === 'Rejected' && booking.updated_at) {
           const updatedTime = new Date(booking.updated_at);
           const timeSinceUpdate = now - updatedTime.getTime();
@@ -685,6 +815,8 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
       case 'overdue-release':
       case 'overdue-return':
         return <HiExclamationCircle size={20} color="#f44336" />;
+      case 'pending-payment':
+        return <HiDocumentCurrencyDollar size={20} color="#ed6c02" />;
 
       // Customer notifications
       case 'booking-approved':
@@ -699,6 +831,16 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
         return <HiXCircle size={20} color="#4caf50" />;
       case 'payment-received':
         return <HiBookOpen size={20} color="#4caf50" />;
+
+      // Customer reminders
+      case 'customer-release-reminder':
+        return <HiExclamationCircle size={20} color="#ff9800" />;
+      case 'customer-return-today':
+        return <HiExclamationCircle size={20} color="#2196f3" />;
+      case 'customer-return-overdue':
+        return <HiExclamationCircle size={20} color="#f44336" />;
+      case 'customer-pending-payment':
+        return <HiDocumentCurrencyDollar size={20} color="#ed6c02" />;
 
       // Driver notifications
       case 'driver-assigned':

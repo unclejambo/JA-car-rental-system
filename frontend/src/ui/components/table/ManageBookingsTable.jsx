@@ -112,6 +112,9 @@ const ManageBookingsTable = ({
       const message = result.message || 'Booking confirmed successfully!';
       showMessage(message, 'success');
 
+      // Trigger real-time refresh of header notifications
+      window.dispatchEvent(new Event('refreshNotifications'));
+
       // Refresh data if callback provided
       if (onDataChange && typeof onDataChange === 'function') {
         onDataChange();
@@ -139,6 +142,9 @@ const ManageBookingsTable = ({
 
       showMessage('Cancellation confirmed successfully!', 'success');
 
+      // Trigger real-time refresh of header notifications
+      window.dispatchEvent(new Event('refreshNotifications'));
+
       // Refresh data if callback provided
       if (onDataChange && typeof onDataChange === 'function') {
         onDataChange();
@@ -165,6 +171,9 @@ const ManageBookingsTable = ({
       );
 
       showMessage('Cancellation request rejected successfully!', 'success');
+
+      // Trigger real-time refresh of header notifications
+      window.dispatchEvent(new Event('refreshNotifications'));
 
       // Refresh data if callback provided
       if (onDataChange && typeof onDataChange === 'function') {
@@ -199,6 +208,8 @@ const ManageBookingsTable = ({
           'Extension payment confirmed! End date has been updated.',
           'success'
         );
+        // Refresh header notifications after confirming payment
+        window.dispatchEvent(new Event('refreshNotifications'));
       } else {
         // Customer hasn't paid yet - approve the extension REQUEST
         const result = await bookingAPI.confirmExtensionRequest(
@@ -209,6 +220,8 @@ const ManageBookingsTable = ({
           'Extension request approved! Waiting for customer payment.',
           'success'
         );
+        // Refresh header notifications after approving extension
+        window.dispatchEvent(new Event('refreshNotifications'));
       }
 
       // Refresh data if callback provided
@@ -234,6 +247,9 @@ const ManageBookingsTable = ({
       const result = await bookingAPI.rejectExtensionRequest(bookingId, logout);
 
       showMessage('Extension request rejected successfully!', 'success');
+
+      // Trigger real-time refresh of header notifications
+      window.dispatchEvent(new Event('refreshNotifications'));
 
       // Refresh data if callback provided
       if (onDataChange && typeof onDataChange === 'function') {
@@ -264,6 +280,9 @@ const ManageBookingsTable = ({
       await paymentAPI.deletePaymentByBookingId(bookingId, logout, true);
 
       showMessage('Payment cancelled successfully!', 'success');
+
+      // Trigger real-time refresh of header notifications
+      window.dispatchEvent(new Event('refreshNotifications'));
 
       // Refresh data if callback provided
       if (onDataChange && typeof onDataChange === 'function') {

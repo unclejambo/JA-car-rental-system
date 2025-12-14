@@ -625,6 +625,20 @@ function CustomerBookingHistory() {
     parseInt(localStorage.getItem('customerSettingsTab') || '0', 10)
   );
 
+  // Handle URL parameters for tab navigation
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+
+    if (tabParam === 'payments' || tabParam === 'settlement') {
+      setActiveTab(1); // Payments tab
+      localStorage.setItem('customerSettingsTab', '1');
+    } else if (tabParam === 'bookings') {
+      setActiveTab(0); // Bookings tab
+      localStorage.setItem('customerSettingsTab', '0');
+    }
+  }, []);
+
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
     localStorage.setItem('customerSettingsTab', newValue.toString());

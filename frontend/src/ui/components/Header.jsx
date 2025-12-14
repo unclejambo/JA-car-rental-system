@@ -377,7 +377,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
               title: 'Booking Rejected ✗',
               message: `Your booking request for ${carName} was rejected`,
               timestamp: updatedTime,
-              link: '/customer-bookings?tab=bookings',
+              link: '/customer-history?tab=bookings',
             });
           }
         }
@@ -435,7 +435,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
               title: 'Cancellation Approved ✓',
               message: `Admin approved your cancellation for ${carName}`,
               timestamp: updatedTime,
-              link: '/customer-bookings?tab=bookings',
+              link: '/customer-history?tab=bookings',
             });
           }
         }
@@ -453,7 +453,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
                   title: 'Payment Received ✓',
                   message: `Admin confirmed your ₱${payment.amount?.toLocaleString()} payment for ${carName}`,
                   timestamp: paidDate,
-                  link: '/customer-bookings?tab=settlement',
+                  link: '/customer-history?tab=payments',
                 });
               }
             }

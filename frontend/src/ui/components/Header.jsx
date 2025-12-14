@@ -554,6 +554,23 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
             });
           }
         }
+
+        // 4. Completed Booking
+        if (schedule.booking_status === 'Completed' && schedule.updated_at) {
+          const completedTime = new Date(schedule.updated_at);
+          const timeSinceCompletion = now - completedTime.getTime();
+          // Show if completed within last 3 days
+          if (timeSinceCompletion < THREE_DAYS) {
+            notificationsList.push({
+              id: `completed-${schedule.booking_id}`,
+              type: 'driver-completed',
+              title: 'Booking Completed ✓',
+              message: `Trip with ${carName} for ${customerName} has been completed`,
+              timestamp: completedTime,
+              link: '/driver-schedule',
+            });
+          }
+        }
       });
 
       // Sort by timestamp (newest first)
@@ -690,6 +707,8 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
         return <HiExclamationCircle size={20} color="#ff9800" />;
       case 'driver-cancelled':
         return <HiXCircle size={20} color="#f44336" />;
+      case 'driver-completed':
+        return <HiBookOpen size={20} color="#4caf50" />;
 
       default:
         return <HiBell size={20} />;

@@ -128,15 +128,21 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
   const badgeDate = (() => {
     switch (activeTab) {
       case 'CONFIRMED':
-        return confirmationDate || startDate || pickupTime || endDate || dropoffTime;
+        return (
+          confirmationDate || startDate || pickupTime || endDate || dropoffTime
+        );
       case 'IN PROGRESS':
-        return startDate || pickupTime || confirmationDate || endDate || dropoffTime;
+        return (
+          startDate || pickupTime || confirmationDate || endDate || dropoffTime
+        );
       case 'RELEASE':
         return releaseDate || startDate || pickupTime || confirmationDate;
       case 'RETURN':
         return dropoffTime || endDate || startDate || pickupTime;
       default:
-        return startDate || pickupTime || endDate || dropoffTime || confirmationDate;
+        return (
+          startDate || pickupTime || endDate || dropoffTime || confirmationDate
+        );
     }
   })();
 

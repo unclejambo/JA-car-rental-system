@@ -23,6 +23,7 @@ import {
   HiArrowsExpand,
   HiTruck,
   HiExclamationCircle,
+  HiCash,
 } from 'react-icons/hi';
 import '../../styles/components/header.css';
 
@@ -816,7 +817,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
       case 'overdue-return':
         return <HiExclamationCircle size={20} color="#f44336" />;
       case 'pending-payment':
-        return <HiDocumentCurrencyDollar size={20} color="#ed6c02" />;
+        return <HiCash size={20} color="#ed6c02" />;
 
       // Customer notifications
       case 'booking-approved':
@@ -840,7 +841,7 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
       case 'customer-return-overdue':
         return <HiExclamationCircle size={20} color="#f44336" />;
       case 'customer-pending-payment':
-        return <HiDocumentCurrencyDollar size={20} color="#ed6c02" />;
+        return <HiCash size={20} color="#ed6c02" />;
 
       // Driver notifications
       case 'driver-assigned':

@@ -47,10 +47,12 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
   const commonColumns = [
     {
       field: 'customerName',
-      headerName: 'Customer Name',
+      headerName: 'Customer',
       flex: 1.5,
       minWidth: 140,
       editable: false,
+      headerAlign: 'center',
+      align: 'center',
       renderCell: (params) => (
         <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
           {params.value}
@@ -68,6 +70,8 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         flex: 1.5,
         minWidth: 120,
         editable: false,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}
@@ -75,11 +79,41 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         ),
       },
       {
-        field: 'bookingDate',
-        headerName: 'Booking Date',
+        field: 'startDate',
+        headerName: 'Start Date',
         flex: 1.5,
         minWidth: 120,
         editable: false,
+        headerAlign: 'center',
+        align: 'center',
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
+      },
+      {
+        field: 'endDate',
+        headerName: 'End Date',
+        flex: 1.5,
+        minWidth: 120,
+        editable: false,
+        headerAlign: 'center',
+        align: 'center',
+        renderCell: (params) => (
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {params.value}
+          </Typography>
+        ),
+      },
+      {
+        field: 'driver',
+        headerName: 'Driver',
+        flex: 1.5,
+        minWidth: 130,
+        editable: false,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}
@@ -88,10 +122,12 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
       },
       {
         field: 'completionDate',
-        headerName: 'Completion Date',
+        headerName: 'Completion',
         flex: 1.5,
         minWidth: 130,
         editable: false,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}
@@ -100,10 +136,12 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
       },
       {
         field: 'cancellationDate',
-        headerName: 'Cancellation Date',
+        headerName: 'Cancellation',
         flex: 1.5,
         minWidth: 140,
         editable: false,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}
@@ -114,9 +152,11 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
     PAYMENT: [
       {
         field: 'paymentMethod',
-        headerName: 'Payment Method',
+        headerName: 'Method',
         flex: 1.5,
         minWidth: 130,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}
@@ -128,6 +168,8 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         headerName: 'Reference No',
         flex: 1.5,
         minWidth: 130,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}
@@ -139,6 +181,8 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         headerName: 'GCash No',
         flex: 1.5,
         minWidth: 110,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}
@@ -150,6 +194,8 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         headerName: 'Total Amount',
         flex: 1.5,
         minWidth: 120,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography
             sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1976d2' }}
@@ -169,6 +215,8 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         headerName: 'Paid Date',
         flex: 1.5,
         minWidth: 110,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}
@@ -180,6 +228,8 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         headerName: 'Description',
         flex: 1.5,
         minWidth: 130,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}
@@ -190,9 +240,11 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
     REFUND: [
       {
         field: 'refundMethod',
-        headerName: 'Refund Method',
+        headerName: 'Method',
         flex: 1.5,
         minWidth: 130,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}
@@ -204,6 +256,8 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         headerName: 'Reference No',
         flex: 1.5,
         minWidth: 130,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}
@@ -215,6 +269,8 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         headerName: 'GCash No',
         flex: 1.5,
         minWidth: 110,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}
@@ -223,9 +279,11 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
       },
       {
         field: 'refundAmount',
-        headerName: 'Refund Amount',
+        headerName: 'Amount',
         flex: 1.5,
         minWidth: 130,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography
             sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1976d2' }}
@@ -245,6 +303,8 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         headerName: 'Refund Date',
         flex: 1.5,
         minWidth: 110,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}
@@ -256,6 +316,8 @@ const TransactionLogsTable = ({ activeTab, rows, loading, onViewBooking }) => {
         headerName: 'Description',
         flex: 1.5,
         minWidth: 130,
+        headerAlign: 'center',
+        align: 'center',
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
             {params.value}

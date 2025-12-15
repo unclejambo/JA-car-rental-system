@@ -53,9 +53,24 @@ export default function AdminTransactionPage() {
   const rows = React.useMemo(() => {
     if (!Array.isArray(storeRows)) return [];
     if (activeTab === 'TRANSACTIONS') {
-      return storeRows.filter((r) => {
-        return Boolean(r?.completionDate) || Boolean(r?.cancellationDate);
-      });
+      return storeRows
+        .filter((r) => {
+          return Boolean(r?.completionDate) || Boolean(r?.cancellationDate);
+        })
+        .map((r) => {
+          // Access booking data that should be included from backend
+          const startDate = r.startDate || null;
+          const endDate = r.endDate || null;
+          const isSelfDriver = r.isSelfDriver === true;
+          const driverName = r.driverName || null;
+
+          return {
+            ...r,
+            startDate,
+            endDate,
+            driver: isSelfDriver ? 'Self-driven' : driverName || 'N/A',
+          };
+        });
     }
     if (activeTab === 'PAYMENT') {
       return storeRows.filter((r) => r?.description !== 'User Booked the Car');
@@ -77,6 +92,15 @@ export default function AdminTransactionPage() {
 
       // Search by car model
       if (row.carModel?.toLowerCase().includes(query)) return true;
+
+      // Search by start date (TRANSACTIONS tab)
+      if (row.startDate?.toLowerCase().includes(query)) return true;
+
+      // Search by end date (TRANSACTIONS tab)
+      if (row.endDate?.toLowerCase().includes(query)) return true;
+
+      // Search by driver (TRANSACTIONS tab)
+      if (row.driver?.toLowerCase().includes(query)) return true;
 
       // Search by booking date
       if (row.bookingDate?.toLowerCase().includes(query)) return true;

@@ -50,7 +50,9 @@ export const generateTransactionCSV = (activeTab, rows) => {
       'Booking ID',
       'Customer',
       'Car Model',
-      'Booking Date',
+      'Start Date',
+      'End Date',
+      'Driver',
       'Completion Date',
       'Cancellation Date',
     ];
@@ -60,7 +62,9 @@ export const generateTransactionCSV = (activeTab, rows) => {
       row.bookingId || row.booking_id || '',
       row.customerName || '',
       row.carModel || '',
-      formatDate(row.bookingDate || row.booking_date),
+      formatDate(row.startDate || row.start_date),
+      formatDate(row.endDate || row.end_date),
+      row.driver || '',
       formatDate(row.completionDate || row.completion_date),
       formatDate(row.cancellationDate || row.cancellation_date),
     ]);

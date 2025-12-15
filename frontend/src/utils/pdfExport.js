@@ -70,7 +70,9 @@ export const generateTransactionPDF = (activeTab, rows) => {
       { header: 'Booking ID', dataKey: 'bookingId' },
       { header: 'Customer', dataKey: 'customerName' },
       { header: 'Car Model', dataKey: 'carModel' },
-      { header: 'Booking Date', dataKey: 'bookingDate' },
+      { header: 'Start Date', dataKey: 'startDate' },
+      { header: 'End Date', dataKey: 'endDate' },
+      { header: 'Driver', dataKey: 'driver' },
       { header: 'Completion Date', dataKey: 'completionDate' },
       { header: 'Cancellation Date', dataKey: 'cancellationDate' },
     ];
@@ -80,7 +82,9 @@ export const generateTransactionPDF = (activeTab, rows) => {
       bookingId: row.bookingId || row.booking_id || 'N/A',
       customerName: row.customerName || 'N/A',
       carModel: row.carModel || 'N/A',
-      bookingDate: formatDate(row.bookingDate || row.booking_date),
+      startDate: formatDate(row.startDate || row.start_date),
+      endDate: formatDate(row.endDate || row.end_date),
+      driver: row.driver || 'N/A',
       completionDate: formatDate(row.completionDate || row.completion_date),
       cancellationDate: formatDate(row.cancellationDate || row.cancellation_date),
     }));

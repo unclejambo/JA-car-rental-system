@@ -16,6 +16,18 @@ function shapeTransaction(t) {
     bookingDate: booking?.booking_date
       ? booking.booking_date.toISOString().split("T")[0]
       : null,
+    startDate: booking?.start_date
+      ? booking.start_date.toISOString().split("T")[0]
+      : null,
+    endDate: booking?.end_date
+      ? booking.end_date.toISOString().split("T")[0]
+      : null,
+    isSelfDriver: booking?.isSelfDriver === true,
+    driverName: booking?.driver
+      ? [booking.driver.first_name, booking.driver.last_name]
+          .filter(Boolean)
+          .join(" ")
+      : null,
     completionDate: rest.completion_date
       ? rest.completion_date.toISOString().split("T")[0]
       : null,
@@ -56,7 +68,20 @@ export const getTransactions = async (req, res) => {
       where,
       orderBy: { [sortBy]: sortOrder },
       include: {
-        booking: { select: { booking_date: true } },
+        booking: {
+          select: {
+            booking_date: true,
+            start_date: true,
+            end_date: true,
+            isSelfDriver: true,
+            driver: {
+              select: {
+                first_name: true,
+                last_name: true,
+              },
+            },
+          },
+        },
         customer: { select: { first_name: true, last_name: true } },
         car: { select: { make: true, model: true } },
       },
@@ -83,7 +108,20 @@ export const getMyTransactions = async (req, res) => {
     const transactions = await prisma.transaction.findMany({
       where: { customer_id: parseInt(customerId) },
       include: {
-        booking: { select: { booking_date: true } },
+        booking: {
+          select: {
+            booking_date: true,
+            start_date: true,
+            end_date: true,
+            isSelfDriver: true,
+            driver: {
+              select: {
+                first_name: true,
+                last_name: true,
+              },
+            },
+          },
+        },
         customer: { select: { first_name: true, last_name: true } },
         car: { select: { make: true, model: true } },
       },
@@ -123,7 +161,20 @@ export const createTransaction = async (req, res) => {
           : null,
       },
       include: {
-        booking: { select: { booking_date: true } },
+        booking: {
+          select: {
+            booking_date: true,
+            start_date: true,
+            end_date: true,
+            isSelfDriver: true,
+            driver: {
+              select: {
+                first_name: true,
+                last_name: true,
+              },
+            },
+          },
+        },
         customer: { select: { first_name: true, last_name: true } },
         car: { select: { make: true, model: true } },
       },

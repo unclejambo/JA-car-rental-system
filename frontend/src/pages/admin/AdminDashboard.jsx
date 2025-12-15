@@ -355,13 +355,15 @@ function AdminDashboard() {
               spacing={{ xs: 2, md: 2.5 }}
               sx={{ px: { xs: 2, md: 0 }, mb: { xs: 2, md: 3 } }}
             >
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={2}>
                 <Card
                   sx={{
                     borderRadius: 3,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    boxShadow: '0 4px 14px rgba(193,0,7,0.12)',
                     height: '100%',
                     minHeight: 140,
+                    background:
+                      'linear-gradient(135deg, #ffe3e6 0%, #ffc1c7 100%)',
                   }}
                 >
                   <CardContent
@@ -376,7 +378,7 @@ function AdminDashboard() {
                       sx={{
                         fontWeight: 700,
                         fontSize: '0.875rem',
-                        color: '#616161',
+                        color: '#7a0012',
                         mb: 1,
                         lineHeight: 1.2,
                       }}
@@ -387,7 +389,7 @@ function AdminDashboard() {
                       sx={{
                         fontWeight: 800,
                         fontSize: '2rem',
-                        color: '#c10007',
+                        color: '#b30019',
                         mb: 1,
                       }}
                     >
@@ -399,7 +401,7 @@ function AdminDashboard() {
                       size="small"
                       variant="text"
                       sx={{
-                        color: '#c10007',
+                        color: '#7a0012',
                         textTransform: 'none',
                         p: 0,
                         minWidth: 0,
@@ -411,13 +413,15 @@ function AdminDashboard() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={2}>
                 <Card
                   sx={{
                     borderRadius: 3,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    boxShadow: '0 4px 14px rgba(0,128,0,0.12)',
                     height: '100%',
                     minHeight: 140,
+                    background:
+                      'linear-gradient(135deg, #e3f8e8 0%, #c3f0d2 100%)',
                   }}
                 >
                   <CardContent
@@ -432,7 +436,7 @@ function AdminDashboard() {
                       sx={{
                         fontWeight: 700,
                         fontSize: '0.875rem',
-                        color: '#616161',
+                        color: '#1b5e20',
                         mb: 1,
                         lineHeight: 1.2,
                       }}
@@ -443,7 +447,7 @@ function AdminDashboard() {
                       sx={{
                         fontWeight: 800,
                         fontSize: '2rem',
-                        color: '#2e7d32',
+                        color: '#1b8a3b',
                         mb: 1,
                       }}
                     >
@@ -455,7 +459,7 @@ function AdminDashboard() {
                       size="small"
                       variant="text"
                       sx={{
-                        color: '#2e7d32',
+                        color: '#1b5e20',
                         textTransform: 'none',
                         p: 0,
                         minWidth: 0,
@@ -467,13 +471,15 @@ function AdminDashboard() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={2}>
                 <Card
                   sx={{
                     borderRadius: 3,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    boxShadow: '0 4px 14px rgba(25,118,210,0.14)',
                     height: '100%',
                     minHeight: 140,
+                    background:
+                      'linear-gradient(135deg, #e3f2fd 0%, #cddff8 100%)',
                   }}
                 >
                   <CardContent
@@ -488,7 +494,7 @@ function AdminDashboard() {
                       sx={{
                         fontWeight: 700,
                         fontSize: '0.875rem',
-                        color: '#616161',
+                        color: '#0d47a1',
                         mb: 1,
                         lineHeight: 1.2,
                       }}
@@ -499,7 +505,7 @@ function AdminDashboard() {
                       sx={{
                         fontWeight: 800,
                         fontSize: '2rem',
-                        color: '#1976d2',
+                        color: '#1565c0',
                         mb: 1,
                       }}
                     >
@@ -511,7 +517,7 @@ function AdminDashboard() {
                       size="small"
                       variant="text"
                       sx={{
-                        color: '#1976d2',
+                        color: '#0d47a1',
                         textTransform: 'none',
                         p: 0,
                         minWidth: 0,
@@ -523,7 +529,7 @@ function AdminDashboard() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={2}>
                 <Card
                   sx={{
                     borderRadius: 3,
@@ -579,13 +585,15 @@ function AdminDashboard() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={2}>
                 <Card
                   sx={{
                     borderRadius: 3,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    boxShadow: '0 4px 14px rgba(211,47,47,0.14)',
                     height: '100%',
                     minHeight: 140,
+                    background:
+                      'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)',
                   }}
                 >
                   <CardContent
@@ -600,7 +608,7 @@ function AdminDashboard() {
                       sx={{
                         fontWeight: 700,
                         fontSize: '0.875rem',
-                        color: '#616161',
+                        color: '#b71c1c',
                         mb: 1,
                         lineHeight: 1.2,
                       }}
@@ -623,25 +631,27 @@ function AdminDashboard() {
                       size="small"
                       variant="text"
                       sx={{
-                        color: '#d32f2f',
+                        color: '#b71c1c',
                         textTransform: 'none',
                         p: 0,
                         minWidth: 0,
                         alignSelf: 'flex-start',
                       }}
                     >
-                      Review Now →
+                      View Schedule →
                     </Button>
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={2}>
                 <Card
                   sx={{
                     borderRadius: 3,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    boxShadow: '0 4px 14px rgba(237,108,2,0.14)',
                     height: '100%',
                     minHeight: 140,
+                    background:
+                      'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)',
                   }}
                 >
                   <CardContent
@@ -656,7 +666,7 @@ function AdminDashboard() {
                       sx={{
                         fontWeight: 700,
                         fontSize: '0.875rem',
-                        color: '#616161',
+                        color: '#e65100',
                         mb: 1,
                         lineHeight: 1.2,
                       }}
@@ -667,7 +677,7 @@ function AdminDashboard() {
                       sx={{
                         fontWeight: 800,
                         fontSize: '2rem',
-                        color: '#ed6c02',
+                        color: '#f57c00',
                         mb: 1,
                       }}
                     >
@@ -679,7 +689,7 @@ function AdminDashboard() {
                       size="small"
                       variant="text"
                       sx={{
-                        color: '#ed6c02',
+                        color: '#e65100',
                         textTransform: 'none',
                         p: 0,
                         minWidth: 0,
@@ -691,13 +701,15 @@ function AdminDashboard() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={2}>
                 <Card
                   sx={{
                     borderRadius: 3,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    boxShadow: '0 4px 14px rgba(2,136,209,0.14)',
                     height: '100%',
                     minHeight: 140,
+                    background:
+                      'linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%)',
                   }}
                 >
                   <CardContent
@@ -712,7 +724,7 @@ function AdminDashboard() {
                       sx={{
                         fontWeight: 700,
                         fontSize: '0.875rem',
-                        color: '#616161',
+                        color: '#01579b',
                         mb: 1,
                         lineHeight: 1.2,
                       }}
@@ -735,7 +747,7 @@ function AdminDashboard() {
                       size="small"
                       variant="text"
                       sx={{
-                        color: '#0288d1',
+                        color: '#01579b',
                         textTransform: 'none',
                         p: 0,
                         minWidth: 0,

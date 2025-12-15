@@ -29,7 +29,13 @@ import {
   Payment,
   Favorite,
 } from '@mui/icons-material';
-import { HiCalendar, HiCurrencyDollar, HiCheckCircle } from 'react-icons/hi2';
+import {
+  HiCalendar,
+  HiCurrencyDollar,
+  HiCheckCircle,
+  HiArrowUturnLeft,
+  HiTruck,
+} from 'react-icons/hi2';
 import { Link } from 'react-router-dom';
 import CustomerSideBar from '../../ui/components/CustomerSideBar';
 import Header from '../../ui/components/Header';
@@ -44,9 +50,51 @@ function CustomerDashboard() {
     totalBookings: 0,
     unpaidSettlements: [],
     favoriteCar: null,
+    forRelease: [],
+    forReturn: [],
   });
 
   const API_BASE = getApiBase().replace(/\/$/, '');
+
+  const isReleaseCandidate = (row) => {
+    try {
+      const status = (row.status || row.booking_status || '')
+        .toString()
+        .toLowerCase();
+      if (status !== 'confirmed') return false;
+      const pickup = row.pickup_time || row.start_date || row.startDate;
+      if (!pickup) return false;
+      const pickupTime = new Date(pickup);
+      const now = new Date();
+      const diff = pickupTime - now;
+      const oneHourBefore = -60 * 60 * 1000;
+      return diff <= 60 * 60 * 1000 && diff >= oneHourBefore;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const isReturnCandidate = (row) => {
+    try {
+      const status = (row.status || row.booking_status || '')
+        .toString()
+        .toLowerCase();
+      if (status === 'completed') return true;
+      if (
+        status === 'in progress' ||
+        status === 'in_progress' ||
+        status === 'ongoing'
+      ) {
+        const end = row.end_date || row.endDate || row.dropoff_time;
+        if (!end) return false;
+        const endTime = new Date(end);
+        return endTime <= new Date();
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
 
   // Helper function to get relative date label
   const getRelativeDateLabel = (date) => {
@@ -111,6 +159,13 @@ function CustomerDashboard() {
       const schedules = Array.isArray(customerSchedules)
         ? customerSchedules
         : [];
+
+      const forRelease = schedules.filter((schedule) =>
+        isReleaseCandidate(schedule)
+      );
+      const forReturn = schedules.filter((schedule) =>
+        isReturnCandidate(schedule)
+      );
 
       // Get today's schedules (only Confirmed and In Progress bookings)
       const today = new Date();
@@ -200,6 +255,8 @@ function CustomerDashboard() {
         totalBookings: bookings.length,
         unpaidSettlements: unpaidSettlements.slice(0, 3),
         favoriteCar,
+        forRelease,
+        forReturn,
       });
     } catch (error) {
       // Set empty data to prevent crashes
@@ -209,6 +266,8 @@ function CustomerDashboard() {
         totalBookings: 0,
         unpaidSettlements: [],
         favoriteCar: null,
+        forRelease: [],
+        forReturn: [],
       });
     } finally {
       setLoading(false);
@@ -308,7 +367,7 @@ function CustomerDashboard() {
               }}
             >
               {/* Total Bookings Stat */}
-              <Grid item xs={6} sm={6} md={3}>
+              <Grid item xs={6} sm={6} md={4} lg={2}>
                 <Card
                   sx={{
                     background:
@@ -365,7 +424,7 @@ function CustomerDashboard() {
               </Grid>
 
               {/* Today's Schedule Stat */}
-              <Grid item xs={6} sm={6} md={3}>
+              <Grid item xs={6} sm={6} md={4} lg={2}>
                 <Card
                   sx={{
                     background:
@@ -422,7 +481,7 @@ function CustomerDashboard() {
               </Grid>
 
               {/* Active Bookings Stat */}
-              <Grid item xs={6} sm={6} md={3}>
+              <Grid item xs={6} sm={6} md={4} lg={2}>
                 <Card
                   sx={{
                     background:
@@ -479,7 +538,7 @@ function CustomerDashboard() {
               </Grid>
 
               {/* Pending Payments Stat */}
-              <Grid item xs={6} sm={6} md={3}>
+              <Grid item xs={6} sm={6} md={4} lg={2}>
                 <Card
                   sx={{
                     background:
@@ -530,6 +589,122 @@ function CustomerDashboard() {
                       }}
                     >
                       Pending Payments
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* For Release Stat */}
+              <Grid item xs={6} sm={6} md={4} lg={2}>
+                <Card
+                  sx={{
+                    background:
+                      'linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%)',
+                    borderRadius: 2,
+                    height: '100%',
+                    minHeight: { xs: 140, md: 160 },
+                    boxShadow: '0 4px 12px rgba(0, 151, 167, 0.2)',
+                  }}
+                >
+                  <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 1,
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          bgcolor: 'rgba(255, 255, 255, 0.3)',
+                          width: { xs: 36, md: 42 },
+                          height: { xs: 36, md: 42 },
+                        }}
+                      >
+                        <HiTruck
+                          style={{ color: '#007c91', fontSize: '1.5rem' }}
+                        />
+                      </Avatar>
+                    </Box>
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        fontWeight: 700,
+                        color: '#006064',
+                        mb: 0.5,
+                        fontSize: { xs: '1.5rem', md: '2rem' },
+                      }}
+                    >
+                      {dashboardData.forRelease?.length || 0}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: '#004d60',
+                        fontWeight: 500,
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                      }}
+                    >
+                      For Release Today
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* For Return Stat */}
+              <Grid item xs={6} sm={6} md={4} lg={2}>
+                <Card
+                  sx={{
+                    background:
+                      'linear-gradient(135deg, #ede7f6 0%, #d1c4e9 100%)',
+                    borderRadius: 2,
+                    height: '100%',
+                    minHeight: { xs: 140, md: 160 },
+                    boxShadow: '0 4px 12px rgba(94, 53, 177, 0.2)',
+                  }}
+                >
+                  <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 1,
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          bgcolor: 'rgba(255, 255, 255, 0.3)',
+                          width: { xs: 36, md: 42 },
+                          height: { xs: 36, md: 42 },
+                        }}
+                      >
+                        <HiArrowUturnLeft
+                          style={{ color: '#4527a0', fontSize: '1.5rem' }}
+                        />
+                      </Avatar>
+                    </Box>
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        fontWeight: 700,
+                        color: '#4527a0',
+                        mb: 0.5,
+                        fontSize: { xs: '1.5rem', md: '2rem' },
+                      }}
+                    >
+                      {dashboardData.forReturn?.length || 0}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: '#311b92',
+                        fontWeight: 500,
+                        fontSize: { xs: '0.75rem', md: '0.875rem' },
+                      }}
+                    >
+                      For Return Today
                     </Typography>
                   </CardContent>
                 </Card>

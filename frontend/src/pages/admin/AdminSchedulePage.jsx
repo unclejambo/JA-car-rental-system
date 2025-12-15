@@ -541,6 +541,22 @@ export default function AdminSchedulePage() {
     }
   };
 
+  const toTimestamp = (value) => {
+    if (!value) return 0;
+    const t = new Date(value).getTime();
+    return Number.isNaN(t) ? 0 : t;
+  };
+
+  const releaseSortValue = (row) =>
+    toTimestamp(
+      row.pickup_time || row.start_date || row.startDate || row.pickupTime
+    );
+
+  const returnSortValue = (row) =>
+    toTimestamp(
+      row.dropoff_time || row.end_date || row.endDate || row.dropoffTime
+    );
+
   const getCounts = () => {
     if (!schedule || schedule.length === 0) {
       return { CONFIRMED: 0, 'IN PROGRESS': 0, RELEASE: 0, RETURN: 0 };
@@ -631,10 +647,14 @@ export default function AdminSchedulePage() {
         });
 
       case 'RELEASE':
-        return filtered.filter((r) => isReleaseCandidate(r));
+        return filtered
+          .filter((r) => isReleaseCandidate(r))
+          .sort((a, b) => releaseSortValue(b) - releaseSortValue(a));
 
       case 'RETURN':
-        return filtered.filter((r) => isReturnCandidate(r));
+        return filtered
+          .filter((r) => isReturnCandidate(r))
+          .sort((a, b) => returnSortValue(b) - returnSortValue(a));
 
       default:
         return filtered;

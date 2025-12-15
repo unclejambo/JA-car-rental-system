@@ -279,6 +279,7 @@ export const getMyDriverSchedules = async (req, res) => {
     // Map schedule data
     const mapped = schedules.map((s) => ({
       schedule_id: s.booking_id,
+      booking_id: s.booking_id, // Include booking_id for notifications
       start_date: s.start_date,
       pickup_time: s.pickup_time,
       pickup_loc: s.pickup_loc,
@@ -286,6 +287,7 @@ export const getMyDriverSchedules = async (req, res) => {
       dropoff_time: s.dropoff_time,
       dropoff_loc: s.dropoff_loc,
       booking_status: s.booking_status,
+      booking_date: s.booking_date, // Include for notification timestamp
       customer_name: s.customer
         ? `${s.customer.first_name ?? ""} ${s.customer.last_name ?? ""}`.trim()
         : "No Customer",

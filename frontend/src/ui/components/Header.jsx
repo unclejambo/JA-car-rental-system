@@ -631,17 +631,20 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
         const carName = schedule.car_model || 'a vehicle';
         const customerName = schedule.customer_name || 'Customer';
 
-        // 1. New Assignment - Recently assigned bookings
-        if (schedule.booking_status === 'Confirmed' && schedule.updated_at) {
-          const assignedTime = new Date(schedule.updated_at);
+        // 1. New Assignment - Recently assigned bookings (including unconfirmed/pending)
+        if ((schedule.booking_status === 'Confirmed' || schedule.booking_status === 'Pending') && schedule.booking_date) {
+          const assignedTime = new Date(schedule.booking_date);
           const timeSinceAssignment = now - assignedTime.getTime();
           // Show if assigned within last 3 days
           if (timeSinceAssignment < THREE_DAYS) {
+            const isPending = schedule.booking_status === 'Pending';
             notificationsList.push({
               id: `assigned-${schedule.booking_id}`,
-              type: 'driver-assigned',
-              title: 'New Assignment 🚗',
-              message: `You've been assigned to drive ${carName} for ${customerName}`,
+              type: isPending ? 'driver-assigned-unconfirmed' : 'driver-assigned',
+              title: isPending ? 'New Unconfirmed Assignment 📋' : 'New Assignment 🚗',
+              message: isPending 
+                ? `You've been assigned to drive ${carName} for ${customerName} (Awaiting payment confirmation)`
+                : `You've been assigned to drive ${carName} for ${customerName}`,
               timestamp: assignedTime,
               link: '/driver-schedule',
             });
@@ -846,6 +849,8 @@ function Header({ onMenuClick = null, isMenuOpen = false }) {
       // Driver notifications
       case 'driver-assigned':
         return <HiTruck size={20} color="#4caf50" />;
+      case 'driver-assigned-unconfirmed':
+        return <HiBookOpen size={20} color="#ff9800" />;
       case 'driver-upcoming':
         return <HiExclamationCircle size={20} color="#ff9800" />;
       case 'driver-cancelled':

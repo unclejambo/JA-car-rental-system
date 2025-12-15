@@ -30,6 +30,7 @@ import {
   Step,
   StepLabel,
   Avatar,
+  Checkbox,
 } from '@mui/material';
 import {
   HiX,

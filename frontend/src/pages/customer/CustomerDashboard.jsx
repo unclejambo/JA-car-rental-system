@@ -42,6 +42,7 @@ import {
 import { Link } from 'react-router-dom';
 import CustomerSideBar from '../../ui/components/CustomerSideBar';
 import Header from '../../ui/components/Header';
+import WeeklyCalendarView from '../../ui/components/WeeklyCalendarView';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 
 function CustomerDashboard() {
@@ -55,6 +56,8 @@ function CustomerDashboard() {
     favoriteCar: null,
     forRelease: [],
     forReturn: [],
+    forReleaseWeekly: [],
+    forReturnWeekly: [],
   });
   const [customerInfo, setCustomerInfo] = useState({
     first_name: '',
@@ -174,6 +177,35 @@ function CustomerDashboard() {
         isReturnCandidate(schedule)
       );
 
+      // Filter For Release: All confirmed bookings (not cancelled) for weekly calendar view
+      const forReleaseWeekly = Array.isArray(schedules)
+        ? schedules
+            .filter((schedule) => {
+              const status = schedule.booking_status?.toLowerCase();
+              // Include only confirmed bookings that are not cancelled
+              return status === 'confirmed' && !schedule.isCancel;
+            })
+            .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
+        : [];
+
+      // Filter For Return: All in-progress bookings (not cancelled) for weekly calendar view, considering extensions
+      const forReturnWeekly = Array.isArray(schedules)
+        ? schedules
+            .filter((schedule) => {
+              const status = schedule.booking_status?.toLowerCase();
+              // Include only in-progress bookings that are not cancelled
+              return (status === 'in progress' || status === 'in_progress') && !schedule.isCancel;
+            })
+            .map((schedule) => ({
+              ...schedule,
+              // Use new_end_date if booking is extended, otherwise use end_date
+              effective_end_date: schedule.isExtended && schedule.new_end_date
+                ? schedule.new_end_date
+                : schedule.end_date,
+            }))
+            .sort((a, b) => new Date(a.effective_end_date) - new Date(b.effective_end_date))
+        : [];
+
       // Get today's schedules (only Confirmed and In Progress bookings)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -264,6 +296,8 @@ function CustomerDashboard() {
         favoriteCar,
         forRelease,
         forReturn,
+        forReleaseWeekly,
+        forReturnWeekly,
       });
 
       // Fetch customer profile information for tier display
@@ -289,6 +323,8 @@ function CustomerDashboard() {
         favoriteCar: null,
         forRelease: [],
         forReturn: [],
+        forReleaseWeekly: [],
+        forReturnWeekly: [],
       });
     } finally {
       setLoading(false);
@@ -346,600 +382,25 @@ function CustomerDashboard() {
         {/* Welcome Header */}
         {!loading && (
           <>
-            <Box
-              sx={{
-                background: 'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
-                borderRadius: 3,
-                p: { xs: 2, md: 2.5 },
-                mb: 2,
-                mx: { xs: 2, md: 0 },
-                boxShadow: '0 2px 8px rgba(193, 0, 7, 0.2)',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                <Box>
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontWeight: 700,
-                      color: '#fff',
-                      mb: 0.5,
-                      fontSize: { xs: '1.25rem', md: '1.5rem' },
-                    }}
-                  >
-                    Welcome Back{customerInfo.first_name ? `, ${customerInfo.first_name}` : ''}! 👋
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'rgba(255, 255, 255, 0.9)',
-                      fontSize: { xs: '0.8rem', md: '0.875rem' },
-                    }}
-                  >
-                    Here's what's happening with your rentals today
-                  </Typography>
-                </Box>
-              </Box>
+            
+            {/* Weekly Calendar View - For Release & For Return */}
+            <Box sx={{ mb: 2, px: { xs: 2, md: 0 } }}>
+              <WeeklyCalendarView
+                forRelease={dashboardData.forReleaseWeekly || []}
+                forReturn={dashboardData.forReturnWeekly || []}
+              />
             </Box>
 
-            {/* Stats Overview Cards */}
+            {/* Bookings and Settlements Section */}
             <Grid
               container
-              spacing={{ xs: 1.5, md: 2 }}
+              spacing={{ xs: 2, md: 2 }}
               sx={{
-                mb: 2,
                 px: { xs: 2, md: 0 },
               }}
             >
-              {/* Total Bookings Stat */}
-              <Grid item xs={6} sm={6} md={4} lg={2}>
-                <Card
-                  sx={{
-                    background:
-                      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    borderRadius: 2,
-                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.25)',
-                    height: '100%',
-                  }}
-                >
-                  <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        mb: 1,
-                      }}
-                    >
-                      <Avatar
-                        sx={{
-                          bgcolor: 'rgba(255, 255, 255, 0.2)',
-                          width: { xs: 36, md: 42 },
-                          height: { xs: 36, md: 42 },
-                        }}
-                      >
-                        <BookOnline
-                          sx={{ color: '#fff', fontSize: { xs: 18, md: 22 } }}
-                        />
-                      </Avatar>
-                    </Box>
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        fontWeight: 700,
-                        color: '#fff',
-                        mb: 0.5,
-                        fontSize: { xs: '1.5rem', md: '2rem' },
-                      }}
-                    >
-                      {dashboardData.totalBookings}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: 'rgba(255, 255, 255, 0.9)',
-                        fontWeight: 500,
-                        fontSize: { xs: '0.75rem', md: '0.875rem' },
-                      }}
-                    >
-                      Total Bookings
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* Today's Schedule Stat */}
-              <Grid item xs={6} sm={6} md={4} lg={2}>
-                <Card
-                  sx={{
-                    background:
-                      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                    borderRadius: 2,
-                    boxShadow: '0 4px 12px rgba(245, 87, 108, 0.25)',
-                    height: '100%',
-                  }}
-                >
-                  <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        mb: 1,
-                      }}
-                    >
-                      <Avatar
-                        sx={{
-                          bgcolor: 'rgba(255, 255, 255, 0.2)',
-                          width: { xs: 36, md: 42 },
-                          height: { xs: 36, md: 42 },
-                        }}
-                      >
-                        <HiCalendar
-                          style={{ color: '#fff', fontSize: '1.5rem' }}
-                        />
-                      </Avatar>
-                    </Box>
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        fontWeight: 700,
-                        color: '#fff',
-                        mb: 0.5,
-                        fontSize: { xs: '1.5rem', md: '2rem' },
-                      }}
-                    >
-                      {dashboardData.todaySchedule?.length || 0}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: 'rgba(255, 255, 255, 0.9)',
-                        fontWeight: 500,
-                        fontSize: { xs: '0.75rem', md: '0.875rem' },
-                      }}
-                    >
-                      Today's Rentals
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* Active Bookings Stat */}
-              <Grid item xs={6} sm={6} md={4} lg={2}>
-                <Card
-                  sx={{
-                    background:
-                      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                    borderRadius: 2,
-                    boxShadow: '0 4px 12px rgba(79, 172, 254, 0.25)',
-                    height: '100%',
-                  }}
-                >
-                  <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        mb: 1,
-                      }}
-                    >
-                      <Avatar
-                        sx={{
-                          bgcolor: 'rgba(255, 255, 255, 0.2)',
-                          width: { xs: 36, md: 42 },
-                          height: { xs: 36, md: 42 },
-                        }}
-                      >
-                        <HiCheckCircle
-                          style={{ color: '#fff', fontSize: '1.5rem' }}
-                        />
-                      </Avatar>
-                    </Box>
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        fontWeight: 700,
-                        color: '#fff',
-                        mb: 0.5,
-                        fontSize: { xs: '1.5rem', md: '2rem' },
-                      }}
-                    >
-                      {dashboardData.myBookings?.length || 0}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: 'rgba(255, 255, 255, 0.9)',
-                        fontWeight: 500,
-                        fontSize: { xs: '0.75rem', md: '0.875rem' },
-                      }}
-                    >
-                      Active Bookings
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* Pending Payments Stat */}
-              <Grid item xs={6} sm={6} md={4} lg={2}>
-                <Card
-                  sx={{
-                    background:
-                      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                    borderRadius: 2,
-                    height: '100%',
-                    boxShadow: '0 4px 12px rgba(250, 112, 154, 0.25)',
-                  }}
-                >
-                  <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        mb: 1,
-                      }}
-                    >
-                      <Avatar
-                        sx={{
-                          bgcolor: 'rgba(255, 255, 255, 0.2)',
-                          width: { xs: 36, md: 42 },
-                          height: { xs: 36, md: 42 },
-                        }}
-                      >
-                        <HiCurrencyDollar
-                          style={{ color: '#fff', fontSize: '1.5rem' }}
-                        />
-                      </Avatar>
-                    </Box>
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        fontWeight: 700,
-                        color: '#fff',
-                        mb: 0.5,
-                        fontSize: { xs: '1.5rem', md: '2rem' },
-                      }}
-                    >
-                      {dashboardData.unpaidSettlements?.length || 0}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: 'rgba(255, 255, 255, 0.9)',
-                        fontWeight: 500,
-                        fontSize: { xs: '0.75rem', md: '0.875rem' },
-                      }}
-                    >
-                      Pending Payments
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* For Release Stat */}
-              <Grid item xs={6} sm={6} md={4} lg={2}>
-                <Card
-                  sx={{
-                    background:
-                      'linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%)',
-                    borderRadius: 2,
-                    height: '100%',
-                    minHeight: { xs: 140, md: 160 },
-                    boxShadow: '0 4px 12px rgba(0, 151, 167, 0.2)',
-                  }}
-                >
-                  <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        mb: 1,
-                      }}
-                    >
-                      <Avatar
-                        sx={{
-                          bgcolor: 'rgba(255, 255, 255, 0.3)',
-                          width: { xs: 36, md: 42 },
-                          height: { xs: 36, md: 42 },
-                        }}
-                      >
-                        <HiTruck
-                          style={{ color: '#007c91', fontSize: '1.5rem' }}
-                        />
-                      </Avatar>
-                    </Box>
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        fontWeight: 700,
-                        color: '#006064',
-                        mb: 0.5,
-                        fontSize: { xs: '1.5rem', md: '2rem' },
-                      }}
-                    >
-                      {dashboardData.forRelease?.length || 0}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: '#004d60',
-                        fontWeight: 500,
-                        fontSize: { xs: '0.75rem', md: '0.875rem' },
-                      }}
-                    >
-                      For Release Today
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* For Return Stat */}
-              <Grid item xs={6} sm={6} md={4} lg={2}>
-                <Card
-                  sx={{
-                    background:
-                      'linear-gradient(135deg, #ede7f6 0%, #d1c4e9 100%)',
-                    borderRadius: 2,
-                    height: '100%',
-                    minHeight: { xs: 140, md: 160 },
-                    boxShadow: '0 4px 12px rgba(94, 53, 177, 0.2)',
-                  }}
-                >
-                  <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        mb: 1,
-                      }}
-                    >
-                      <Avatar
-                        sx={{
-                          bgcolor: 'rgba(255, 255, 255, 0.3)',
-                          width: { xs: 36, md: 42 },
-                          height: { xs: 36, md: 42 },
-                        }}
-                      >
-                        <HiArrowUturnLeft
-                          style={{ color: '#4527a0', fontSize: '1.5rem' }}
-                        />
-                      </Avatar>
-                    </Box>
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        fontWeight: 700,
-                        color: '#4527a0',
-                        mb: 0.5,
-                        fontSize: { xs: '1.5rem', md: '2rem' },
-                      }}
-                    >
-                      {dashboardData.forReturn?.length || 0}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: '#311b92',
-                        fontWeight: 500,
-                        fontSize: { xs: '0.75rem', md: '0.875rem' },
-                      }}
-                    >
-                      For Return Today
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-
-            {/* Top Section - Schedule & My Bookings */}
-            <Grid
-              container
-              spacing={{ xs: 0, md: 2 }}
-              sx={{
-                mb: { xs: 1, md: 2 },
-                px: { xs: 2, md: 0 },
-                display: 'flex',
-                justifyContent: { xs: 'center', md: 'space-between' },
-                gap: { xs: 2, md: 1 },
-                flexDirection: { xs: 'column', md: 'row' },
-              }}
-            >
-              {/* Today's Schedule */}
-              <Grid item xs={12} md={6} lg={7} xl={7} sx={{ flex: { md: 1 } }}>
-                <Card
-                  sx={{
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    height: '100%',
-                    minHeight: { xs: 'auto', lg: 500 },
-                    borderRadius: 3,
-                    overflow: 'hidden',
-                  }}
-                >
-                  {/* Gradient Header */}
-                  <Box
-                    sx={{
-                      background:
-                        'linear-gradient(135deg, #c10007 0%, #8b0005 100%)',
-                      p: { xs: 2, md: 2.5 },
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <Box
-                      sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
-                    >
-                      <Avatar
-                        sx={{
-                          bgcolor: 'rgba(255, 255, 255, 0.2)',
-                          width: { xs: 40, md: 48 },
-                          height: { xs: 40, md: 48 },
-                        }}
-                      >
-                        <Schedule
-                          sx={{ fontSize: { xs: 20, md: 24 }, color: '#fff' }}
-                        />
-                      </Avatar>
-                      <Box>
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            fontWeight: 700,
-                            color: '#fff',
-                            fontSize: { xs: '1.125rem', md: '1.25rem' },
-                          }}
-                        >
-                          Today's Schedule
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: 'rgba(255, 255, 255, 0.9)',
-                            fontSize: { xs: '0.75rem', md: '0.875rem' },
-                          }}
-                        >
-                          Your rentals for today
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                    {dashboardData.todaySchedule &&
-                    dashboardData.todaySchedule.length > 0 ? (
-                      <TableContainer
-                        component={Paper}
-                        sx={{
-                          boxShadow: 0,
-                          border: '1px solid #e0e0e0',
-                          maxHeight: { xs: 250, md: 320 },
-                          overflowX: 'auto',
-                        }}
-                      >
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow sx={{ bgcolor: '#fafafa' }}>
-                              <TableCell
-                                sx={{
-                                  fontWeight: 'bold',
-                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
-                                }}
-                              >
-                                Time
-                              </TableCell>
-                              <TableCell
-                                sx={{
-                                  fontWeight: 'bold',
-                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
-                                }}
-                              >
-                                Car
-                              </TableCell>
-                              <TableCell
-                                sx={{
-                                  fontWeight: 'bold',
-                                  fontSize: { xs: '0.75rem', md: '0.875rem' },
-                                }}
-                              >
-                                Type
-                              </TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {dashboardData.todaySchedule.map((schedule) => (
-                              <TableRow
-                                key={
-                                  schedule.schedule_id || schedule.booking_id
-                                }
-                                sx={{ '&:hover': { bgcolor: '#f5f5f5' } }}
-                              >
-                                <TableCell
-                                  sx={{
-                                    fontSize: { xs: '0.75rem', md: '0.875rem' },
-                                  }}
-                                >
-                                  {schedule.pickup_time
-                                    ? new Date(
-                                        schedule.pickup_time
-                                      ).toLocaleTimeString('en-US', {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                      })
-                                    : new Date(
-                                        schedule.start_date
-                                      ).toLocaleTimeString('en-US', {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                      })}
-                                </TableCell>
-                                <TableCell
-                                  sx={{
-                                    fontSize: { xs: '0.75rem', md: '0.875rem' },
-                                  }}
-                                >
-                                  {schedule.car_model || 'N/A'}
-                                </TableCell>
-                                <TableCell
-                                  sx={{
-                                    fontSize: { xs: '0.75rem', md: '0.875rem' },
-                                  }}
-                                >
-                                  <Chip
-                                    label={schedule.booking_status || 'Active'}
-                                    size="small"
-                                    sx={{
-                                      bgcolor: '#c10007',
-                                      color: 'white',
-                                      fontSize: {
-                                        xs: '0.65rem',
-                                        md: '0.75rem',
-                                      },
-                                    }}
-                                  />
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    ) : (
-                      <Typography
-                        sx={{
-                          my: { xs: 2, md: 3 },
-                          fontSize: { xs: '0.875rem', md: '1rem' },
-                          color: 'text.secondary',
-                          textAlign: 'center',
-                        }}
-                      >
-                        No schedule for today.
-                      </Typography>
-                    )}
-
-                    <Button
-                      component={Link}
-                      to="/customer-schedule"
-                      variant="contained"
-                      fullWidth
-                      sx={{
-                        mt: { xs: 1.5, md: 2 },
-                        bgcolor: '#c10007',
-                        color: 'white',
-                        '&:hover': { bgcolor: '#a00006' },
-                        py: { xs: 1, md: 1.25 },
-                      }}
-                    >
-                      More Details
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Grid>
-
               {/* My Bookings */}
-              <Grid item xs={12} md={6} lg={5} xl={5} sx={{ flex: { md: 1 } }}>
+              <Grid item xs={12}>
                 <Card
                   sx={{
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -1096,22 +557,9 @@ function CustomerDashboard() {
                   </CardContent>
                 </Card>
               </Grid>
-            </Grid>
 
-            {/* Bottom Section - Unpaid Settlements & Favorite Car */}
-            <Grid
-              container
-              spacing={{ xs: 0, md: 2 }}
-              sx={{
-                px: { xs: 2, md: 0 },
-                display: 'flex',
-                justifyContent: { xs: 'center', md: 'space-between' },
-                gap: { xs: 2, md: 1 },
-                flexDirection: { xs: 'column', md: 'row' },
-              }}
-            >
               {/* Unpaid Settlements */}
-              <Grid item xs={12} md={6} lg={6} xl={6} sx={{ flex: { md: 1 } }}>
+              <Grid item xs={12}>
                 <Card
                   sx={{
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -1246,177 +694,6 @@ function CustomerDashboard() {
                     >
                       More Details
                     </Button>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* Favorite Car */}
-              <Grid item xs={12} md={6} lg={6} xl={6} sx={{ flex: { md: 1 } }}>
-                <Card
-                  sx={{
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    minHeight: { xs: 'auto', md: 450 },
-                    borderRadius: 3,
-                    overflow: 'hidden',
-                  }}
-                >
-                  {/* Gradient Header */}
-                  <Box
-                    sx={{
-                      background:
-                        'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)',
-                      p: { xs: 2, md: 2.5 },
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <Box
-                      sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
-                    >
-                      <Avatar
-                        sx={{
-                          bgcolor: 'rgba(255, 255, 255, 0.2)',
-                          width: { xs: 40, md: 48 },
-                          height: { xs: 40, md: 48 },
-                        }}
-                      >
-                        <Favorite
-                          sx={{ fontSize: { xs: 20, md: 24 }, color: '#fff' }}
-                        />
-                      </Avatar>
-                      <Box>
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            fontWeight: 700,
-                            color: '#fff',
-                            fontSize: { xs: '1.125rem', md: '1.25rem' },
-                          }}
-                        >
-                          Favorite Car
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: 'rgba(255, 255, 255, 0.9)',
-                            fontSize: { xs: '0.75rem', md: '0.875rem' },
-                          }}
-                        >
-                          Most booked vehicle
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                  <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                    {dashboardData.favoriteCar ? (
-                      <>
-                        {/* Car Image */}
-                        {dashboardData.favoriteCar.carImgUrl ? (
-                          <Box
-                            sx={{
-                              width: '100%',
-                              height: { xs: 150, md: 180 },
-                              borderRadius: 2,
-                              overflow: 'hidden',
-                              mb: { xs: 1.5, md: 2 },
-                              border: '2px solid #e0e0e0',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              backgroundColor: '#f9f9f9',
-                            }}
-                          >
-                            <img
-                              src={dashboardData.favoriteCar.carImgUrl}
-                              alt={dashboardData.favoriteCar.carModel}
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.parentElement.style.display = 'none';
-                              }}
-                              style={{
-                                maxWidth: '100%',
-                                maxHeight: '100%',
-                                objectFit: 'contain',
-                              }}
-                            />
-                          </Box>
-                        ) : (
-                          <Box
-                            sx={{
-                              width: '100%',
-                              height: { xs: 150, md: 180 },
-                              borderRadius: 2,
-                              mb: { xs: 1.5, md: 2 },
-                              border: '2px solid #e0e0e0',
-                              bgcolor: '#f5f5f5',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <DirectionsCar
-                              sx={{
-                                fontSize: { xs: 60, md: 80 },
-                                color: '#c0c0c0',
-                              }}
-                            />
-                          </Box>
-                        )}
-
-                        {/* Car Details */}
-                        <Box>
-                          <Typography
-                            variant="h5"
-                            sx={{
-                              fontWeight: 'bold',
-                              fontSize: { xs: '1.25rem', md: '1.5rem' },
-                              color: '#000',
-                              mb: 0.5,
-                            }}
-                          >
-                            {dashboardData.favoriteCar.carModel ||
-                              `${dashboardData.favoriteCar.make || ''} ${dashboardData.favoriteCar.model || ''}`.trim() ||
-                              'N/A'}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              mb: { xs: 1.5, md: 2 },
-                              fontSize: { xs: '0.875rem', md: '1rem' },
-                              color: 'text.secondary',
-                            }}
-                          >
-                            {dashboardData.favoriteCar.carType ||
-                              dashboardData.favoriteCar.car_type ||
-                              'N/A'}
-                          </Typography>
-                          <Divider sx={{ my: { xs: 1.5, md: 2 } }} />
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              fontWeight: 'bold',
-                              fontSize: { xs: '1rem', md: '1.125rem' },
-                              color: '#c10007',
-                            }}
-                          >
-                            {dashboardData.favoriteCar.count} BOOKING
-                            {dashboardData.favoriteCar.count !== 1 ? 'S' : ''}
-                          </Typography>
-                        </Box>
-                      </>
-                    ) : (
-                      <Typography
-                        sx={{
-                          my: { xs: 2, md: 3 },
-                          fontSize: { xs: '0.875rem', md: '1rem' },
-                          color: 'text.secondary',
-                          textAlign: 'center',
-                        }}
-                      >
-                        No favorite car yet.
-                      </Typography>
-                    )}
                   </CardContent>
                 </Card>
               </Grid>

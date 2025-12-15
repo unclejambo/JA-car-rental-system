@@ -111,15 +111,35 @@ app.listen(PORT, () => {
   const AUTO_CANCEL_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
   
   // Setup return reminder scheduler
-  // Runs every 30 minutes to check for bookings needing 3-hour return reminders
-  const RETURN_REMINDER_INTERVAL = 30 * 60 * 1000; // 30 minutes in milliseconds
+  // Calculate time until next midnight in Philippine timezone
+  const scheduleReturnReminders = () => {
+    const nowInPH = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+    const now = new Date(nowInPH);
+    
+    // Get next midnight in Philippine timezone
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 0, 0);
+    
+    const msUntilMidnight = nextMidnight - now;
+    
+    console.log(`⏰ Next return reminder check scheduled in ${Math.round(msUntilMidnight / 1000 / 60)} minutes (at midnight Philippine time)`);
+    
+    setTimeout(async () => {
+      await sendReturnReminders();
+      // Schedule the next run (every 24 hours)
+      setInterval(async () => {
+        await sendReturnReminders();
+      }, 24 * 60 * 60 * 1000); // 24 hours
+    }, msUntilMidnight);
+  };
   
   // Run immediately on startup (after 30 seconds to let server initialize)
   setTimeout(async () => {
     console.log('🔧 Running initial scheduled tasks...');
     await autoCancelExpiredExtensions();
     await autoCancelExpiredBookings();
-    // await sendReturnReminders(); // TODO: Uncomment after running migration
+    await sendReturnReminders(); // Send reminders on startup
+    scheduleReturnReminders(); // Then schedule for midnight
   }, 30000);
 
   // Run auto-cancel every hour
@@ -128,12 +148,7 @@ app.listen(PORT, () => {
     await autoCancelExpiredBookings();
   }, AUTO_CANCEL_INTERVAL);
   
-  // Run return reminders every 30 minutesd
-  setInterval(async () => {
-    await sendReturnReminders();
-  }, RETURN_REMINDER_INTERVAL);
-  
   console.log('✅ Scheduled tasks configured:');
   console.log('   - Auto-cancel: Every 60 minutes');
-  console.log('   - Return reminders: Every 30 minutes');
+  console.log('   - Return reminders: Daily at 12:00 AM Philippine Time');
 });

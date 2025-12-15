@@ -85,7 +85,28 @@ export default function ReleaseModal({
       return;
     }
 
-    // No validation needed - will auto-pay full balance if exists
+    // Validate all images are uploaded
+    const requiredImages = ['id1', 'id2', 'front', 'back', 'right', 'left'];
+    const missingImages = requiredImages.filter(
+      (key) => !formData.images[key].file
+    );
+
+    if (missingImages.length > 0) {
+      const imageLabels = {
+        id1: 'Valid ID 1',
+        id2: 'Valid ID 2',
+        front: 'Front',
+        back: 'Back',
+        right: 'Right',
+        left: 'Left',
+      };
+      const missingLabels = missingImages.map((key) => imageLabels[key]);
+      setError(
+        `Please upload all required images. Missing: ${missingLabels.join(', ')}`
+      );
+      setLoading(false);
+      return;
+    }
 
     try {
       const authFetch = createAuthenticatedFetch(() => {

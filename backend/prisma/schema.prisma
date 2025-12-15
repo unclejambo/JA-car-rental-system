@@ -126,6 +126,7 @@ model Booking {
   isPay                      Boolean?      @default(false)
   isExtended                 Boolean?      @default(false)
   extension_payment_deadline DateTime?     @db.Timestamptz(6)
+  return_reminder_sent       Boolean?      @default(false)
   admin                      Admin?        @relation(fields: [admin_id], references: [admin_id])
   car                        Car           @relation(fields: [car_id], references: [car_id])
   customer                   Customer      @relation(fields: [customer_id], references: [customer_id])

@@ -31,6 +31,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import autoCancelRoutes from "./routes/autoCancelRoutes.js";
 import phoneVerificationRoutes from "./routes/phoneVerificationRoutes.js";
 import { autoCancelExpiredBookings, autoCancelExpiredExtensions } from "./utils/autoCancel.js";
+import { sendReturnReminders } from "./utils/returnReminder.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -103,18 +104,36 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
+  
   // Setup auto-cancel scheduler
   // Runs every hour to check for expired bookings AND extensions
   const AUTO_CANCEL_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
+  
+  // Setup return reminder scheduler
+  // Runs every 30 minutes to check for bookings needing 3-hour return reminders
+  const RETURN_REMINDER_INTERVAL = 30 * 60 * 1000; // 30 minutes in milliseconds
+  
   // Run immediately on startup (after 30 seconds to let server initialize)
   setTimeout(async () => {
+    console.log('🔧 Running initial scheduled tasks...');
     await autoCancelExpiredExtensions();
     await autoCancelExpiredBookings();
+    // await sendReturnReminders(); // TODO: Uncomment after running migration
   }, 30000);
 
-  // Then run every hour
+  // Run auto-cancel every hour
   setInterval(async () => {
     await autoCancelExpiredExtensions();
     await autoCancelExpiredBookings();
   }, AUTO_CANCEL_INTERVAL);
+  
+  // Run return reminders every 30 minutesd
+  setInterval(async () => {
+    await sendReturnReminders();
+  }, RETURN_REMINDER_INTERVAL);
+  
+  console.log('✅ Scheduled tasks configured:');
+  console.log('   - Auto-cancel: Every 60 minutes');
+  console.log('   - Return reminders: Every 30 minutes');
 });

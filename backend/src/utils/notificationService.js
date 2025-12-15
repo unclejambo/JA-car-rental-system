@@ -1785,3 +1785,122 @@ export async function sendTestNotification(params) {
 
   return await sendCarAvailabilityNotification(testCustomer, testCar);
 }
+
+/**
+ * Send return reminder notification to customer (on return date at 00:00)
+ * @param {Object} booking - Booking object
+ * @param {Object} customer - Customer object
+ * @param {Object} car - Car object
+ * @returns {Promise<Object>} Result of notification attempt
+ */
+export async function sendReturnReminderNotification(booking, customer, car) {
+  const { first_name, contact_no, email, isRecUpdate } = customer;
+  const { make, model, year, license_plate } = car;
+  const carName = `${make} ${model} (${year})`;
+  
+  const returnTime = booking.dropoff_time || booking.end_date;
+  const returnTimeFormatted = formatDatePH(returnTime);
+
+  // SMS message with delay notification instruction
+  const smsMessage = `Hi ${first_name}! Reminder: Today is your car return date. Scheduled return: ${returnTimeFormatted}. Car: ${carName} [${license_plate}]. Return Location: ${booking.dropoff_loc || 'JA Office'}. IMPORTANT: If you cannot return the car on time, please call us immediately to notify of any delay. - JA Car Rental`;
+
+  // Email subject and body
+  const emailSubject = `Return Reminder - ${carName}`;
+  const emailBody = `
+    Hi ${first_name},
+
+    This is a friendly reminder that today is your car return date.
+
+    Return Details:
+    - Car: ${carName} [${license_plate}]
+    - Return Time: ${returnTimeFormatted}
+    - Return Location: ${booking.dropoff_loc || 'JA Car Rental Office'}
+    - Booking ID: ${booking.booking_id}
+
+    IMPORTANT NOTICE:
+    If you cannot return the car on time, please call us immediately at [Your Phone Number] to notify us of any delay. Late returns may incur additional fees.
+
+    Thank you for choosing JA Car Rental!
+
+    Best regards,
+    JA Car Rental Team
+  `;
+
+  const results = {
+    success: false,
+    sms: null,
+    email: null,
+    method: null
+  };
+
+  try {
+    switch (isRecUpdate) {
+      case 1: // SMS only
+        if (contact_no) {
+          results.sms = await sendSMSNotification(contact_no, smsMessage);
+          results.success = results.sms.success;
+          results.method = 'SMS';
+        } else {
+          results.success = false;
+          results.error = 'No contact number';
+        }
+        break;
+
+      case 2: // Email only
+        if (email) {
+          results.email = await sendEmailNotification(email, emailSubject, emailBody);
+          results.success = results.email.success;
+          results.method = 'Email';
+        } else {
+          results.success = false;
+          results.error = 'No email';
+        }
+        break;
+
+      case 3: // Both SMS and Email
+        const promises = [];
+
+        if (contact_no) {
+          promises.push(sendSMSNotification(contact_no, smsMessage));
+        }
+        if (email) {
+          promises.push(sendEmailNotification(email, emailSubject, emailBody));
+        }
+
+        if (promises.length > 0) {
+          const [smsResult, emailResult] = await Promise.allSettled(promises);
+
+          results.sms = smsResult?.value || null;
+          results.email = emailResult?.value || null;
+          results.success = (smsResult?.status === 'fulfilled' && smsResult?.value?.success) ||
+                           (emailResult?.status === 'fulfilled' && emailResult?.value?.success);
+          results.method = 'Both';
+        } else {
+          results.success = false;
+          results.error = 'No contact information';
+        }
+        break;
+
+      default:
+        results.success = false;
+        results.error = 'Notifications disabled';
+        results.method = 'None';
+    }
+
+    if (results.success) {
+      console.log(`✅ Return reminder sent to customer ${customer.customer_id} for booking ${booking.booking_id}`);
+    } else {
+      console.log(`❌ Failed to send return reminder to customer ${customer.customer_id}:`, results.error);
+    }
+
+    return results;
+  } catch (error) {
+    console.error('Error sending return reminder:', error);
+    return { 
+      success: false, 
+      error: error.message,
+      sms: null,
+      email: null
+    };
+  }
+}

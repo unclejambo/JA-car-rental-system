@@ -62,6 +62,16 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
     return { bg: '#f5f5f5', text: '#757575', border: '#757575' };
   };
 
+  const getTabStatusColor = (status, tab) => {
+    if (tab === 'RELEASE') {
+      return { bg: '#e0f2f1', text: '#00695c', border: '#00897b' };
+    }
+    if (tab === 'RETURN') {
+      return { bg: '#ede7f6', text: '#4527a0', border: '#5e35b1' };
+    }
+    return getStatusColor(status);
+  };
+
   const getDayOfWeek = (iso) => {
     if (!iso) return '';
     const d = new Date(iso);
@@ -77,7 +87,13 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
   };
 
   const status = schedule.booking_status || schedule.status || 'N/A';
-  const statusColors = getStatusColor(status);
+  const statusColors = getTabStatusColor(status, activeTab);
+  const statusLabel =
+    activeTab === 'RELEASE'
+      ? 'For Release'
+      : activeTab === 'RETURN'
+        ? 'For Return'
+        : status;
   const carModel = schedule.car_model || 'Vehicle';
   const customerName = schedule.customer_name || 'N/A';
   const contactNo = schedule.contact_no || 'N/A';
@@ -154,7 +170,7 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
           </Box>
 
           <Chip
-            label={status}
+            label={statusLabel}
             sx={{
               bgcolor: statusColors.bg,
               color: statusColors.text,

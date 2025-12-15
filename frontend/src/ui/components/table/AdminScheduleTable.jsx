@@ -192,6 +192,42 @@ const AdminScheduleTable = ({
       })
     : [];
 
+  // Sort: latest first with status priority (Confirmed > In Progress/Ongoing > Released > Returned/Done > others)
+  const statusPriority = (value) => {
+    const s = (value || '').toString().toLowerCase();
+    if (s === 'confirmed') return 4;
+    if (s === 'in progress' || s === 'in_progress' || s === 'ongoing') return 3;
+    if (s === 'release' || s === 'released') return 2;
+    if (s === 'return' || s === 'returned' || s === 'done' || s === 'completed')
+      return 1;
+    return 0;
+  };
+
+  const latestTimestamp = (row) => {
+    const candidates = [
+      row.dropoff_time,
+      row.end_date,
+      row.pickup_time,
+      row.start_date,
+      row.updated_at,
+      row.booking_date,
+    ]
+      .filter(Boolean)
+      .map((d) => new Date(d).getTime())
+      .filter((t) => !Number.isNaN(t));
+    if (!candidates.length) return 0;
+    return Math.max(...candidates);
+  };
+
+  const sortedRows = [...normalizedRows].sort((a, b) => {
+    const pa = statusPriority(a.status ?? a.booking_status);
+    const pb = statusPriority(b.status ?? b.booking_status);
+    if (pb !== pa) return pb - pa;
+    const ta = latestTimestamp(a);
+    const tb = latestTimestamp(b);
+    return tb - ta;
+  });
+
   // Define columns that are common to all tabs (use normalized field names)
   const commonColumns = [
     {
@@ -485,7 +521,7 @@ const AdminScheduleTable = ({
       }}
     >
       <DataGrid
-        rows={normalizedRows}
+        rows={sortedRows}
         columns={columns}
         getRowId={(row) => row.reservationId ?? row.booking_id ?? row.id}
         loading={loading}

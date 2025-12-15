@@ -548,7 +548,7 @@ function AdminDashboard() {
 
                 <Button
                   component={Link}
-                  to="/schedule"
+                  to="/schedule?tab=RELEASE"
                   variant="outlined"
                   fullWidth
                   sx={{
@@ -810,7 +810,7 @@ function AdminDashboard() {
 
                 <Button
                   component={Link}
-                  to="/schedule"
+                  to="/schedule?tab=RETURN"
                   variant="outlined"
                   fullWidth
                   sx={{

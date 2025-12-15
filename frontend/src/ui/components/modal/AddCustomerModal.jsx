@@ -16,22 +16,33 @@ import {
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
 import { useAuth } from '../../../hooks/useAuth';
 
-const customerSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  address: z.string().min(1, 'Address is required'),
-  phone: z
-    .string()
-    .min(7, 'Enter a valid phone number')
-    .max(15, 'Enter a valid phone number')
-    .regex(/^\d+$/, 'Digits only'),
-  email: z.string().email('Enter a valid email'),
-  username: z.string().min(3, 'Username must be at least 3 characters'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  driverLicenseNo: z.string().min(1, 'Driver license number is required'),
-  fbLink: z.string().optional(),
-  status: z.enum(['Active', 'Inactive']),
-});
+const customerSchema = z
+  .object({
+    firstName: z.string().min(1, 'First name is required'),
+    lastName: z.string().min(1, 'Last name is required'),
+    address: z.string().min(1, 'Address is required'),
+    phone: z
+      .string()
+      .min(7, 'Enter a valid phone number')
+      .max(15, 'Enter a valid phone number')
+      .regex(/^\d+$/, 'Digits only'),
+    email: z.string().email('Enter a valid email'),
+    username: z.string().min(3, 'Username must be at least 3 characters'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+    licenseStatus: z.enum(['has', 'none']),
+    driverLicenseNo: z.string().optional(),
+    fbLink: z.string().optional(),
+    status: z.enum(['Active', 'Inactive']),
+  })
+  .refine(
+    (data) =>
+      data.licenseStatus === 'none' ||
+      (data.driverLicenseNo && String(data.driverLicenseNo).trim().length > 0),
+    {
+      path: ['driverLicenseNo'],
+      message: "Driver's license number is required",
+    }
+  );
 
 export default function AddCustomerModal({ show, onClose, onSuccess }) {
   const { logout } = useAuth();
@@ -43,6 +54,7 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
     email: '',
     username: '',
     password: '',
+    licenseStatus: 'has',
     driverLicenseNo: '',
     fbLink: '',
     status: 'Active',
@@ -118,7 +130,8 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
         email: formData.email,
         username: formData.username,
         password: formData.password,
-        driver_license_no: formData.driverLicenseNo,
+        driver_license_no:
+          formData.licenseStatus === 'has' ? formData.driverLicenseNo : null,
         fb_link: formData.fbLink || null,
         status: formData.status === 'Active',
       };
@@ -152,6 +165,7 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
         email: '',
         username: '',
         password: '',
+        licenseStatus: 'has',
         driverLicenseNo: '',
         fbLink: '',
         status: 'Active',
@@ -271,15 +285,34 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
               fullWidth
             />
             <TextField
-              label="Driver License Number"
-              name="driverLicenseNo"
-              value={formData.driverLicenseNo}
+              select
+              label="Driver's License"
+              name="licenseStatus"
+              value={formData.licenseStatus}
               onChange={handleInputChange}
               required
-              error={!!errors.driverLicenseNo}
-              helperText={errors.driverLicenseNo}
               fullWidth
-            />
+              helperText={
+                formData.licenseStatus === 'has'
+                  ? "Select if the customer has a license and enter the driver's license number"
+                  : "Select if the customer doesn't have a license"
+              }
+            >
+              <MenuItem value="has">Has A Driver's License</MenuItem>
+              <MenuItem value="none">Doesn't have a Driver's License</MenuItem>
+            </TextField>
+            {formData.licenseStatus === 'has' && (
+              <TextField
+                label="Driver License Number"
+                name="driverLicenseNo"
+                value={formData.driverLicenseNo}
+                onChange={handleInputChange}
+                required
+                error={!!errors.driverLicenseNo}
+                helperText={errors.driverLicenseNo}
+                fullWidth
+              />
+            )}
             <TextField
               label="Facebook Link (Optional)"
               name="fbLink"

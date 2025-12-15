@@ -106,7 +106,7 @@ function ScheduleCard({ schedule }) {
             flexDirection: { xs: 'row', md: 'column' },
             alignItems: 'center',
             justifyContent: { xs: 'flex-start', md: 'center' },
-            gap: { xs: 2, md: 0 },
+            gap: { xs: 2, md: 1.5 },
           }}
         >
           <Box

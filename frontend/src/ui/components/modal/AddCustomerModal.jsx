@@ -12,7 +12,12 @@ import {
   Box,
   Alert,
   CircularProgress,
+  FormControlLabel,
+  Checkbox,
+  Typography,
+  Divider,
 } from '@mui/material';
+import { HiUserPlus } from 'react-icons/hi2';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
 import { useAuth } from '../../../hooks/useAuth';
 
@@ -46,6 +51,7 @@ const customerSchema = z
 
 export default function AddCustomerModal({ show, onClose, onSuccess }) {
   const { logout } = useAuth();
+  const [isWalkIn, setIsWalkIn] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -112,7 +118,7 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate(formData)) return;
+    if (!isWalkIn && !validate(formData)) return;
 
     setLoading(true);
     setApiError('');
@@ -121,24 +127,40 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
       const authenticatedFetch = createAuthenticatedFetch(logout);
       const API_BASE = getApiBase();
 
-      // Transform formData to match backend expectations
-      const payload = {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        address: formData.address,
-        contact_no: formData.phone,
-        email: formData.email,
-        username: formData.username,
-        password: formData.password,
-        driver_license_no:
-          formData.licenseStatus === 'has' ? formData.driverLicenseNo : null,
-        fb_link: formData.fbLink || null,
-        status: formData.status === 'Active',
-      };
+      let payload;
+      let endpoint;
 
-      console.log('Submitting customer data:', payload);
+      if (isWalkIn) {
+        // Walk-in customer - simplified payload
+        payload = {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          contact_no: formData.phone,
+          email: formData.email || null,
+          driver_license_no: formData.licenseStatus === 'has' ? formData.driverLicenseNo : null,
+        };
+        endpoint = `${API_BASE}/api/customers/walk-in`;
+      } else {
+        // Regular customer - full payload
+        payload = {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          address: formData.address,
+          contact_no: formData.phone,
+          email: formData.email,
+          username: formData.username,
+          password: formData.password,
+          driver_license_no:
+            formData.licenseStatus === 'has' ? formData.driverLicenseNo : null,
+          fb_link: formData.fbLink || null,
+          status: formData.status === 'Active',
+        };
+        endpoint = `${API_BASE}/api/customers`;
+      }
 
-      const response = await authenticatedFetch(`${API_BASE}/api/customers`, {
+      console.log(`Submitting ${isWalkIn ? 'walk-in' : 'regular'} customer data:`, payload);
+
+      const response = await authenticatedFetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -156,6 +178,13 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
       const result = await response.json();
       console.log('Customer created successfully:', result);
 
+      // Show temporary password for walk-in customers
+      if (isWalkIn && result.tempPassword) {
+        alert(
+          `✅ Walk-in customer created!\n\nTemporary Password: ${result.tempPassword}\n\n⚠️ Please save this password and provide it to the customer.`
+        );
+      }
+
       // Reset form
       setFormData({
         firstName: '',
@@ -170,6 +199,7 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
         fbLink: '',
         status: 'Active',
       });
+      setIsWalkIn(false);
 
       // Call success callback to refresh the list
       if (onSuccess) {
@@ -179,8 +209,10 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
       // Close modal
       onClose?.();
 
-      // Show success message
-      alert('✅ Customer created successfully!');
+      // Show success message for regular customers
+      if (!isWalkIn) {
+        alert('✅ Customer created successfully!');
+      }
     } catch (error) {
       console.error('Error creating customer:', error);
       setApiError(
@@ -206,6 +238,37 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
             {apiError}
           </Alert>
         )}
+        
+        {/* Walk-in Quick Registration Toggle */}
+        <Box sx={{ mb: 2 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={isWalkIn}
+                onChange={(e) => setIsWalkIn(e.target.checked)}
+                color="primary"
+              />
+            }
+            label={
+              <Box>
+                <Typography variant="body2" fontWeight={600}>
+                  Walk-in Customer (Quick Registration)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Simplified form for walk-in customers. Auto-generates username and password.
+                </Typography>
+              </Box>
+            }
+          />
+        </Box>
+
+        {isWalkIn && (
+          <Alert severity="info" icon={<HiUserPlus />} sx={{ mb: 2 }}>
+            Walk-in mode: Only name, phone, and optional email/license required. 
+            System will auto-generate credentials.
+          </Alert>
+        )}
+
         <form id="addCustomerForm" onSubmit={handleSubmit}>
           <Stack spacing={2}>
             <TextField
@@ -228,16 +291,23 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
               helperText={errors.lastName}
               fullWidth
             />
-            <TextField
-              label="Address"
-              name="address"
-              value={formData.address}
-              onChange={handleInputChange}
-              required
-              error={!!errors.address}
-              helperText={errors.address}
-              fullWidth
-            />
+            
+            {/* Conditional fields - hidden for walk-in */}
+            {!isWalkIn && (
+              <>
+                <TextField
+                  label="Address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  required
+                  error={!!errors.address}
+                  helperText={errors.address}
+                  fullWidth
+                />
+              </>
+            )}
+            
             <TextField
               label="Phone"
               name="phone"
@@ -253,37 +323,44 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
               inputProps={{ pattern: '[0-9]*' }}
             />
             <TextField
-              label="Email"
+              label={isWalkIn ? "Email (Optional)" : "Email"}
               name="email"
               type="email"
               value={formData.email}
               onChange={handleInputChange}
-              required
+              required={!isWalkIn}
               error={!!errors.email}
-              helperText={errors.email}
+              helperText={errors.email || (isWalkIn ? "Leave blank to auto-generate" : "")}
               fullWidth
             />
-            <TextField
-              label="Username"
-              name="username"
-              value={formData.username}
-              onChange={handleInputChange}
-              required
-              error={!!errors.username}
-              helperText={errors.username}
-              fullWidth
-            />
-            <TextField
-              label="Password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              required
-              error={!!errors.password}
-              helperText={errors.password}
-              fullWidth
-            />
+            
+            {/* Credentials - hidden for walk-in */}
+            {!isWalkIn && (
+              <>
+                <TextField
+                  label="Username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  required
+                  error={!!errors.username}
+                  helperText={errors.username}
+                  fullWidth
+                />
+                <TextField
+                  label="Password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  required
+                  error={!!errors.password}
+                  helperText={errors.password}
+                  fullWidth
+                />
+              </>
+            )}
+            
             <TextField
               select
               label="Driver's License"
@@ -313,29 +390,35 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
                 fullWidth
               />
             )}
-            <TextField
-              label="Facebook Link (Optional)"
-              name="fbLink"
-              value={formData.fbLink}
-              onChange={handleInputChange}
-              error={!!errors.fbLink}
-              helperText={errors.fbLink}
-              fullWidth
-            />
-            <TextField
-              select
-              label="Status"
-              name="status"
-              value={formData.status}
-              onChange={handleInputChange}
-              required
-              error={!!errors.status}
-              helperText={errors.status}
-              fullWidth
-            >
-              <MenuItem value="Active">Active</MenuItem>
-              <MenuItem value="Inactive">Inactive</MenuItem>
-            </TextField>
+            
+            {/* Optional fields - hidden for walk-in */}
+            {!isWalkIn && (
+              <>
+                <TextField
+                  label="Facebook Link (Optional)"
+                  name="fbLink"
+                  value={formData.fbLink}
+                  onChange={handleInputChange}
+                  error={!!errors.fbLink}
+                  helperText={errors.fbLink}
+                  fullWidth
+                />
+                <TextField
+                  select
+                  label="Status"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                  required
+                  error={!!errors.status}
+                  helperText={errors.status}
+                  fullWidth
+                >
+                  <MenuItem value="Active">Active</MenuItem>
+                  <MenuItem value="Inactive">Inactive</MenuItem>
+                </TextField>
+              </>
+            )}
           </Stack>
         </form>
       </DialogContent>

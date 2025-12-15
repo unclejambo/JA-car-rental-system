@@ -7,6 +7,8 @@ import {
   updateCustomer,
   getCurrentCustomer,
   updateNotificationSettings,
+  createWalkInCustomer,
+  convertWalkInToRegistered,
 } from "../controllers/customerController.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 
@@ -23,6 +25,8 @@ router.put("/me/notification-settings", verifyToken, updateNotificationSettings)
 router.get("/", getCustomers);
 router.get("/:id", getCustomerById);
 router.post("/", createCustomer);
+router.post("/walk-in", createWalkInCustomer); // Quick walk-in customer creation
+router.put("/:id/convert-to-registered", convertWalkInToRegistered); // Convert walk-in to full account
 router.delete("/:id", deleteCustomer);
 router.put("/:id", updateCustomer);
 

@@ -344,3 +344,148 @@ export const updateNotificationSettings = async (req, res) => {
     res.status(500).json({ error: "Failed to update notification settings" });
   }
 };
+
+/**
+ * Create a quick walk-in customer account (simplified registration)
+ */
+export const createWalkInCustomer = async (req, res) => {
+  try {
+    const {
+      first_name,
+      last_name,
+      contact_no,
+      email,
+      driver_license_no,
+    } = req.body;
+
+    // Validate required fields for walk-in
+    if (!first_name || !last_name || !contact_no) {
+      return res.status(400).json({
+        error: "first_name, last_name, and contact_no are required for walk-in customers",
+      });
+    }
+
+    // Generate a unique username for walk-in (format: walkin_timestamp)
+    const username = `walkin_${Date.now()}`;
+    
+    // Generate a random temporary password
+    const tempPassword = Math.random().toString(36).slice(-8);
+    const hashedPassword = await bcrypt.hash(tempPassword, 12);
+
+    const newWalkInCustomer = await prisma.customer.create({
+      data: {
+        first_name,
+        last_name,
+        contact_no,
+        email: email || `${username}@walkin.temp`, // Temporary email if not provided
+        username,
+        password: hashedPassword,
+        is_walk_in: true,
+        isRecUpdate: 1, // SMS only for walk-ins by default
+        status: "active",
+        date_created: new Date(),
+        driver_license_no,
+      },
+      include: {
+        driver_license: true,
+      },
+    });
+
+    const { password: _pw, ...safeCustomer } = newWalkInCustomer;
+    
+    res.status(201).json({
+      success: true,
+      message: "Walk-in customer created successfully",
+      customer: safeCustomer,
+      tempPassword: tempPassword, // Send to admin/staff only, not to customer
+    });
+  } catch (error) {
+    console.error("Failed to create walk-in customer:", error);
+    if (error?.code === "P2002") {
+      return res.status(409).json({ 
+        error: "Customer with this contact number or email already exists" 
+      });
+    }
+    res.status(500).json({ 
+      error: "Failed to create walk-in customer",
+      details: error.message 
+    });
+  }
+};
+
+/**
+ * Convert walk-in customer to full registered account
+ */
+export const convertWalkInToRegistered = async (req, res) => {
+  try {
+    const customerId = parseInt(req.params.id);
+    const { 
+      username, 
+      password, 
+      email, 
+      address, 
+      fb_link 
+    } = req.body;
+
+    // Validate required fields for full registration
+    if (!username || !password || !email) {
+      return res.status(400).json({
+        error: "username, password, and email are required to convert to full account",
+      });
+    }
+
+    // Check if customer exists and is walk-in
+    const existingCustomer = await prisma.customer.findUnique({
+      where: { customer_id: customerId },
+    });
+
+    if (!existingCustomer) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+
+    if (!existingCustomer.is_walk_in) {
+      return res.status(400).json({ 
+        error: "Customer is already a registered account" 
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Update to full account
+    const updatedCustomer = await prisma.customer.update({
+      where: { customer_id: customerId },
+      data: {
+        username,
+        password: hashedPassword,
+        email,
+        address,
+        fb_link,
+        is_walk_in: false,
+        isRecUpdate: 3, // Enable both SMS and Email for full accounts
+      },
+      include: {
+        driver_license: true,
+      },
+    });
+
+    const { password: _pw, ...safeCustomer } = updatedCustomer;
+    
+    res.status(200).json({
+      success: true,
+      message: "Walk-in customer converted to full account successfully",
+      customer: safeCustomer,
+    });
+  } catch (error) {
+    console.error("Failed to convert walk-in customer:", error);
+    if (error?.code === "P2002") {
+      return res.status(409).json({ 
+        error: "Username or email already exists" 
+      });
+    }
+    res.status(500).json({ 
+      error: "Failed to convert walk-in customer",
+      details: error.message 
+    });
+  }
+};

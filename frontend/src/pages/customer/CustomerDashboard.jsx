@@ -28,6 +28,9 @@ import {
   BookOnline,
   Payment,
   Favorite,
+  Stars,
+  LocalActivity,
+  EmojiEvents,
 } from '@mui/icons-material';
 import {
   HiCalendar,
@@ -52,6 +55,10 @@ function CustomerDashboard() {
     favoriteCar: null,
     forRelease: [],
     forReturn: [],
+  });
+  const [customerInfo, setCustomerInfo] = useState({
+    first_name: '',
+    is_walk_in: false,
   });
 
   const API_BASE = getApiBase().replace(/\/$/, '');
@@ -258,6 +265,20 @@ function CustomerDashboard() {
         forRelease,
         forReturn,
       });
+
+      // Fetch customer profile information for tier display
+      try {
+        const profileResponse = await authFetch(`${API_BASE}/customers/profile`);
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          setCustomerInfo({
+            first_name: profileData.first_name || '',
+            is_walk_in: profileData.is_walk_in || false,
+          });
+        }
+      } catch (profileError) {
+        console.error('Failed to fetch customer profile:', profileError);
+      }
     } catch (error) {
       // Set empty data to prevent crashes
       setDashboardData({
@@ -335,26 +356,30 @@ function CustomerDashboard() {
                 boxShadow: '0 2px 8px rgba(193, 0, 7, 0.2)',
               }}
             >
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 700,
-                  color: '#fff',
-                  mb: 0.5,
-                  fontSize: { xs: '1.25rem', md: '1.5rem' },
-                }}
-              >
-                Welcome Back! 👋
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  fontSize: { xs: '0.8rem', md: '0.875rem' },
-                }}
-              >
-                Here's what's happening with your rentals today
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                <Box>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 700,
+                      color: '#fff',
+                      mb: 0.5,
+                      fontSize: { xs: '1.25rem', md: '1.5rem' },
+                    }}
+                  >
+                    Welcome Back{customerInfo.first_name ? `, ${customerInfo.first_name}` : ''}! 👋
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      fontSize: { xs: '0.8rem', md: '0.875rem' },
+                    }}
+                  >
+                    Here's what's happening with your rentals today
+                  </Typography>
+                </Box>
+              </Box>
             </Box>
 
             {/* Stats Overview Cards */}

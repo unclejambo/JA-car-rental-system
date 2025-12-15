@@ -39,12 +39,15 @@ model Customer {
   profile_img_url   String?
   phone_verified    Boolean?       @default(false)
   driver_license_id Int?
+  is_walk_in        Boolean        @default(false)  // True for walk-in customers without full registration
+  
   bookings          Booking[]
   driver_license    DriverLicense? @relation("CustomerDriverLicense", fields: [driver_license_id], references: [license_id])
   payments          Payment[]
   refunds           Refund[]
   transactions      Transaction[]
   Waitlist          Waitlist[]
+  agreements        CustomerAgreement[]
 }
 
 model DriverLicense {
@@ -136,6 +139,7 @@ model Booking {
   releases                   Release[]
   Return                     Return[]
   transactions               Transaction[]
+  agreements                 CustomerAgreement[]
 }
 
 model Extension {
@@ -319,4 +323,28 @@ enum damage_level {
   No_Damage
   Minor
   Major
+}
+
+model CustomerAgreement {
+  agreement_id      Int       @id @default(autoincrement())
+  customer_id       Int
+  booking_id        Int?
+  agreement_type    String    // "rental_terms", "release_checklist", "return_acknowledgment"
+  agreement_version String    @default("v1.0") // Track policy changes
+  agreed_at         DateTime  @default(now()) @db.Timestamptz(6)
+  ip_address        String?
+  signature_data    String?   @db.Text // Base64 signature image
+  agreement_text    String    @db.Text // Full text they agreed to
+  customer_name     String    // Name at time of signing
+  equipment_list    String?   // For release checklist
+  vehicle_condition String?   // For release checklist
+  gas_level         String?   // For release checklist
+  mileage           Int?      // For release checklist
+  
+  customer          Customer  @relation(fields: [customer_id], references: [customer_id], onDelete: Cascade)
+  booking           Booking?  @relation(fields: [booking_id], references: [booking_id], onDelete: Cascade)
+
+  @@index([customer_id])
+  @@index([booking_id])
+  @@index([agreement_type])
 }

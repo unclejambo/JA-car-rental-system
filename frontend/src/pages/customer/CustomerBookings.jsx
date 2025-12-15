@@ -1046,6 +1046,55 @@ function CustomerBookings() {
                                 </Box>
                               </Box>
 
+                              {/* Driver Information (if not self-drive) */}
+                              {booking.driver_id && booking.driver_id !== 1 && booking.driver && (
+                                <Box
+                                  sx={{
+                                    mt: 1.5,
+                                    mb: 1.5,
+                                    p: 1.5,
+                                    bgcolor: '#f5f5f5',
+                                    borderRadius: 1,
+                                    border: '1px solid #e0e0e0',
+                                  }}
+                                >
+                                  <Typography
+                                    variant="subtitle2"
+                                    fontWeight="bold"
+                                    gutterBottom
+                                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                                  >
+                                    <HiUser size={16} color="#c10007" />
+                                    Your Assigned Driver
+                                  </Typography>
+                                  <Grid container spacing={1} sx={{ mt: 0.5 }}>
+                                    <Grid item xs={12} sm={6}>
+                                      <Typography variant="body2" fontSize="0.75rem">
+                                        <strong>Name:</strong> {booking.driver.first_name} {booking.driver.last_name}
+                                      </Typography>
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                      <Typography variant="body2" fontSize="0.75rem">
+                                        <strong>License:</strong> {booking.driver.driver_license?.driver_license_no || 'N/A'}
+                                      </Typography>
+                                    </Grid>
+                                    {booking.driver.contact_no && (
+                                      <Grid item xs={12}>
+                                        <Typography variant="body2" fontSize="0.75rem">
+                                          <strong>Contact:</strong> {booking.driver.contact_no}
+                                        </Typography>
+                                      </Grid>
+                                    )}
+                                  </Grid>
+                                </Box>
+                              )}
+                              
+                              {booking.driver_id === 1 && (
+                                <Box sx={{ mb: 1 }}>
+                                  <Chip label="Self-Drive" color="primary" size="small" />
+                                </Box>
+                              )}
+
                               {/* Total Amount */}
                               <Box
                                 sx={{

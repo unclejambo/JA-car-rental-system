@@ -80,16 +80,17 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
   // Payment deadline state
   const [paymentDeadline, setPaymentDeadline] = useState(null);
   const [paymentDeadlineHours, setPaymentDeadlineHours] = useState(null);
+  const [sameLocationCheckbox, setSameLocationCheckbox] = useState(true);
   const [formData, setFormData] = useState({
     purpose: '',
     customPurpose: '',
     startDate: '',
     endDate: '',
-    pickupTime: '',
-    dropoffTime: '',
+    pickupTime: '09:00',  // Default to 9 AM
+    dropoffTime: '17:00', // Default to 5 PM
     deliveryLocation: '',
-    pickupLocation: '',
-    dropoffLocation: '',
+    pickupLocation: 'JA Car Rental Office', // Default pickup location
+    dropoffLocation: 'JA Car Rental Office', // Default dropoff location
     selectedDriver: '',
   });
 
@@ -121,19 +122,20 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       fetchFees(); // Fetch current fee structure
       fetchCustomerData(); // Fetch customer data to check license
 
-      // Reset form when modal opens
+      // Reset form when modal opens with smart defaults
       setFormData({
         purpose: '',
         customPurpose: '',
         startDate: '',
         endDate: '',
-        pickupTime: '',
-        dropoffTime: '',
+        pickupTime: '09:00',  // Default 9 AM
+        dropoffTime: '17:00', // Default 5 PM
         deliveryLocation: '',
-        pickupLocation: '',
-        dropoffLocation: '',
+        pickupLocation: 'JA Car Rental Office', // Default location
+        dropoffLocation: 'JA Car Rental Office', // Default location
         selectedDriver: '',
       });
+      setSameLocationCheckbox(true);
       setError('');
       // Don't auto-set isSelfService here - let fetchCustomerData handle it
       setActiveTab(0);
@@ -1540,9 +1542,15 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                       fullWidth
                       label="Delivery Address *"
                       value={formData.deliveryLocation}
-                      onChange={(e) =>
-                        handleInputChange('deliveryLocation', e.target.value)
-                      }
+                      onChange={(e) => {
+                        handleInputChange('deliveryLocation', e.target.value);
+                        if (sameLocationCheckbox) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            dropoffLocation: e.target.value,
+                          }));
+                        }
+                      }}
                       required
                       error={missingFields.includes('deliveryLocation')}
                       placeholder="Where should we deliver the car?"
@@ -1570,6 +1578,30 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                     )}
                   </Box>
 
+                  {/* Same Location Checkbox */}
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={sameLocationCheckbox}
+                        onChange={(e) => {
+                          setSameLocationCheckbox(e.target.checked);
+                          if (e.target.checked) {
+                            setFormData((prev) => ({
+                              ...prev,
+                              dropoffLocation: prev.deliveryLocation,
+                            }));
+                          }
+                        }}
+                        sx={{
+                          color: '#c10007',
+                          '&.Mui-checked': { color: '#c10007' },
+                        }}
+                      />
+                    }
+                    label="Return to same location"
+                    sx={{ mb: 2 }}
+                  />
+
                   <Box
                     ref={fieldRefs.dropoffLocation}
                     sx={{ position: 'relative' }}
@@ -1578,12 +1610,14 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                       fullWidth
                       label="Drop-off Address *"
                       value={formData.dropoffLocation}
-                      onChange={(e) =>
-                        handleInputChange('dropoffLocation', e.target.value)
-                      }
+                      onChange={(e) => {
+                        handleInputChange('dropoffLocation', e.target.value);
+                        setSameLocationCheckbox(false); // Uncheck if manually edited
+                      }}
                       required
                       error={missingFields.includes('dropoffLocation')}
                       placeholder="Where should we pick up the car when you're done?"
+                      disabled={sameLocationCheckbox}
                       sx={{
                         '& .MuiInputLabel-root': { fontSize: '1rem' },
                         '& .MuiInputBase-input': { fontSize: '1rem', py: 1.5 },
@@ -2273,6 +2307,77 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                         ₱{calculateTotalCost().toLocaleString()}
                       </Typography>
                     </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+
+              {/* Potential Additional Fees Warning */}
+              <Card sx={{ backgroundColor: '#fff3e0', border: '2px solid #ff9800', mt: 2 }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <HiExclamationCircle size={24} color="#e65100" />
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#e65100' }}>
+                      ⚠️ Potential Additional Fees
+                    </Typography>
+                  </Box>
+                  
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      These fees only apply <strong>if issues occur</strong> during or after your rental
+                    </Typography>
+                  </Alert>
+                  
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <Box>
+                      <Typography variant="body2" fontWeight="bold">
+                        🕐 Late Return Fee
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        ₱500 per hour (first 2 hours), then full day rate thereafter
+                      </Typography>
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="body2" fontWeight="bold">
+                        ⛽ Fuel Level Difference
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        ₱500 per level below pickup level (must return with same fuel level)
+                      </Typography>
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="body2" fontWeight="bold">
+                        🧰 Missing Equipment
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        ₱1,000 per missing item (spare tire, jack, first aid kit, etc.)
+                      </Typography>
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="body2" fontWeight="bold">
+                        🚗 Vehicle Damage
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Assessed based on actual repair cost (you'll be notified before charging)
+                      </Typography>
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="body2" fontWeight="bold">
+                        🧼 Deep Cleaning/Stain Removal
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        ₱500 if excessive dirt or stains require special cleaning
+                      </Typography>
+                    </Box>
+                  </Box>
+                  
+                  <Box sx={{ mt: 2, p: 1.5, bgcolor: 'rgba(255, 152, 0, 0.1)', borderRadius: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      💡 <strong>Tip:</strong> Return the vehicle on time, with the same fuel level, and in clean condition to avoid any additional charges.
+                    </Typography>
                   </Box>
                 </CardContent>
               </Card>

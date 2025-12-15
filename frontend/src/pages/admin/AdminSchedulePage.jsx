@@ -101,6 +101,10 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
   const endDate = schedule.end_date || schedule.endDate;
   const pickupTime = schedule.pickup_time || schedule.pickupTime || startDate;
   const dropoffTime = schedule.dropoff_time || schedule.dropoffTime || endDate;
+
+  // Check if return is overdue (only for RETURN tab)
+  const isOverdue =
+    activeTab === 'RETURN' && dropoffTime && new Date(dropoffTime) < new Date();
   const pickupLoc = schedule.pickup_loc || schedule.pickup_location || 'N/A';
   const dropoffLoc =
     schedule.dropoff_loc ||
@@ -207,17 +211,37 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
             </Typography>
           </Box>
 
-          <Chip
-            label={statusLabel}
-            sx={{
-              bgcolor: statusColors.bg,
-              color: statusColors.text,
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              border: `1px solid ${statusColors.border}`,
-              height: 28,
-            }}
-          />
+          <Stack direction="column" spacing={0.5} alignItems="center">
+            <Chip
+              label={statusLabel}
+              sx={{
+                bgcolor: statusColors.bg,
+                color: statusColors.text,
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                border: `1px solid ${statusColors.border}`,
+                height: 28,
+              }}
+            />
+            {isOverdue && (
+              <Chip
+                label="OVERDUE"
+                size="small"
+                sx={{
+                  bgcolor: '#ff9800',
+                  color: 'white',
+                  fontWeight: 700,
+                  fontSize: '0.65rem',
+                  height: 24,
+                  animation: 'pulse 2s infinite',
+                  '@keyframes pulse': {
+                    '0%, 100%': { opacity: 1 },
+                    '50%': { opacity: 0.7 },
+                  },
+                }}
+              />
+            )}
+          </Stack>
         </Box>
 
         <Divider
@@ -367,31 +391,60 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
                     width: 10,
                     height: 10,
                     borderRadius: '50%',
-                    bgcolor: '#f44336',
+                    bgcolor: isOverdue ? '#ff9800' : '#f44336',
                     mt: 0.5,
-                    boxShadow: '0 0 0 4px rgba(244, 67, 54, 0.2)',
+                    boxShadow: isOverdue
+                      ? '0 0 0 4px rgba(255, 152, 0, 0.3)'
+                      : '0 0 0 4px rgba(244, 67, 54, 0.2)',
                   }}
                 />
                 <Box sx={{ flex: 1 }}>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: '#666',
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      fontSize: '0.7rem',
-                    }}
-                  >
-                    Drop-off
-                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: '#666',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        fontSize: '0.7rem',
+                      }}
+                    >
+                      Drop-off
+                    </Typography>
+                    {isOverdue && (
+                      <Chip
+                        label="OVERDUE"
+                        size="small"
+                        sx={{
+                          bgcolor: '#ff9800',
+                          color: 'white',
+                          fontWeight: 700,
+                          fontSize: '0.6rem',
+                          height: 20,
+                          '& .MuiChip-label': {
+                            px: 1,
+                          },
+                        }}
+                      />
+                    )}
+                  </Stack>
                   <Stack
                     direction={{ xs: 'column', sm: 'row' }}
                     spacing={{ xs: 0.5, sm: 2 }}
                     sx={{ mt: 0.5 }}
                   >
                     <Stack direction="row" spacing={0.5} alignItems="center">
-                      <HiClock size={16} color="#666" />
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      <HiClock
+                        size={16}
+                        color={isOverdue ? '#ff9800' : '#666'}
+                      />
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: isOverdue ? 600 : 500,
+                          color: isOverdue ? '#ff9800' : 'inherit',
+                        }}
+                      >
                         {formatDate(endDate)} • {formatTime(dropoffTime)}
                       </Typography>
                     </Stack>

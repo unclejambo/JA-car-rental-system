@@ -108,6 +108,38 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
     schedule.drop_location ||
     'N/A';
 
+  // Determine the calendar badge date based on the active tab
+  const confirmationDate =
+    schedule.confirmation_date ||
+    schedule.confirmed_at ||
+    schedule.confirmationDate ||
+    schedule.approved_at ||
+    schedule.approvedAt ||
+    null;
+
+  const releaseDate =
+    schedule.release_date ||
+    schedule.releaseDate ||
+    schedule.pickup_time ||
+    schedule.start_date ||
+    schedule.startDate ||
+    null;
+
+  const badgeDate = (() => {
+    switch (activeTab) {
+      case 'CONFIRMED':
+        return confirmationDate || startDate || pickupTime || endDate || dropoffTime;
+      case 'IN PROGRESS':
+        return startDate || pickupTime || confirmationDate || endDate || dropoffTime;
+      case 'RELEASE':
+        return releaseDate || startDate || pickupTime || confirmationDate;
+      case 'RETURN':
+        return dropoffTime || endDate || startDate || pickupTime;
+      default:
+        return startDate || pickupTime || endDate || dropoffTime || confirmationDate;
+    }
+  })();
+
   return (
     <Paper
       elevation={3}
@@ -154,16 +186,16 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
               variant="caption"
               sx={{ fontSize: '0.7rem', fontWeight: 500, opacity: 0.9 }}
             >
-              {getDayOfWeek(startDate)}
+              {getDayOfWeek(badgeDate)}
             </Typography>
             <Typography variant="h4" sx={{ fontWeight: 'bold', lineHeight: 1 }}>
-              {getMonthDay(startDate)}
+              {getMonthDay(badgeDate)}
             </Typography>
             <Typography
               variant="caption"
               sx={{ fontSize: '0.65rem', opacity: 0.9 }}
             >
-              {new Date(startDate).toLocaleDateString('en-US', {
+              {new Date(badgeDate).toLocaleDateString('en-US', {
                 month: 'short',
               })}
             </Typography>

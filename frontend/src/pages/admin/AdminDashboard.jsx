@@ -782,7 +782,7 @@ function AdminDashboard() {
               sx={{
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 height: '100%',
-                minHeight: { xs: 'auto', md: 300 },
+                minHeight: { xs: 'auto', md: 450 },
                 borderRadius: 3,
                 overflow: 'hidden',
               }}
@@ -875,18 +875,17 @@ function AdminDashboard() {
                     sx={{
                       boxShadow: 0,
                       border: '1px solid #e0e0e0',
-                      maxHeight: { xs: 250, md: 300 },
+                      maxHeight: { xs: 300, md: 400 },
                       overflowX: 'auto',
                     }}
                   >
-                    <Table size="small" sx={{ borderCollapse: 'separate' }}>
+                    <Table size="small">
                       <TableHead>
                         <TableRow sx={{ bgcolor: '#fafafa' }}>
                           <TableCell
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
-                              whiteSpace: 'nowrap',
                             }}
                           >
                             Customer
@@ -895,7 +894,6 @@ function AdminDashboard() {
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
-                              whiteSpace: 'nowrap',
                             }}
                           >
                             Car
@@ -904,7 +902,6 @@ function AdminDashboard() {
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
-                              whiteSpace: 'nowrap',
                             }}
                           >
                             Release Time
@@ -913,7 +910,6 @@ function AdminDashboard() {
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
-                              whiteSpace: 'nowrap',
                             }}
                           >
                             Status
@@ -1033,7 +1029,7 @@ function AdminDashboard() {
                       borderColor: '#a00006',
                       bgcolor: 'rgba(193, 0, 7, 0.04)',
                     },
-                    py: { xs: 0.5, md: 1 },
+                    py: { xs: 1, md: 1.5 },
                   }}
                 >
                   View All Releases
@@ -1048,7 +1044,7 @@ function AdminDashboard() {
               sx={{
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 height: '100%',
-                minHeight: { xs: 'auto', md: 300 },
+                minHeight: { xs: 'auto', md: 450 },
                 borderRadius: 3,
                 overflow: 'hidden',
               }}
@@ -1141,18 +1137,17 @@ function AdminDashboard() {
                     sx={{
                       boxShadow: 0,
                       border: '1px solid #e0e0e0',
-                      maxHeight: { xs: 250, md: 300 },
+                      maxHeight: { xs: 300, md: 400 },
                       overflowX: 'auto',
                     }}
                   >
-                    <Table size="small" sx={{ borderCollapse: 'separate' }}>
+                    <Table size="small">
                       <TableHead>
                         <TableRow sx={{ bgcolor: '#fafafa' }}>
                           <TableCell
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
-                              whiteSpace: 'nowrap',
                             }}
                           >
                             Customer
@@ -1161,7 +1156,6 @@ function AdminDashboard() {
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
-                              whiteSpace: 'nowrap',
                             }}
                           >
                             Car
@@ -1170,7 +1164,6 @@ function AdminDashboard() {
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
-                              whiteSpace: 'nowrap',
                             }}
                           >
                             Return Time
@@ -1179,7 +1172,6 @@ function AdminDashboard() {
                             sx={{
                               fontWeight: 'bold',
                               fontSize: { xs: '0.75rem', md: '0.875rem' },
-                              whiteSpace: 'nowrap',
                             }}
                           >
                             Status
@@ -1299,7 +1291,7 @@ function AdminDashboard() {
                       borderColor: '#333',
                       bgcolor: 'rgba(0, 0, 0, 0.04)',
                     },
-                    py: { xs: 0.5, md: 1 },
+                    py: { xs: 1, md: 1.5 },
                   }}
                 >
                   View All Returns

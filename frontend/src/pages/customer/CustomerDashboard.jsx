@@ -392,17 +392,17 @@ function CustomerDashboard() {
             </Box>
 
             {/* Bookings and Settlements Section */}
-            <Grid
-              container
-              spacing={{ xs: 2, md: 2 }}
-              sx={{
-                px: { xs: 2, md: 0 },
-              }}
-            >
+            <Box sx={{ px: { xs: 2, md: 0 } }}>
+              <Grid
+                container
+                spacing={{ xs: 2, md: 3 }}
+                sx={{ justifyContent: 'center' }}
+              >
               {/* My Bookings */}
-              <Grid item xs={12}>
+              <Grid item xs={12} md={6}>
                 <Card
                   sx={{
+                    width: '100%',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                     height: '100%',
                     minHeight: { xs: 'auto', lg: 500 },
@@ -559,11 +559,13 @@ function CustomerDashboard() {
               </Grid>
 
               {/* Unpaid Settlements */}
-              <Grid item xs={12}>
+              <Grid item xs={12} md={6}>
                 <Card
                   sx={{
+                    width: '100%',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    minHeight: { xs: 'auto', md: 450 },
+                    height: '100%',
+                    minHeight: { xs: 'auto', lg: 500 },
                     borderRadius: 3,
                     overflow: 'hidden',
                   }}
@@ -679,13 +681,25 @@ function CustomerDashboard() {
                       </Typography>
                     )}
 
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 'bold',
+                        fontSize: { xs: '1rem', md: '1.125rem' },
+                        color: '#c10007',
+                        mt: { xs: 1.5, md: 2 },
+                        mb: { xs: 1, md: 1.5 },
+                      }}
+                    >
+                      TOTAL UNPAID: ₱{dashboardData.unpaidSettlements?.reduce((sum, settlement) => sum + (parseFloat(settlement.balance) || parseFloat(settlement.total_amount) || 0), 0).toLocaleString()}
+                    </Typography>
+
                     <Button
                       component={Link}
                       to="/customer-bookings?tab=settlement"
                       variant="contained"
                       fullWidth
                       sx={{
-                        mt: { xs: 1.5, md: 2 },
                         bgcolor: '#c10007',
                         color: 'white',
                         '&:hover': { bgcolor: '#a00006' },
@@ -698,6 +712,7 @@ function CustomerDashboard() {
                 </Card>
               </Grid>
             </Grid>
+            </Box>
           </>
         )}
       </Box>

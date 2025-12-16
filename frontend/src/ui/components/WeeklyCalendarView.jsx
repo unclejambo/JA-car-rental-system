@@ -16,13 +16,14 @@ import { Link } from 'react-router-dom';
 
 export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) {
   const [view, setView] = useState('release');
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  // Get current week dates (Sunday to Saturday)
+  // Get week dates based on offset (Sunday to Saturday)
   const weekDates = useMemo(() => {
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - dayOfWeek);
+    startOfWeek.setDate(today.getDate() - dayOfWeek + (weekOffset * 7));
     startOfWeek.setHours(0, 0, 0, 0);
 
     return Array.from({ length: 7 }, (_, i) => {
@@ -30,7 +31,7 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
       date.setDate(startOfWeek.getDate() + i);
       return date;
     });
-  }, []);
+  }, [weekOffset]);
 
   const currentData = view === 'release' ? forRelease : forReturn;
 
@@ -90,37 +91,46 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
     };
   };
 
-  // Calculate counts for bookings within the current week only
+  // Calculate counts for bookings within the displayed week
   const now = new Date();
   const startOfWeek = weekDates[0];
   const endOfWeek = new Date(weekDates[6]);
   endOfWeek.setHours(23, 59, 59, 999);
 
+  // For current week (weekOffset === 0), filter by 'now' to show active/overdue
+  // For past/future weeks, show all bookings in that week
   const activeBookings = currentData.filter((b) => {
     const targetDate = new Date(
       view === 'release'
         ? b.pickup_time || b.start_date
         : b.effective_end_date || b.dropoff_time || b.end_date
     );
-    // Check if booking falls within the current week and is not overdue
-    return targetDate >= now && targetDate >= startOfWeek && targetDate <= endOfWeek;
+    // Check if booking falls within the displayed week
+    const inWeek = targetDate >= startOfWeek && targetDate <= endOfWeek;
+    
+    if (weekOffset === 0) {
+      // Current week: only show non-overdue bookings
+      return inWeek && targetDate >= now;
+    } else {
+      // Past/future weeks: show all bookings that aren't overdue relative to now
+      return inWeek && targetDate >= now;
+    }
   });
+  
   const overdueBookings = currentData.filter((b) => {
     const targetDate = new Date(
       view === 'release'
         ? b.pickup_time || b.start_date
         : b.effective_end_date || b.dropoff_time || b.end_date
     );
-    // Check if booking falls within the current week and is overdue
-    return targetDate < now && targetDate >= startOfWeek && targetDate <= endOfWeek;
+    // Check if booking falls within the displayed week and is overdue
+    return targetDate >= startOfWeek && targetDate <= endOfWeek && targetDate < now;
   });
 
   return (
     <Card
       sx={{
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        height: '100%',
-        minHeight: { xs: 'auto', md: 450 },
         borderRadius: 3,
         overflow: 'hidden',
       }}
@@ -229,6 +239,61 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
             <ToggleButton value="release">RELEASE</ToggleButton>
             <ToggleButton value="return">RETURN</ToggleButton>
           </ToggleButtonGroup>
+
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Button
+              size="small"
+              onClick={() => setWeekOffset(weekOffset - 1)}
+              sx={{
+                color: '#fff',
+                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                minWidth: 'auto',
+                px: 1.5,
+                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' },
+              }}
+            >
+              ◀
+            </Button>
+            <Typography
+              variant="caption"
+              sx={{
+                color: '#fff',
+                fontSize: { xs: '0.7rem', md: '0.75rem' },
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {weekOffset === 0 ? 'This Week' : weekOffset > 0 ? `+${weekOffset}w` : `${weekOffset}w`}
+            </Typography>
+            <Button
+              size="small"
+              onClick={() => setWeekOffset(weekOffset + 1)}
+              sx={{
+                color: '#fff',
+                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                minWidth: 'auto',
+                px: 1.5,
+                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' },
+              }}
+            >
+              ▶
+            </Button>
+            {weekOffset !== 0 && (
+              <Button
+                size="small"
+                onClick={() => setWeekOffset(0)}
+                sx={{
+                  color: '#fff',
+                  bgcolor: 'rgba(255, 235, 59, 0.2)',
+                  fontSize: { xs: '0.65rem', md: '0.7rem' },
+                  px: 1,
+                  '&:hover': { bgcolor: 'rgba(255, 235, 59, 0.3)' },
+                }}
+              >
+                Today
+              </Button>
+            )}
+          </Box>
         </Box>
       </Box>
 

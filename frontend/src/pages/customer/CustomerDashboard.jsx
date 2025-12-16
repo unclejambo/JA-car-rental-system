@@ -384,7 +384,12 @@ function CustomerDashboard() {
           <>
             
             {/* Weekly Calendar View - For Release & For Return */}
-            <Box sx={{ mb: 2, px: { xs: 2, md: 0 } }}>
+            <Box
+              sx={{
+                mb: { xs: 1, md: 2 },
+                px: { xs: 2, md: 0 },
+              }}
+            >
               <WeeklyCalendarView
                 forRelease={dashboardData.forReleaseWeekly || []}
                 forReturn={dashboardData.forReturnWeekly || []}
@@ -392,14 +397,20 @@ function CustomerDashboard() {
             </Box>
 
             {/* Bookings and Settlements Section */}
-            <Box sx={{ px: { xs: 2, md: 0 } }}>
-              <Grid
-                container
-                spacing={{ xs: 2, md: 3 }}
-                sx={{ justifyContent: 'center' }}
-              >
+            <Grid
+              container
+              spacing={{ xs: 0, md: 2 }}
+              sx={{
+                mb: { xs: 1, md: 2 },
+                px: { xs: 2, md: 0 },
+                display: 'flex',
+                justifyContent: { xs: 'center', md: 'space-between' },
+                gap: { xs: 2, md: 1 },
+                flexDirection: { xs: 'column', md: 'row' },
+              }}
+            >
               {/* My Bookings */}
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
                 <Card
                   sx={{
                     width: '100%',
@@ -559,7 +570,7 @@ function CustomerDashboard() {
               </Grid>
 
               {/* Unpaid Settlements */}
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={6} sx={{ flex: { md: 1 } }}>
                 <Card
                   sx={{
                     width: '100%',
@@ -621,7 +632,13 @@ function CustomerDashboard() {
                   <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                     {dashboardData.unpaidSettlements &&
                     dashboardData.unpaidSettlements.length > 0 ? (
-                      <List sx={{ py: 0 }}>
+                      <List
+                        sx={{
+                          py: 0,
+                          maxHeight: { xs: 250, md: 300 },
+                          overflow: 'auto',
+                        }}
+                      >
                         {dashboardData.unpaidSettlements.map(
                           (settlement, index) => (
                             <ListItem
@@ -712,7 +729,6 @@ function CustomerDashboard() {
                 </Card>
               </Grid>
             </Grid>
-            </Box>
           </>
         )}
       </Box>

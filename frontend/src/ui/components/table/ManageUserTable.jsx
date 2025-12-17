@@ -178,11 +178,10 @@ const ManageUserTable = ({ activeTab, rows, loading }) => {
         field: 'driver_license_no',
         headerName: 'License #',
         flex: 1.2,
-        minWidth: 100,
-        hide: isSmallScreen,
+        minWidth: 120,
         renderCell: (params) => (
           <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-            {params.value}
+            {params.value || '-'}
           </Typography>
         ),
       },

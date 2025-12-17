@@ -97,6 +97,8 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
   const carModel = schedule.car_model || 'Vehicle';
   const customerName = schedule.customer_name || 'N/A';
   const contactNo = schedule.contact_no || 'N/A';
+  const driverName = schedule.driver_name || null;
+  const isSelfDriver = schedule.isSelfDriver || schedule.is_self_driver || false;
   const startDate = schedule.start_date || schedule.startDate;
   const endDate = schedule.end_date || schedule.endDate;
   const pickupTime = schedule.pickup_time || schedule.pickupTime || startDate;
@@ -315,6 +317,32 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
                   sx={{ fontWeight: 600, color: '#c10007' }}
                 >
                   {carModel}
+                </Typography>
+              </Box>
+            </Stack>
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{ flex: 1 }}
+            >
+              <HiUser size={20} color="#2196f3" />
+              <Box>
+                <Typography
+                  variant="caption"
+                  sx={{ color: '#666', fontSize: '0.7rem' }}
+                >
+                  Driver
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ 
+                    fontWeight: 600, 
+                    color: isSelfDriver ? '#757575' : '#2196f3',
+                    fontStyle: isSelfDriver ? 'italic' : 'normal'
+                  }}
+                >
+                  {isSelfDriver ? 'Self-Driven' : driverName}
                 </Typography>
               </Box>
             </Stack>

@@ -51,7 +51,7 @@ const customerSchema = z
 
 export default function AddCustomerModal({ show, onClose, onSuccess }) {
   const { logout } = useAuth();
-  const [isWalkIn, setIsWalkIn] = useState(false);
+  const [isWalkIn, setIsWalkIn] = useState(true);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -78,6 +78,7 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
         const key = issue.path[0] || 'form';
         fieldErrors[key] = issue.message;
       }
+      setErrors(fieldErrors);
       return false;
     }
     setErrors({});
@@ -245,20 +246,21 @@ export default function AddCustomerModal({ show, onClose, onSuccess }) {
             control={
               <Checkbox
                 checked={isWalkIn}
-                onChange={(e) => setIsWalkIn(e.target.checked)}
+                disabled
                 color="primary"
               />
             }
             label={
               <Box>
-                <Typography variant="body2" fontWeight={600}>
+                <Typography variant="body2" fontWeight={600} sx={{ opacity: 0.7 }}>
                   Walk-in Customer (Quick Registration)
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" color="text.secondary" sx={{ opacity: 0.7 }}>
                   Simplified form for walk-in customers. Auto-generates username and password.
                 </Typography>
               </Box>
             }
+            sx={{ opacity: 0.8 }}
           />
         </Box>
 

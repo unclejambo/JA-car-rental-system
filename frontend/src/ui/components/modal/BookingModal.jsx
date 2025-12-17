@@ -57,6 +57,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [drivers, setDrivers] = useState([]);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSelfService, setIsSelfService] = useState(true);
   const [missingFields, setMissingFields] = useState([]);
   const [availableDates, setAvailableDates] = useState(null);
@@ -107,7 +108,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
     selectedDriver: useRef(null),
   };
 
-  const steps = ['Service Type', 'Booking Details', 'Confirmation'];
+  const steps = ['Service Type', 'Booking Details', 'Car Use Notice', 'Confirmation'];
 
   // Get today's date for minimum date validation
   const getMinimumDate = () => {
@@ -142,6 +143,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       setActiveTab(0);
       setActiveStep(0);
       setHasDateConflict(false);
+      setTermsAccepted(false); // Reset terms acceptance
     }
   }, [open, car]);
 
@@ -451,6 +453,13 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       // Step 1: Booking details - validate form
       if (validateForm()) {
         setActiveStep(2);
+      }
+    } else if (activeStep === 2) {
+      // Step 2: Car Use Notice - validate terms acceptance
+      if (termsAccepted) {
+        setActiveStep(3);
+      } else {
+        setError('Please agree to the Car Use Notice terms to proceed.');
       }
     }
   };
@@ -1960,8 +1969,122 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
           </Box>
         )}
 
-        {/* Step 2: Confirmation Step */}
+        {/* Step 2: Car Use Notice */}
         {activeStep === 2 && (
+          <Box sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 } }}>
+            <Card 
+              sx={{ 
+                border: '2px solid #c10007',
+                mb: 2
+              }}
+            >
+              <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    mb: 2,
+                    fontWeight: 'bold',
+                    color: '#c10007',
+                    fontSize: { xs: '1rem', sm: '1.25rem' },
+                  }}
+                >
+                  J & A Car Rental – Car Use Notice
+                </Typography>
+                
+                <Typography
+                  variant="body1"
+                  sx={{ mb: 2, fontSize: { xs: '0.9rem', sm: '1rem' } }}
+                >
+                  By renting our vehicle, you agree to the following:
+                </Typography>
+
+                <Box sx={{ pl: { xs: 1, sm: 2 }, mb: 3 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ 
+                      mb: 1.5,
+                      fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                      lineHeight: 1.6
+                    }}
+                  >
+                    • Use the car for legal purposes only
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ 
+                      mb: 1.5,
+                      fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                      lineHeight: 1.6
+                    }}
+                  >
+                    • Do not sublease or allow unauthorized drivers
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ 
+                      mb: 1.5,
+                      fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                      lineHeight: 1.6
+                    }}
+                  >
+                    • Return the vehicle on or before the agreed date and time
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ 
+                      fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                      lineHeight: 1.6
+                    }}
+                  >
+                    • Customer is responsible for traffic violations, damages, or losses during the rental period
+                  </Typography>
+                </Box>
+
+                <Box 
+                  sx={{ 
+                    mt: 3,
+                    pt: 2,
+                    borderTop: '1px solid #e0e0e0'
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={termsAccepted}
+                        onChange={(e) => {
+                          setTermsAccepted(e.target.checked);
+                          if (e.target.checked) {
+                            setError(''); // Clear error when terms accepted
+                          }
+                        }}
+                        sx={{
+                          color: '#c10007',
+                          '&.Mui-checked': {
+                            color: '#c10007',
+                          },
+                        }}
+                      />
+                    }
+                    label={
+                      <Typography 
+                        variant="body2"
+                        sx={{ 
+                          fontWeight: 'bold',
+                          fontSize: { xs: '0.9rem', sm: '1rem' }
+                        }}
+                      >
+                        I agree to these terms
+                      </Typography>
+                    }
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
+        {/* Step 3: Confirmation Step */}
+        {activeStep === 3 && (
           <Box sx={{ px: { xs: 2, sm: 3 } }}>
             <Typography
               variant="h6"
@@ -2541,7 +2664,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
               Next
             </Button>
           </>
-        ) : activeStep === 1 ? (
+        ) : activeStep === 1 || activeStep === 2 ? (
           <>
             <Button
               onClick={handleBack}

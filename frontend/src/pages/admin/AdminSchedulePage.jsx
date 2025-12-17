@@ -623,16 +623,25 @@ export default function AdminSchedulePage() {
       const status = (row.status || row.booking_status || '')
         .toString()
         .toLowerCase();
+      // Must be Confirmed status
       if (status !== 'confirmed') return false;
-      const pickup =
-        row.pickup_time || row.start_date || row.startDate || row.pickup_time;
+
+      // Check if start date has arrived (start of the day)
+      const pickup = row.pickup_time || row.start_date || row.startDate;
       if (!pickup) return false;
-      const pickupTime = new Date(pickup);
+
+      const pickupDate = new Date(pickup);
       const now = new Date();
-      const diff = pickupTime - now;
-      const oneHourBefore = -60 * 60 * 1000; // 1 hour before in milliseconds
-      // within 1 hour before pickup or already passed
-      return diff <= 60 * 60 * 1000 && diff >= oneHourBefore;
+
+      // Check if today is the start date or later
+      const pickupDayStart = new Date(pickupDate);
+      pickupDayStart.setHours(0, 0, 0, 0);
+
+      const todayStart = new Date(now);
+      todayStart.setHours(0, 0, 0, 0);
+
+      // Show in RELEASE tab if today is the start date or later
+      return todayStart >= pickupDayStart;
     } catch (e) {
       return false;
     }
@@ -643,19 +652,31 @@ export default function AdminSchedulePage() {
       const status = (row.status || row.booking_status || '')
         .toString()
         .toLowerCase();
-      if (status === 'completed') return true;
-      // if in progress but end date/time passed
+
+      // Must be In Progress status
       if (
-        status === 'in progress' ||
-        status === 'in_progress' ||
-        status === 'ongoing'
-      ) {
-        const end = row.end_date || row.endDate || row.dropoff_time;
-        if (!end) return false;
-        const endTime = new Date(end);
-        return endTime <= new Date();
-      }
-      return false;
+        status !== 'in progress' &&
+        status !== 'in_progress' &&
+        status !== 'ongoing'
+      )
+        return false;
+
+      // Check if end date has arrived (start of the day)
+      const end = row.end_date || row.endDate || row.dropoff_time;
+      if (!end) return false;
+
+      const endDate = new Date(end);
+      const now = new Date();
+
+      // Check if today is the end date or later
+      const endDayStart = new Date(endDate);
+      endDayStart.setHours(0, 0, 0, 0);
+
+      const todayStart = new Date(now);
+      todayStart.setHours(0, 0, 0, 0);
+
+      // Show in RETURN tab if today is the end date or later
+      return todayStart >= endDayStart;
     } catch (e) {
       return false;
     }

@@ -1,5 +1,5 @@
-import { sendOTPSMS } from './smsService.js';
-import nodemailer from 'nodemailer';
+import { sendOTPSMS } from "./smsService.js";
+import nodemailer from "nodemailer";
 
 /**
  * Send car availability notification to customer based on their preference
@@ -36,7 +36,7 @@ export async function sendCarAvailabilityNotification(customer, car) {
     success: false,
     sms: null,
     email: null,
-    method: null
+    method: null,
   };
 
   try {
@@ -45,21 +45,25 @@ export async function sendCarAvailabilityNotification(customer, car) {
         if (contact_no) {
           results.sms = await sendSMSNotification(contact_no, smsMessage);
           results.success = results.sms.success;
-          results.method = 'SMS';
+          results.method = "SMS";
         } else {
           results.success = false;
-          results.error = 'No contact number';
+          results.error = "No contact number";
         }
         break;
 
       case 2: // Email only
         if (email) {
-          results.email = await sendEmailNotification(email, emailSubject, emailBody);
+          results.email = await sendEmailNotification(
+            email,
+            emailSubject,
+            emailBody
+          );
           results.success = results.email.success;
-          results.method = 'Email';
+          results.method = "Email";
         } else {
           results.success = false;
-          results.error = 'No email';
+          results.error = "No email";
         }
         break;
 
@@ -78,19 +82,21 @@ export async function sendCarAvailabilityNotification(customer, car) {
 
           results.sms = smsResult?.value || null;
           results.email = emailResult?.value || null;
-          results.success = (smsResult?.status === 'fulfilled' && smsResult?.value?.success) ||
-                           (emailResult?.status === 'fulfilled' && emailResult?.value?.success);
-          results.method = 'Both';
+          results.success =
+            (smsResult?.status === "fulfilled" && smsResult?.value?.success) ||
+            (emailResult?.status === "fulfilled" &&
+              emailResult?.value?.success);
+          results.method = "Both";
         } else {
           results.success = false;
-          results.error = 'No contact information';
+          results.error = "No contact information";
         }
         break;
 
       default:
         results.success = false;
-        results.error = 'Notifications disabled';
-        results.method = 'None';
+        results.error = "Notifications disabled";
+        results.method = "None";
     }
 
     if (results.success) {
@@ -99,12 +105,34 @@ export async function sendCarAvailabilityNotification(customer, car) {
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
+  }
+}
+
+/**
+ * Send walk-in credentials via SMS to customer
+ * @param {string} phoneNumber - Customer phone number
+ * @param {string} firstName - Customer first name
+ * @param {string} username - Generated username
+ * @param {string} tempPassword - Generated temporary password
+ * @returns {Promise<Object>} SMS sending result
+ */
+export async function sendWalkInCredentialsSMS(
+  phoneNumber,
+  firstName,
+  username,
+  tempPassword
+) {
+  const smsMessage = `Hi ${firstName}! Your JA Car Rental quick registration credentials:\nUsername: ${username}\nTemporary Password: ${tempPassword}\nPlease log in and change your password.`;
+  try {
+    return await sendSMSNotification(phoneNumber, smsMessage);
+  } catch (error) {
+    return { success: false, error: error.message };
   }
 }
 
@@ -126,39 +154,38 @@ async function sendSMSNotification(phoneNumber, message) {
         messageId: `msg_${Date.now()}`,
         recipient: phoneNumber,
         message: message,
-        simulated: true
+        simulated: true,
       };
     }
 
     // Send actual SMS via Semaphore API
-    const response = await fetch('https://api.semaphore.co/api/v4/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    const response = await fetch("https://api.semaphore.co/api/v4/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         apikey: SEMAPHORE_API_KEY,
         number: phoneNumber,
         message: message,
-        sendername: 'JACarRental'
-      })
+        sendername: "JACarRental",
+      }),
     });
 
     const data = await response.json();
 
     if (response.ok && data.length > 0 && data[0].message_id) {
-      return { 
-        success: true, 
+      return {
+        success: true,
         messageId: data[0].message_id,
         recipient: phoneNumber,
-        message: message
+        message: message,
       };
     } else {
-      return { 
-        success: false, 
-        error: data.message || 'Failed to send SMS',
-        details: data
+      return {
+        success: false,
+        error: data.message || "Failed to send SMS",
+        details: data,
       };
     }
-
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -184,21 +211,21 @@ async function sendEmailNotification(email, subject, body) {
         messageId: `email_${Date.now()}`,
         recipient: email,
         subject: subject,
-        simulated: true
+        simulated: true,
       };
     }
 
     // Create transporter using Gmail or custom SMTP
     const transporter = nodemailer.createTransport({
-      service: 'gmail', // Use 'gmail' or configure custom SMTP
+      service: "gmail", // Use 'gmail' or configure custom SMTP
       auth: {
         user: emailUser,
-        pass: emailPass // Use App Password for Gmail
-      }
+        pass: emailPass, // Use App Password for Gmail
+      },
     });
 
     // Format HTML email
-    const htmlBody = body.replace(/\n/g, '<br>').trim();
+    const htmlBody = body.replace(/\n/g, "<br>").trim();
 
     // Send email
     const info = await transporter.sendMail({
@@ -217,15 +244,14 @@ async function sendEmailNotification(email, subject, body) {
             This is an automated message from JA Car Rental. Please do not reply to this email.
           </p>
         </div>
-      `
+      `,
     });
-    return { 
-      success: true, 
+    return {
+      success: true,
       messageId: info.messageId,
       recipient: email,
-      subject: subject
+      subject: subject,
     };
-
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -240,24 +266,30 @@ async function sendEmailNotification(email, subject, body) {
 function calculatePaymentDeadline(bookingDate, startDate) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-  const daysUntilStart = Math.ceil((startDateOnly - today) / (1000 * 60 * 60 * 24));
+  const startDateOnly = new Date(
+    startDate.getFullYear(),
+    startDate.getMonth(),
+    startDate.getDate()
+  );
+  const daysUntilStart = Math.ceil(
+    (startDateOnly - today) / (1000 * 60 * 60 * 24)
+  );
 
   let deadline;
   let deadlineDescription;
 
   if (daysUntilStart === 0) {
     // Booking start date is TODAY - 1 hour deadline
-    deadline = new Date(bookingDate.getTime() + (1 * 60 * 60 * 1000));
-    deadlineDescription = '1 hour';
+    deadline = new Date(bookingDate.getTime() + 1 * 60 * 60 * 1000);
+    deadlineDescription = "1 hour";
   } else if (daysUntilStart > 0 && daysUntilStart <= 3) {
     // Booking start date is within 3 days (but not today) - 24 hour deadline
-    deadline = new Date(bookingDate.getTime() + (24 * 60 * 60 * 1000));
-    deadlineDescription = '24 hours';
+    deadline = new Date(bookingDate.getTime() + 24 * 60 * 60 * 1000);
+    deadlineDescription = "24 hours";
   } else {
     // Booking start date is more than 3 days away - 72 hour (3 day) deadline
-    deadline = new Date(bookingDate.getTime() + (72 * 60 * 60 * 1000));
-    deadlineDescription = '72 hours (3 days)';
+    deadline = new Date(bookingDate.getTime() + 72 * 60 * 60 * 1000);
+    deadlineDescription = "72 hours (3 days)";
   }
 
   return { deadline, deadlineDescription };
@@ -269,13 +301,13 @@ function calculatePaymentDeadline(bookingDate, startDate) {
  * @returns {String} Formatted date string
  */
 function formatDatePH(date) {
-  return new Date(date).toLocaleString('en-US', {
-    timeZone: 'Asia/Manila',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  return new Date(date).toLocaleString("en-US", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -317,13 +349,17 @@ Booking ID: ${booking.booking_id}
 Car: ${carName}
 Pickup Date: ${startDateFormatted}
 Return Date: ${endDateFormatted}
-Pickup Location: ${booking.pickup_loc || 'JA Car Rental Office'}
-Drop-off Location: ${booking.dropoff_loc || 'JA Car Rental Office'}
+Pickup Location: ${booking.pickup_loc || "JA Car Rental Office"}
+Drop-off Location: ${booking.dropoff_loc || "JA Car Rental Office"}
 
 💰 PAYMENT INFORMATION:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total Amount: ₱${booking.total_amount?.toLocaleString() || '0'}
-Amount Due: ₱${booking.balance?.toLocaleString() || booking.total_amount?.toLocaleString() || '0'}
+Total Amount: ₱${booking.total_amount?.toLocaleString() || "0"}
+Amount Due: ₱${
+    booking.balance?.toLocaleString() ||
+    booking.total_amount?.toLocaleString() ||
+    "0"
+  }
 
 ⏰ IMPORTANT - PAYMENT DEADLINE:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -350,7 +386,7 @@ JA Car Rental Team
     success: false,
     sms: null,
     email: null,
-    method: null
+    method: null,
   };
 
   try {
@@ -368,12 +404,16 @@ JA Car Rental Team
       const results_array = await Promise.allSettled(promises);
 
       results.sms = contact_no ? results_array[0]?.value || null : null;
-      results.email = email ? results_array[contact_no ? 1 : 0]?.value || null : null;
-      results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
-      results.method = 'Both';
+      results.email = email
+        ? results_array[contact_no ? 1 : 0]?.value || null
+        : null;
+      results.success = results_array.some(
+        (r) => r.status === "fulfilled" && r.value?.success
+      );
+      results.method = "Both";
     } else {
       results.success = false;
-      results.error = 'No contact information';
+      results.error = "No contact information";
     }
 
     if (results.success) {
@@ -382,11 +422,11 @@ JA Car Rental Team
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
   }
 }
@@ -398,7 +438,11 @@ JA Car Rental Team
  * @param {Object} car - Car object
  * @returns {Promise<Object>} Result of notification attempt
  */
-export async function sendBookingConfirmationNotification(booking, customer, car) {
+export async function sendBookingConfirmationNotification(
+  booking,
+  customer,
+  car
+) {
   const { first_name, contact_no, email, customer_id } = customer;
   const { make, model, year, license_plate } = car;
   const carName = `${make} ${model} (${year})`;
@@ -422,7 +466,7 @@ Status: ✅ CONFIRMED
 🚗 VEHICLE INFORMATION:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Car: ${carName}
-${license_plate ? `Plate Number: ${license_plate}` : ''}
+${license_plate ? `Plate Number: ${license_plate}` : ""}
 
 📅 RENTAL PERIOD:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -431,22 +475,33 @@ Return Date & Time: ${endDateFormatted}
 
 📍 LOCATION:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Pickup Location: ${booking.pickup_loc || 'JA Car Rental Office'}
-Drop-off Location: ${booking.dropoff_loc || 'JA Car Rental Office'}
+Pickup Location: ${booking.pickup_loc || "JA Car Rental Office"}
+Drop-off Location: ${booking.dropoff_loc || "JA Car Rental Office"}
 
 💰 PAYMENT STATUS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total Amount: ₱${booking.total_amount?.toLocaleString() || '0'}
-Amount Paid: ₱${((booking.total_amount || 0) - (booking.balance || 0))?.toLocaleString() || '0'}
-Remaining Balance: ₱${booking.balance?.toLocaleString() || '0'}
+Total Amount: ₱${booking.total_amount?.toLocaleString() || "0"}
+Amount Paid: ₱${
+    ((booking.total_amount || 0) - (booking.balance || 0))?.toLocaleString() ||
+    "0"
+  }
+Remaining Balance: ₱${booking.balance?.toLocaleString() || "0"}
 
 📝 WHAT'S NEXT:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1. Arrive at the pickup location on the scheduled date and time
 2. Bring a valid driver's license and ID
-${booking.balance > 0 ? `3. Pay the remaining balance of ₱${booking.balance?.toLocaleString()} upon pickup` : ''}
+${
+  booking.balance > 0
+    ? `3. Pay the remaining balance of ₱${booking.balance?.toLocaleString()} upon pickup`
+    : ""
+}
 
-${booking.balance > 0 ? `💡 TIP: You can pay the remaining balance online before pickup for a faster process.` : ''}
+${
+  booking.balance > 0
+    ? `💡 TIP: You can pay the remaining balance online before pickup for a faster process.`
+    : ""
+}
 
 If you need to make any changes to your booking or have questions, please contact us.
 
@@ -460,7 +515,7 @@ JA Car Rental Team
     success: false,
     sms: null,
     email: null,
-    method: null
+    method: null,
   };
 
   try {
@@ -478,12 +533,16 @@ JA Car Rental Team
       const results_array = await Promise.allSettled(promises);
 
       results.sms = contact_no ? results_array[0]?.value || null : null;
-      results.email = email ? results_array[contact_no ? 1 : 0]?.value || null : null;
-      results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
-      results.method = 'Both';
+      results.email = email
+        ? results_array[contact_no ? 1 : 0]?.value || null
+        : null;
+      results.success = results_array.some(
+        (r) => r.status === "fulfilled" && r.value?.success
+      );
+      results.method = "Both";
     } else {
       results.success = false;
-      results.error = 'No contact information';
+      results.error = "No contact information";
     }
 
     if (results.success) {
@@ -492,11 +551,11 @@ JA Car Rental Team
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
   }
 }
@@ -510,13 +569,19 @@ JA Car Rental Team
  * @param {string} paymentType - Type of payment ('gcash' or 'cash')
  * @returns {Promise<Object>} Result of notification attempt
  */
-export async function sendPaymentReceivedNotification(payment, customer, car, booking, paymentType = 'payment') {
+export async function sendPaymentReceivedNotification(
+  payment,
+  customer,
+  car,
+  booking,
+  paymentType = "payment"
+) {
   const { first_name, contact_no, email, customer_id } = customer;
   const { make, model, year, license_plate } = car;
   const { booking_id, start_date, end_date, total_amount, balance } = booking;
   // Build notification messages
   const carName = `${make} ${model} (${year})`;
-  const paymentMethodText = paymentType === 'gcash' ? 'GCash' : 'Cash';
+  const paymentMethodText = paymentType === "gcash" ? "GCash" : "Cash";
   const startDateFormatted = formatDatePH(start_date);
   const endDateFormatted = formatDatePH(end_date);
 
@@ -533,13 +598,13 @@ export async function sendPaymentReceivedNotification(payment, customer, car, bo
     PAYMENT DETAILS:
     - Amount Received: ₱${payment.amount.toLocaleString()}
     - Payment Method: ${paymentMethodText}
-    ${payment.reference_no ? `- Reference Number: ${payment.reference_no}` : ''}
+    ${payment.reference_no ? `- Reference Number: ${payment.reference_no}` : ""}
     - Payment Date: ${formatDatePH(payment.paid_date || new Date())}
 
     BOOKING DETAILS:
     - Booking ID: #${booking_id}
     - Vehicle: ${carName}
-    - Plate Number: ${license_plate || 'TBA'}
+    - Plate Number: ${license_plate || "TBA"}
     - Pickup Date: ${startDateFormatted}
     - Return Date: ${endDateFormatted}
 
@@ -547,11 +612,17 @@ export async function sendPaymentReceivedNotification(payment, customer, car, bo
     - Total Amount: ₱${total_amount.toLocaleString()}
     - Amount Paid: ₱${(total_amount - balance).toLocaleString()}
     - Remaining Balance: ₱${balance.toLocaleString()}
-    ${balance > 0 ? '\n    ⚠️ Please pay the remaining balance before/on the pickup date.' : '\n    ✅ Your booking is fully paid!'}
+    ${
+      balance > 0
+        ? "\n    ⚠️ Please pay the remaining balance before/on the pickup date."
+        : "\n    ✅ Your booking is fully paid!"
+    }
 
-    ${balance > 0 
-      ? 'You can pay the remaining balance via GCash or cash before/on the day of pickup.' 
-      : 'Your booking is now fully paid. We look forward to serving you!'}
+    ${
+      balance > 0
+        ? "You can pay the remaining balance via GCash or cash before/on the day of pickup."
+        : "Your booking is now fully paid. We look forward to serving you!"
+    }
 
     If you have any questions about your payment or booking, please don't hesitate to contact us.
 
@@ -565,7 +636,7 @@ export async function sendPaymentReceivedNotification(payment, customer, car, bo
     success: false,
     sms: null,
     email: null,
-    method: null
+    method: null,
   };
 
   try {
@@ -583,12 +654,16 @@ export async function sendPaymentReceivedNotification(payment, customer, car, bo
       const results_array = await Promise.allSettled(promises);
 
       results.sms = contact_no ? results_array[0]?.value || null : null;
-      results.email = email ? results_array[contact_no ? 1 : 0]?.value || null : null;
-      results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
-      results.method = 'Both';
+      results.email = email
+        ? results_array[contact_no ? 1 : 0]?.value || null
+        : null;
+      results.success = results_array.some(
+        (r) => r.status === "fulfilled" && r.value?.success
+      );
+      results.method = "Both";
     } else {
       results.success = false;
-      results.error = 'No contact information';
+      results.error = "No contact information";
     }
 
     if (results.success) {
@@ -597,11 +672,11 @@ export async function sendPaymentReceivedNotification(payment, customer, car, bo
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
   }
 }
@@ -613,7 +688,11 @@ export async function sendPaymentReceivedNotification(payment, customer, car, bo
  * @param {Object} car - Car object
  * @returns {Promise<Object>} Result of notification attempt
  */
-export async function sendCancellationApprovedNotification(booking, customer, car) {
+export async function sendCancellationApprovedNotification(
+  booking,
+  customer,
+  car
+) {
   const { first_name, contact_no, email, customer_id } = customer;
   const { make, model, year, license_plate } = car;
   const { booking_id, start_date, end_date, total_amount } = booking;
@@ -635,7 +714,7 @@ export async function sendCancellationApprovedNotification(booking, customer, ca
     CANCELLED BOOKING DETAILS:
     - Booking ID: #${booking_id}
     - Vehicle: ${carName}
-    - Plate Number: ${license_plate || 'TBA'}
+    - Plate Number: ${license_plate || "TBA"}
     - Original Pickup Date: ${startDateFormatted}
     - Original Return Date: ${endDateFormatted}
     - Total Amount: ₱${total_amount.toLocaleString()}
@@ -661,7 +740,7 @@ export async function sendCancellationApprovedNotification(booking, customer, ca
     success: false,
     sms: null,
     email: null,
-    method: null
+    method: null,
   };
 
   try {
@@ -679,12 +758,16 @@ export async function sendCancellationApprovedNotification(booking, customer, ca
       const results_array = await Promise.allSettled(promises);
 
       results.sms = contact_no ? results_array[0]?.value || null : null;
-      results.email = email ? results_array[contact_no ? 1 : 0]?.value || null : null;
-      results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
-      results.method = 'Both';
+      results.email = email
+        ? results_array[contact_no ? 1 : 0]?.value || null
+        : null;
+      results.success = results_array.some(
+        (r) => r.status === "fulfilled" && r.value?.success
+      );
+      results.method = "Both";
     } else {
       results.success = false;
-      results.error = 'No contact information';
+      results.error = "No contact information";
     }
 
     if (results.success) {
@@ -693,11 +776,11 @@ export async function sendCancellationApprovedNotification(booking, customer, ca
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
   }
 }
@@ -709,13 +792,20 @@ export async function sendCancellationApprovedNotification(booking, customer, ca
  * @param {Object} car - Car object
  * @returns {Promise<Object>} Result of notification attempt
  */
-export async function sendAdminCancellationRequestNotification(booking, customer, car) {
+export async function sendAdminCancellationRequestNotification(
+  booking,
+  customer,
+  car
+) {
   // Import admin config
-  const { ADMIN_NOTIFICATION_CONFIG } = await import('../config/adminNotificationConfig.js');
+  const { ADMIN_NOTIFICATION_CONFIG } = await import(
+    "../config/adminNotificationConfig.js"
+  );
 
   const { first_name, last_name, contact_no, email } = customer;
   const { make, model, year, license_plate } = car;
-  const { booking_id, start_date, end_date, total_amount, cancel_reason } = booking;
+  const { booking_id, start_date, end_date, total_amount, cancel_reason } =
+    booking;
   // Build notification messages
   const carName = `${make} ${model} (${year})`;
   const customerName = `${first_name} ${last_name}`;
@@ -744,24 +834,26 @@ export async function sendAdminCancellationRequestNotification(booking, customer
 
     VEHICLE INFORMATION:
     - Vehicle: ${carName}
-    - Plate Number: ${license_plate || 'TBA'}
+    - Plate Number: ${license_plate || "TBA"}
 
     RENTAL PERIOD:
     - Start Date: ${startDateFormatted}
     - End Date: ${endDateFormatted}
     - Duration: ${(() => {
-        const startDateTime = new Date(start_date);
-        const endDateTime = new Date(end_date);
-        const totalHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
-        const days = Math.ceil(totalHours / 24);
-        return `${totalHours.toFixed(1)} hours (${days} day${days !== 1 ? 's' : ''})`;
-      })()}
+      const startDateTime = new Date(start_date);
+      const endDateTime = new Date(end_date);
+      const totalHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
+      const days = Math.ceil(totalHours / 24);
+      return `${totalHours.toFixed(1)} hours (${days} day${
+        days !== 1 ? "s" : ""
+      })`;
+    })()}
 
     FINANCIAL DETAILS:
     - Total Amount: ₱${total_amount.toLocaleString()}
 
     CANCELLATION REASON:
-    ${cancel_reason || 'No reason provided'}
+    ${cancel_reason || "No reason provided"}
 
     ACTION REQUIRED:
     Please review this cancellation request in the admin dashboard and either approve or deny it.
@@ -776,7 +868,7 @@ export async function sendAdminCancellationRequestNotification(booking, customer
     success: false,
     sms: null,
     email: null,
-    method: 'Both'
+    method: "Both",
   };
 
   try {
@@ -784,16 +876,26 @@ export async function sendAdminCancellationRequestNotification(booking, customer
     const promises = [];
 
     // Send SMS to admin phone
-    promises.push(sendSMSNotification(ADMIN_NOTIFICATION_CONFIG.PHONE, smsMessage));
+    promises.push(
+      sendSMSNotification(ADMIN_NOTIFICATION_CONFIG.PHONE, smsMessage)
+    );
 
     // Send Email to admin email
-    promises.push(sendEmailNotification(ADMIN_NOTIFICATION_CONFIG.EMAIL, emailSubject, emailBody));
+    promises.push(
+      sendEmailNotification(
+        ADMIN_NOTIFICATION_CONFIG.EMAIL,
+        emailSubject,
+        emailBody
+      )
+    );
 
     const results_array = await Promise.allSettled(promises);
 
     results.sms = results_array[0]?.value || null;
     results.email = results_array[1]?.value || null;
-    results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+    results.success = results_array.some(
+      (r) => r.status === "fulfilled" && r.value?.success
+    );
 
     if (results.success) {
     } else {
@@ -801,11 +903,11 @@ export async function sendAdminCancellationRequestNotification(booking, customer
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
   }
 }
@@ -817,7 +919,11 @@ export async function sendAdminCancellationRequestNotification(booking, customer
  * @param {Object} car - Car object
  * @returns {Promise<Object>} Result of notification attempt
  */
-export async function sendCancellationDeniedNotification(booking, customer, car) {
+export async function sendCancellationDeniedNotification(
+  booking,
+  customer,
+  car
+) {
   const { first_name, contact_no, email, customer_id, isRecUpdate } = customer;
   const { make, model, year, license_plate } = car;
   const { booking_id, start_date, end_date, total_amount } = booking;
@@ -839,7 +945,7 @@ export async function sendCancellationDeniedNotification(booking, customer, car)
     BOOKING DETAILS:
     - Booking ID: #${booking_id}
     - Vehicle: ${carName}
-    - Plate Number: ${license_plate || 'TBA'}
+    - Plate Number: ${license_plate || "TBA"}
     - Pickup Date: ${startDateFormatted}
     - Return Date: ${endDateFormatted}
     - Total Amount: ₱${total_amount.toLocaleString()}
@@ -860,8 +966,8 @@ export async function sendCancellationDeniedNotification(booking, customer, car)
 
     NEED TO DISCUSS?
     If you have concerns or need to discuss your booking, please contact us:
-    - Phone: ${ADMIN_NOTIFICATION_CONFIG?.PHONE || '09925315378'}
-    - Email: ${ADMIN_NOTIFICATION_CONFIG?.EMAIL || 'gregg.marayan@gmail.com'}
+    - Phone: ${ADMIN_NOTIFICATION_CONFIG?.PHONE || "09925315378"}
+    - Email: ${ADMIN_NOTIFICATION_CONFIG?.EMAIL || "gregg.marayan@gmail.com"}
 
     We're here to help and want to ensure your rental experience meets your needs.
 
@@ -873,7 +979,7 @@ export async function sendCancellationDeniedNotification(booking, customer, car)
     success: false,
     sms: null,
     email: null,
-    method: null
+    method: null,
   };
 
   try {
@@ -882,7 +988,7 @@ export async function sendCancellationDeniedNotification(booking, customer, car)
 
     if (notifMethod === 0) {
       results.success = false;
-      results.error = 'Customer notifications disabled';
+      results.error = "Customer notifications disabled";
       return results;
     }
 
@@ -892,7 +998,7 @@ export async function sendCancellationDeniedNotification(booking, customer, car)
       // Send SMS
       if (contact_no) {
         promises.push(sendSMSNotification(contact_no, smsMessage));
-        results.method = notifMethod === 1 ? 'SMS' : 'Both';
+        results.method = notifMethod === 1 ? "SMS" : "Both";
       }
     }
 
@@ -900,7 +1006,7 @@ export async function sendCancellationDeniedNotification(booking, customer, car)
       // Send Email
       if (email) {
         promises.push(sendEmailNotification(email, emailSubject, emailBody));
-        results.method = notifMethod === 2 ? 'Email' : 'Both';
+        results.method = notifMethod === 2 ? "Email" : "Both";
       }
     }
 
@@ -916,10 +1022,12 @@ export async function sendCancellationDeniedNotification(booking, customer, car)
         results.email = results_array[0]?.value || null;
       }
 
-      results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+      results.success = results_array.some(
+        (r) => r.status === "fulfilled" && r.value?.success
+      );
     } else {
       results.success = false;
-      results.error = 'No contact information';
+      results.error = "No contact information";
     }
 
     if (results.success) {
@@ -928,11 +1036,11 @@ export async function sendCancellationDeniedNotification(booking, customer, car)
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
   }
 }
@@ -946,11 +1054,20 @@ export async function sendCancellationDeniedNotification(booking, customer, car)
  */
 export async function sendAdminNewBookingNotification(booking, customer, car) {
   // Import admin config
-  const { ADMIN_NOTIFICATION_CONFIG } = await import('../config/adminNotificationConfig.js');
+  const { ADMIN_NOTIFICATION_CONFIG } = await import(
+    "../config/adminNotificationConfig.js"
+  );
 
   const { first_name, last_name, contact_no, email } = customer;
   const { make, model, year, license_plate } = car;
-  const { booking_id, start_date, end_date, total_amount, purpose, pickup_loc } = booking;
+  const {
+    booking_id,
+    start_date,
+    end_date,
+    total_amount,
+    purpose,
+    pickup_loc,
+  } = booking;
   // Build notification messages
   const carName = `${make} ${model} (${year})`;
   const customerName = `${first_name} ${last_name}`;
@@ -979,19 +1096,21 @@ export async function sendAdminNewBookingNotification(booking, customer, car) {
 
     VEHICLE INFORMATION:
     - Vehicle: ${carName}
-    - Plate Number: ${license_plate || 'TBA'}
-    - Pickup Location: ${pickup_loc || 'N/A'}
+    - Plate Number: ${license_plate || "TBA"}
+    - Pickup Location: ${pickup_loc || "N/A"}
 
     RENTAL PERIOD:
     - Start Date: ${startDateFormatted}
     - End Date: ${endDateFormatted}
     - Duration: ${(() => {
-        const startDateTime = new Date(start_date);
-        const endDateTime = new Date(end_date);
-        const totalHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
-        const days = Math.ceil(totalHours / 24);
-        return `${totalHours.toFixed(1)} hours (${days} day${days !== 1 ? 's' : ''})`;
-      })()}
+      const startDateTime = new Date(start_date);
+      const endDateTime = new Date(end_date);
+      const totalHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
+      const days = Math.ceil(totalHours / 24);
+      return `${totalHours.toFixed(1)} hours (${days} day${
+        days !== 1 ? "s" : ""
+      })`;
+    })()}
 
     FINANCIAL DETAILS:
     - Total Amount: ₱${total_amount.toLocaleString()}
@@ -999,7 +1118,7 @@ export async function sendAdminNewBookingNotification(booking, customer, car) {
     - Balance Due: ₱${total_amount.toLocaleString()}
 
     PURPOSE:
-    ${purpose || 'Not specified'}
+    ${purpose || "Not specified"}
 
     ACTION REQUIRED:
     Please review this booking in the admin dashboard and confirm the booking details with the customer.
@@ -1013,7 +1132,7 @@ export async function sendAdminNewBookingNotification(booking, customer, car) {
     success: false,
     sms: null,
     email: null,
-    method: 'Both'
+    method: "Both",
   };
 
   try {
@@ -1021,16 +1140,26 @@ export async function sendAdminNewBookingNotification(booking, customer, car) {
     const promises = [];
 
     // Send SMS to admin phone
-    promises.push(sendSMSNotification(ADMIN_NOTIFICATION_CONFIG.PHONE, smsMessage));
+    promises.push(
+      sendSMSNotification(ADMIN_NOTIFICATION_CONFIG.PHONE, smsMessage)
+    );
 
     // Send Email to admin email
-    promises.push(sendEmailNotification(ADMIN_NOTIFICATION_CONFIG.EMAIL, emailSubject, emailBody));
+    promises.push(
+      sendEmailNotification(
+        ADMIN_NOTIFICATION_CONFIG.EMAIL,
+        emailSubject,
+        emailBody
+      )
+    );
 
     const results_array = await Promise.allSettled(promises);
 
     results.sms = results_array[0]?.value || null;
     results.email = results_array[1]?.value || null;
-    results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+    results.success = results_array.some(
+      (r) => r.status === "fulfilled" && r.value?.success
+    );
 
     if (results.success) {
     } else {
@@ -1038,11 +1167,11 @@ export async function sendAdminNewBookingNotification(booking, customer, car) {
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
   }
 }
@@ -1055,13 +1184,27 @@ export async function sendAdminNewBookingNotification(booking, customer, car) {
  * @param {Object} car - Car object
  * @returns {Promise<Object>} Result of notification attempt
  */
-export async function sendAdminPaymentRequestNotification(payment, customer, booking, car) {
+export async function sendAdminPaymentRequestNotification(
+  payment,
+  customer,
+  booking,
+  car
+) {
   // Import admin config
-  const { ADMIN_NOTIFICATION_CONFIG } = await import('../config/adminNotificationConfig.js');
+  const { ADMIN_NOTIFICATION_CONFIG } = await import(
+    "../config/adminNotificationConfig.js"
+  );
 
   const { first_name, last_name, contact_no, email } = customer;
   const { make, model, year, license_plate } = car;
-  const { payment_id, payment_method, gcash_no, reference_no, amount, description } = payment;
+  const {
+    payment_id,
+    payment_method,
+    gcash_no,
+    reference_no,
+    amount,
+    description,
+  } = payment;
   const { booking_id, start_date, end_date, total_amount } = booking;
   // Build notification messages
   const carName = `${make} ${model} (${year})`;
@@ -1072,7 +1215,7 @@ export async function sendAdminPaymentRequestNotification(payment, customer, boo
   // SMS Message (concise for admin)
   let smsMessage = `PAYMENT REQUEST! ${customerName} submitted ${payment_method} payment of ₱${amount.toLocaleString()} for Booking #${booking_id} (${carName})`;
 
-  if (payment_method === 'GCash' && reference_no) {
+  if (payment_method === "GCash" && reference_no) {
     smsMessage += `. Ref: ${reference_no}`;
   }
 
@@ -1093,15 +1236,23 @@ export async function sendAdminPaymentRequestNotification(payment, customer, boo
     PAYMENT DETAILS:
     - Payment ID: #${payment_id}
     - Payment Method: ${payment_method}
-    ${payment_method === 'GCash' ? `- GCash Number: ${gcash_no || 'Not provided'}` : ''}
-    ${reference_no ? `- Reference Number: ${reference_no}` : '- Reference Number: Not provided'}
+    ${
+      payment_method === "GCash"
+        ? `- GCash Number: ${gcash_no || "Not provided"}`
+        : ""
+    }
+    ${
+      reference_no
+        ? `- Reference Number: ${reference_no}`
+        : "- Reference Number: Not provided"
+    }
     - Amount: ₱${amount.toLocaleString()}
     - Submitted Date: ${formatDatePH(new Date())}
 
     BOOKING INFORMATION:
     - Booking ID: #${booking_id}
     - Vehicle: ${carName}
-    - Plate Number: ${license_plate || 'TBA'}
+    - Plate Number: ${license_plate || "TBA"}
     - Rental Period: ${startDateFormatted} to ${endDateFormatted}
     - Total Booking Amount: ₱${total_amount.toLocaleString()}
     - Payment Purpose: ${description || `Payment for ${carName} booking`}
@@ -1109,26 +1260,37 @@ export async function sendAdminPaymentRequestNotification(payment, customer, boo
     FINANCIAL SUMMARY:
     - Payment Submitted: ₱${amount.toLocaleString()}
     - Remaining Balance: ₱${Math.max(0, total_amount - amount).toLocaleString()}
-    ${amount >= total_amount ? '- Status: FULL PAYMENT' : '- Status: PARTIAL PAYMENT'}
+    ${
+      amount >= total_amount
+        ? "- Status: FULL PAYMENT"
+        : "- Status: PARTIAL PAYMENT"
+    }
 
-    ${payment_method === 'GCash' ? `
+    ${
+      payment_method === "GCash"
+        ? `
     GCASH PAYMENT VERIFICATION:
     Please verify this GCash payment by:
-    1. Checking your GCash transaction history for reference number: ${reference_no || 'N/A'}
+    1. Checking your GCash transaction history for reference number: ${
+      reference_no || "N/A"
+    }
     2. Confirming the amount matches: ₱${amount.toLocaleString()}
-    3. Verifying the sender's GCash number: ${gcash_no || 'Not provided'}
+    3. Verifying the sender's GCash number: ${gcash_no || "Not provided"}
     4. Approving the payment in the admin dashboard
-    ` : `
+    `
+        : `
     CASH PAYMENT VERIFICATION:
     This is a cash payment record. Please verify:
     1. Cash amount received: ₱${amount.toLocaleString()}
     2. Update the payment status in the admin dashboard
-    `}
+    `
+    }
 
     ACTION REQUIRED:
-    ${payment_method === 'GCash' 
-      ? 'Please verify the GCash transaction and approve/reject this payment request in the admin dashboard.'
-      : 'Please confirm the cash payment has been received and update the booking status accordingly.'
+    ${
+      payment_method === "GCash"
+        ? "Please verify the GCash transaction and approve/reject this payment request in the admin dashboard."
+        : "Please confirm the cash payment has been received and update the booking status accordingly."
     }
 
     ---
@@ -1140,7 +1302,7 @@ export async function sendAdminPaymentRequestNotification(payment, customer, boo
     success: false,
     sms: null,
     email: null,
-    method: 'Both'
+    method: "Both",
   };
 
   try {
@@ -1148,16 +1310,26 @@ export async function sendAdminPaymentRequestNotification(payment, customer, boo
     const promises = [];
 
     // Send SMS to admin phone
-    promises.push(sendSMSNotification(ADMIN_NOTIFICATION_CONFIG.PHONE, smsMessage));
+    promises.push(
+      sendSMSNotification(ADMIN_NOTIFICATION_CONFIG.PHONE, smsMessage)
+    );
 
     // Send Email to admin email
-    promises.push(sendEmailNotification(ADMIN_NOTIFICATION_CONFIG.EMAIL, emailSubject, emailBody));
+    promises.push(
+      sendEmailNotification(
+        ADMIN_NOTIFICATION_CONFIG.EMAIL,
+        emailSubject,
+        emailBody
+      )
+    );
 
     const results_array = await Promise.allSettled(promises);
 
     results.sms = results_array[0]?.value || null;
     results.email = results_array[1]?.value || null;
-    results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+    results.success = results_array.some(
+      (r) => r.status === "fulfilled" && r.value?.success
+    );
 
     if (results.success) {
     } else {
@@ -1165,11 +1337,11 @@ export async function sendAdminPaymentRequestNotification(payment, customer, boo
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
   }
 }
@@ -1183,9 +1355,17 @@ export async function sendAdminPaymentRequestNotification(payment, customer, boo
  * @param {string} paymentType - Type of payment ('cash' or 'gcash')
  * @returns {Promise<Object>} Result of notification attempt
  */
-export async function sendAdminPaymentCompletedNotification(payment, customer, booking, car, paymentType) {
+export async function sendAdminPaymentCompletedNotification(
+  payment,
+  customer,
+  booking,
+  car,
+  paymentType
+) {
   // Import admin config
-  const { ADMIN_NOTIFICATION_CONFIG } = await import('../config/adminNotificationConfig.js');
+  const { ADMIN_NOTIFICATION_CONFIG } = await import(
+    "../config/adminNotificationConfig.js"
+  );
 
   const { first_name, last_name, contact_no, email } = customer;
   const { make, model, year, license_plate } = car;
@@ -1196,20 +1376,22 @@ export async function sendAdminPaymentCompletedNotification(payment, customer, b
   const customerName = `${first_name} ${last_name}`;
   const startDateFormatted = formatDatePH(start_date);
   const endDateFormatted = formatDatePH(end_date);
-  const paymentMethodText = paymentType === 'gcash' ? 'GCash' : 'Cash';
-  const actionText = paymentType === 'gcash' ? 'approved' : 'recorded';
+  const paymentMethodText = paymentType === "gcash" ? "GCash" : "Cash";
+  const actionText = paymentType === "gcash" ? "approved" : "recorded";
 
   // SMS Message (concise for admin)
   let smsMessage = `PAYMENT ${actionText.toUpperCase()}! ${customerName} paid ₱${amount.toLocaleString()} via ${paymentMethodText} for ${carName}`;
 
-  if (paymentType === 'gcash' && reference_no) {
+  if (paymentType === "gcash" && reference_no) {
     smsMessage += ` (Ref: ${reference_no})`;
   }
 
   smsMessage += `. Remaining: ₱${balance.toLocaleString()}. Booking #${booking_id}. - JA Car Rental`;
 
   // Email
-  const emailSubject = `Payment ${paymentType === 'gcash' ? 'Approved' : 'Recorded'} - ₱${amount.toLocaleString()} from ${customerName}`;
+  const emailSubject = `Payment ${
+    paymentType === "gcash" ? "Approved" : "Recorded"
+  } - ₱${amount.toLocaleString()} from ${customerName}`;
   const emailBody = `
     PAYMENT ${actionText.toUpperCase()} NOTIFICATION
 
@@ -1223,31 +1405,39 @@ export async function sendAdminPaymentCompletedNotification(payment, customer, b
     PAYMENT DETAILS:
     - Payment ID: #${payment_id}
     - Payment Method: ${paymentMethodText}
-    ${paymentType === 'gcash' ? `- GCash Number: ${gcash_no || 'Not provided'}` : ''}
-    ${reference_no ? `- Reference Number: ${reference_no}` : ''}
+    ${
+      paymentType === "gcash"
+        ? `- GCash Number: ${gcash_no || "Not provided"}`
+        : ""
+    }
+    ${reference_no ? `- Reference Number: ${reference_no}` : ""}
     - Amount: ₱${amount.toLocaleString()}
-    - ${paymentType === 'gcash' ? 'Approved' : 'Recorded'} Date: ${formatDatePH(new Date())}
+    - ${paymentType === "gcash" ? "Approved" : "Recorded"} Date: ${formatDatePH(
+    new Date()
+  )}
 
     BOOKING INFORMATION:
     - Booking ID: #${booking_id}
     - Vehicle: ${carName}
-    - Plate Number: ${license_plate || 'TBA'}
+    - Plate Number: ${license_plate || "TBA"}
     - Rental Period: ${startDateFormatted} to ${endDateFormatted}
 
     PAYMENT SUMMARY:
     - Total Booking Amount: ₱${total_amount.toLocaleString()}
     - Payment Received: ₱${amount.toLocaleString()}
     - Remaining Balance: ₱${balance.toLocaleString()}
-    ${balance <= 0 ? '\n    ✅ BOOKING FULLY PAID!' : ''}
+    ${balance <= 0 ? "\n    ✅ BOOKING FULLY PAID!" : ""}
 
-    ${paymentType === 'gcash' 
-      ? `GCASH PAYMENT STATUS:\n    ✅ This GCash payment has been verified and approved.\n    The customer has been notified of the payment confirmation.` 
-      : `CASH PAYMENT STATUS:\n    ✅ This cash payment has been recorded in the system.\n    The customer has been notified of the payment receipt.`
+    ${
+      paymentType === "gcash"
+        ? `GCASH PAYMENT STATUS:\n    ✅ This GCash payment has been verified and approved.\n    The customer has been notified of the payment confirmation.`
+        : `CASH PAYMENT STATUS:\n    ✅ This cash payment has been recorded in the system.\n    The customer has been notified of the payment receipt.`
     }
 
-    ${balance > 0 
-      ? `\nREMAINING BALANCE:\nThe customer still needs to pay ₱${balance.toLocaleString()} before or during pickup.` 
-      : '\nThis booking is now fully paid and confirmed for the customer.'
+    ${
+      balance > 0
+        ? `\nREMAINING BALANCE:\nThe customer still needs to pay ₱${balance.toLocaleString()} before or during pickup.`
+        : "\nThis booking is now fully paid and confirmed for the customer."
     }
 
     ---
@@ -1259,7 +1449,7 @@ export async function sendAdminPaymentCompletedNotification(payment, customer, b
     success: false,
     sms: null,
     email: null,
-    method: 'Both'
+    method: "Both",
   };
 
   try {
@@ -1267,16 +1457,26 @@ export async function sendAdminPaymentCompletedNotification(payment, customer, b
     const promises = [];
 
     // Send SMS to admin phone
-    promises.push(sendSMSNotification(ADMIN_NOTIFICATION_CONFIG.PHONE, smsMessage));
+    promises.push(
+      sendSMSNotification(ADMIN_NOTIFICATION_CONFIG.PHONE, smsMessage)
+    );
 
     // Send Email to admin email
-    promises.push(sendEmailNotification(ADMIN_NOTIFICATION_CONFIG.EMAIL, emailSubject, emailBody));
+    promises.push(
+      sendEmailNotification(
+        ADMIN_NOTIFICATION_CONFIG.EMAIL,
+        emailSubject,
+        emailBody
+      )
+    );
 
     const results_array = await Promise.allSettled(promises);
 
     results.sms = results_array[0]?.value || null;
     results.email = results_array[1]?.value || null;
-    results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+    results.success = results_array.some(
+      (r) => r.status === "fulfilled" && r.value?.success
+    );
 
     if (results.success) {
     } else {
@@ -1284,11 +1484,11 @@ export async function sendAdminPaymentCompletedNotification(payment, customer, b
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
   }
 }
@@ -1302,9 +1502,17 @@ export async function sendAdminPaymentCompletedNotification(payment, customer, b
  * @param {number} additionalCost - Cost for extension
  * @returns {Promise<Object>} Result of notification attempt
  */
-export async function sendAdminExtensionRequestNotification(booking, customer, car, additionalDays, additionalCost) {
+export async function sendAdminExtensionRequestNotification(
+  booking,
+  customer,
+  car,
+  additionalDays,
+  additionalCost
+) {
   // Import admin config
-  const { ADMIN_NOTIFICATION_CONFIG } = await import('../config/adminNotificationConfig.js');
+  const { ADMIN_NOTIFICATION_CONFIG } = await import(
+    "../config/adminNotificationConfig.js"
+  );
 
   const { first_name, last_name, contact_no, email } = customer;
   const { make, model, year, license_plate } = car;
@@ -1337,7 +1545,7 @@ export async function sendAdminExtensionRequestNotification(booking, customer, c
 
     VEHICLE INFORMATION:
     - Vehicle: ${carName}
-    - Plate Number: ${license_plate || 'TBA'}
+    - Plate Number: ${license_plate || "TBA"}
 
     EXTENSION DETAILS:
     - Current End Date: ${oldEndDateFormatted}
@@ -1369,7 +1577,7 @@ export async function sendAdminExtensionRequestNotification(booking, customer, c
     success: false,
     sms: null,
     email: null,
-    method: 'Both'
+    method: "Both",
   };
 
   try {
@@ -1377,16 +1585,26 @@ export async function sendAdminExtensionRequestNotification(booking, customer, c
     const promises = [];
 
     // Send SMS to admin phone
-    promises.push(sendSMSNotification(ADMIN_NOTIFICATION_CONFIG.PHONE, smsMessage));
+    promises.push(
+      sendSMSNotification(ADMIN_NOTIFICATION_CONFIG.PHONE, smsMessage)
+    );
 
     // Send Email to admin email
-    promises.push(sendEmailNotification(ADMIN_NOTIFICATION_CONFIG.EMAIL, emailSubject, emailBody));
+    promises.push(
+      sendEmailNotification(
+        ADMIN_NOTIFICATION_CONFIG.EMAIL,
+        emailSubject,
+        emailBody
+      )
+    );
 
     const results_array = await Promise.allSettled(promises);
 
     results.sms = results_array[0]?.value || null;
     results.email = results_array[1]?.value || null;
-    results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+    results.success = results_array.some(
+      (r) => r.status === "fulfilled" && r.value?.success
+    );
 
     if (results.success) {
     } else {
@@ -1394,11 +1612,11 @@ export async function sendAdminExtensionRequestNotification(booking, customer, c
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
   }
 }
@@ -1412,7 +1630,13 @@ export async function sendAdminExtensionRequestNotification(booking, customer, c
  * @param {number} additionalCost - Cost for extension
  * @returns {Promise<Object>} Result of notification attempt
  */
-export async function sendExtensionApprovedNotification(booking, customer, car, additionalDays, additionalCost) {
+export async function sendExtensionApprovedNotification(
+  booking,
+  customer,
+  car,
+  additionalDays,
+  additionalCost
+) {
   const { first_name, contact_no, email, customer_id, isRecUpdate } = customer;
   const { make, model, year, license_plate } = car;
   const { booking_id, end_date, balance, total_amount } = booking;
@@ -1433,7 +1657,7 @@ export async function sendExtensionApprovedNotification(booking, customer, car, 
     BOOKING DETAILS:
     - Booking ID: #${booking_id}
     - Vehicle: ${carName}
-    - Plate Number: ${license_plate || 'TBA'}
+    - Plate Number: ${license_plate || "TBA"}
     - Status: Extension Approved
 
     EXTENSION DETAILS:
@@ -1470,7 +1694,7 @@ export async function sendExtensionApprovedNotification(booking, customer, car, 
     success: false,
     sms: null,
     email: null,
-    method: null
+    method: null,
   };
 
   try {
@@ -1479,7 +1703,7 @@ export async function sendExtensionApprovedNotification(booking, customer, car, 
 
     if (notifMethod === 0) {
       results.success = false;
-      results.error = 'Customer notifications disabled';
+      results.error = "Customer notifications disabled";
       return results;
     }
 
@@ -1489,7 +1713,7 @@ export async function sendExtensionApprovedNotification(booking, customer, car, 
       // Send SMS
       if (contact_no) {
         promises.push(sendSMSNotification(contact_no, smsMessage));
-        results.method = notifMethod === 1 ? 'SMS' : 'Both';
+        results.method = notifMethod === 1 ? "SMS" : "Both";
       }
     }
 
@@ -1497,7 +1721,7 @@ export async function sendExtensionApprovedNotification(booking, customer, car, 
       // Send Email
       if (email) {
         promises.push(sendEmailNotification(email, emailSubject, emailBody));
-        results.method = notifMethod === 2 ? 'Email' : 'Both';
+        results.method = notifMethod === 2 ? "Email" : "Both";
       }
     }
 
@@ -1513,10 +1737,12 @@ export async function sendExtensionApprovedNotification(booking, customer, car, 
         results.email = results_array[0]?.value || null;
       }
 
-      results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+      results.success = results_array.some(
+        (r) => r.status === "fulfilled" && r.value?.success
+      );
     } else {
       results.success = false;
-      results.error = 'No contact information';
+      results.error = "No contact information";
     }
 
     if (results.success) {
@@ -1525,11 +1751,11 @@ export async function sendExtensionApprovedNotification(booking, customer, car, 
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
   }
 }
@@ -1543,7 +1769,13 @@ export async function sendExtensionApprovedNotification(booking, customer, car, 
  * @param {number} deductedAmount - Amount that was deducted after rejection
  * @returns {Promise<Object>} Result of notification attempt
  */
-export async function sendExtensionRejectedNotification(booking, customer, car, additionalDays, deductedAmount) {
+export async function sendExtensionRejectedNotification(
+  booking,
+  customer,
+  car,
+  additionalDays,
+  deductedAmount
+) {
   const { first_name, contact_no, email, customer_id, isRecUpdate } = customer;
   const { make, model, year, license_plate } = car;
   const { booking_id, end_date, total_amount } = booking;
@@ -1564,7 +1796,7 @@ export async function sendExtensionRejectedNotification(booking, customer, car, 
     BOOKING DETAILS:
     - Booking ID: #${booking_id}
     - Vehicle: ${carName}
-    - Plate Number: ${license_plate || 'TBA'}
+    - Plate Number: ${license_plate || "TBA"}
     - Original Return Date: ${endDateFormatted}
     - Status: Extension Denied
 
@@ -1588,8 +1820,8 @@ export async function sendExtensionRejectedNotification(booking, customer, car, 
 
     NEED TO DISCUSS?
     Please contact us:
-    - Phone: ${ADMIN_NOTIFICATION_CONFIG?.PHONE || '09925315378'}
-    - Email: ${ADMIN_NOTIFICATION_CONFIG?.EMAIL || 'gregg.marayan@gmail.com'}
+    - Phone: ${ADMIN_NOTIFICATION_CONFIG?.PHONE || "09925315378"}
+    - Email: ${ADMIN_NOTIFICATION_CONFIG?.EMAIL || "gregg.marayan@gmail.com"}
 
     We apologize for any inconvenience and appreciate your understanding.
 
@@ -1601,7 +1833,7 @@ export async function sendExtensionRejectedNotification(booking, customer, car, 
     success: false,
     sms: null,
     email: null,
-    method: null
+    method: null,
   };
 
   try {
@@ -1610,7 +1842,7 @@ export async function sendExtensionRejectedNotification(booking, customer, car, 
 
     if (notifMethod === 0) {
       results.success = false;
-      results.error = 'Customer notifications disabled';
+      results.error = "Customer notifications disabled";
       return results;
     }
 
@@ -1620,7 +1852,7 @@ export async function sendExtensionRejectedNotification(booking, customer, car, 
       // Send SMS
       if (contact_no) {
         promises.push(sendSMSNotification(contact_no, smsMessage));
-        results.method = notifMethod === 1 ? 'SMS' : 'Both';
+        results.method = notifMethod === 1 ? "SMS" : "Both";
       }
     }
 
@@ -1628,7 +1860,7 @@ export async function sendExtensionRejectedNotification(booking, customer, car, 
       // Send Email
       if (email) {
         promises.push(sendEmailNotification(email, emailSubject, emailBody));
-        results.method = notifMethod === 2 ? 'Email' : 'Both';
+        results.method = notifMethod === 2 ? "Email" : "Both";
       }
     }
 
@@ -1644,10 +1876,12 @@ export async function sendExtensionRejectedNotification(booking, customer, car, 
         results.email = results_array[0]?.value || null;
       }
 
-      results.success = results_array.some(r => r.status === 'fulfilled' && r.value?.success);
+      results.success = results_array.some(
+        (r) => r.status === "fulfilled" && r.value?.success
+      );
     } else {
       results.success = false;
-      results.error = 'No contact information';
+      results.error = "No contact information";
     }
 
     if (results.success) {
@@ -1656,11 +1890,11 @@ export async function sendExtensionRejectedNotification(booking, customer, car, 
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
   }
 }
@@ -1672,9 +1906,23 @@ export async function sendExtensionRejectedNotification(booking, customer, car, 
  * @param {Object} customer - Customer object
  * @param {Object} car - Car object
  */
-export async function sendDriverAssignedNotification(booking, driver, customer, car) {
-  const { first_name: driverFirstName, last_name: driverLastName, contact_no: driverPhone, drivers_id } = driver;
-  const { first_name: customerFirstName, last_name: customerLastName, contact_no: customerPhone } = customer;
+export async function sendDriverAssignedNotification(
+  booking,
+  driver,
+  customer,
+  car
+) {
+  const {
+    first_name: driverFirstName,
+    last_name: driverLastName,
+    contact_no: driverPhone,
+    drivers_id,
+  } = driver;
+  const {
+    first_name: customerFirstName,
+    last_name: customerLastName,
+    contact_no: customerPhone,
+  } = customer;
   const { make, model, year, license_plate } = car;
   const carName = `${make} ${model} (${year})`;
   const startDateFormatted = formatDatePH(booking.start_date);
@@ -1682,12 +1930,16 @@ export async function sendDriverAssignedNotification(booking, driver, customer, 
   const customerName = `${customerFirstName} ${customerLastName}`;
 
   // SMS message for driver - concise and informative
-  const smsMessage = `Hi ${driverFirstName}! You've been assigned to a new booking (ID: ${booking.booking_id}). Customer: ${customerName} (${customerPhone}). Car: ${carName} [${license_plate}]. Pickup: ${startDateFormatted}. Return: ${endDateFormatted}. Location: ${booking.pickup_loc || 'JA Office'}. Payment pending. - JA Car Rental`;
+  const smsMessage = `Hi ${driverFirstName}! You've been assigned to a new booking (ID: ${
+    booking.booking_id
+  }). Customer: ${customerName} (${customerPhone}). Car: ${carName} [${license_plate}]. Pickup: ${startDateFormatted}. Return: ${endDateFormatted}. Location: ${
+    booking.pickup_loc || "JA Office"
+  }. Payment pending. - JA Car Rental`;
 
   const results = {
     success: false,
     sms: null,
-    method: 'SMS'
+    method: "SMS",
   };
 
   try {
@@ -1697,7 +1949,7 @@ export async function sendDriverAssignedNotification(booking, driver, customer, 
       results.success = results.sms.success;
     } else {
       results.success = false;
-      results.error = 'No contact number';
+      results.error = "No contact number";
     }
 
     if (results.success) {
@@ -1706,10 +1958,10 @@ export async function sendDriverAssignedNotification(booking, driver, customer, 
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
-      sms: null
+      sms: null,
     };
   }
 }
@@ -1721,9 +1973,23 @@ export async function sendDriverAssignedNotification(booking, driver, customer, 
  * @param {Object} customer - Customer object
  * @param {Object} car - Car object
  */
-export async function sendDriverBookingConfirmedNotification(booking, driver, customer, car) {
-  const { first_name: driverFirstName, last_name: driverLastName, contact_no: driverPhone, drivers_id } = driver;
-  const { first_name: customerFirstName, last_name: customerLastName, contact_no: customerPhone } = customer;
+export async function sendDriverBookingConfirmedNotification(
+  booking,
+  driver,
+  customer,
+  car
+) {
+  const {
+    first_name: driverFirstName,
+    last_name: driverLastName,
+    contact_no: driverPhone,
+    drivers_id,
+  } = driver;
+  const {
+    first_name: customerFirstName,
+    last_name: customerLastName,
+    contact_no: customerPhone,
+  } = customer;
   const { make, model, year, license_plate } = car;
   const carName = `${make} ${model} (${year})`;
   const startDateFormatted = formatDatePH(booking.start_date);
@@ -1731,12 +1997,16 @@ export async function sendDriverBookingConfirmedNotification(booking, driver, cu
   const customerName = `${customerFirstName} ${customerLastName}`;
 
   // SMS message for driver - confirmed booking ready for release
-  const smsMessage = `Hi ${driverFirstName}! Booking ${booking.booking_id} is now CONFIRMED. Customer: ${customerName} (${customerPhone}). Car: ${carName} [${license_plate}]. Pickup: ${startDateFormatted}. Return: ${endDateFormatted}. Location: ${booking.pickup_loc || 'JA Office'}. Please prepare for car release. - JA Car Rental`;
+  const smsMessage = `Hi ${driverFirstName}! Booking ${
+    booking.booking_id
+  } is now CONFIRMED. Customer: ${customerName} (${customerPhone}). Car: ${carName} [${license_plate}]. Pickup: ${startDateFormatted}. Return: ${endDateFormatted}. Location: ${
+    booking.pickup_loc || "JA Office"
+  }. Please prepare for car release. - JA Car Rental`;
 
   const results = {
     success: false,
     sms: null,
-    method: 'SMS'
+    method: "SMS",
   };
 
   try {
@@ -1746,7 +2016,7 @@ export async function sendDriverBookingConfirmedNotification(booking, driver, cu
       results.success = results.sms.success;
     } else {
       results.success = false;
-      results.error = 'No contact number';
+      results.error = "No contact number";
     }
 
     if (results.success) {
@@ -1755,10 +2025,10 @@ export async function sendDriverBookingConfirmedNotification(booking, driver, cu
 
     return results;
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: error.message,
-      sms: null
+      sms: null,
     };
   }
 }
@@ -1770,17 +2040,17 @@ export async function sendDriverBookingConfirmedNotification(booking, driver, cu
 export async function sendTestNotification(params) {
   const testCustomer = {
     customer_id: 999,
-    first_name: 'Test',
+    first_name: "Test",
     contact_no: params.phoneNumber,
     email: params.email,
-    isRecUpdate: params.notificationMethod // 1=SMS, 2=Email, 3=Both
+    isRecUpdate: params.notificationMethod, // 1=SMS, 2=Email, 3=Both
   };
 
   const testCar = {
     car_id: 1,
-    make: 'Toyota',
-    model: 'Vios',
-    year: 2024
+    make: "Toyota",
+    model: "Vios",
+    year: 2024,
   };
 
   return await sendCarAvailabilityNotification(testCustomer, testCar);
@@ -1797,12 +2067,14 @@ export async function sendReturnReminderNotification(booking, customer, car) {
   const { first_name, contact_no, email, isRecUpdate } = customer;
   const { make, model, year, license_plate } = car;
   const carName = `${make} ${model} (${year})`;
-  
+
   const returnTime = booking.dropoff_time || booking.end_date;
   const returnTimeFormatted = formatDatePH(returnTime);
 
   // SMS message with delay notification instruction
-  const smsMessage = `Hi ${first_name}! Reminder: Today is your car return date. Scheduled return: ${returnTimeFormatted}. Car: ${carName} [${license_plate}]. Return Location: ${booking.dropoff_loc || 'JA Office'}. IMPORTANT: If you cannot return the car on time, please call us immediately to notify of any delay. - JA Car Rental`;
+  const smsMessage = `Hi ${first_name}! Reminder: Today is your car return date. Scheduled return: ${returnTimeFormatted}. Car: ${carName} [${license_plate}]. Return Location: ${
+    booking.dropoff_loc || "JA Office"
+  }. IMPORTANT: If you cannot return the car on time, please call us immediately to notify of any delay. - JA Car Rental`;
 
   // Email subject and body
   const emailSubject = `Return Reminder - ${carName}`;
@@ -1814,7 +2086,7 @@ export async function sendReturnReminderNotification(booking, customer, car) {
     Return Details:
     - Car: ${carName} [${license_plate}]
     - Return Time: ${returnTimeFormatted}
-    - Return Location: ${booking.dropoff_loc || 'JA Car Rental Office'}
+    - Return Location: ${booking.dropoff_loc || "JA Car Rental Office"}
     - Booking ID: ${booking.booking_id}
 
     IMPORTANT NOTICE:
@@ -1830,7 +2102,7 @@ export async function sendReturnReminderNotification(booking, customer, car) {
     success: false,
     sms: null,
     email: null,
-    method: null
+    method: null,
   };
 
   try {
@@ -1839,21 +2111,25 @@ export async function sendReturnReminderNotification(booking, customer, car) {
         if (contact_no) {
           results.sms = await sendSMSNotification(contact_no, smsMessage);
           results.success = results.sms.success;
-          results.method = 'SMS';
+          results.method = "SMS";
         } else {
           results.success = false;
-          results.error = 'No contact number';
+          results.error = "No contact number";
         }
         break;
 
       case 2: // Email only
         if (email) {
-          results.email = await sendEmailNotification(email, emailSubject, emailBody);
+          results.email = await sendEmailNotification(
+            email,
+            emailSubject,
+            emailBody
+          );
           results.success = results.email.success;
-          results.method = 'Email';
+          results.method = "Email";
         } else {
           results.success = false;
-          results.error = 'No email';
+          results.error = "No email";
         }
         break;
 
@@ -1872,35 +2148,42 @@ export async function sendReturnReminderNotification(booking, customer, car) {
 
           results.sms = smsResult?.value || null;
           results.email = emailResult?.value || null;
-          results.success = (smsResult?.status === 'fulfilled' && smsResult?.value?.success) ||
-                           (emailResult?.status === 'fulfilled' && emailResult?.value?.success);
-          results.method = 'Both';
+          results.success =
+            (smsResult?.status === "fulfilled" && smsResult?.value?.success) ||
+            (emailResult?.status === "fulfilled" &&
+              emailResult?.value?.success);
+          results.method = "Both";
         } else {
           results.success = false;
-          results.error = 'No contact information';
+          results.error = "No contact information";
         }
         break;
 
       default:
         results.success = false;
-        results.error = 'Notifications disabled';
-        results.method = 'None';
+        results.error = "Notifications disabled";
+        results.method = "None";
     }
 
     if (results.success) {
-      console.log(`✅ Return reminder sent to customer ${customer.customer_id} for booking ${booking.booking_id}`);
+      console.log(
+        `✅ Return reminder sent to customer ${customer.customer_id} for booking ${booking.booking_id}`
+      );
     } else {
-      console.log(`❌ Failed to send return reminder to customer ${customer.customer_id}:`, results.error);
+      console.log(
+        `❌ Failed to send return reminder to customer ${customer.customer_id}:`,
+        results.error
+      );
     }
 
     return results;
   } catch (error) {
-    console.error('Error sending return reminder:', error);
-    return { 
-      success: false, 
+    console.error("Error sending return reminder:", error);
+    return {
+      success: false,
       error: error.message,
       sms: null,
-      email: null
+      email: null,
     };
   }
 }

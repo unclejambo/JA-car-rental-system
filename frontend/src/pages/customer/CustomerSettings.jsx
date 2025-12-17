@@ -1682,7 +1682,19 @@ export default function CustomerSettings() {
                                           onChange={handleChange}
                                           size="small"
                                           fullWidth
-                                          disabled
+                                          disabled={
+                                            !profile.username ||
+                                            !profile.username.startsWith(
+                                              'walkin_'
+                                            )
+                                          }
+                                          helperText={
+                                            profile.username?.startsWith(
+                                              'walkin_'
+                                            )
+                                              ? 'You can change your username once. After saving, it becomes locked.'
+                                              : 'Username is locked. Contact support to request a change.'
+                                          }
                                           sx={{
                                             '& .MuiInputBase-input.Mui-disabled':
                                               {
@@ -1841,29 +1853,60 @@ export default function CustomerSettings() {
                                     label="Receive updates via Email"
                                   />
                                 </Box>
-                                
+
                                 {/* SMS/Email Notification Examples */}
                                 <Alert severity="info" sx={{ mt: 2, mb: 2 }}>
-                                  <Typography variant="body2" fontWeight="bold" gutterBottom>
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight="bold"
+                                    gutterBottom
+                                  >
                                     📱 What notifications will I receive?
                                   </Typography>
-                                  <Typography variant="caption" component="div" sx={{ mt: 1 }}>
+                                  <Typography
+                                    variant="caption"
+                                    component="div"
+                                    sx={{ mt: 1 }}
+                                  >
                                     <strong>You'll be notified about:</strong>
                                   </Typography>
-                                  <Box component="ul" sx={{ pl: 2, mt: 0.5, fontSize: '0.75rem' }}>
-                                    <li>Booking confirmations & status updates</li>
-                                    <li>Payment reminders (24 hours before deadline)</li>
-                                    <li>Return reminders (24 hours before due date)</li>
-                                    <li>Overdue alerts (if vehicle not returned on time)</li>
+                                  <Box
+                                    component="ul"
+                                    sx={{ pl: 2, mt: 0.5, fontSize: '0.75rem' }}
+                                  >
+                                    <li>
+                                      Booking confirmations & status updates
+                                    </li>
+                                    <li>
+                                      Payment reminders (24 hours before
+                                      deadline)
+                                    </li>
+                                    <li>
+                                      Return reminders (24 hours before due
+                                      date)
+                                    </li>
+                                    <li>
+                                      Overdue alerts (if vehicle not returned on
+                                      time)
+                                    </li>
                                     <li>Agreement signing requests</li>
                                     <li>Extension approvals/rejections</li>
                                     <li>Cancellation confirmations</li>
                                   </Box>
-                                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                                    💡 <em>Critical notifications (overdue, cancellations) are always sent regardless of your preferences.</em>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ mt: 1, display: 'block' }}
+                                  >
+                                    💡{' '}
+                                    <em>
+                                      Critical notifications (overdue,
+                                      cancellations) are always sent regardless
+                                      of your preferences.
+                                    </em>
                                   </Typography>
                                 </Alert>
-                                
+
                                 {isEditing && (
                                   <Box
                                     sx={{
@@ -2086,7 +2129,7 @@ export default function CustomerSettings() {
                                               draftLicenseNo
                                             )
                                           }
-                                          disabled
+                                          disabled={!hasNoLicense}
                                           sx={{
                                             '& .MuiInputBase-input.Mui-disabled':
                                               {

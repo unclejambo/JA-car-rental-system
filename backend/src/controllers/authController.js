@@ -1,12 +1,12 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { createClient } from '@supabase/supabase-js';
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { createClient } from "@supabase/supabase-js";
 
 const prisma = new PrismaClient();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-jwt-secret';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
+const JWT_SECRET = process.env.JWT_SECRET || "dev-jwt-secret";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "8h";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -16,7 +16,9 @@ async function login(req, res, next) {
   try {
     const { identifier, email, username, password } = req.body;
     if (!password || !(identifier || email || username)) {
-      return res.status(400).json({ ok: false, message: 'Missing credentials' });
+      return res
+        .status(400)
+        .json({ ok: false, message: "Missing credentials" });
     }
 
     let user = null;
@@ -30,36 +32,28 @@ async function login(req, res, next) {
     try {
       user = await prisma.admin.findFirst({
         where: {
-          OR: [
-            { email: searchTerm },
-            { username: searchTerm },
-          ],
+          OR: [{ email: searchTerm }, { username: searchTerm }],
         },
       });
       if (user) {
-        role = user.user_type || 'admin'; // Use user_type from database, default to admin
-        foundIn = 'admin';
+        role = user.user_type || "admin"; // Use user_type from database, default to admin
+        foundIn = "admin";
       }
-    } catch (err) {
-    }
+    } catch (err) {}
 
     // Try Customer if not found in Admin
     if (!user) {
       try {
         user = await prisma.customer.findFirst({
           where: {
-            OR: [
-              { email: searchTerm },
-              { username: searchTerm },
-            ],
+            OR: [{ email: searchTerm }, { username: searchTerm }],
           },
         });
         if (user) {
-          role = 'customer';
-          foundIn = 'customer';
+          role = "customer";
+          foundIn = "customer";
         }
-      } catch (err) {
-      }
+      } catch (err) {}
     }
 
     // Try Driver if not found in Admin or Customer
@@ -67,22 +61,20 @@ async function login(req, res, next) {
       try {
         user = await prisma.driver.findFirst({
           where: {
-            OR: [
-              { email: searchTerm },
-              { username: searchTerm },
-            ],
+            OR: [{ email: searchTerm }, { username: searchTerm }],
           },
         });
         if (user) {
-          role = 'driver';
-          foundIn = 'driver';
+          role = "driver";
+          foundIn = "driver";
         }
-      } catch (err) {
-      }
+      } catch (err) {}
     }
 
     if (!user) {
-      return res.status(401).json({ ok: false, message: 'Invalid credentials' });
+      return res
+        .status(401)
+        .json({ ok: false, message: "Invalid credentials" });
     }
 
     // Check password
@@ -98,34 +90,39 @@ async function login(req, res, next) {
     }
 
     if (!passwordMatches) {
-      return res.status(401).json({ ok: false, message: 'Invalid credentials' });
+      return res
+        .status(401)
+        .json({ ok: false, message: "Invalid credentials" });
     }
 
     // Check if account is active based on user type
-    if (foundIn === 'admin') {
+    if (foundIn === "admin") {
       // For admin and staff, check isActive column and user_type
-      if (user.user_type === 'admin' || user.user_type === 'staff') {
+      if (user.user_type === "admin" || user.user_type === "staff") {
         if (!user.isActive) {
-          return res.status(403).json({ 
-            ok: false, 
-            message: 'Account is inactive. Please contact admin to activate your account.' 
+          return res.status(403).json({
+            ok: false,
+            message:
+              "Account is inactive. Please contact admin to activate your account.",
           });
         }
       }
-    } else if (foundIn === 'customer') {
-      // For customers, check status column
-      if (user.status !== 'active') {
-        return res.status(403).json({ 
-          ok: false, 
-          message: 'Account is inactive. Please contact admin to activate your account.' 
+    } else if (foundIn === "customer") {
+      // For customers, check status column (case-insensitive)
+      if ((user.status || "").toLowerCase() !== "active") {
+        return res.status(403).json({
+          ok: false,
+          message:
+            "Account is inactive. Please contact admin to activate your account.",
         });
       }
-    } else if (foundIn === 'driver') {
-      // For drivers, check status column
-      if (user.status !== 'active') {
-        return res.status(403).json({ 
-          ok: false, 
-          message: 'Account is inactive. Please contact admin to activate your account.' 
+    } else if (foundIn === "driver") {
+      // For drivers, check status column (case-insensitive)
+      if ((user.status || "").toLowerCase() !== "active") {
+        return res.status(403).json({
+          ok: false,
+          message:
+            "Account is inactive. Please contact admin to activate your account.",
         });
       }
     }
@@ -139,20 +136,22 @@ async function login(req, res, next) {
       foundIn,
     };
 
-    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const token = jwt.sign(tokenPayload, JWT_SECRET, {
+      expiresIn: JWT_EXPIRES_IN,
+    });
 
     // decide redirect (frontend can override)
     const redirectMap = {
-      admin: '/admindashboard',
-      staff: '/admindashboard', // Staff uses same dashboard as admin
-      driver: '/driver-schedule', 
-      customer: '/customer-dashboard',
+      admin: "/admindashboard",
+      staff: "/admindashboard", // Staff uses same dashboard as admin
+      driver: "/driver-schedule",
+      customer: "/customer-dashboard",
     };
-    const redirect = redirectMap[role] || '/';
+    const redirect = redirectMap[role] || "/";
 
     return res.json({
       ok: true,
-      message: 'Authenticated',
+      message: "Authenticated",
       token,
       role,
       redirect,
@@ -161,7 +160,9 @@ async function login(req, res, next) {
         name: `${user.first_name} ${user.last_name}`,
         email: user.email,
         username: user.username,
-        ...(foundIn === 'admin' && user.user_type ? { user_type: user.user_type } : {}),
+        ...(foundIn === "admin" && user.user_type
+          ? { user_type: user.user_type }
+          : {}),
       },
     });
   } catch (err) {
@@ -174,7 +175,7 @@ async function validateToken(req, res, next) {
     // Token is already verified by middleware, just return success
     return res.json({
       ok: true,
-      message: 'Token is valid',
+      message: "Token is valid",
       user: req.user,
     });
   } catch (err) {
@@ -203,7 +204,9 @@ async function register(req, res, next) {
     } = req.body;
 
     const licenseNumber =
-      licenseNumberBody || req.body.license_number || req.body.driver_license_no;
+      licenseNumberBody ||
+      req.body.license_number ||
+      req.body.driver_license_no;
     // Basic validation (license fields are optional)
     if (
       !email ||
@@ -215,9 +218,9 @@ async function register(req, res, next) {
       !contactNumber ||
       !agreeTerms
     ) {
-      return res.status(400).json({ 
-        ok: false, 
-        message: 'Missing required fields',
+      return res.status(400).json({
+        ok: false,
+        message: "Missing required fields",
         missing: {
           email: !email,
           username: !username,
@@ -226,22 +229,22 @@ async function register(req, res, next) {
           lastName: !lastName,
           address: !address,
           contactNumber: !contactNumber,
-          agreeTerms: !agreeTerms
-        }
+          agreeTerms: !agreeTerms,
+        },
       });
     }
 
     // If user has a license, validate license fields
-    if (hasDriverLicense === 'yes') {
+    if (hasDriverLicense === "yes") {
       if (!licenseNumber || !licenseExpiry || !dl_img_url) {
         return res.status(400).json({
           ok: false,
-          message: 'Driver license information is incomplete',
+          message: "Driver license information is incomplete",
           missing: {
             licenseNumber: !licenseNumber,
             licenseExpiry: !licenseExpiry,
-            dl_img_url: !dl_img_url
-          }
+            dl_img_url: !dl_img_url,
+          },
         });
       }
     }
@@ -251,7 +254,9 @@ async function register(req, res, next) {
       where: { OR: [{ email }, { username }] },
     });
     if (existingCustomer) {
-      return res.status(409).json({ ok: false, message: 'Account already exists' });
+      return res
+        .status(409)
+        .json({ ok: false, message: "Account already exists" });
     }
 
     // Only check license if user has one
@@ -260,7 +265,9 @@ async function register(req, res, next) {
         where: { driver_license_no: licenseNumber },
       });
       if (existingLicense) {
-        return res.status(409).json({ ok: false, message: 'Driver license already registered' });
+        return res
+          .status(409)
+          .json({ ok: false, message: "Driver license already registered" });
       }
     }
 
@@ -273,7 +280,7 @@ async function register(req, res, next) {
         data: {
           driver_license_no: licenseNumber,
           expiry_date: new Date(licenseExpiry),
-          restrictions: restrictions || 'None',
+          restrictions: restrictions || "None",
           dl_img_url: dl_img_url, // Store the Supabase URL
         },
       });
@@ -291,7 +298,7 @@ async function register(req, res, next) {
         username,
         password: hashedPassword,
         fb_link: fb_link || null,
-        status: 'active',
+        status: "active",
         driver_license_id: driverLicenseId, // Use driver_license_id FK instead of driver_license_no
         date_created: new Date(),
         isRecUpdate: 3, // Enable both SMS and Email notifications by default
@@ -299,7 +306,7 @@ async function register(req, res, next) {
     });
     return res.status(201).json({
       ok: true,
-      message: 'Account created successfully',
+      message: "Account created successfully",
       user: {
         id: customer.customer_id,
         name: `${customer.first_name} ${customer.last_name}`,
@@ -309,8 +316,10 @@ async function register(req, res, next) {
       },
     });
   } catch (err) {
-    if (err.code === 'P2002') {
-      return res.status(409).json({ ok: false, message: 'Unique constraint failed' });
+    if (err.code === "P2002") {
+      return res
+        .status(409)
+        .json({ ok: false, message: "Unique constraint failed" });
     }
     next(err);
   }

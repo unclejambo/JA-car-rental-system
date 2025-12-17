@@ -77,6 +77,9 @@ export const getSchedules = async (req, res) => {
             license_plate: true,
           },
         },
+        driver: {
+          select: { first_name: true, last_name: true },
+        },
       },
     });
 
@@ -89,6 +92,9 @@ export const getSchedules = async (req, res) => {
         s.customer?.last_name ?? ""
       }`.trim(),
       contact_no: s.customer?.contact_no || null,
+      driver_name: `${s.driver?.first_name ?? ""} ${
+        s.driver?.last_name ?? ""
+      }`.trim(),
       start_date: s.start_date,
       pickup_time: s.pickup_time,
       pickup_loc: s.pickup_loc,

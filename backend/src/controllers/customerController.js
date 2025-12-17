@@ -1,7 +1,12 @@
 import prisma from "../config/prisma.js";
-import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
-import { getPaginationParams, getSortingParams, buildPaginationResponse, getSearchParam } from '../utils/pagination.js';
+import { createClient } from "@supabase/supabase-js";
+import bcrypt from "bcryptjs";
+import {
+  getPaginationParams,
+  getSortingParams,
+  buildPaginationResponse,
+  getSearchParam,
+} from "../utils/pagination.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -16,14 +21,14 @@ async function getSignedLicenseUrl(dl_img_url) {
   try {
     // Extract the path from the URL if it's already a full URL
     let path = dl_img_url;
-    if (dl_img_url.includes('/licenses/')) {
-      path = dl_img_url.split('/licenses/')[1];
+    if (dl_img_url.includes("/licenses/")) {
+      path = dl_img_url.split("/licenses/")[1];
       // Decode any URL-encoded characters
       path = decodeURIComponent(path);
     }
 
     const { data, error } = await supabase.storage
-      .from('licenses')
+      .from("licenses")
       .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
 
     if (error) {
@@ -43,7 +48,7 @@ export const getCustomers = async (req, res) => {
   try {
     // Get pagination parameters
     const { page, pageSize, skip } = getPaginationParams(req);
-    const { sortBy, sortOrder } = getSortingParams(req, 'customer_id', 'desc');
+    const { sortBy, sortOrder } = getSortingParams(req, "customer_id", "desc");
     const search = getSearchParam(req);
 
     // Build where clause
@@ -52,10 +57,10 @@ export const getCustomers = async (req, res) => {
     // Search filter (name, email, or username)
     if (search) {
       where.OR = [
-        { first_name: { contains: search, mode: 'insensitive' } },
-        { last_name: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { username: { contains: search, mode: 'insensitive' } },
+        { first_name: { contains: search, mode: "insensitive" } },
+        { last_name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { username: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -79,7 +84,6 @@ export const getCustomers = async (req, res) => {
     });
 
     res.json(buildPaginationResponse(users, total, page, pageSize));
-
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch users" });
   }
@@ -102,8 +106,11 @@ export const getCustomerById = async (req, res) => {
 
     // Generate signed URL for license image if it exists
     if (customer.driver_license?.dl_img_url) {
-      const signedUrl = await getSignedLicenseUrl(customer.driver_license.dl_img_url);
-      customer.driver_license.dl_img_url = signedUrl || customer.driver_license.dl_img_url;
+      const signedUrl = await getSignedLicenseUrl(
+        customer.driver_license.dl_img_url
+      );
+      customer.driver_license.dl_img_url =
+        signedUrl || customer.driver_license.dl_img_url;
     }
 
     res.json(customer);
@@ -128,7 +135,7 @@ export const createCustomer = async (req, res) => {
       fb_link,
       date_created,
       status,
-      driver_license_no, // -> Must exist as FK
+      driver_license_no,
     } = req.body;
 
     if (!first_name || !last_name || !email || !username || !password) {
@@ -140,6 +147,26 @@ export const createCustomer = async (req, res) => {
 
     // Hash the password before storing
     const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Handle driver license if provided
+    let driver_license_id = null;
+    if (driver_license_no && driver_license_no.trim()) {
+      // Check if license already exists
+      let license = await prisma.driverLicense.findUnique({
+        where: { driver_license_no: driver_license_no.trim() },
+      });
+
+      // If not exists, create it
+      if (!license) {
+        license = await prisma.driverLicense.create({
+          data: {
+            driver_license_no: driver_license_no.trim(),
+          },
+        });
+      }
+
+      driver_license_id = license.license_id;
+    }
 
     const newCustomer = await prisma.customer.create({
       data: {
@@ -153,11 +180,11 @@ export const createCustomer = async (req, res) => {
         fb_link,
         date_created,
         status,
-        driver_license_no,
+        driver_license_id,
         isRecUpdate: 3, // Enable both SMS and Email notifications by default
       },
       include: {
-        driver_license: true, // ✅ include after create
+        driver_license: true,
       },
     });
 
@@ -214,7 +241,7 @@ export const updateCustomer = async (req, res) => {
     }
 
     // Handle password change with proper hashing
-    if (data.password && data.password.trim() !== '') {
+    if (data.password && data.password.trim() !== "") {
       // If currentPassword is provided, verify it first
       if (data.currentPassword) {
         const isCurrentPasswordValid = await bcrypt.compare(
@@ -222,8 +249,8 @@ export const updateCustomer = async (req, res) => {
           existing.password
         );
         if (!isCurrentPasswordValid) {
-          return res.status(400).json({ 
-            error: "Current password is incorrect" 
+          return res.status(400).json({
+            error: "Current password is incorrect",
           });
         }
       }
@@ -262,7 +289,9 @@ export const getCurrentCustomer = async (req, res) => {
     const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
 
     if (!customerId) {
-      return res.status(401).json({ error: "Unauthorized - No customer ID found" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized - No customer ID found" });
     }
 
     const customer = await prisma.customer.findUnique({
@@ -289,9 +318,9 @@ export const getCurrentCustomer = async (req, res) => {
             dl_img_url: true,
           },
         },
-        date_created: true
+        date_created: true,
         // Exclude password for security
-      }
+      },
     });
 
     if (!customer) {
@@ -312,7 +341,9 @@ export const updateNotificationSettings = async (req, res) => {
     const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
 
     if (!customerId) {
-      return res.status(401).json({ error: "Unauthorized - No customer ID found" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized - No customer ID found" });
     }
     const { isRecUpdate } = req.body;
 
@@ -321,8 +352,9 @@ export const updateNotificationSettings = async (req, res) => {
     const parsedValue = parseInt(isRecUpdate);
 
     if (!validValues.includes(parsedValue)) {
-      return res.status(400).json({ 
-        error: "Invalid notification setting. Must be 0 (none), 1 (SMS), 2 (Email), or 3 (Both)" 
+      return res.status(400).json({
+        error:
+          "Invalid notification setting. Must be 0 (none), 1 (SMS), 2 (Email), or 3 (Both)",
       });
     }
 
@@ -333,12 +365,12 @@ export const updateNotificationSettings = async (req, res) => {
         customer_id: true,
         first_name: true,
         last_name: true,
-        isRecUpdate: true
-      }
+        isRecUpdate: true,
+      },
     });
     res.json({
       message: "Notification settings updated successfully",
-      customer: updatedCustomer
+      customer: updatedCustomer,
     });
   } catch (error) {
     res.status(500).json({ error: "Failed to update notification settings" });
@@ -350,27 +382,43 @@ export const updateNotificationSettings = async (req, res) => {
  */
 export const createWalkInCustomer = async (req, res) => {
   try {
-    const {
-      first_name,
-      last_name,
-      contact_no,
-      email,
-      driver_license_no,
-    } = req.body;
+    const { first_name, last_name, contact_no, email, driver_license_no } =
+      req.body;
 
     // Validate required fields for walk-in
     if (!first_name || !last_name || !contact_no) {
       return res.status(400).json({
-        error: "first_name, last_name, and contact_no are required for walk-in customers",
+        error:
+          "first_name, last_name, and contact_no are required for walk-in customers",
       });
     }
 
     // Generate a unique username for walk-in (format: walkin_timestamp)
     const username = `walkin_${Date.now()}`;
-    
+
     // Generate a random temporary password
     const tempPassword = Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(tempPassword, 12);
+
+    // Handle driver license if provided
+    let driver_license_id = null;
+    if (driver_license_no && driver_license_no.trim()) {
+      // Check if license already exists
+      let license = await prisma.driverLicense.findUnique({
+        where: { driver_license_no: driver_license_no.trim() },
+      });
+
+      // If not exists, create it
+      if (!license) {
+        license = await prisma.driverLicense.create({
+          data: {
+            driver_license_no: driver_license_no.trim(),
+          },
+        });
+      }
+
+      driver_license_id = license.license_id;
+    }
 
     const newWalkInCustomer = await prisma.customer.create({
       data: {
@@ -384,7 +432,7 @@ export const createWalkInCustomer = async (req, res) => {
         isRecUpdate: 1, // SMS only for walk-ins by default
         status: "active",
         date_created: new Date(),
-        driver_license_no,
+        driver_license_id,
       },
       include: {
         driver_license: true,
@@ -392,7 +440,7 @@ export const createWalkInCustomer = async (req, res) => {
     });
 
     const { password: _pw, ...safeCustomer } = newWalkInCustomer;
-    
+
     res.status(201).json({
       success: true,
       message: "Walk-in customer created successfully",
@@ -402,13 +450,13 @@ export const createWalkInCustomer = async (req, res) => {
   } catch (error) {
     console.error("Failed to create walk-in customer:", error);
     if (error?.code === "P2002") {
-      return res.status(409).json({ 
-        error: "Customer with this contact number or email already exists" 
+      return res.status(409).json({
+        error: "Customer with this contact number or email already exists",
       });
     }
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to create walk-in customer",
-      details: error.message 
+      details: error.message,
     });
   }
 };
@@ -419,18 +467,13 @@ export const createWalkInCustomer = async (req, res) => {
 export const convertWalkInToRegistered = async (req, res) => {
   try {
     const customerId = parseInt(req.params.id);
-    const { 
-      username, 
-      password, 
-      email, 
-      address, 
-      fb_link 
-    } = req.body;
+    const { username, password, email, address, fb_link } = req.body;
 
     // Validate required fields for full registration
     if (!username || !password || !email) {
       return res.status(400).json({
-        error: "username, password, and email are required to convert to full account",
+        error:
+          "username, password, and email are required to convert to full account",
       });
     }
 
@@ -444,8 +487,8 @@ export const convertWalkInToRegistered = async (req, res) => {
     }
 
     if (!existingCustomer.is_walk_in) {
-      return res.status(400).json({ 
-        error: "Customer is already a registered account" 
+      return res.status(400).json({
+        error: "Customer is already a registered account",
       });
     }
 
@@ -470,7 +513,7 @@ export const convertWalkInToRegistered = async (req, res) => {
     });
 
     const { password: _pw, ...safeCustomer } = updatedCustomer;
-    
+
     res.status(200).json({
       success: true,
       message: "Walk-in customer converted to full account successfully",
@@ -479,13 +522,13 @@ export const convertWalkInToRegistered = async (req, res) => {
   } catch (error) {
     console.error("Failed to convert walk-in customer:", error);
     if (error?.code === "P2002") {
-      return res.status(409).json({ 
-        error: "Username or email already exists" 
+      return res.status(409).json({
+        error: "Username or email already exists",
       });
     }
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to convert walk-in customer",
-      details: error.message 
+      details: error.message,
     });
   }
 };

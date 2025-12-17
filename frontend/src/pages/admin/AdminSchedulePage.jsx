@@ -98,7 +98,8 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
   const customerName = schedule.customer_name || 'N/A';
   const contactNo = schedule.contact_no || 'N/A';
   const driverName = schedule.driver_name || null;
-  const isSelfDriver = schedule.isSelfDriver || schedule.is_self_driver || false;
+  const isSelfDriver =
+    schedule.isSelfDriver || schedule.is_self_driver || false;
   const startDate = schedule.start_date || schedule.startDate;
   const endDate = schedule.end_date || schedule.endDate;
   const pickupTime = schedule.pickup_time || schedule.pickupTime || startDate;
@@ -336,10 +337,10 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ 
-                    fontWeight: 600, 
+                  sx={{
+                    fontWeight: 600,
                     color: isSelfDriver ? '#757575' : '#2196f3',
-                    fontStyle: isSelfDriver ? 'italic' : 'normal'
+                    fontStyle: isSelfDriver ? 'italic' : 'normal',
                   }}
                 >
                   {isSelfDriver ? 'Self-Driven' : driverName}

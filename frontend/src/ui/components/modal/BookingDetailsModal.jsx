@@ -70,8 +70,7 @@ export default function BookingDetailsModal({
             const driver = await response.json();
             setDriverName(driver.first_name || '');
           }
-        } catch (error) {
-        }
+        } catch (error) {}
       };
       fetchDriverName();
     } else {
@@ -163,6 +162,24 @@ export default function BookingDetailsModal({
       month: 'short',
       day: 'numeric',
       year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const formatDateOnly = (date) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const formatTimeOnly = (time) => {
+    if (!time) return 'N/A';
+    return new Date(time).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
@@ -776,8 +793,10 @@ export default function BookingDetailsModal({
                       Car Make & Model:
                     </Typography>
                     <Typography variant="body1" fontWeight="medium">
-                      {booking.car_model || 
-                       (booking.car_make ? `${booking.car_make} ${booking.car_year || ''}`.trim() : 'N/A')}
+                      {booking.car_model ||
+                        (booking.car_make
+                          ? `${booking.car_make} ${booking.car_year || ''}`.trim()
+                          : 'N/A')}
                     </Typography>
                   </Box>
                   <Box>
@@ -816,8 +835,14 @@ export default function BookingDetailsModal({
                     <Typography variant="body2" color="text.secondary">
                       Daily Rate:
                     </Typography>
-                    <Typography variant="body1" fontWeight="medium" color="primary.main">
-                      {booking.car_rent_price ? `₱${booking.car_rent_price.toLocaleString()}` : 'N/A'}
+                    <Typography
+                      variant="body1"
+                      fontWeight="medium"
+                      color="primary.main"
+                    >
+                      {booking.car_rent_price
+                        ? `₱${booking.car_rent_price.toLocaleString()}`
+                        : 'N/A'}
                     </Typography>
                   </Box>
                 </Box>
@@ -845,7 +870,7 @@ export default function BookingDetailsModal({
                       Start date:
                     </Typography>
                     <Typography variant="body1" fontWeight="medium">
-                      {formatDateTime(booking.start_date)}
+                      {formatDateOnly(booking.start_date)}
                     </Typography>
                   </Box>
                   <Box>
@@ -853,7 +878,7 @@ export default function BookingDetailsModal({
                       End date:
                     </Typography>
                     <Typography variant="body1" fontWeight="medium">
-                      {formatDateTime(booking.end_date)}
+                      {formatDateOnly(booking.end_date)}
                     </Typography>
                   </Box>
                   <Box>
@@ -861,7 +886,7 @@ export default function BookingDetailsModal({
                       Pick-up time:
                     </Typography>
                     <Typography variant="body1" fontWeight="medium">
-                      {formatDateTime(booking.pickup_time)}
+                      {formatTimeOnly(booking.pickup_time)}
                     </Typography>
                   </Box>
                   <Box>
@@ -869,7 +894,7 @@ export default function BookingDetailsModal({
                       Drop-off time:
                     </Typography>
                     <Typography variant="body1" fontWeight="medium">
-                      {formatDateTime(booking.dropoff_time)}
+                      {formatTimeOnly(booking.dropoff_time)}
                     </Typography>
                   </Box>
                   {booking.isExtend && booking.new_end_date && (
@@ -882,7 +907,7 @@ export default function BookingDetailsModal({
                         fontWeight="medium"
                         color="warning.main"
                       >
-                        {formatDateTime(booking.new_end_date)}
+                        {formatDateOnly(booking.new_end_date)}
                       </Typography>
                     </Box>
                   )}

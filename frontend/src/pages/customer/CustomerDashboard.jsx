@@ -194,16 +194,23 @@ function CustomerDashboard() {
             .filter((schedule) => {
               const status = schedule.booking_status?.toLowerCase();
               // Include only in-progress bookings that are not cancelled
-              return (status === 'in progress' || status === 'in_progress') && !schedule.isCancel;
+              return (
+                (status === 'in progress' || status === 'in_progress') &&
+                !schedule.isCancel
+              );
             })
             .map((schedule) => ({
               ...schedule,
               // Use new_end_date if booking is extended, otherwise use end_date
-              effective_end_date: schedule.isExtended && schedule.new_end_date
-                ? schedule.new_end_date
-                : schedule.end_date,
+              effective_end_date:
+                schedule.isExtended && schedule.new_end_date
+                  ? schedule.new_end_date
+                  : schedule.end_date,
             }))
-            .sort((a, b) => new Date(a.effective_end_date) - new Date(b.effective_end_date))
+            .sort(
+              (a, b) =>
+                new Date(a.effective_end_date) - new Date(b.effective_end_date)
+            )
         : [];
 
       // Get today's schedules (only Confirmed and In Progress bookings)
@@ -302,7 +309,9 @@ function CustomerDashboard() {
 
       // Fetch customer profile information for tier display
       try {
-        const profileResponse = await authFetch(`${API_BASE}/customers/profile`);
+        const profileResponse = await authFetch(
+          `${API_BASE}/customers/profile`
+        );
         if (profileResponse.ok) {
           const profileData = await profileResponse.json();
           setCustomerInfo({
@@ -382,7 +391,6 @@ function CustomerDashboard() {
         {/* Welcome Header */}
         {!loading && (
           <>
-            
             {/* Weekly Calendar View - For Release & For Return */}
             <Box
               sx={{
@@ -393,6 +401,7 @@ function CustomerDashboard() {
               <WeeklyCalendarView
                 forRelease={dashboardData.forReleaseWeekly || []}
                 forReturn={dashboardData.forReturnWeekly || []}
+                isCustomer={true}
               />
             </Box>
 
@@ -708,7 +717,17 @@ function CustomerDashboard() {
                         mb: { xs: 1, md: 1.5 },
                       }}
                     >
-                      TOTAL UNPAID: ₱{dashboardData.unpaidSettlements?.reduce((sum, settlement) => sum + (parseFloat(settlement.balance) || parseFloat(settlement.total_amount) || 0), 0).toLocaleString()}
+                      TOTAL UNPAID: ₱
+                      {dashboardData.unpaidSettlements
+                        ?.reduce(
+                          (sum, settlement) =>
+                            sum +
+                            (parseFloat(settlement.balance) ||
+                              parseFloat(settlement.total_amount) ||
+                              0),
+                          0
+                        )
+                        .toLocaleString()}
                     </Typography>
 
                     <Button

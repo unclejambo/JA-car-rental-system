@@ -14,7 +14,11 @@ import {
 import { CarRental, Event, Warning } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 
-export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) {
+export default function WeeklyCalendarView({
+  forRelease = [],
+  forReturn = [],
+  isCustomer = false,
+}) {
   const [view, setView] = useState('release');
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -23,7 +27,7 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - dayOfWeek + (weekOffset * 7));
+    startOfWeek.setDate(today.getDate() - dayOfWeek + weekOffset * 7);
     startOfWeek.setHours(0, 0, 0, 0);
 
     return Array.from({ length: 7 }, (_, i) => {
@@ -47,7 +51,9 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
       const bookingDate = new Date(
         view === 'release'
           ? booking.pickup_time || booking.start_date
-          : booking.effective_end_date || booking.dropoff_time || booking.end_date
+          : booking.dropoff_time ||
+            booking.effective_end_date ||
+            booking.end_date
       );
       const dateKey = bookingDate.toDateString();
       if (grouped[dateKey]) {
@@ -80,7 +86,7 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
     const targetDate = new Date(
       view === 'release'
         ? booking.pickup_time || booking.start_date
-        : booking.effective_end_date || booking.dropoff_time || booking.end_date
+        : booking.dropoff_time || booking.effective_end_date || booking.end_date
     );
     const isOverdue = targetDate < now;
 
@@ -103,11 +109,11 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
     const targetDate = new Date(
       view === 'release'
         ? b.pickup_time || b.start_date
-        : b.effective_end_date || b.dropoff_time || b.end_date
+        : b.dropoff_time || b.effective_end_date || b.end_date
     );
     // Check if booking falls within the displayed week
     const inWeek = targetDate >= startOfWeek && targetDate <= endOfWeek;
-    
+
     if (weekOffset === 0) {
       // Current week: only show non-overdue bookings
       return inWeek && targetDate >= now;
@@ -116,15 +122,17 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
       return inWeek && targetDate >= now;
     }
   });
-  
+
   const overdueBookings = currentData.filter((b) => {
     const targetDate = new Date(
       view === 'release'
         ? b.pickup_time || b.start_date
-        : b.effective_end_date || b.dropoff_time || b.end_date
+        : b.dropoff_time || b.effective_end_date || b.end_date
     );
     // Check if booking falls within the displayed week and is overdue
-    return targetDate >= startOfWeek && targetDate <= endOfWeek && targetDate < now;
+    return (
+      targetDate >= startOfWeek && targetDate <= endOfWeek && targetDate < now
+    );
   });
 
   return (
@@ -173,7 +181,13 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
                 fontSize: { xs: '1.125rem', md: '1.25rem' },
               }}
             >
-              {view === 'release' ? 'FOR RELEASE' : 'FOR RETURN'}
+              {view === 'release'
+                ? isCustomer
+                  ? 'TO PICKUP'
+                  : 'FOR RELEASE'
+                : isCustomer
+                  ? 'TO RETURN'
+                  : 'FOR RETURN'}
             </Typography>
             <Typography
               variant="body2"
@@ -182,12 +196,25 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
                 fontSize: { xs: '0.75rem', md: '0.875rem' },
               }}
             >
-              {view === 'release' ? 'Pending vehicle releases' : 'Completed returns'}
+              {view === 'release'
+                ? isCustomer
+                  ? 'Your upcoming pickups'
+                  : 'Pending vehicle releases'
+                : isCustomer
+                  ? 'Your upcoming returns'
+                  : 'Completed returns'}
             </Typography>
           </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            flexWrap: 'wrap',
+          }}
+        >
           <Chip
             label={
               activeBookings.length > 0 && overdueBookings.length > 0
@@ -236,7 +263,9 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
               },
             }}
           >
-            <ToggleButton value="release">RELEASE</ToggleButton>
+            <ToggleButton value="release">
+              {isCustomer ? 'PICKUP' : 'RELEASE'}
+            </ToggleButton>
             <ToggleButton value="return">RETURN</ToggleButton>
           </ToggleButtonGroup>
 
@@ -263,7 +292,11 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
                 whiteSpace: 'nowrap',
               }}
             >
-              {weekOffset === 0 ? 'This Week' : weekOffset > 0 ? `+${weekOffset}w` : `${weekOffset}w`}
+              {weekOffset === 0
+                ? 'This Week'
+                : weekOffset > 0
+                  ? `+${weekOffset}w`
+                  : `${weekOffset}w`}
             </Typography>
             <Button
               size="small"
@@ -307,165 +340,184 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
             mb: 2,
           }}
         >
-              {weekDates.map((date, index) => {
-                const dateKey = date.toDateString();
-                const bookings = groupedByDate[dateKey] || [];
-                const todayDate = isToday(date);
-                const pastDate = isPast(date);
+          {weekDates.map((date, index) => {
+            const dateKey = date.toDateString();
+            const bookings = groupedByDate[dateKey] || [];
+            const todayDate = isToday(date);
+            const pastDate = isPast(date);
 
-                return (
-                  <Box
-                    key={index}
-                    sx={{
-                      border: '1px solid',
-                      borderColor: todayDate ? '#c10007' : '#e0e0e0',
-                      borderRadius: 1,
-                      p: { xs: 0.5, md: 1 },
-                      bgcolor: todayDate
-                        ? 'rgba(193, 0, 7, 0.05)'
-                        : pastDate
-                          ? '#fafafa'
-                          : '#fff',
-                      minHeight: { xs: 80, md: 100 },
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        transform: 'translateY(-2px)',
-                      },
-                    }}
-                  >
-                    {/* Day Header */}
+            return (
+              <Box
+                key={index}
+                sx={{
+                  border: '1px solid',
+                  borderColor: todayDate ? '#c10007' : '#e0e0e0',
+                  borderRadius: 1,
+                  p: { xs: 0.5, md: 1 },
+                  bgcolor: todayDate
+                    ? 'rgba(193, 0, 7, 0.05)'
+                    : pastDate
+                      ? '#fafafa'
+                      : '#fff',
+                  minHeight: { xs: 80, md: 100 },
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    transform: 'translateY(-2px)',
+                  },
+                }}
+              >
+                {/* Day Header */}
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 700,
+                    color: todayDate ? '#c10007' : 'text.secondary',
+                    display: 'block',
+                    mb: 0.5,
+                    fontSize: { xs: '0.65rem', md: '0.75rem' },
+                  }}
+                >
+                  {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                </Typography>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 700,
+                    color: todayDate ? '#c10007' : 'text.primary',
+                    mb: 0.5,
+                    fontSize: { xs: '0.875rem', md: '1rem' },
+                  }}
+                >
+                  {date.getDate()}
+                </Typography>
+
+                {/* Bookings */}
+                <Box
+                  sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}
+                >
+                  {bookings.slice(0, 3).map((booking) => {
+                    const status = getStatusInfo(booking);
+                    const time = new Date(
+                      view === 'release'
+                        ? booking.pickup_time || booking.start_date
+                        : booking.dropoff_time ||
+                          booking.effective_end_date ||
+                          booking.end_date
+                    );
+
+                    return (
+                      <Tooltip
+                        key={booking.booking_id}
+                        title={
+                          <Box>
+                            <Typography
+                              variant="caption"
+                              sx={{ fontWeight: 700 }}
+                            >
+                              {booking.customer_name}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{ display: 'block' }}
+                            >
+                              {booking.car_model}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{ display: 'block' }}
+                            >
+                              {time.toLocaleTimeString('en-US', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </Typography>
+                            {view === 'return' && booking.isExtended && (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  display: 'block',
+                                  color: '#ffeb3b',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                ⚡ Extended
+                              </Typography>
+                            )}
+                          </Box>
+                        }
+                        arrow
+                      >
+                        <Box
+                          sx={{
+                            bgcolor: status.color,
+                            borderRadius: 0.5,
+                            p: { xs: 0.25, md: 0.5 },
+                            cursor: 'pointer',
+                            border:
+                              view === 'return' && booking.isExtended
+                                ? '1px solid #ffeb3b'
+                                : 'none',
+                            boxShadow:
+                              view === 'return' && booking.isExtended
+                                ? '0 0 4px rgba(255, 235, 59, 0.5)'
+                                : 'none',
+                            '&:hover': {
+                              opacity: 0.8,
+                            },
+                          }}
+                        >
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: '#fff',
+                              fontSize: { xs: '0.55rem', md: '0.65rem' },
+                              fontWeight: 600,
+                              display: 'block',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {view === 'return' && booking.isExtended && '⚡ '}
+                            {time.toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            })}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: '#fff',
+                              fontSize: { xs: '0.5rem', md: '0.6rem' },
+                              display: 'block',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {booking.customer_name}
+                          </Typography>
+                        </Box>
+                      </Tooltip>
+                    );
+                  })}
+                  {bookings.length > 3 && (
                     <Typography
                       variant="caption"
                       sx={{
-                        fontWeight: 700,
-                        color: todayDate ? '#c10007' : 'text.secondary',
-                        display: 'block',
-                        mb: 0.5,
-                        fontSize: { xs: '0.65rem', md: '0.75rem' },
+                        color: 'text.secondary',
+                        fontSize: { xs: '0.5rem', md: '0.6rem' },
+                        textAlign: 'center',
                       }}
                     >
-                      {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                      +{bookings.length - 3} more
                     </Typography>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 700,
-                        color: todayDate ? '#c10007' : 'text.primary',
-                        mb: 0.5,
-                        fontSize: { xs: '0.875rem', md: '1rem' },
-                      }}
-                    >
-                      {date.getDate()}
-                    </Typography>
-
-                    {/* Bookings */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                      {bookings.slice(0, 3).map((booking) => {
-                        const status = getStatusInfo(booking);
-                        const time = new Date(
-                          view === 'release'
-                            ? booking.pickup_time || booking.start_date
-                            : booking.effective_end_date || booking.dropoff_time || booking.end_date
-                        );
-
-                        return (
-                          <Tooltip
-                            key={booking.booking_id}
-                            title={
-                              <Box>
-                                <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                                  {booking.customer_name}
-                                </Typography>
-                                <Typography variant="caption" sx={{ display: 'block' }}>
-                                  {booking.car_model}
-                                </Typography>
-                                <Typography variant="caption" sx={{ display: 'block' }}>
-                                  {time.toLocaleTimeString('en-US', {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
-                                </Typography>
-                                {view === 'return' && booking.isExtended && (
-                                  <Typography 
-                                    variant="caption" 
-                                    sx={{ 
-                                      display: 'block', 
-                                      color: '#ffeb3b',
-                                      fontWeight: 700 
-                                    }}
-                                  >
-                                    ⚡ Extended
-                                  </Typography>
-                                )}
-                              </Box>
-                            }
-                            arrow
-                          >
-                            <Box
-                              sx={{
-                                bgcolor: status.color,
-                                borderRadius: 0.5,
-                                p: { xs: 0.25, md: 0.5 },
-                                cursor: 'pointer',
-                                border: view === 'return' && booking.isExtended ? '1px solid #ffeb3b' : 'none',
-                                boxShadow: view === 'return' && booking.isExtended ? '0 0 4px rgba(255, 235, 59, 0.5)' : 'none',
-                                '&:hover': {
-                                  opacity: 0.8,
-                                },
-                              }}
-                            >
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  color: '#fff',
-                                  fontSize: { xs: '0.55rem', md: '0.65rem' },
-                                  fontWeight: 600,
-                                  display: 'block',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {view === 'return' && booking.isExtended && '⚡ '}
-                                {time.toLocaleTimeString('en-US', {
-                                  hour: 'numeric',
-                                  minute: '2-digit',
-                                })}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  color: '#fff',
-                                  fontSize: { xs: '0.5rem', md: '0.6rem' },
-                                  display: 'block',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {booking.customer_name}
-                              </Typography>
-                            </Box>
-                          </Tooltip>
-                        );
-                      })}
-                      {bookings.length > 3 && (
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: 'text.secondary',
-                            fontSize: { xs: '0.5rem', md: '0.6rem' },
-                            textAlign: 'center',
-                          }}
-                        >
-                          +{bookings.length - 3} more
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
-                );
-              })}
+                  )}
+                </Box>
+              </Box>
+            );
+          })}
         </Box>
 
         {/* View All Button */}
@@ -487,7 +539,12 @@ export default function WeeklyCalendarView({ forRelease = [], forReturn = [] }) 
             py: { xs: 1, md: 1.5 },
           }}
         >
-          View All {view === 'release' ? 'Releases' : 'Returns'}
+          View All{' '}
+          {view === 'release'
+            ? isCustomer
+              ? 'Pickups'
+              : 'Releases'
+            : 'Returns'}
         </Button>
       </CardContent>
     </Card>

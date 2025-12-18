@@ -2832,6 +2832,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         open={showTermsModal}
         onClose={() => setShowTermsModal(false)}
         onAgree={handleAgreeTerms}
+        hidePersonalInfoSection={true}
       />
     </Dialog>
   );

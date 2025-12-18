@@ -43,6 +43,7 @@ import {
 } from 'react-icons/hi';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
 import { useAuth } from '../../../hooks/useAuth';
+import RegisterTermsAndConditionsModal from '../../modals/RegisterTermsAndConditionsModal';
 
 const API_BASE = getApiBase();
 
@@ -58,6 +59,8 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
   const [error, setError] = useState('');
   const [drivers, setDrivers] = useState([]);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [hasViewedTerms, setHasViewedTerms] = useState(false);
   const [isSelfService, setIsSelfService] = useState(true);
   const [missingFields, setMissingFields] = useState([]);
   const [availableDates, setAvailableDates] = useState(null);
@@ -88,7 +91,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
     customPurpose: '',
     startDate: '',
     endDate: '',
-    pickupTime: '09:00',  // Default to 9 AM
+    pickupTime: '09:00', // Default to 9 AM
     dropoffTime: '17:00', // Default to 5 PM
     deliveryLocation: '',
     pickupLocation: 'JA Car Rental Office', // Default pickup location
@@ -108,7 +111,12 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
     selectedDriver: useRef(null),
   };
 
-  const steps = ['Service Type', 'Booking Details', 'Car Use Notice', 'Confirmation'];
+  const steps = [
+    'Service Type',
+    'Booking Details',
+    'Car Use Notice',
+    'Confirmation',
+  ];
 
   // Get today's date for minimum date validation
   const getMinimumDate = () => {
@@ -130,7 +138,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         customPurpose: '',
         startDate: '',
         endDate: '',
-        pickupTime: '09:00',  // Default 9 AM
+        pickupTime: '09:00', // Default 9 AM
         dropoffTime: '17:00', // Default 5 PM
         deliveryLocation: '',
         pickupLocation: 'JA Car Rental Office', // Default location
@@ -144,6 +152,8 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
       setActiveStep(0);
       setHasDateConflict(false);
       setTermsAccepted(false); // Reset terms acceptance
+      setShowTermsModal(false); // Reset terms modal visibility
+      setHasViewedTerms(false); // Reset terms viewed flag
     }
   }, [open, car]);
 
@@ -443,6 +453,30 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
+  };
+
+  const handleShowTerms = () => {
+    setShowTermsModal(true);
+  };
+
+  const handleAgreeTerms = () => {
+    setShowTermsModal(false);
+    setHasViewedTerms(true); // Mark that terms have been viewed
+    setTermsAccepted(true); // Auto-check the checkbox when agreeing
+    // Remove focus from any previously focused element
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
+  };
+
+  const handleCheckboxClick = (e) => {
+    // If checkbox is disabled (terms not viewed), show warning
+    if (!hasViewedTerms) {
+      e.preventDefault();
+      setError('⚠️ Please read the Terms and Conditions first');
+      // Clear the error after 3 seconds
+      setTimeout(() => setError(''), 3000);
+    }
   };
 
   const handleNext = () => {
@@ -1972,10 +2006,10 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
         {/* Step 2: Car Use Notice */}
         {activeStep === 2 && (
           <Box sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 } }}>
-            <Card 
-              sx={{ 
+            <Card
+              sx={{
                 border: '2px solid #c10007',
-                mb: 2
+                mb: 2,
               }}
             >
               <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
@@ -1990,7 +2024,7 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                 >
                   J & A Car Rental – Car Use Notice
                 </Typography>
-                
+
                 <Typography
                   variant="body1"
                   sx={{ mb: 2, fontSize: { xs: '0.9rem', sm: '1rem' } }}
@@ -2001,56 +2035,86 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                 <Box sx={{ pl: { xs: 1, sm: 2 }, mb: 3 }}>
                   <Typography
                     variant="body2"
-                    sx={{ 
+                    sx={{
                       mb: 1.5,
                       fontSize: { xs: '0.85rem', sm: '0.95rem' },
-                      lineHeight: 1.6
+                      lineHeight: 1.6,
                     }}
                   >
                     • Use the car for legal purposes only
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ 
+                    sx={{
                       mb: 1.5,
                       fontSize: { xs: '0.85rem', sm: '0.95rem' },
-                      lineHeight: 1.6
+                      lineHeight: 1.6,
                     }}
                   >
                     • Do not sublease or allow unauthorized drivers
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ 
+                    sx={{
                       mb: 1.5,
                       fontSize: { xs: '0.85rem', sm: '0.95rem' },
-                      lineHeight: 1.6
+                      lineHeight: 1.6,
                     }}
                   >
                     • Return the vehicle on or before the agreed date and time
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ 
+                    sx={{
                       fontSize: { xs: '0.85rem', sm: '0.95rem' },
-                      lineHeight: 1.6
+                      lineHeight: 1.6,
                     }}
                   >
-                    • Customer is responsible for traffic violations, damages, or losses during the rental period
+                    • Customer is responsible for traffic violations, damages,
+                    or losses during the rental period
                   </Typography>
                 </Box>
 
-                <Box 
-                  sx={{ 
+                <Box
+                  sx={{
                     mt: 3,
                     pt: 2,
-                    borderTop: '1px solid #e0e0e0'
+                    borderTop: '1px solid #e0e0e0',
                   }}
                 >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mb: 1.5,
+                      fontSize: { xs: '0.9rem', sm: '1rem' },
+                    }}
+                  >
+                    For detailed terms, please review our full{' '}
+                    <button
+                      type="button"
+                      onClick={handleShowTerms}
+                      style={{
+                        color: '#c10007',
+                        textDecoration: 'underline',
+                        fontWeight: 600,
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                        transition: 'color 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => (e.target.style.color = '#a00006')}
+                      onMouseLeave={(e) => (e.target.style.color = '#c10007')}
+                    >
+                      Terms and Conditions
+                    </button>
+                  </Typography>
                   <FormControlLabel
                     control={
                       <Checkbox
                         checked={termsAccepted}
+                        disabled={!hasViewedTerms}
+                        onClick={handleCheckboxClick}
                         onChange={(e) => {
                           setTermsAccepted(e.target.checked);
                           if (e.target.checked) {
@@ -2062,15 +2126,18 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                           '&.Mui-checked': {
                             color: '#c10007',
                           },
+                          '&.Mui-disabled': {
+                            opacity: 0.6,
+                          },
                         }}
                       />
                     }
                     label={
-                      <Typography 
+                      <Typography
                         variant="body2"
-                        sx={{ 
+                        sx={{
                           fontWeight: 'bold',
-                          fontSize: { xs: '0.9rem', sm: '1rem' }
+                          fontSize: { xs: '0.9rem', sm: '1rem' },
                         }}
                       >
                         I agree to these terms
@@ -2354,7 +2421,8 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
                             (new Date(formData.endDate) -
                               new Date(formData.startDate)) /
                               (1000 * 60 * 60 * 24)
-                          ) + 1) *
+                          ) +
+                            1) *
                           car.rent_price
                         ).toLocaleString()}
                       </Typography>
@@ -2436,71 +2504,104 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
               </Card>
 
               {/* Potential Additional Fees Warning */}
-              <Card sx={{ backgroundColor: '#fff3e0', border: '2px solid #ff9800', mt: 2 }}>
+              <Card
+                sx={{
+                  backgroundColor: '#fff3e0',
+                  border: '2px solid #ff9800',
+                  mt: 2,
+                }}
+              >
                 <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      mb: 2,
+                    }}
+                  >
                     <HiExclamationCircle size={24} color="#e65100" />
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#e65100' }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: 'bold', color: '#e65100' }}
+                    >
                       ⚠️ Potential Additional Fees
                     </Typography>
                   </Box>
-                  
+
                   <Alert severity="warning" sx={{ mb: 2 }}>
                     <Typography variant="body2">
-                      These fees only apply <strong>if issues occur</strong> during or after your rental
+                      These fees only apply <strong>if issues occur</strong>{' '}
+                      during or after your rental
                     </Typography>
                   </Alert>
-                  
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+
+                  <Box
+                    sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}
+                  >
                     <Box>
                       <Typography variant="body2" fontWeight="bold">
                         🕐 Late Return Fee
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        ₱500 per hour (first 2 hours), then full day rate thereafter
+                        ₱500 per hour (first 2 hours), then full day rate
+                        thereafter
                       </Typography>
                     </Box>
-                    
+
                     <Box>
                       <Typography variant="body2" fontWeight="bold">
                         ⛽ Fuel Level Difference
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        ₱500 per level below pickup level (must return with same fuel level)
+                        ₱500 per level below pickup level (must return with same
+                        fuel level)
                       </Typography>
                     </Box>
-                    
+
                     <Box>
                       <Typography variant="body2" fontWeight="bold">
                         🧰 Missing Equipment
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        ₱1,000 per missing item (spare tire, jack, first aid kit, etc.)
+                        ₱1,000 per missing item (spare tire, jack, first aid
+                        kit, etc.)
                       </Typography>
                     </Box>
-                    
+
                     <Box>
                       <Typography variant="body2" fontWeight="bold">
                         🚗 Vehicle Damage
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Assessed based on actual repair cost (you'll be notified before charging)
+                        Assessed based on actual repair cost (you'll be notified
+                        before charging)
                       </Typography>
                     </Box>
-                    
+
                     <Box>
                       <Typography variant="body2" fontWeight="bold">
                         🧼 Deep Cleaning/Stain Removal
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        ₱500 if excessive dirt or stains require special cleaning
+                        ₱500 if excessive dirt or stains require special
+                        cleaning
                       </Typography>
                     </Box>
                   </Box>
-                  
-                  <Box sx={{ mt: 2, p: 1.5, bgcolor: 'rgba(255, 152, 0, 0.1)', borderRadius: 1 }}>
+
+                  <Box
+                    sx={{
+                      mt: 2,
+                      p: 1.5,
+                      bgcolor: 'rgba(255, 152, 0, 0.1)',
+                      borderRadius: 1,
+                    }}
+                  >
                     <Typography variant="caption" color="text.secondary">
-                      💡 <strong>Tip:</strong> Return the vehicle on time, with the same fuel level, and in clean condition to avoid any additional charges.
+                      💡 <strong>Tip:</strong> Return the vehicle on time, with
+                      the same fuel level, and in clean condition to avoid any
+                      additional charges.
                     </Typography>
                   </Box>
                 </CardContent>
@@ -2726,6 +2827,12 @@ export default function BookingModal({ open, onClose, car, onBookingSuccess }) {
           </>
         )}
       </DialogActions>
+
+      <RegisterTermsAndConditionsModal
+        open={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAgree={handleAgreeTerms}
+      />
     </Dialog>
   );
 }

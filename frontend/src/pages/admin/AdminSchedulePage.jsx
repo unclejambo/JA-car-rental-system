@@ -66,9 +66,6 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
     if (tab === 'RELEASE') {
       return { bg: '#e0f2f1', text: '#00695c', border: '#00897b' };
     }
-    if (tab === 'RETURN') {
-      return { bg: '#ede7f6', text: '#4527a0', border: '#5e35b1' };
-    }
     return getStatusColor(status);
   };
 
@@ -88,12 +85,7 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
 
   const status = schedule.booking_status || schedule.status || 'N/A';
   const statusColors = getTabStatusColor(status, activeTab);
-  const statusLabel =
-    activeTab === 'RELEASE'
-      ? 'For Release'
-      : activeTab === 'RETURN'
-        ? 'For Return'
-        : status;
+  const statusLabel = activeTab === 'RELEASE' ? 'For Release' : status;
   const carModel = schedule.car_model || 'Vehicle';
   const customerName = schedule.customer_name || 'N/A';
   const contactNo = schedule.contact_no || 'N/A';
@@ -105,9 +97,7 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
   const pickupTime = schedule.pickup_time || schedule.pickupTime || startDate;
   const dropoffTime = schedule.dropoff_time || schedule.dropoffTime || endDate;
 
-  // Check if return is overdue (only for RETURN tab)
-  const isOverdue =
-    activeTab === 'RETURN' && dropoffTime && new Date(dropoffTime) < new Date();
+  // Cars can be returned anytime, no overdue check needed
   const pickupLoc = schedule.pickup_loc || schedule.pickup_location || 'N/A';
   const dropoffLoc =
     schedule.dropoff_loc ||
@@ -144,8 +134,6 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
         );
       case 'RELEASE':
         return releaseDate || startDate || pickupTime || confirmationDate;
-      case 'RETURN':
-        return dropoffTime || endDate || startDate || pickupTime;
       default:
         return (
           startDate || pickupTime || endDate || dropoffTime || confirmationDate
@@ -226,24 +214,6 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
                 height: 28,
               }}
             />
-            {isOverdue && (
-              <Chip
-                label="OVERDUE"
-                size="small"
-                sx={{
-                  bgcolor: '#ff9800',
-                  color: 'white',
-                  fontWeight: 700,
-                  fontSize: '0.65rem',
-                  height: 24,
-                  animation: 'pulse 2s infinite',
-                  '@keyframes pulse': {
-                    '0%, 100%': { opacity: 1 },
-                    '50%': { opacity: 0.7 },
-                  },
-                }}
-              />
-            )}
           </Stack>
         </Box>
 
@@ -420,11 +390,9 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
                     width: 10,
                     height: 10,
                     borderRadius: '50%',
-                    bgcolor: isOverdue ? '#ff9800' : '#f44336',
+                    bgcolor: '#f44336',
                     mt: 0.5,
-                    boxShadow: isOverdue
-                      ? '0 0 0 4px rgba(255, 152, 0, 0.3)'
-                      : '0 0 0 4px rgba(244, 67, 54, 0.2)',
+                    boxShadow: '0 0 0 4px rgba(244, 67, 54, 0.2)',
                   }}
                 />
                 <Box sx={{ flex: 1 }}>
@@ -440,22 +408,6 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
                     >
                       Drop-off
                     </Typography>
-                    {isOverdue && (
-                      <Chip
-                        label="OVERDUE"
-                        size="small"
-                        sx={{
-                          bgcolor: '#ff9800',
-                          color: 'white',
-                          fontWeight: 700,
-                          fontSize: '0.6rem',
-                          height: 20,
-                          '& .MuiChip-label': {
-                            px: 1,
-                          },
-                        }}
-                      />
-                    )}
                   </Stack>
                   <Stack
                     direction={{ xs: 'column', sm: 'row' }}
@@ -463,15 +415,12 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
                     sx={{ mt: 0.5 }}
                   >
                     <Stack direction="row" spacing={0.5} alignItems="center">
-                      <HiClock
-                        size={16}
-                        color={isOverdue ? '#ff9800' : '#666'}
-                      />
+                      <HiClock size={16} color="#666" />
                       <Typography
                         variant="body2"
                         sx={{
-                          fontWeight: isOverdue ? 600 : 500,
-                          color: isOverdue ? '#ff9800' : 'inherit',
+                          fontWeight: 500,
+                          color: 'inherit',
                         }}
                       >
                         {formatDate(endDate)} • {formatTime(dropoffTime)}
@@ -491,9 +440,7 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
         </Box>
 
         {/* Actions - Conditionally rendered based on active tab */}
-        {(activeTab === 'IN PROGRESS' ||
-          activeTab === 'RELEASE' ||
-          activeTab === 'RETURN') && (
+        {(activeTab === 'IN PROGRESS' || activeTab === 'RELEASE') && (
           <>
             <Divider
               orientation="vertical"
@@ -522,7 +469,7 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
                   Release
                 </Button>
               )}
-              {activeTab === 'RETURN' && (
+              {activeTab === 'IN PROGRESS' && (
                 <Button
                   variant="contained"
                   size="small"
@@ -537,9 +484,7 @@ function ScheduleCard({ schedule, onRelease, onReturn, onGPS, activeTab }) {
                   Return
                 </Button>
               )}
-              {(activeTab === 'IN PROGRESS' ||
-                activeTab === 'RELEASE' ||
-                activeTab === 'RETURN') && (
+              {(activeTab === 'IN PROGRESS' || activeTab === 'RELEASE') && (
                 <Button
                   variant="outlined"
                   size="small"
@@ -575,10 +520,7 @@ export default function AdminSchedulePage() {
   const getInitialTab = () => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
-    if (
-      tab &&
-      ['CONFIRMED', 'IN PROGRESS', 'RELEASE', 'RETURN'].includes(tab)
-    ) {
+    if (tab && ['CONFIRMED', 'IN PROGRESS', 'RELEASE'].includes(tab)) {
       return tab;
     }
     return 'CONFIRMED';
@@ -595,10 +537,7 @@ export default function AdminSchedulePage() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
-    if (
-      tab &&
-      ['CONFIRMED', 'IN PROGRESS', 'RELEASE', 'RETURN'].includes(tab)
-    ) {
+    if (tab && ['CONFIRMED', 'IN PROGRESS', 'RELEASE'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [location.search]);
@@ -700,7 +639,7 @@ export default function AdminSchedulePage() {
 
   const getCounts = () => {
     if (!schedule || schedule.length === 0) {
-      return { CONFIRMED: 0, 'IN PROGRESS': 0, RELEASE: 0, RETURN: 0 };
+      return { CONFIRMED: 0, 'IN PROGRESS': 0, RELEASE: 0 };
     }
 
     const base = schedule.filter((row) => {
@@ -727,20 +666,16 @@ export default function AdminSchedulePage() {
 
     const inProgress = base.filter((r) => {
       const s = (r.status || r.booking_status || '').toString().toLowerCase();
-      // Exclude return candidates (ended/completed) from In Progress
-      if (isReturnCandidate(r)) return false;
+      // Show all In Progress bookings (cars can be returned anytime)
       return s === 'in progress' || s === 'in_progress' || s === 'ongoing';
     }).length;
 
     const release = base.filter((r) => isReleaseCandidate(r)).length;
 
-    const returnCount = base.filter((r) => isReturnCandidate(r)).length;
-
     return {
       CONFIRMED: confirmed,
       'IN PROGRESS': inProgress,
       RELEASE: release,
-      RETURN: returnCount,
     };
   };
 
@@ -782,8 +717,7 @@ export default function AdminSchedulePage() {
           const s = (r.status || r.booking_status || '')
             .toString()
             .toLowerCase();
-          // Exclude return candidates (ended/completed) from In Progress
-          if (isReturnCandidate(r)) return false;
+          // Show all In Progress bookings (cars can be returned anytime)
           return s === 'in progress' || s === 'in_progress' || s === 'ongoing';
         });
 
@@ -791,11 +725,6 @@ export default function AdminSchedulePage() {
         return filtered
           .filter((r) => isReleaseCandidate(r))
           .sort((a, b) => releaseSortValue(b) - releaseSortValue(a));
-
-      case 'RETURN':
-        return filtered
-          .filter((r) => isReturnCandidate(r))
-          .sort((a, b) => returnSortValue(b) - returnSortValue(a));
 
       default:
         return filtered;

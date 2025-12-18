@@ -523,7 +523,7 @@ export default function WeeklyCalendarView({
         {/* View All Button */}
         <Button
           component={Link}
-          to={`/schedule?tab=${view === 'release' ? 'RELEASE' : 'RETURN'}`}
+          to={`/schedule?tab=${view === 'release' ? 'RELEASE' : 'IN PROGRESS'}`}
           variant="outlined"
           fullWidth
           sx={{

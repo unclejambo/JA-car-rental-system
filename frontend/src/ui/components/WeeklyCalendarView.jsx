@@ -360,6 +360,9 @@ export default function WeeklyCalendarView({
                       ? '#fafafa'
                       : '#fff',
                   minHeight: { xs: 80, md: 100 },
+                  maxHeight: { xs: 200, md: 250 },
+                  display: 'flex',
+                  flexDirection: 'column',
                   transition: 'all 0.2s',
                   '&:hover': {
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -392,11 +395,33 @@ export default function WeeklyCalendarView({
                   {date.getDate()}
                 </Typography>
 
-                {/* Bookings */}
+                {/* Bookings - Scrollable Container */}
                 <Box
-                  sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.5,
+                    flex: 1,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    pr: 0.5,
+                    '&::-webkit-scrollbar': {
+                      width: '4px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      backgroundColor: 'rgba(0,0,0,0.05)',
+                      borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      backgroundColor: 'rgba(0,0,0,0.2)',
+                      borderRadius: '4px',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0,0,0,0.3)',
+                      },
+                    },
+                  }}
                 >
-                  {bookings.slice(0, 3).map((booking) => {
+                  {bookings.map((booking) => {
                     const status = getStatusInfo(booking);
                     const time = new Date(
                       view === 'release'
@@ -502,18 +527,6 @@ export default function WeeklyCalendarView({
                       </Tooltip>
                     );
                   })}
-                  {bookings.length > 3 && (
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: 'text.secondary',
-                        fontSize: { xs: '0.5rem', md: '0.6rem' },
-                        textAlign: 'center',
-                      }}
-                    >
-                      +{bookings.length - 3} more
-                    </Typography>
-                  )}
                 </Box>
               </Box>
             );

@@ -4,6 +4,7 @@ import {
   getBookingById,
   createBooking,
   createBookingRequest,
+  createBulkBookings,
   updateBooking,
   deleteBooking,
   getMyBookings,
@@ -32,6 +33,7 @@ const router = express.Router();
 router.get("/", verifyToken, adminOrStaff, getBookings); // Admin only to see all bookings
 router.post("/", verifyToken, requireCustomer, createBooking); // Customer only to create bookings
 router.post("/request", verifyToken, requireCustomer, createBooking); // Alternative endpoint for booking requests
+router.post("/bulk", verifyToken, requireCustomer, createBulkBookings); // Customer bulk booking endpoint
 
 // Named routes (no parameters) - must be before /:id routes
 router.get("/my-bookings/list", verifyToken, requireCustomer, getMyBookings); // Customer sees own bookings

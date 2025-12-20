@@ -18,6 +18,7 @@ function shapePayment(p) {
     transactionId: rest.payment_id, // unify row id key for DataGrid
     paymentId: rest.payment_id,
     bookingId: rest.booking_id,
+    bookingGroupId: rest.booking_group_id,
     customerId: rest.customer_id,
     customerName: [customer?.first_name, customer?.last_name]
       .filter(Boolean)
@@ -75,8 +76,7 @@ export const recalculatePaymentBalances = async (bookingId) => {
         data: { balance: runningBalance },
       });
     }
-  } catch (error) {
-  }
+  } catch (error) {}
 };
 
 // Utility function to determine appropriate booking status based on payments
@@ -730,13 +730,371 @@ export const processBookingPayment = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Payment submitted successfully! Waiting for admin confirmation.",
+      message:
+        "Payment submitted successfully! Waiting for admin confirmation.",
       payment: shapePayment(payment),
       remaining_balance: payment.balance,
       booking_status: bookingStatus,
     });
   } catch (error) {
     res.status(500).json({ error: "Failed to process payment" });
+  }
+};
+
+// @desc    Process payment for a grouped booking (multi-vehicle single settlement)
+// @route   POST /payments/process-booking-group-payment
+// @access  Private (Customer)
+export const processBookingGroupPayment = async (req, res) => {
+  try {
+    const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
+
+    if (!customerId) {
+      return res
+        .status(401)
+        .json({ error: "Customer authentication required" });
+    }
+
+    const { booking_group_id, payment_method, gcash_no, reference_no, amount } =
+      req.body;
+
+    if (!booking_group_id || !amount || !payment_method) {
+      return res.status(400).json({
+        error: "booking_group_id, amount, and payment_method are required",
+      });
+    }
+
+    const group = await prisma.bookingGroup.findUnique({
+      where: { booking_group_id: parseInt(booking_group_id) },
+      include: {
+        customer: {
+          select: {
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true,
+          },
+        },
+        bookings: {
+          include: {
+            payments: { select: { amount: true } },
+            car: {
+              select: {
+                make: true,
+                model: true,
+                year: true,
+                license_plate: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!group) {
+      return res.status(404).json({ error: "Booking group not found" });
+    }
+
+    console.log(`\n=== GROUP FETCH VERIFICATION ===`);
+    console.log(`Group fetched with ${group.bookings.length} bookings`);
+    for (const b of group.bookings) {
+      console.log(
+        `  Booking ${b.booking_id}: total_amount=${b.total_amount}, status=${b.booking_status}`
+      );
+    }
+    console.log(`=== END GROUP FETCH VERIFICATION ===\n`);
+
+    if (group.customer_id !== parseInt(customerId)) {
+      return res
+        .status(403)
+        .json({ error: "You can only pay for your own grouped bookings" });
+    }
+
+    // Validate minimum payment: 1000 per booking in the group
+    const minPaymentPerBooking = 1000;
+    const minPayment = minPaymentPerBooking * (group.booking_count || 1);
+    if (parseInt(amount) < minPayment) {
+      return res.status(400).json({
+        error: `Minimum payment for ${
+          group.booking_count || 1
+        } vehicle(s) is ₱${minPayment.toLocaleString()} (₱1,000 per vehicle)`,
+      });
+    }
+
+    // Create the group-level payment record
+    const payment = await prisma.payment.create({
+      data: {
+        booking_group_id: parseInt(booking_group_id),
+        customer_id: parseInt(customerId),
+        description: `Payment for booking group ${booking_group_id}`,
+        payment_method,
+        gcash_no,
+        reference_no,
+        amount: parseInt(amount),
+        paid_date: new Date(),
+        balance: Math.max(0, (group.total_amount || 0) - parseInt(amount)),
+      },
+      include: {
+        customer: {
+          select: {
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true,
+          },
+        },
+      },
+    });
+
+    // Compute new group balance based on all group payments
+    const allPayments = await prisma.payment.findMany({
+      where: { booking_group_id: parseInt(booking_group_id) },
+      select: { amount: true },
+    });
+
+    const totalPaid = allPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const newBalance = (group.total_amount || 0) - totalPaid;
+
+    const paymentStatus = newBalance <= 0 ? "Paid" : "Unpaid";
+
+    await prisma.bookingGroup.update({
+      where: { booking_group_id: parseInt(booking_group_id) },
+      data: {
+        payment_status: paymentStatus,
+        balance: newBalance,
+      },
+    });
+
+    // Allocate the group payment across individual bookings so admin views and balances update correctly
+    // EQUAL DISTRIBUTION STRATEGY:
+    // 1. Divide total payment equally among all bookings in the group
+    // 2. Allocate equal share to each booking (capped at their remaining balance)
+    // 3. Distribute any remainder sequentially
+
+    const totalToAllocate = parseInt(amount);
+    const bookingsOrdered = group.bookings.sort(
+      (a, b) => a.booking_id - b.booking_id
+    );
+    const numBookings = bookingsOrdered.length;
+
+    console.log(`\n=== EQUAL DISTRIBUTION ALLOCATION START ===`);
+    console.log(`Group ID: ${booking_group_id}`);
+    console.log(`Total Payment: ₱${totalToAllocate}`);
+    console.log(`Number of bookings: ${numBookings}`);
+    console.log(
+      `Bookings in group:`,
+      bookingsOrdered.map((b) => ({ id: b.booking_id, total: b.total_amount }))
+    );
+
+    // Calculate equal share per booking
+    const equalShare = Math.floor(totalToAllocate / numBookings);
+    let remainder = totalToAllocate % numBookings;
+
+    console.log(
+      `Equal share per booking: ₱${equalShare} | Remainder: ₱${remainder}`
+    );
+
+    // Allocate equal share to each booking
+    console.log(`\n=== EQUAL SHARE ALLOCATION PASS ===`);
+    for (const b of bookingsOrdered) {
+      console.log(`\n--- Booking ${b.booking_id} ---`);
+
+      if (!b.total_amount || b.total_amount <= 0) {
+        console.log(`Skipping - invalid total_amount`);
+        continue;
+      }
+
+      // Get current paid for this booking
+      const latestBookingPayments = await prisma.payment.findMany({
+        where: { booking_id: b.booking_id },
+        select: { amount: true },
+      });
+
+      const bookingPaid = latestBookingPayments.reduce(
+        (sum, p) => sum + (p.amount || 0),
+        0
+      );
+      console.log(`Current paid: ₱${bookingPaid}`);
+
+      const bookingTotal = b.total_amount;
+      const bookingRemaining = Math.max(0, bookingTotal - bookingPaid);
+
+      console.log(`Booking remaining: ₱${bookingRemaining}`);
+
+      if (bookingRemaining <= 0) {
+        console.log(`Booking fully paid, skipping allocation`);
+        continue;
+      }
+
+      // Allocate equal share, but capped at booking remaining balance
+      const allocation = Math.min(equalShare, bookingRemaining);
+      console.log(
+        `Allocating equal share: ₱${allocation} to booking ${b.booking_id}`
+      );
+
+      // Create payment record
+      await prisma.payment.create({
+        data: {
+          booking_id: b.booking_id,
+          customer_id: parseInt(customerId),
+          description: `Group payment allocation from Group #${booking_group_id}`,
+          payment_method,
+          gcash_no,
+          reference_no,
+          amount: allocation,
+          paid_date: new Date(),
+          balance: Math.max(0, bookingTotal - (bookingPaid + allocation)),
+        },
+      });
+
+      console.log(
+        `Payment created for booking ${b.booking_id}: ₱${allocation}`
+      );
+    }
+
+    // Allocate remainder one by one to bookings that need it
+    if (remainder > 0) {
+      console.log(
+        `\n=== REMAINDER ALLOCATION PASS: ₱${remainder} to distribute ===`
+      );
+      for (const b of bookingsOrdered) {
+        if (remainder <= 0) {
+          console.log(`Remainder fully distributed`);
+          break;
+        }
+
+        if (!b.total_amount || b.total_amount <= 0) {
+          continue;
+        }
+
+        // Get current paid for this booking (updated)
+        const latestBookingPayments = await prisma.payment.findMany({
+          where: { booking_id: b.booking_id },
+          select: { amount: true },
+        });
+
+        const bookingPaid = latestBookingPayments.reduce(
+          (sum, p) => sum + (p.amount || 0),
+          0
+        );
+
+        const bookingTotal = b.total_amount;
+        const bookingRemaining = Math.max(0, bookingTotal - bookingPaid);
+
+        if (bookingRemaining <= 0) {
+          console.log(`Booking ${b.booking_id} fully paid, skipping remainder`);
+          continue;
+        }
+
+        // Allocate 1 from remainder
+        const remainderAllocation = Math.min(1, remainder, bookingRemaining);
+        console.log(
+          `\nAllocating remainder: ₱${remainderAllocation} to booking ${b.booking_id}`
+        );
+
+        await prisma.payment.create({
+          data: {
+            booking_id: b.booking_id,
+            customer_id: parseInt(customerId),
+            description: `Group payment allocation from Group #${booking_group_id}`,
+            payment_method,
+            gcash_no,
+            reference_no,
+            amount: remainderAllocation,
+            paid_date: new Date(),
+            balance: Math.max(
+              0,
+              bookingTotal - (bookingPaid + remainderAllocation)
+            ),
+          },
+        });
+
+        remainder -= remainderAllocation;
+        console.log(`Remainder left: ₱${remainder}`);
+      }
+    }
+
+    // Update all bookings with their final status based on current total paid
+    console.log(`\n=== UPDATING BOOKING STATUS ===`);
+    for (const b of bookingsOrdered) {
+      // Get final paid amount for this booking
+      const finalPayments = await prisma.payment.findMany({
+        where: { booking_id: b.booking_id },
+        select: { amount: true },
+      });
+
+      const finalPaid = finalPayments.reduce(
+        (sum, p) => sum + (p.amount || 0),
+        0
+      );
+      const finalBalance = Math.max(0, b.total_amount - finalPaid);
+      const isFullyPaid = finalBalance <= 0;
+      const newBookingStatus = isFullyPaid
+        ? "Confirmed"
+        : b.booking_status || "Pending";
+
+      console.log(
+        `Booking ${b.booking_id}: Paid=₱${finalPaid}, Balance=₱${finalBalance}, Status=${newBookingStatus}`
+      );
+
+      await prisma.booking.update({
+        where: { booking_id: b.booking_id },
+        data: {
+          isPay: finalPaid > 0,
+          booking_status: newBookingStatus,
+          payment_status: isFullyPaid ? "Paid" : "Grouped",
+          balance: finalBalance,
+        },
+      });
+    }
+
+    console.log(`\n=== ALLOCATION END ===\n`);
+
+    if (payment_method === "GCash") {
+      try {
+        await sendAdminPaymentRequestNotification(
+          {
+            payment_id: payment.payment_id,
+            payment_method,
+            gcash_no,
+            reference_no,
+            amount: parseInt(amount),
+            description: payment.description,
+          },
+          {
+            customer_id: parseInt(customerId),
+            first_name: group.customer.first_name,
+            last_name: group.customer.last_name,
+            email: group.customer.email,
+            contact_no: group.customer.contact_no,
+          },
+          {
+            booking_id: booking_group_id,
+            start_date: group.bookings[0]?.start_date,
+            end_date: group.bookings[0]?.end_date,
+            total_amount: group.total_amount,
+          },
+          {
+            make: group.bookings[0]?.car?.make,
+            model: group.bookings[0]?.car?.model,
+            year: group.bookings[0]?.car?.year,
+            license_plate: group.bookings[0]?.car?.license_plate,
+          }
+        );
+      } catch (adminNotifyError) {}
+    }
+
+    res.status(201).json({
+      success: true,
+      message:
+        "Payment submitted for grouped booking. Waiting for admin confirmation.",
+      payment: shapePayment(payment),
+      remaining_balance: newBalance,
+      booking_group_id: parseInt(booking_group_id),
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to process grouped booking payment" });
   }
 };
 

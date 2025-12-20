@@ -3,6 +3,7 @@ import {
   getPayments,
   createPayment,
   processBookingPayment,
+  processBookingGroupPayment,
   getMyPayments,
   deletePayment,
   deletePaymentByBookingId,
@@ -27,9 +28,25 @@ router.post(
   requireCustomer,
   processBookingPayment
 );
+router.post(
+  "/process-booking-group-payment",
+  verifyToken,
+  requireCustomer,
+  processBookingGroupPayment
+);
 router.get("/my-payments", verifyToken, requireCustomer, getMyPayments);
-router.delete('/booking/:bookingId', verifyToken, adminOrStaff, deletePaymentByBookingId);
-router.delete('/:id', verifyToken, adminOrStaff, deletePayment);
-router.post('/fix-booking-status', verifyToken, adminOrStaff, fixAllBookingStatusInconsistencies);
+router.delete(
+  "/booking/:bookingId",
+  verifyToken,
+  adminOrStaff,
+  deletePaymentByBookingId
+);
+router.delete("/:id", verifyToken, adminOrStaff, deletePayment);
+router.post(
+  "/fix-booking-status",
+  verifyToken,
+  adminOrStaff,
+  fixAllBookingStatusInconsistencies
+);
 
 export default router;

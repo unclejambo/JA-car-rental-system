@@ -82,10 +82,12 @@ function CustomerBookings() {
 
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [bookings, setBookings] = useState(null);
+  const [bookingGroups, setBookingGroups] = useState([]);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [selectedBookingGroup, setSelectedBookingGroup] = useState(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showCancelExtensionDialog, setShowCancelExtensionDialog] =
     useState(false);
@@ -199,9 +201,27 @@ function CustomerBookings() {
     }
   };
 
+  const fetchBookingGroups = async () => {
+    try {
+      const response = await authenticatedFetch(
+        `${API_BASE}/bookings/my-booking-groups/list`
+      );
+
+      if (response.ok) {
+        const response_data = await response.json();
+        setBookingGroups(Array.isArray(response_data) ? response_data : []);
+      } else {
+        setBookingGroups([]);
+      }
+    } catch (error) {
+      setBookingGroups([]);
+    }
+  };
+
   useEffect(() => {
     fetchBookings();
     fetchPayments();
+    fetchBookingGroups();
   }, [authenticatedFetch, API_BASE]);
 
   const handleTabChange = (event, newValue) => {
@@ -277,6 +297,7 @@ function CustomerBookings() {
   const handleBookingUpdated = () => {
     fetchBookings();
     fetchPayments();
+    fetchBookingGroups();
     setShowEditDialog(false);
     setSelectedBooking(null);
   };
@@ -285,8 +306,10 @@ function CustomerBookings() {
   const handlePaymentSuccess = (result) => {
     fetchBookings();
     fetchPayments();
+    fetchBookingGroups();
     setShowPaymentDialog(false);
     setSelectedBooking(null);
+    setSelectedBookingGroup(null);
 
     // Show success message via snackbar if provided
     if (result?.successMessage) {
@@ -393,18 +416,20 @@ function CustomerBookings() {
   };
 
   // Filter bookings based on search query
-  const filteredBookings = (bookings || []).filter((booking) => {
-    if (!bookingSearchQuery) return true;
-    const query = bookingSearchQuery.toLowerCase();
-    return (
-      booking.booking_id?.toString().includes(query) ||
-      booking.car_details?.display_name?.toLowerCase().includes(query) ||
-      booking.car_details?.license_plate?.toLowerCase().includes(query) ||
-      booking.booking_status?.toLowerCase().includes(query) ||
-      booking.pickup_location?.toLowerCase().includes(query) ||
-      booking.dropoff_location?.toLowerCase().includes(query)
-    );
-  });
+  const filteredBookings = (bookings || [])
+    .filter((booking) => !booking.booking_group_id)
+    .filter((booking) => {
+      if (!bookingSearchQuery) return true;
+      const query = bookingSearchQuery.toLowerCase();
+      return (
+        booking.booking_id?.toString().includes(query) ||
+        booking.car_details?.display_name?.toLowerCase().includes(query) ||
+        booking.car_details?.license_plate?.toLowerCase().includes(query) ||
+        booking.booking_status?.toLowerCase().includes(query) ||
+        booking.pickup_location?.toLowerCase().includes(query) ||
+        booking.dropoff_location?.toLowerCase().includes(query)
+      );
+    });
 
   // Filter payments based on search query
   const filteredPayments = payments.filter((payment) => {
@@ -420,6 +445,32 @@ function CustomerBookings() {
       payment.dropoff_date?.toLowerCase().includes(query)
     );
   });
+
+  const activeBookingGroups = (bookingGroups || []).filter((group) => {
+    if (!paymentSearchQuery) return true;
+    const query = paymentSearchQuery.toLowerCase();
+    return (
+      group.booking_group_id?.toString().includes(query) ||
+      group.bookings?.some((b) =>
+        b.car_details?.display_name?.toLowerCase().includes(query)
+      )
+    );
+  });
+
+  const unpaidGroupCount = activeBookingGroups.filter(
+    (group) => group.payment_status?.toLowerCase() !== 'paid'
+  ).length;
+  const unpaidSingleCount = payments.filter((booking) => {
+    const status = booking.booking_status?.toLowerCase();
+    return (
+      !booking.booking_group_id &&
+      (status === 'pending' ||
+        status === 'confirmed' ||
+        status === 'in progress' ||
+        status === 'ongoing')
+    );
+  }).length;
+  const settlementCount = unpaidGroupCount + unpaidSingleCount;
 
   return (
     <>
@@ -582,19 +633,7 @@ function CustomerBookings() {
                 }}
               >
                 <Tab label={`My Bookings (${bookings?.length || 0})`} />
-                <Tab
-                  label={`Settlement (${
-                    payments.filter((booking) => {
-                      const status = booking.booking_status?.toLowerCase();
-                      return (
-                        status === 'pending' ||
-                        status === 'confirmed' ||
-                        status === 'in progress' ||
-                        status === 'ongoing'
-                      );
-                    }).length
-                  })`}
-                />
+                <Tab label={`Settlement (${settlementCount})`} />
               </Tabs>
             </Box>
 
@@ -699,6 +738,122 @@ function CustomerBookings() {
                     px: { xs: 0.5, sm: 0 },
                   }}
                 >
+                  {activeBookingGroups.length > 0 &&
+                    activeBookingGroups.map((group) => (
+                      <Card
+                        key={`group-booking-${group.booking_group_id}`}
+                        sx={{
+                          display: 'flex',
+                          flexDirection: { xs: 'column', sm: 'row' },
+                          border: '1px solid #e0e0e0',
+                          position: 'relative',
+                          '&:hover': {
+                            boxShadow: '0 4px 12px rgba(193, 0, 7, 0.1)',
+                            borderColor: '#c10007',
+                          },
+                          transition: 'all 0.3s ease',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: 10,
+                            right: 10,
+                            zIndex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 0.5,
+                            alignItems: 'flex-end',
+                          }}
+                        >
+                          <Chip
+                            label={`Group • ${group.booking_count} vehicle(s)`}
+                            size="small"
+                            sx={{
+                              backgroundColor: '#2196F3',
+                              color: 'white',
+                              fontWeight: 'bold',
+                            }}
+                          />
+                          <Chip
+                            label={group.payment_status || 'Unpaid'}
+                            size="small"
+                            color={
+                              group.payment_status?.toLowerCase() === 'paid'
+                                ? 'success'
+                                : 'warning'
+                            }
+                          />
+                        </Box>
+
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexGrow: 1,
+                            flexDirection: 'column',
+                          }}
+                        >
+                          <CardContent
+                            sx={{ flex: '1 0 auto', p: { xs: 1.5, sm: 2 } }}
+                          >
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-start',
+                                mb: 1,
+                                pr: { xs: 5, sm: 0 },
+                              }}
+                            >
+                              <Box>
+                                <Typography
+                                  variant="h6"
+                                  sx={{
+                                    fontWeight: 'bold',
+                                    mb: 0.5,
+                                    fontSize: { xs: '1rem', sm: '1.1rem' },
+                                  }}
+                                >
+                                  Group Booking #{group.booking_group_id}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{
+                                    fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                                  }}
+                                >
+                                  Total: ₱{group.total_amount?.toLocaleString()}{' '}
+                                  | Balance: ₱{group.balance?.toLocaleString()}
+                                </Typography>
+                              </Box>
+                            </Box>
+
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 0.35,
+                              }}
+                            >
+                              {group.bookings?.map((b) => (
+                                <Typography
+                                  key={`group-booking-item-${b.booking_id}`}
+                                  variant="body2"
+                                  sx={{
+                                    fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                                  }}
+                                >
+                                  • {b.car_details?.display_name || 'Vehicle'} —{' '}
+                                  {b.booking_status}
+                                </Typography>
+                              ))}
+                            </Box>
+                          </CardContent>
+                        </Box>
+                      </Card>
+                    ))}
+
                   {filteredBookings
                     .filter((booking) => {
                       const status = booking.booking_status?.toLowerCase();
@@ -1047,51 +1202,79 @@ function CustomerBookings() {
                               </Box>
 
                               {/* Driver Information (if not self-drive) */}
-                              {booking.driver_id && booking.driver_id !== 1 && booking.driver && (
-                                <Box
-                                  sx={{
-                                    mt: 1.5,
-                                    mb: 1.5,
-                                    p: 1.5,
-                                    bgcolor: '#f5f5f5',
-                                    borderRadius: 1,
-                                    border: '1px solid #e0e0e0',
-                                  }}
-                                >
-                                  <Typography
-                                    variant="subtitle2"
-                                    fontWeight="bold"
-                                    gutterBottom
-                                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                              {booking.driver_id &&
+                                booking.driver_id !== 1 &&
+                                booking.driver && (
+                                  <Box
+                                    sx={{
+                                      mt: 1.5,
+                                      mb: 1.5,
+                                      p: 1.5,
+                                      bgcolor: '#f5f5f5',
+                                      borderRadius: 1,
+                                      border: '1px solid #e0e0e0',
+                                    }}
                                   >
-                                    <HiUser size={16} color="#c10007" />
-                                    Your Assigned Driver
-                                  </Typography>
-                                  <Grid container spacing={1} sx={{ mt: 0.5 }}>
-                                    <Grid item xs={12} sm={6}>
-                                      <Typography variant="body2" fontSize="0.75rem">
-                                        <strong>Name:</strong> {booking.driver.first_name} {booking.driver.last_name}
-                                      </Typography>
-                                    </Grid>
-                                    <Grid item xs={12} sm={6}>
-                                      <Typography variant="body2" fontSize="0.75rem">
-                                        <strong>License:</strong> {booking.driver.driver_license?.driver_license_no || 'N/A'}
-                                      </Typography>
-                                    </Grid>
-                                    {booking.driver.contact_no && (
-                                      <Grid item xs={12}>
-                                        <Typography variant="body2" fontSize="0.75rem">
-                                          <strong>Contact:</strong> {booking.driver.contact_no}
+                                    <Typography
+                                      variant="subtitle2"
+                                      fontWeight="bold"
+                                      gutterBottom
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                      }}
+                                    >
+                                      <HiUser size={16} color="#c10007" />
+                                      Your Assigned Driver
+                                    </Typography>
+                                    <Grid
+                                      container
+                                      spacing={1}
+                                      sx={{ mt: 0.5 }}
+                                    >
+                                      <Grid item xs={12} sm={6}>
+                                        <Typography
+                                          variant="body2"
+                                          fontSize="0.75rem"
+                                        >
+                                          <strong>Name:</strong>{' '}
+                                          {booking.driver.first_name}{' '}
+                                          {booking.driver.last_name}
                                         </Typography>
                                       </Grid>
-                                    )}
-                                  </Grid>
-                                </Box>
-                              )}
-                              
+                                      <Grid item xs={12} sm={6}>
+                                        <Typography
+                                          variant="body2"
+                                          fontSize="0.75rem"
+                                        >
+                                          <strong>License:</strong>{' '}
+                                          {booking.driver.driver_license
+                                            ?.driver_license_no || 'N/A'}
+                                        </Typography>
+                                      </Grid>
+                                      {booking.driver.contact_no && (
+                                        <Grid item xs={12}>
+                                          <Typography
+                                            variant="body2"
+                                            fontSize="0.75rem"
+                                          >
+                                            <strong>Contact:</strong>{' '}
+                                            {booking.driver.contact_no}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                    </Grid>
+                                  </Box>
+                                )}
+
                               {booking.driver_id === 1 && (
                                 <Box sx={{ mb: 1 }}>
-                                  <Chip label="Self-Drive" color="primary" size="small" />
+                                  <Chip
+                                    label="Self-Drive"
+                                    color="primary"
+                                    size="small"
+                                  />
                                 </Box>
                               )}
 
@@ -1313,15 +1496,21 @@ function CustomerBookings() {
 
             <TabPanel value={activeTab} index={1}>
               {/* SETTLEMENT TAB - HORIZONTAL LAYOUT WITHOUT IMAGE */}
-              {filteredPayments.filter((b) => {
-                const status = b.booking_status?.toLowerCase();
-                return (
-                  status === 'pending' ||
-                  status === 'confirmed' ||
-                  status === 'in progress' ||
-                  status === 'ongoing'
-                );
-              }).length === 0 && !loading ? (
+              {activeBookingGroups.filter(
+                (g) => g.payment_status?.toLowerCase() !== 'paid'
+              ).length === 0 &&
+              filteredPayments
+                .filter((b) => !b.booking_group_id)
+                .filter((b) => {
+                  const status = b.booking_status?.toLowerCase();
+                  return (
+                    status === 'pending' ||
+                    status === 'confirmed' ||
+                    status === 'in progress' ||
+                    status === 'ongoing'
+                  );
+                }).length === 0 &&
+              !loading ? (
                 <Card sx={{ p: 4, textAlign: 'center', mx: { xs: 1, sm: 0 } }}>
                   <Typography
                     variant="h6"
@@ -1347,7 +1536,156 @@ function CustomerBookings() {
                     px: { xs: 0.5, sm: 0 },
                   }}
                 >
+                  {activeBookingGroups
+                    .filter(
+                      (group) => group.payment_status?.toLowerCase() !== 'paid'
+                    )
+                    .map((group) => (
+                      <Card
+                        key={`group-${group.booking_group_id}`}
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          border: '1px solid #e0e0e0',
+                          position: 'relative',
+                          width: '100%',
+                          borderRadius: { xs: 0, sm: 1 },
+                          '&:hover': {
+                            boxShadow: '0 4px 12px rgba(193, 0, 7, 0.1)',
+                            borderColor: '#c10007',
+                          },
+                          transition: 'all 0.3s ease',
+                        }}
+                      >
+                        <Button
+                          size="small"
+                          variant="contained"
+                          sx={{
+                            position: 'absolute',
+                            top: { xs: 8, sm: 12 },
+                            right: { xs: 8, sm: 12 },
+                            backgroundColor: '#c10007',
+                            color: 'white',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                            padding: { xs: '4px 12px', sm: '6px 16px' },
+                            '&:hover': {
+                              backgroundColor: '#a50006',
+                            },
+                          }}
+                          onClick={() => {
+                            setSelectedBooking(null);
+                            setSelectedBookingGroup(group);
+                            setShowPaymentDialog(true);
+                          }}
+                        >
+                          Pay Now (Group)
+                        </Button>
+
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            direction: 'column',
+                            flexGrow: 1,
+                            ml: { xs: 0.5, sm: 1 },
+                          }}
+                        >
+                          <CardContent
+                            sx={{ flex: '1', p: { xs: 0.5, sm: 1 } }}
+                          >
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: { xs: 'column', sm: 'row' },
+                                justifyContent: 'space-between',
+                                alignItems: { xs: 'flex-start', sm: 'center' },
+                                gap: { xs: 1, sm: 0 },
+                                mb: 1.5,
+                                pr: { xs: 10, sm: 12 },
+                              }}
+                            >
+                              <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                                <Typography
+                                  variant="h6"
+                                  sx={{
+                                    fontWeight: 'bold',
+                                    fontSize: { xs: '1rem', sm: '1.15rem' },
+                                    mb: 0.25,
+                                  }}
+                                >
+                                  Group Booking #{group.booking_group_id}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{
+                                    fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                                  }}
+                                >
+                                  {group.booking_count} vehicle(s) · ₱
+                                  {group.total_amount?.toLocaleString()}
+                                </Typography>
+                              </Box>
+                            </Box>
+
+                            <Divider sx={{ mb: 1 }} />
+
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 0.5,
+                              }}
+                            >
+                              {group.bookings?.map((b) => (
+                                <Typography
+                                  key={b.booking_id}
+                                  variant="body2"
+                                  sx={{
+                                    fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                                  }}
+                                >
+                                  • {b.car_details?.display_name || 'Vehicle'}{' '}
+                                  (₱
+                                  {b.total_amount?.toLocaleString() || 0})
+                                </Typography>
+                              ))}
+                            </Box>
+
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                mt: 1,
+                              }}
+                            >
+                              <Typography
+                                variant="body1"
+                                sx={{
+                                  fontWeight: 'bold',
+                                  color: '#c10007',
+                                  fontSize: { xs: '0.9rem', sm: '1rem' },
+                                }}
+                              >
+                                Balance: ₱{group.balance?.toLocaleString()}
+                              </Typography>
+                              <Chip
+                                label={group.payment_status || 'Unpaid'}
+                                color={
+                                  group.payment_status?.toLowerCase() === 'paid'
+                                    ? 'success'
+                                    : 'warning'
+                                }
+                                size="small"
+                              />
+                            </Box>
+                          </CardContent>
+                        </Box>
+                      </Card>
+                    ))}
+
                   {filteredPayments
+                    .filter((booking) => !booking.booking_group_id)
                     .filter((booking) => {
                       const status = booking.booking_status?.toLowerCase();
                       return (
@@ -1406,6 +1744,7 @@ function CustomerBookings() {
                             }}
                             onClick={() => {
                               setSelectedBooking(booking);
+                              setSelectedBookingGroup(null);
                               setShowPaymentDialog(true);
                             }}
                           >
@@ -1823,8 +2162,13 @@ function CustomerBookings() {
       {/* Payment Modal */}
       <PaymentModal
         open={showPaymentDialog}
-        onClose={() => setShowPaymentDialog(false)}
+        onClose={() => {
+          setShowPaymentDialog(false);
+          setSelectedBooking(null);
+          setSelectedBookingGroup(null);
+        }}
         booking={selectedBooking}
+        bookingGroup={selectedBookingGroup}
         onPaymentSuccess={handlePaymentSuccess}
       />
 

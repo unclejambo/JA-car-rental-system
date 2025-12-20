@@ -40,6 +40,7 @@ export default function PaymentModal({
   open,
   onClose,
   booking,
+  bookingGroup,
   onPaymentSuccess,
 }) {
   const { logout } = useAuth();
@@ -61,10 +62,13 @@ export default function PaymentModal({
   const steps = ['Payment Method', 'Payment Details', 'Confirmation'];
 
   React.useEffect(() => {
-    if (booking && open) {
-      // Calculate remaining balance
-      const totalAmount = booking.total_amount || 0;
-      const totalPaid = booking.total_paid || 0;
+    if ((booking || bookingGroup) && open) {
+      const totalAmount = bookingGroup
+        ? bookingGroup.total_amount || 0
+        : booking?.total_amount || 0;
+      const totalPaid = bookingGroup
+        ? bookingGroup.total_paid || 0
+        : booking?.total_paid || 0;
       const remainingBalance = totalAmount - totalPaid;
 
       setPaymentData({
@@ -76,7 +80,7 @@ export default function PaymentModal({
       setActiveStep(0);
       setError('');
     }
-  }, [booking, open]);
+  }, [booking, bookingGroup, open]);
 
   const handleInputChange = (field, value) => {
     setPaymentData((prev) => ({
@@ -128,9 +132,17 @@ export default function PaymentModal({
       return false;
     }
 
-    // Validate minimum payment amount of 1000
-    if (parseFloat(paymentData.amount) < 1000) {
-      setError('Payment amount must be at least ₱1,000');
+    // Calculate minimum payment based on booking count
+    const minPaymentPerCar = 1000;
+    const bookingCount = bookingGroup ? bookingGroup.booking_count || 1 : 1;
+    const minPayment = minPaymentPerCar * bookingCount;
+
+    // Validate minimum payment amount
+    if (parseFloat(paymentData.amount) < minPayment) {
+      const reason = bookingGroup
+        ? `For ${bookingCount} vehicle(s), minimum payment is ₱${minPayment.toLocaleString()}`
+        : 'Payment amount must be at least ₱1,000';
+      setError(reason);
       return false;
     }
 
@@ -159,16 +171,27 @@ export default function PaymentModal({
       setLoading(true);
       setError('');
 
+      const isGroupPayment = Boolean(bookingGroup);
       const response = await authenticatedFetch(
-        `${API_BASE}/payments/process-booking-payment`,
+        isGroupPayment
+          ? `${API_BASE}/payments/process-booking-group-payment`
+          : `${API_BASE}/payments/process-booking-payment`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            booking_id: booking.booking_id,
-            ...paymentData,
-            amount: parseFloat(paymentData.amount),
-          }),
+          body: JSON.stringify(
+            isGroupPayment
+              ? {
+                  booking_group_id: bookingGroup.booking_group_id,
+                  ...paymentData,
+                  amount: parseFloat(paymentData.amount),
+                }
+              : {
+                  booking_id: booking.booking_id,
+                  ...paymentData,
+                  amount: parseFloat(paymentData.amount),
+                }
+          ),
         }
       );
 
@@ -218,9 +241,12 @@ export default function PaymentModal({
   };
 
   const getRemainingBalance = () => {
-    if (!booking) return 0;
-    const totalAmount = booking.total_amount || 0;
-    const totalPaid = booking.total_paid || 0;
+    const totalAmount = bookingGroup
+      ? bookingGroup.total_amount || 0
+      : booking?.total_amount || 0;
+    const totalPaid = bookingGroup
+      ? bookingGroup.total_paid || 0
+      : booking?.total_paid || 0;
     return Math.max(0, totalAmount - totalPaid);
   };
   const renderPaymentMethodStep = () => (
@@ -440,24 +466,40 @@ export default function PaymentModal({
                 {/* Payment Amount - Only for GCash */}
                 <Grid size={{ xs: 12 }}>
                   <Box sx={{ width: '100%', maxWidth: '100%' }}>
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="Payment Amount"
-                      value={paymentData.amount}
-                      onChange={(e) =>
-                        handleInputChange('amount', e.target.value)
-                      }
-                      required
-                      InputProps={{
-                        startAdornment: (
-                          <Typography sx={{ mr: 1 }}>₱</Typography>
-                        ),
-                      }}
-                      inputProps={{ min: 1000, max: getRemainingBalance() }}
-                      helperText={`Outstanding balance: ₱${getRemainingBalance().toLocaleString()} (Minimum: ₱1,000)`}
-                      sx={{ width: '100%' }}
-                    />
+                    {(() => {
+                      const bookingCount = bookingGroup
+                        ? bookingGroup.booking_count || 1
+                        : 1;
+                      const minPayment = 1000 * bookingCount;
+                      const minText =
+                        bookingGroup && bookingCount > 1
+                          ? `Minimum: ₱${minPayment.toLocaleString()} (₱1,000 per vehicle)`
+                          : `Minimum: ₱1,000`;
+
+                      return (
+                        <TextField
+                          fullWidth
+                          type="number"
+                          label="Payment Amount"
+                          value={paymentData.amount}
+                          onChange={(e) =>
+                            handleInputChange('amount', e.target.value)
+                          }
+                          required
+                          InputProps={{
+                            startAdornment: (
+                              <Typography sx={{ mr: 1 }}>₱</Typography>
+                            ),
+                          }}
+                          inputProps={{
+                            min: minPayment,
+                            max: getRemainingBalance(),
+                          }}
+                          helperText={`Outstanding balance: ₱${getRemainingBalance().toLocaleString()} (${minText})`}
+                          sx={{ width: '100%' }}
+                        />
+                      );
+                    })()}
                   </Box>
                 </Grid>
 
@@ -729,7 +771,7 @@ export default function PaymentModal({
     </Box>
   );
 
-  if (!booking) return null;
+  if (!booking && !bookingGroup) return null;
 
   return (
     <Dialog
@@ -771,8 +813,14 @@ export default function PaymentModal({
           }}
         >
           <Typography variant="body1" sx={{ mb: 1 }}>
-            <strong>Booking #{booking.booking_id}</strong> -{' '}
-            {booking.car_details?.make} {booking.car_details?.model}
+            {bookingGroup ? (
+              <strong>Group Booking #{bookingGroup.booking_group_id}</strong>
+            ) : (
+              <>
+                <strong>Booking #{booking.booking_id}</strong> -{' '}
+                {booking.car_details?.make} {booking.car_details?.model}
+              </>
+            )}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Outstanding Balance:{' '}

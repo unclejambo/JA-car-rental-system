@@ -223,7 +223,78 @@ export default function AdminBookingPage() {
           );
         });
 
-        setRows(formattedData);
+        // Collapse grouped bookings into a single summary row per group for admin view
+        const singles = [];
+        const groupMap = new Map();
+
+        for (const b of formattedData) {
+          const groupId = b.booking_group_id;
+          if (!groupId) {
+            singles.push(b);
+            continue;
+          }
+
+          const entry = groupMap.get(groupId) || {
+            groupId,
+            booking_count: 0,
+            total_amount: 0,
+            balance: 0,
+            start_date: null,
+            end_date: null,
+            customer_name: b.customer_name,
+            car_models: [],
+            childBookings: [],
+          };
+
+          entry.booking_count += 1;
+          entry.total_amount += Number(
+            b.total_amount || b.total_rental_amount || 0
+          );
+          entry.balance += Number(b.balance || 0);
+          entry.start_date = !entry.start_date
+            ? b.start_date
+            : [entry.start_date, b.start_date].sort()[0];
+          entry.end_date = !entry.end_date
+            ? b.end_date
+            : [entry.end_date, b.end_date].sort().slice(-1)[0];
+          if (b.car_model) entry.car_models.push(b.car_model);
+          entry.childBookings.push(b);
+
+          groupMap.set(groupId, entry);
+        }
+
+        const groupedRows = Array.from(groupMap.values()).map((g) => {
+          const firstChild = g.childBookings[0] || {};
+          const carSummary =
+            g.car_models.length === 1
+              ? `${g.car_models[0]} (Group of 1)`
+              : `Group (${g.booking_count} vehicles)`;
+
+          const childPaid = g.childBookings.some(
+            (cb) =>
+              cb.isPay === true || cb.isPay === 'true' || cb.isPay === 'TRUE'
+          );
+
+          return {
+            // Use first child's booking_id for detail fetch compatibility
+            booking_id: firstChild.booking_id,
+            // Provide a custom display id for the table
+            actualBookingId: `G${g.groupId}`,
+            customer_name: g.customer_name,
+            car_model: carSummary,
+            start_date: g.start_date,
+            end_date: g.end_date,
+            total_amount: g.total_amount,
+            balance: g.balance,
+            booking_status: firstChild.booking_status || 'grouped',
+            isGroup: true,
+            isPay: childPaid ? 'TRUE' : 'FALSE',
+            booking_group_id: g.groupId,
+            child_bookings: g.childBookings,
+          };
+        });
+
+        setRows([...groupedRows, ...singles]);
         setError(null);
       })
       .catch((err) => {

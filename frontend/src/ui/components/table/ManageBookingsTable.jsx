@@ -103,14 +103,24 @@ const ManageBookingsTable = ({
 
     try {
       setProcessing(true);
-      const bookingId = row.actualBookingId;
 
-      // Call the confirm booking API
-      const result = await bookingAPI.confirmBooking(bookingId, logout);
-
-      // Use the message from backend response
-      const message = result.message || 'Booking confirmed successfully!';
-      showMessage(message, 'success');
+      if (row.isGroup === true && Array.isArray(row.child_bookings)) {
+        // Confirm all child bookings that have payment submitted
+        const children = row.child_bookings;
+        for (const cb of children) {
+          const childPaid =
+            cb.isPay === true || cb.isPay === 'true' || cb.isPay === 'TRUE';
+          if (!childPaid) continue;
+          const childId = cb.booking_id || cb.actualBookingId;
+          if (!childId) continue;
+          await bookingAPI.confirmBooking(childId, logout);
+        }
+        showMessage('Grouped payment confirmed for all vehicles!', 'success');
+      } else {
+        const bookingId = row.actualBookingId;
+        await bookingAPI.confirmBooking(bookingId, logout);
+        showMessage('Booking confirmed successfully!', 'success');
+      }
 
       // Trigger real-time refresh of header notifications
       window.dispatchEvent(new Event('refreshNotifications'));
@@ -271,15 +281,22 @@ const ManageBookingsTable = ({
 
     try {
       setProcessing(true);
-      const bookingId = row.actualBookingId;
 
-      // Update isPay to false first
-      await bookingAPI.updateIsPay(bookingId, false, logout);
-
-      // Delete payment with keepStatus=true to maintain current booking status
-      await paymentAPI.deletePaymentByBookingId(bookingId, logout, true);
-
-      showMessage('Payment cancelled successfully!', 'success');
+      if (row.isGroup === true && Array.isArray(row.child_bookings)) {
+        // Cancel payments for all child bookings
+        for (const cb of row.child_bookings) {
+          const childId = cb.booking_id || cb.actualBookingId;
+          if (!childId) continue;
+          await bookingAPI.updateIsPay(childId, false, logout);
+          await paymentAPI.deletePaymentByBookingId(childId, logout, true);
+        }
+        showMessage('Grouped payment cancelled for all vehicles!', 'success');
+      } else {
+        const bookingId = row.actualBookingId;
+        await bookingAPI.updateIsPay(bookingId, false, logout);
+        await paymentAPI.deletePaymentByBookingId(bookingId, logout, true);
+        showMessage('Payment cancelled successfully!', 'success');
+      }
 
       // Trigger real-time refresh of header notifications
       window.dispatchEvent(new Event('refreshNotifications'));
@@ -352,10 +369,16 @@ const ManageBookingsTable = ({
     booking_date: formatDateString(r.booking_date),
     start_date: formatDateString(r.start_date),
     end_date: formatDateString(r.end_date),
-    // Use the actual booking ID from database for DataGrid's id requirement
-    id: r.booking_id || r.id || r.reservation_id || `row-${idx}`,
-    // Store the actual booking ID separately for display
-    actualBookingId: r.booking_id || r.id || r.reservation_id || idx,
+    // Use the provided actualBookingId if present, else fall back
+    id:
+      r.actualBookingId ??
+      r.booking_id ??
+      r.id ??
+      r.reservation_id ??
+      `row-${idx}`,
+    // Store the actual booking ID separately for display, prefer provided value
+    actualBookingId:
+      r.actualBookingId ?? r.booking_id ?? r.id ?? r.reservation_id ?? idx,
   }));
 
   // Define columns that are common to all tabs
@@ -758,6 +781,7 @@ const ManageBookingsTable = ({
         params.row.isPay === 'true' ||
         params.row.isPay === 'TRUE';
 
+      const isGroup = params.row.isGroup === true;
       return (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
           {/* BOOKINGS TAB - View details and payment buttons */}
@@ -814,7 +838,7 @@ const ManageBookingsTable = ({
           )}
 
           {/* CANCELLATION TAB - Confirm and reject buttons */}
-          {activeTab === 'CANCELLATION' && (
+          {activeTab === 'CANCELLATION' && !isGroup && (
             <>
               <IconButton
                 size="small"
@@ -849,6 +873,7 @@ const ManageBookingsTable = ({
 
           {/* EXTENSION TAB - Confirm and reject buttons */}
           {activeTab === 'EXTENSION' &&
+            !isGroup &&
             (() => {
               const latestExtension = params.row.latest_extension;
               const isExtensionApproved =

@@ -133,6 +133,8 @@ export const getBookings = async (req, res) => {
           car_rent_price: car?.rent_price || null,
           total_paid: totalPaid,
           remaining_balance: remainingBalance,
+          isPay: rest.isPay || false,
+          booking_group_id: rest.booking_group_id || null,
           latest_extension: latestExtension, // Include extension info
         };
       })
@@ -805,7 +807,8 @@ export const createBulkBookings = async (req, res) => {
         total_amount: Math.round(parseFloat(booking.totalCost || 0)),
         payment_status: "Unpaid",
         booking_status: "Pending",
-        isSelfDriver: booking.isSelfDrive !== undefined ? booking.isSelfDrive : true,
+        isSelfDriver:
+          booking.isSelfDrive !== undefined ? booking.isSelfDrive : true,
         drivers_id: finalDriverId,
         isExtend: false,
         isCancel: false,
@@ -860,9 +863,7 @@ export const createBulkBookings = async (req, res) => {
       if (!dateValidation.isValid) {
         validationErrors.push({
           index: i,
-          errors: [
-            `Date conflict: ${dateValidation.message}`,
-          ],
+          errors: [`Date conflict: ${dateValidation.message}`],
         });
         continue;
       }
@@ -1056,6 +1057,333 @@ export const createBulkBookings = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: "Failed to create bulk bookings",
+      details: error.message,
+    });
+  }
+};
+
+// Create multiple bookings at once but bind them to a single booking group for unified settlement
+export const createGroupedBookings = async (req, res) => {
+  try {
+    const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
+
+    if (!customerId) {
+      return res.status(401).json({
+        error: "Customer authentication required",
+      });
+    }
+
+    if (req.user?.role !== "customer") {
+      return res.status(403).json({
+        error: "Only customers can create bookings",
+      });
+    }
+
+    const { bookings } = req.body;
+
+    if (!Array.isArray(bookings) || bookings.length === 0) {
+      return res.status(400).json({
+        error: "Bookings array is required and must not be empty",
+      });
+    }
+
+    const validatedBookings = [];
+    const validationErrors = [];
+
+    // Validate first so we fail fast with aggregated errors
+    for (let i = 0; i < bookings.length; i++) {
+      const booking = bookings[i];
+      const errors = [];
+
+      if (!booking.car_id) errors.push("car_id is required");
+      if (!booking.startDate) errors.push("startDate is required");
+      if (!booking.endDate) errors.push("endDate is required");
+
+      if (errors.length > 0) {
+        validationErrors.push({ index: i, errors });
+        continue;
+      }
+
+      const startDateTime = new Date(booking.startDate);
+      const endDateTime = new Date(booking.endDate);
+
+      const pickupTimeStr = booking.pickupTime || "09:00";
+      const dropoffTimeStr = booking.dropoffTime || "17:00";
+
+      const [pickupHour, pickupMinute] = pickupTimeStr.split(":");
+      const startDateStr = booking.startDate.split("T")[0];
+      const pickupISOString = `${startDateStr}T${String(pickupHour).padStart(
+        2,
+        "0"
+      )}:${String(pickupMinute).padStart(2, "0")}:00.000+08:00`;
+      const pickupDateTime = new Date(pickupISOString);
+
+      const [dropoffHour, dropoffMinute] = dropoffTimeStr.split(":");
+      const endDateStr = booking.endDate.split("T")[0];
+      const dropoffISOString = `${endDateStr}T${String(dropoffHour).padStart(
+        2,
+        "0"
+      )}:${String(dropoffMinute).padStart(2, "0")}:00.000+08:00`;
+      const dropoffDateTime = new Date(dropoffISOString);
+
+      const finalDriverId =
+        booking.selectedDriver &&
+        booking.selectedDriver !== "null" &&
+        booking.selectedDriver !== ""
+          ? parseInt(booking.selectedDriver)
+          : null;
+
+      const bookingData = {
+        customer_id: parseInt(customerId),
+        car_id: parseInt(booking.car_id),
+        booking_date: new Date(),
+        purpose: booking.purpose || "Not specified",
+        start_date: startDateTime,
+        end_date: endDateTime,
+        pickup_time: pickupDateTime,
+        pickup_loc:
+          booking.pickupLocation ||
+          booking.deliveryLocation ||
+          "JA Car Rental Office",
+        dropoff_time: dropoffDateTime,
+        dropoff_loc: booking.dropoffLocation || "JA Car Rental Office",
+        total_amount: Math.round(parseFloat(booking.totalCost || 0)),
+        payment_status: "Grouped",
+        booking_status: "Pending",
+        isSelfDriver:
+          booking.isSelfDrive !== undefined ? booking.isSelfDrive : true,
+        drivers_id: finalDriverId,
+        isExtend: false,
+        isCancel: false,
+        isRelease: false,
+        isReturned: false,
+        isPay: false,
+        balance: Math.round(parseFloat(booking.totalCost || 0)),
+        isDeliver: booking.deliveryType === "delivery",
+        deliver_loc:
+          booking.deliveryType === "delivery"
+            ? booking.deliveryLocation || booking.pickupLocation
+            : null,
+      };
+
+      const carExists = await prisma.car.findUnique({
+        where: { car_id: parseInt(booking.car_id) },
+      });
+
+      if (!carExists) {
+        validationErrors.push({
+          index: i,
+          errors: [`Car with ID ${booking.car_id} not found`],
+        });
+        continue;
+      }
+
+      const existingBookings = await prisma.booking.findMany({
+        where: {
+          car_id: parseInt(booking.car_id),
+          booking_status: {
+            in: ["Pending", "Confirmed", "In Progress"],
+          },
+          isCancel: false,
+        },
+        select: {
+          booking_id: true,
+          start_date: true,
+          end_date: true,
+          booking_status: true,
+        },
+      });
+
+      const dateValidation = validateBookingDates(
+        startDateTime,
+        endDateTime,
+        existingBookings,
+        1
+      );
+
+      if (!dateValidation.isValid) {
+        validationErrors.push({
+          index: i,
+          errors: [`Date conflict: ${dateValidation.message}`],
+        });
+        continue;
+      }
+
+      if (finalDriverId) {
+        const driverExists = await prisma.driver.findUnique({
+          where: { drivers_id: finalDriverId },
+        });
+
+        if (!driverExists) {
+          validationErrors.push({
+            index: i,
+            errors: [`Driver with ID ${finalDriverId} not found`],
+          });
+          continue;
+        }
+      }
+
+      validatedBookings.push(bookingData);
+    }
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        error: "Validation failed for one or more bookings",
+        validationErrors,
+      });
+    }
+
+    // Compute aggregate amounts for the group
+    const aggregateTotal = validatedBookings.reduce(
+      (sum, b) => sum + (b.total_amount || 0),
+      0
+    );
+
+    // Create booking group + bookings in one transaction
+    const { group, createdBookings } = await prisma.$transaction(async (tx) => {
+      const groupRecord = await tx.bookingGroup.create({
+        data: {
+          customer_id: parseInt(customerId),
+          total_amount: aggregateTotal,
+          balance: aggregateTotal,
+          booking_count: validatedBookings.length,
+          status: "Pending",
+          payment_status: "Unpaid",
+        },
+      });
+
+      const results = [];
+
+      for (const bookingData of validatedBookings) {
+        const newBooking = await tx.booking.create({
+          data: {
+            ...bookingData,
+            booking_group_id: groupRecord.booking_group_id,
+          },
+          include: {
+            customer: {
+              select: {
+                first_name: true,
+                last_name: true,
+                email: true,
+                contact_no: true,
+              },
+            },
+            car: {
+              select: {
+                make: true,
+                model: true,
+                year: true,
+                license_plate: true,
+                car_img_url: true,
+              },
+            },
+            driver: {
+              select: {
+                drivers_id: true,
+                first_name: true,
+                last_name: true,
+                contact_no: true,
+              },
+            },
+          },
+        });
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const bookingStart = new Date(bookingData.start_date);
+        bookingStart.setHours(0, 0, 0, 0);
+
+        if (bookingStart <= today) {
+          try {
+            await tx.car.update({
+              where: { car_id: bookingData.car_id },
+              data: { car_status: "Rented" },
+            });
+          } catch (carUpdateError) {}
+        }
+
+        results.push(newBooking);
+      }
+
+      return { group: groupRecord, createdBookings: results };
+    });
+
+    // Send notifications for each booking
+    for (const booking of createdBookings) {
+      try {
+        await sendBookingSuccessNotification(
+          booking,
+          {
+            customer_id: booking.customer_id,
+            first_name: booking.customer.first_name,
+            last_name: booking.customer.last_name,
+            email: booking.customer.email,
+            contact_no: booking.customer.contact_no,
+          },
+          {
+            make: booking.car.make,
+            model: booking.car.model,
+            year: booking.car.year,
+            license_plate: booking.car.license_plate,
+          }
+        );
+
+        await sendAdminNewBookingNotification(
+          booking,
+          {
+            customer_id: booking.customer_id,
+            first_name: booking.customer.first_name,
+            last_name: booking.customer.last_name,
+            email: booking.customer.email,
+            contact_no: booking.customer.contact_no,
+          },
+          {
+            make: booking.car.make,
+            model: booking.car.model,
+            year: booking.car.year,
+            license_plate: booking.car.license_plate,
+          }
+        );
+
+        if (booking.driver) {
+          try {
+            await sendDriverAssignedNotification(
+              booking,
+              {
+                drivers_id: booking.driver.drivers_id,
+                first_name: booking.driver.first_name,
+                last_name: booking.driver.last_name,
+                contact_no: booking.driver.contact_no,
+              },
+              {
+                first_name: booking.customer.first_name,
+                last_name: booking.customer.last_name,
+                contact_no: booking.customer.contact_no,
+              },
+              {
+                make: booking.car.make,
+                model: booking.car.model,
+                year: booking.car.year,
+                license_plate: booking.car.license_plate,
+              }
+            );
+          } catch (driverNotifyError) {}
+        }
+      } catch (notificationError) {}
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully created ${createdBookings.length} booking(s) in one group`,
+      booking_group: {
+        ...group,
+        bookings: createdBookings,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to create grouped bookings",
       details: error.message,
     });
   }
@@ -1292,6 +1620,99 @@ export const getMyBookings = async (req, res) => {
       error: "Failed to fetch your bookings",
       details: error.message,
     });
+  }
+};
+
+// Get grouped bookings for a customer (single settlement across multiple vehicles)
+export const getMyBookingGroups = async (req, res) => {
+  try {
+    const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
+
+    if (!customerId) {
+      return res
+        .status(401)
+        .json({ error: "Customer authentication required" });
+    }
+
+    const groups = await prisma.bookingGroup.findMany({
+      where: { customer_id: parseInt(customerId) },
+      orderBy: { created_at: "desc" },
+      include: {
+        bookings: {
+          include: {
+            car: {
+              select: {
+                make: true,
+                model: true,
+                year: true,
+                license_plate: true,
+                car_img_url: true,
+                car_type: true,
+                rent_price: true,
+              },
+            },
+            driver: {
+              select: {
+                drivers_id: true,
+                first_name: true,
+                last_name: true,
+                contact_no: true,
+                driver_license: {
+                  select: { driver_license_no: true },
+                },
+              },
+            },
+            payments: {
+              select: { amount: true },
+            },
+          },
+        },
+        payments: true,
+      },
+    });
+
+    const shaped = groups.map((group) => {
+      const totalPaid =
+        group.payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+      const remainingBalance = (group.total_amount || 0) - totalPaid;
+
+      const bookings = (group.bookings || []).map((b) => {
+        const totalPaidBooking =
+          b.payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+        return {
+          ...b,
+          car_details: {
+            make: b.car?.make,
+            model: b.car?.model,
+            year: b.car?.year,
+            license_plate: b.car?.license_plate,
+            image_url: b.car?.car_img_url,
+            display_name: [b.car?.make, b.car?.model].filter(Boolean).join(" "),
+            car_type: b.car?.car_type,
+            rent_price: b.car?.rent_price,
+          },
+          total_paid: totalPaidBooking,
+        };
+      });
+
+      return {
+        booking_group_id: group.booking_group_id,
+        customer_id: group.customer_id,
+        total_amount: group.total_amount,
+        balance: remainingBalance,
+        payment_status: remainingBalance <= 0 ? "Paid" : group.payment_status,
+        status: group.status,
+        booking_count: group.booking_count,
+        bookings,
+        payments: group.payments,
+        total_paid: totalPaid,
+        created_at: group.created_at,
+      };
+    });
+
+    res.json(shaped);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch grouped bookings" });
   }
 };
 

@@ -40,6 +40,7 @@ model Customer {
   phone_verified    Boolean?       @default(false)
   driver_license_id Int?
   bookings          Booking[]
+  booking_groups    BookingGroup[]
   driver_license    DriverLicense? @relation("CustomerDriverLicense", fields: [driver_license_id], references: [license_id])
   payments          Payment[]
   refunds           Refund[]
@@ -127,6 +128,8 @@ model Booking {
   isExtended                 Boolean?      @default(false)
   extension_payment_deadline DateTime?     @db.Timestamptz(6)
   return_reminder_sent       Boolean?      @default(false)
+  booking_group_id           Int?
+  booking_group              BookingGroup? @relation(fields: [booking_group_id], references: [booking_group_id])
   admin                      Admin?        @relation(fields: [admin_id], references: [admin_id])
   car                        Car           @relation(fields: [car_id], references: [car_id])
   customer                   Customer      @relation(fields: [customer_id], references: [customer_id])
@@ -137,6 +140,21 @@ model Booking {
   releases                   Release[]
   Return                     Return[]
   transactions               Transaction[]
+}
+
+model BookingGroup {
+  booking_group_id Int       @id @default(autoincrement())
+  customer_id      Int
+  total_amount     Int       @default(0)
+  balance          Int       @default(0)
+  booking_count    Int       @default(0)
+  status           String?   @default("Pending")
+  payment_status   String?   @default("Unpaid")
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime  @updatedAt @db.Timestamptz(6)
+  customer         Customer  @relation(fields: [customer_id], references: [customer_id])
+  bookings         Booking[]
+  payments         Payment[]
 }
 
 model Extension {
@@ -153,6 +171,7 @@ model Extension {
 model Payment {
   payment_id           Int       @id @default(autoincrement())
   booking_id           Int?
+  booking_group_id     Int?
   customer_id          Int
   description          String?
   payment_method       String?
@@ -168,6 +187,7 @@ model Payment {
   verification_date    DateTime? @db.Timestamptz(6)
   verification_notes   String?
   booking              Booking?  @relation(fields: [booking_id], references: [booking_id], onDelete: Restrict)
+  booking_group        BookingGroup? @relation(fields: [booking_group_id], references: [booking_group_id], onDelete: Restrict)
   customer             Customer  @relation(fields: [customer_id], references: [customer_id])
   Waitlist             Waitlist? @relation(fields: [waitlist_id], references: [waitlist_id])
 

@@ -5,7 +5,7 @@ const ScheduleHeader = ({
   onTabChange,
   counts = {},
 }) => {
-  const tabs = ['CONFIRMED', 'IN PROGRESS', 'RELEASE'];
+  const tabs = ['CONFIRMED', 'RELEASE', 'IN PROGRESS'];
 
   return (
     <Box

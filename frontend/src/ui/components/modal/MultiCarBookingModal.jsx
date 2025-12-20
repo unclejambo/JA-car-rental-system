@@ -46,6 +46,7 @@ import {
 } from 'react-icons/hi';
 import { createAuthenticatedFetch, getApiBase } from '../../../utils/api';
 import { useAuth } from '../../../hooks/useAuth';
+import RegisterTermsAndConditionsModal from '../../modals/RegisterTermsAndConditionsModal';
 
 const API_BASE = getApiBase();
 
@@ -66,6 +67,9 @@ export default function MultiCarBookingModal({
   const [error, setError] = useState('');
   const [drivers, setDrivers] = useState([]);
   const [expandedCar, setExpandedCar] = useState(0);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [hasViewedTerms, setHasViewedTerms] = useState(false);
   const [fees, setFees] = useState({
     reservation_fee: 1000,
     cleaning_fee: 200,
@@ -87,7 +91,12 @@ export default function MultiCarBookingModal({
   // Individual car bookings with ability to override common data
   const [carBookings, setCarBookings] = useState([]);
 
-  const steps = ['Common Details', 'Individual Cars', 'Review & Confirm'];
+  const steps = [
+    'Common Details',
+    'Individual Cars',
+    'Car Use Notice',
+    'Review & Confirm',
+  ];
 
   useEffect(() => {
     if (open && cars && cars.length > 0) {
@@ -114,6 +123,9 @@ export default function MultiCarBookingModal({
       setError('');
       setActiveStep(0);
       setExpandedCar(0);
+      setTermsAccepted(false);
+      setShowTermsModal(false);
+      setHasViewedTerms(false);
     }
   }, [open, cars]);
 
@@ -255,6 +267,27 @@ export default function MultiCarBookingModal({
     return errors;
   };
 
+  const handleShowTerms = () => {
+    setShowTermsModal(true);
+  };
+
+  const handleAgreeTerms = () => {
+    setShowTermsModal(false);
+    setHasViewedTerms(true);
+    setTermsAccepted(true);
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
+  };
+
+  const handleCheckboxClick = (e) => {
+    if (!hasViewedTerms) {
+      e.preventDefault();
+      setError('⚠️ Please read the Terms and Conditions first');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
   const handleNext = () => {
     if (activeStep === 0) {
       const errors = validateCommonData();
@@ -266,6 +299,12 @@ export default function MultiCarBookingModal({
       const errors = validateIndividualBookings();
       if (errors.length > 0) {
         setError(errors.join('. '));
+        return;
+      }
+    } else if (activeStep === 2) {
+      // Car Use Notice step - validate terms acceptance
+      if (!termsAccepted) {
+        setError('Please agree to the Car Use Notice terms to proceed.');
         return;
       }
     }
@@ -292,8 +331,8 @@ export default function MultiCarBookingModal({
               ? commonData.customPurpose
               : booking.customPurpose
             : booking.useCommonData
-            ? commonData.purpose
-            : booking.purpose;
+              ? commonData.purpose
+              : booking.purpose;
 
         return {
           car_id: booking.car.car_id,
@@ -380,7 +419,10 @@ export default function MultiCarBookingModal({
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#c10007' }}>
+          <Typography
+            variant="h5"
+            sx={{ fontWeight: 'bold', color: '#c10007' }}
+          >
             Book Multiple Cars ({carBookings.length})
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -577,7 +619,9 @@ export default function MultiCarBookingModal({
                   </Box>
                 </AccordionSummary>
                 <AccordionDetails>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box
+                    sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+                  >
                     <FormControlLabel
                       control={
                         <Switch
@@ -606,7 +650,11 @@ export default function MultiCarBookingModal({
                             label="Start Date"
                             value={booking.startDate}
                             onChange={(e) =>
-                              handleCarDataChange(index, 'startDate', e.target.value)
+                              handleCarDataChange(
+                                index,
+                                'startDate',
+                                e.target.value
+                              )
                             }
                             InputLabelProps={{ shrink: true }}
                             inputProps={{
@@ -622,7 +670,11 @@ export default function MultiCarBookingModal({
                             label="End Date"
                             value={booking.endDate}
                             onChange={(e) =>
-                              handleCarDataChange(index, 'endDate', e.target.value)
+                              handleCarDataChange(
+                                index,
+                                'endDate',
+                                e.target.value
+                              )
                             }
                             InputLabelProps={{ shrink: true }}
                             inputProps={{ min: booking.startDate }}
@@ -636,7 +688,11 @@ export default function MultiCarBookingModal({
                             label="Pickup Time"
                             value={booking.pickupTime}
                             onChange={(e) =>
-                              handleCarDataChange(index, 'pickupTime', e.target.value)
+                              handleCarDataChange(
+                                index,
+                                'pickupTime',
+                                e.target.value
+                              )
                             }
                             InputLabelProps={{ shrink: true }}
                           />
@@ -648,7 +704,11 @@ export default function MultiCarBookingModal({
                             label="Drop-off Time"
                             value={booking.dropoffTime}
                             onChange={(e) =>
-                              handleCarDataChange(index, 'dropoffTime', e.target.value)
+                              handleCarDataChange(
+                                index,
+                                'dropoffTime',
+                                e.target.value
+                              )
                             }
                             InputLabelProps={{ shrink: true }}
                           />
@@ -660,7 +720,11 @@ export default function MultiCarBookingModal({
                               value={booking.purpose}
                               label="Purpose"
                               onChange={(e) =>
-                                handleCarDataChange(index, 'purpose', e.target.value)
+                                handleCarDataChange(
+                                  index,
+                                  'purpose',
+                                  e.target.value
+                                )
                               }
                             >
                               <MenuItem value="Travel">Travel</MenuItem>
@@ -737,8 +801,155 @@ export default function MultiCarBookingModal({
           </Box>
         )}
 
-        {/* Step 2: Review & Confirm */}
+        {/* Step 2: Car Use Notice */}
         {activeStep === 2 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Card
+              sx={{
+                border: '2px solid #c10007',
+                mb: 2,
+              }}
+            >
+              <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    mb: 2,
+                    fontWeight: 'bold',
+                    color: '#c10007',
+                    fontSize: { xs: '1rem', sm: '1.25rem' },
+                  }}
+                >
+                  J & A Car Rental – Car Use Notice
+                </Typography>
+
+                <Typography
+                  variant="body1"
+                  sx={{ mb: 2, fontSize: { xs: '0.9rem', sm: '1rem' } }}
+                >
+                  By renting our vehicles, you agree to the following:
+                </Typography>
+
+                <Box sx={{ pl: { xs: 1, sm: 2 }, mb: 3 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mb: 1.5,
+                      fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    • Use the cars for legal purposes only
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mb: 1.5,
+                      fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    • Do not sublease or allow unauthorized drivers
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mb: 1.5,
+                      fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    • Return the vehicles on or before the agreed date and time
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    • Customer is responsible for traffic violations, damages,
+                    or losses during the rental period
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    mt: 3,
+                    pt: 2,
+                    borderTop: '1px solid #e0e0e0',
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mb: 1.5,
+                      fontSize: { xs: '0.9rem', sm: '1rem' },
+                    }}
+                  >
+                    For detailed terms, please review our full{' '}
+                    <button
+                      type="button"
+                      onClick={handleShowTerms}
+                      style={{
+                        color: '#c10007',
+                        textDecoration: 'underline',
+                        fontWeight: 600,
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                        transition: 'color 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => (e.target.style.color = '#a00006')}
+                      onMouseLeave={(e) => (e.target.style.color = '#c10007')}
+                    >
+                      Terms and Conditions
+                    </button>
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={termsAccepted}
+                        disabled={!hasViewedTerms}
+                        onClick={handleCheckboxClick}
+                        onChange={(e) => {
+                          setTermsAccepted(e.target.checked);
+                          if (e.target.checked) {
+                            setError('');
+                          }
+                        }}
+                        sx={{
+                          color: '#c10007',
+                          '&.Mui-checked': {
+                            color: '#c10007',
+                          },
+                          '&.Mui-disabled': {
+                            opacity: 0.6,
+                          },
+                        }}
+                      />
+                    }
+                    label={
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 'bold',
+                          fontSize: { xs: '0.9rem', sm: '1rem' },
+                        }}
+                      >
+                        I agree to these terms
+                      </Typography>
+                    }
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
+        {/* Step 3: Review & Confirm */}
+        {activeStep === 3 && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Alert severity="success">
               Review your bookings before confirming. Total: ₱
@@ -759,7 +970,10 @@ export default function MultiCarBookingModal({
                 ) + 1;
 
               return (
-                <Card key={booking.car.car_id} sx={{ border: '1px solid #e0e0e0' }}>
+                <Card
+                  key={booking.car.car_id}
+                  sx={{ border: '1px solid #e0e0e0' }}
+                >
                   <CardContent>
                     <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                       <Box
@@ -786,7 +1000,9 @@ export default function MultiCarBookingModal({
                           {days !== 1 ? 's' : ''})
                         </Typography>
                         <Typography variant="body2">
-                          {booking.isSelfDrive ? '🚗 Self-Drive' : '👨‍💼 With Driver'}
+                          {booking.isSelfDrive
+                            ? '🚗 Self-Drive'
+                            : '👨‍💼 With Driver'}
                         </Typography>
                       </Box>
                       <Box sx={{ textAlign: 'right' }}>
@@ -797,7 +1013,8 @@ export default function MultiCarBookingModal({
                           ₱{calculateCarCost(booking).toLocaleString()}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Base: ₱{(days * booking.car.rent_price).toLocaleString()}
+                          Base: ₱
+                          {(days * booking.car.rent_price).toLocaleString()}
                         </Typography>
                         <br />
                         <Typography variant="caption" color="text.secondary">
@@ -815,7 +1032,9 @@ export default function MultiCarBookingModal({
               );
             })}
 
-            <Card sx={{ backgroundColor: '#f0f8ff', border: '2px solid #c10007' }}>
+            <Card
+              sx={{ backgroundColor: '#f0f8ff', border: '2px solid #c10007' }}
+            >
               <CardContent>
                 <Box
                   sx={{
@@ -858,7 +1077,7 @@ export default function MultiCarBookingModal({
               Next
             </Button>
           </>
-        ) : activeStep === 1 ? (
+        ) : activeStep === 1 || activeStep === 2 ? (
           <>
             <Button onClick={handleBack} startIcon={<HiArrowLeft />}>
               Back
@@ -872,7 +1091,7 @@ export default function MultiCarBookingModal({
                 '&:hover': { backgroundColor: '#a50006' },
               }}
             >
-              Review
+              {activeStep === 1 ? 'Continue' : 'Review'}
             </Button>
           </>
         ) : (
@@ -890,11 +1109,20 @@ export default function MultiCarBookingModal({
                 '&:hover': { backgroundColor: '#a50006' },
               }}
             >
-              {loading ? 'Submitting...' : `Confirm ${carBookings.length} Bookings`}
+              {loading
+                ? 'Submitting...'
+                : `Confirm ${carBookings.length} Bookings`}
             </Button>
           </>
         )}
       </DialogActions>
+
+      <RegisterTermsAndConditionsModal
+        open={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAgree={handleAgreeTerms}
+        hidePersonalInfoSection={true}
+      />
     </Dialog>
   );
 }

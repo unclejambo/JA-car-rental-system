@@ -129,8 +129,8 @@ model Booking {
   extension_payment_deadline DateTime?     @db.Timestamptz(6)
   return_reminder_sent       Boolean?      @default(false)
   booking_group_id           Int?
-  booking_group              BookingGroup? @relation(fields: [booking_group_id], references: [booking_group_id])
   admin                      Admin?        @relation(fields: [admin_id], references: [admin_id])
+  booking_group              BookingGroup? @relation(fields: [booking_group_id], references: [booking_group_id])
   car                        Car           @relation(fields: [car_id], references: [car_id])
   customer                   Customer      @relation(fields: [customer_id], references: [customer_id])
   driver                     Driver?       @relation(fields: [drivers_id], references: [drivers_id])
@@ -152,8 +152,8 @@ model BookingGroup {
   payment_status   String?   @default("Unpaid")
   created_at       DateTime  @default(now()) @db.Timestamptz(6)
   updated_at       DateTime  @updatedAt @db.Timestamptz(6)
-  customer         Customer  @relation(fields: [customer_id], references: [customer_id])
   bookings         Booking[]
+  customer         Customer  @relation(fields: [customer_id], references: [customer_id])
   payments         Payment[]
 }
 
@@ -169,27 +169,27 @@ model Extension {
 }
 
 model Payment {
-  payment_id           Int       @id @default(autoincrement())
+  payment_id           Int           @id @default(autoincrement())
   booking_id           Int?
-  booking_group_id     Int?
   customer_id          Int
   description          String?
   payment_method       String?
   gcash_no             String?
   reference_no         String?
   amount               Int
-  paid_date            DateTime? @db.Timestamptz(6)
+  paid_date            DateTime?     @db.Timestamptz(6)
   balance              Int?
   waitlist_id          Int?
   payment_proof_url    String?
-  verification_status  String?   @default("pending")
+  verification_status  String?       @default("pending")
   verified_by_admin_id Int?
-  verification_date    DateTime? @db.Timestamptz(6)
+  verification_date    DateTime?     @db.Timestamptz(6)
   verification_notes   String?
-  booking              Booking?  @relation(fields: [booking_id], references: [booking_id], onDelete: Restrict)
+  booking_group_id     Int?
   booking_group        BookingGroup? @relation(fields: [booking_group_id], references: [booking_group_id], onDelete: Restrict)
-  customer             Customer  @relation(fields: [customer_id], references: [customer_id])
-  Waitlist             Waitlist? @relation(fields: [waitlist_id], references: [waitlist_id])
+  booking              Booking?      @relation(fields: [booking_id], references: [booking_id], onDelete: Restrict)
+  customer             Customer      @relation(fields: [customer_id], references: [customer_id])
+  Waitlist             Waitlist?     @relation(fields: [waitlist_id], references: [waitlist_id])
 
   @@index([verification_status], map: "idx_payment_verification_status")
 }

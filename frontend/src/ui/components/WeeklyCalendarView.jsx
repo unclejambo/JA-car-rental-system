@@ -135,6 +135,8 @@ export default function WeeklyCalendarView({
     );
   });
 
+  const viewAllPath = `${isCustomer ? '/customer-schedule' : '/schedule'}?tab=${view === 'release' ? 'RELEASE' : 'IN PROGRESS'}`;
+
   return (
     <Card
       sx={{
@@ -536,7 +538,7 @@ export default function WeeklyCalendarView({
         {/* View All Button */}
         <Button
           component={Link}
-          to={`/schedule?tab=${view === 'release' ? 'RELEASE' : 'IN PROGRESS'}`}
+          to={viewAllPath}
           variant="outlined"
           fullWidth
           sx={{

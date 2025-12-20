@@ -75,6 +75,11 @@ export default function MultiCarBookingModal({
     cleaning_fee: 200,
     driver_fee: 500,
   });
+  const [unavailablePeriods, setUnavailablePeriods] = useState({});
+  const [dateConflicts, setDateConflicts] = useState([]);
+  const [driverWarning, setDriverWarning] = useState('');
+  const [customerData, setCustomerData] = useState(null);
+  const [hasDriverLicense, setHasDriverLicense] = useState(true);
 
   // Common form data applied to all cars by default
   const [commonData, setCommonData] = useState({
@@ -86,6 +91,9 @@ export default function MultiCarBookingModal({
     customPurpose: '',
     isSelfDrive: true,
     deliveryType: 'pickup', // 'pickup' or 'delivery'
+    pickupLocation: 'JA Car Rental Office',
+    dropoffLocation: 'JA Car Rental Office',
+    deliveryLocation: '',
   });
 
   // Individual car bookings with ability to override common data
@@ -116,18 +124,57 @@ export default function MultiCarBookingModal({
         deliveryLocation: '',
         dropoffLocation: 'JA Car Rental Office',
         pickupLocation: 'JA Car Rental Office',
+        hasConflict: false,
+        conflictMessage: '',
       }));
       setCarBookings(initialBookings);
       fetchDrivers();
       fetchFees();
+      fetchCustomerData();
+      fetchAllUnavailablePeriods();
       setError('');
       setActiveStep(0);
       setExpandedCar(0);
       setTermsAccepted(false);
       setShowTermsModal(false);
       setHasViewedTerms(false);
+      setDateConflicts([]);
+      setDriverWarning('');
     }
   }, [open, cars]);
+
+  // Check for conflicts when common data dates change
+  useEffect(() => {
+    if (commonData.startDate && commonData.endDate) {
+      setCarBookings((prev) =>
+        prev.map((booking) => {
+          if (booking.useCommonData) {
+            const conflict = checkDateConflict(
+              booking.car.car_id,
+              commonData.startDate,
+              commonData.endDate
+            );
+            return {
+              ...booking,
+              startDate: commonData.startDate,
+              endDate: commonData.endDate,
+              hasConflict: conflict.hasConflict,
+              conflictMessage: conflict.message,
+            };
+          }
+          return booking;
+        })
+      );
+    }
+  }, [commonData.startDate, commonData.endDate, unavailablePeriods]);
+
+  // Auto-expand first conflicted car in Step 1
+  useEffect(() => {
+    if (activeStep === 1 && dateConflicts.length > 0) {
+      const firstConflictIndex = dateConflicts[0].carIndex;
+      setExpandedCar(firstConflictIndex);
+    }
+  }, [activeStep, dateConflicts]);
 
   const fetchDrivers = async () => {
     try {
@@ -163,20 +210,199 @@ export default function MultiCarBookingModal({
     }
   };
 
+  const fetchCustomerData = async () => {
+    try {
+      const response = await authenticatedFetch(`${API_BASE}/api/customers/me`);
+      if (response.ok) {
+        const data = await response.json();
+        setCustomerData(data);
+
+        const hasLicense =
+          data.driver_license?.driver_license_no &&
+          data.driver_license.driver_license_no.trim() !== '';
+        setHasDriverLicense(hasLicense);
+
+        if (!hasLicense) {
+          setCommonData((prev) => ({ ...prev, isSelfDrive: false }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching customer data:', error);
+    }
+  };
+
+  const fetchAllUnavailablePeriods = async () => {
+    if (!cars || cars.length === 0) return;
+
+    try {
+      const periods = {};
+      for (const car of cars) {
+        const response = await fetch(
+          `${API_BASE}/cars/${car.car_id}/unavailable-periods`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          periods[car.car_id] = data.unavailable_periods || [];
+        } else {
+          periods[car.car_id] = [];
+        }
+      }
+      setUnavailablePeriods(periods);
+    } catch (error) {
+      console.error('Error fetching unavailable periods:', error);
+    }
+  };
+
+  const checkDateConflict = (carId, startDate, endDate) => {
+    if (!startDate || !endDate || !unavailablePeriods[carId]) {
+      return { hasConflict: false, message: '' };
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const periods = unavailablePeriods[carId];
+    for (const period of periods) {
+      const periodStart = new Date(period.start_date);
+      const periodEnd = new Date(period.end_date);
+
+      if (start <= periodEnd && end >= periodStart) {
+        const conflictType = period.reason === 'maintenance' ? 'maintenance' : 'another booking';
+        return {
+          hasConflict: true,
+          message: `This car is unavailable from ${periodStart.toLocaleDateString()} to ${periodEnd.toLocaleDateString()} due to ${conflictType}.`,
+        };
+      }
+    }
+
+    return { hasConflict: false, message: '' };
+  };
+
+  const checkDriverAvailability = () => {
+    const carsNeedingDrivers = carBookings.filter(
+      (booking) => !booking.isSelfDrive && booking.useCommonData ? !commonData.isSelfDrive : true
+    );
+
+    if (carsNeedingDrivers.length > drivers.length) {
+      return `Warning: You are booking ${carsNeedingDrivers.length} car(s) that require driver(s), but only ${drivers.length} driver(s) are available. Please ensure drivers are available or consider self-drive for some vehicles.`;
+    }
+
+    return '';
+  };
+
   const handleCommonDataChange = (field, value) => {
     setCommonData((prev) => ({ ...prev, [field]: value }));
+    
+    // Special handling for deliveryType
+    if (field === 'deliveryType') {
+      if (value === 'pickup') {
+        setCommonData((prev) => ({
+          ...prev,
+          deliveryType: value,
+          pickupLocation: 'JA Car Rental Office',
+          dropoffLocation: 'JA Car Rental Office',
+          deliveryLocation: '',
+        }));
+      } else {
+        setCommonData((prev) => ({
+          ...prev,
+          deliveryType: value,
+          deliveryLocation: '',
+        }));
+      }
+    }
+    
     // Update all cars that use common data
     setCarBookings((prev) =>
-      prev.map((booking) =>
-        booking.useCommonData ? { ...booking, [field]: value } : booking
-      )
+      prev.map((booking) => {
+        if (booking.useCommonData) {
+          const updates = { ...booking, [field]: value };
+          // Clear selectedDriver when switching to self-drive in common data
+          if (field === 'isSelfDrive' && value === true) {
+            updates.selectedDriver = '';
+          }
+          return updates;
+        }
+        return booking;
+      })
     );
   };
 
   const handleCarDataChange = (index, field, value) => {
     setCarBookings((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
+      
+      // If changing isSelfDrive while using common data, toggle off useCommonData first
+      if (field === 'isSelfDrive' && updated[index].useCommonData) {
+        updated[index] = {
+          ...updated[index],
+          useCommonData: false,
+          // Copy all common data values except isSelfDrive which we're changing
+          startDate: commonData.startDate,
+          endDate: commonData.endDate,
+          pickupTime: commonData.pickupTime,
+          dropoffTime: commonData.dropoffTime,
+          purpose: commonData.purpose,
+          customPurpose: commonData.customPurpose,
+          deliveryType: commonData.deliveryType,
+          deliveryLocation: commonData.deliveryLocation,
+          pickupLocation: commonData.pickupLocation,
+          dropoffLocation: commonData.dropoffLocation,
+          isSelfDrive: value, // Use the new value
+          selectedDriver: value ? '' : updated[index].selectedDriver, // Clear driver if self-drive
+        };
+      } else {
+        updated[index] = { ...updated[index], [field]: value };
+
+        // Clear selected driver when switching to self-drive
+        if (field === 'isSelfDrive' && value === true) {
+          updated[index].selectedDriver = '';
+        }
+      }
+
+      // Check for date conflicts when dates change
+      if (field === 'startDate' || field === 'endDate') {
+        const booking = updated[index];
+        const conflict = checkDateConflict(
+          booking.car.car_id,
+          booking.startDate,
+          booking.endDate
+        );
+        updated[index].hasConflict = conflict.hasConflict;
+        updated[index].conflictMessage = conflict.message;
+
+        // Update dateConflicts array in real-time
+        setTimeout(() => {
+          const newConflicts = [];
+          updated.forEach((b, idx) => {
+            const startDate = b.useCommonData ? commonData.startDate : b.startDate;
+            const endDate = b.useCommonData ? commonData.endDate : b.endDate;
+            if (startDate && endDate) {
+              const c = checkDateConflict(b.car.car_id, startDate, endDate);
+              if (c.hasConflict) {
+                newConflicts.push({
+                  carIndex: idx,
+                  carName: `${b.car.make} ${b.car.model}`,
+                  message: c.message,
+                });
+              }
+            }
+          });
+          setDateConflicts(newConflicts);
+        }, 0);
+      }
+
+      // Handle deliveryType changes
+      if (field === 'deliveryType') {
+        if (value === 'pickup') {
+          updated[index].pickupLocation = 'JA Car Rental Office';
+          updated[index].dropoffLocation = 'JA Car Rental Office';
+          updated[index].deliveryLocation = '';
+        } else {
+          updated[index].deliveryLocation = '';
+        }
+      }
+
       return updated;
     });
   };
@@ -198,8 +424,49 @@ export default function MultiCarBookingModal({
           customPurpose: commonData.customPurpose,
           isSelfDrive: commonData.isSelfDrive,
           deliveryType: commonData.deliveryType,
+          deliveryLocation: commonData.deliveryLocation,
+          pickupLocation: commonData.pickupLocation,
+          dropoffLocation: commonData.dropoffLocation,
+          // Clear driver if common data is self-drive
+          selectedDriver: commonData.isSelfDrive ? '' : updated[index].selectedDriver,
         }),
       };
+
+      // Check for conflicts when toggling to common data
+      if (useCommon && commonData.startDate && commonData.endDate) {
+        const conflict = checkDateConflict(
+          updated[index].car.car_id,
+          commonData.startDate,
+          commonData.endDate
+        );
+        updated[index].hasConflict = conflict.hasConflict;
+        updated[index].conflictMessage = conflict.message;
+      } else if (!useCommon) {
+        // Clear conflict when switching to custom data
+        updated[index].hasConflict = false;
+        updated[index].conflictMessage = '';
+      }
+
+      // Update dateConflicts array
+      setTimeout(() => {
+        const newConflicts = [];
+        updated.forEach((b, idx) => {
+          const startDate = b.useCommonData ? commonData.startDate : b.startDate;
+          const endDate = b.useCommonData ? commonData.endDate : b.endDate;
+          if (startDate && endDate) {
+            const c = checkDateConflict(b.car.car_id, startDate, endDate);
+            if (c.hasConflict) {
+              newConflicts.push({
+                carIndex: idx,
+                carName: `${b.car.make} ${b.car.model}`,
+                message: c.message,
+              });
+            }
+          }
+        });
+        setDateConflicts(newConflicts);
+      }, 0);
+
       return updated;
     });
   };
@@ -246,11 +513,39 @@ export default function MultiCarBookingModal({
     if (commonData.purpose === 'Others' && !commonData.customPurpose) {
       errors.push('Please specify your purpose');
     }
+    if (commonData.deliveryType === 'delivery' && !commonData.deliveryLocation) {
+      errors.push('Delivery location is required');
+    }
+
+    // Check for date conflicts in cars using common data
+    const conflicts = [];
+    carBookings.forEach((booking, index) => {
+      if (booking.useCommonData) {
+        const conflict = checkDateConflict(
+          booking.car.car_id,
+          commonData.startDate,
+          commonData.endDate
+        );
+        if (conflict.hasConflict) {
+          const carDisplayName = `${booking.car.make} ${booking.car.model}`;
+          conflicts.push({
+            carIndex: index,
+            carName: carDisplayName,
+            message: conflict.message,
+          });
+        }
+      }
+    });
+
+    setDateConflicts(conflicts);
+
     return errors;
   };
 
   const validateIndividualBookings = () => {
     const errors = [];
+    const conflicts = [];
+    
     carBookings.forEach((booking, index) => {
       if (!booking.useCommonData) {
         if (!booking.startDate)
@@ -259,11 +554,74 @@ export default function MultiCarBookingModal({
           errors.push(`Car ${index + 1}: End date is required`);
         if (!booking.purpose)
           errors.push(`Car ${index + 1}: Purpose is required`);
+        if (booking.deliveryType === 'delivery' && !booking.deliveryLocation) {
+          errors.push(`Car ${index + 1}: Delivery location is required`);
+        }
       }
-      if (!booking.isSelfDrive && !booking.selectedDriver) {
-        errors.push(`Car ${index + 1}: Please select a driver`);
+      
+      // Check for date conflicts for ALL cars (both common and custom data)
+      const startDate = booking.useCommonData ? commonData.startDate : booking.startDate;
+      const endDate = booking.useCommonData ? commonData.endDate : booking.endDate;
+      
+      if (startDate && endDate) {
+        const conflict = checkDateConflict(
+          booking.car.car_id,
+          startDate,
+          endDate
+        );
+        if (conflict.hasConflict) {
+          const carDisplayName = `${booking.car.make} ${booking.car.model}`;
+          conflicts.push({
+            carIndex: index,
+            carName: carDisplayName,
+            message: conflict.message,
+          });
+        }
+      }
+      
+      // Check if driver is required but not selected
+      const isSelfDrive = booking.useCommonData ? commonData.isSelfDrive : booking.isSelfDrive;
+      if (!isSelfDrive && !booking.selectedDriver) {
+        const carDisplayName = `${booking.car.make} ${booking.car.model}`;
+        errors.push(`${carDisplayName}: Please select a driver`);
       }
     });
+
+    // Check for duplicate driver assignments
+    const driverAssignments = {};
+    carBookings.forEach((booking, index) => {
+      const isSelfDrive = booking.useCommonData ? commonData.isSelfDrive : booking.isSelfDrive;
+      const driverKey = booking.selectedDriver ? String(booking.selectedDriver) : null;
+      
+      if (!isSelfDrive && driverKey) {
+        if (!driverAssignments[driverKey]) {
+          driverAssignments[driverKey] = [];
+        }
+        driverAssignments[driverKey].push({
+          index,
+          carName: `${booking.car.make} ${booking.car.model}`,
+        });
+      }
+    });
+
+    // Report duplicate driver assignments
+    Object.entries(driverAssignments).forEach(([driverId, assignments]) => {
+      if (assignments.length > 1) {
+        const carNames = assignments.map(a => a.carName).join(' and ');
+        const driver = drivers.find(d => String(d.drivers_id) === driverId);
+        const driverName = driver ? `${driver.first_name} ${driver.last_name}` : 'This driver';
+        errors.push(`⚠️ ${driverName} is assigned to multiple cars (${carNames}). Each driver can only drive one car at a time.`);
+      }
+    });
+
+    // Check driver availability
+    const driverWarningMsg = checkDriverAvailability();
+    if (driverWarningMsg) {
+      setDriverWarning(driverWarningMsg);
+    }
+
+    setDateConflicts(conflicts);
+    
     return errors;
   };
 
@@ -295,10 +653,19 @@ export default function MultiCarBookingModal({
         setError(errors.join('. '));
         return;
       }
+      // Always proceed to Step 1, conflicts will be shown and resolved there
+      setError('');
+      setActiveStep(1);
+      return;
     } else if (activeStep === 1) {
       const errors = validateIndividualBookings();
       if (errors.length > 0) {
         setError(errors.join('. '));
+        return;
+      }
+      // Check if there are still conflicts
+      if (dateConflicts.length > 0) {
+        setError('Please resolve all date conflicts before proceeding.');
         return;
       }
     } else if (activeStep === 2) {
@@ -309,6 +676,7 @@ export default function MultiCarBookingModal({
       }
     }
     setError('');
+    setDriverWarning(''); // Clear driver warning when moving forward
     setActiveStep((prev) => prev + 1);
   };
 
@@ -347,19 +715,37 @@ export default function MultiCarBookingModal({
           dropoffTime: booking.useCommonData
             ? commonData.dropoffTime
             : booking.dropoffTime,
-          deliveryType: booking.deliveryType,
+          deliveryType: booking.useCommonData
+            ? commonData.deliveryType
+            : booking.deliveryType,
           deliveryLocation:
-            booking.deliveryType === 'delivery'
-              ? booking.deliveryLocation
+            (booking.useCommonData
+              ? commonData.deliveryType
+              : booking.deliveryType) === 'delivery'
+              ? (booking.useCommonData
+                  ? commonData.deliveryLocation
+                  : booking.deliveryLocation)
               : null,
           pickupLocation:
-            booking.deliveryType === 'pickup'
-              ? 'JA Car Rental Office - 123 Main Street, Business District, City'
+            (booking.useCommonData
+              ? commonData.deliveryType
+              : booking.deliveryType) === 'pickup'
+              ? (booking.useCommonData
+                  ? commonData.pickupLocation
+                  : booking.pickupLocation)
               : null,
-          dropoffLocation: booking.dropoffLocation,
-          selectedDriver: booking.isSelfDrive ? null : booking.selectedDriver,
+          dropoffLocation: booking.useCommonData
+            ? commonData.dropoffLocation
+            : booking.dropoffLocation,
+          selectedDriver: (booking.useCommonData
+            ? commonData.isSelfDrive
+            : booking.isSelfDrive)
+            ? null
+            : booking.selectedDriver,
           totalCost: calculateCarCost(booking),
-          isSelfDrive: booking.isSelfDrive,
+          isSelfDrive: booking.useCommonData
+            ? commonData.isSelfDrive
+            : booking.isSelfDrive,
           total_amount: calculateCarCost(booking),
           balance: calculateCarCost(booking),
           booking_status: 'Pending',
@@ -458,6 +844,27 @@ export default function MultiCarBookingModal({
               individual cars in the next step.
             </Alert>
 
+            {dateConflicts.length > 0 && (
+              <Alert severity="warning">
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  Date Conflicts Detected ({dateConflicts.length} car{dateConflicts.length > 1 ? 's' : ''}):
+                </Typography>
+                {dateConflicts.map((conflict, idx) => (
+                  <Box key={idx} sx={{ mb: 0.5 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#c10007' }}>
+                      • {conflict.carName}
+                    </Typography>
+                    <Typography variant="caption" sx={{ ml: 2, display: 'block' }}>
+                      {conflict.message}
+                    </Typography>
+                  </Box>
+                ))}
+                <Typography variant="body2" sx={{ mt: 1.5, fontStyle: 'italic', color: '#666' }}>
+                  ⓘ Click NEXT to adjust dates for individual cars in the next step.
+                </Typography>
+              </Alert>
+            )}
+
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
@@ -551,6 +958,75 @@ export default function MultiCarBookingModal({
                   />
                 </Grid>
               )}
+
+              <Grid size={{ xs: 12 }}>
+                <FormControl component="fieldset">
+                  <FormLabel component="legend">Service Type</FormLabel>
+                  <RadioGroup
+                    row
+                    value={commonData.deliveryType}
+                    onChange={(e) =>
+                      handleCommonDataChange('deliveryType', e.target.value)
+                    }
+                  >
+                    <FormControlLabel
+                      value="pickup"
+                      control={<Radio sx={{ color: '#c10007', '&.Mui-checked': { color: '#c10007' } }} />}
+                      label="Pick-up at Office"
+                    />
+                    <FormControlLabel
+                      value="delivery"
+                      control={<Radio sx={{ color: '#c10007', '&.Mui-checked': { color: '#c10007' } }} />}
+                      label="Delivery Service"
+                    />
+                  </RadioGroup>
+                </FormControl>
+              </Grid>
+
+              {commonData.deliveryType === 'delivery' && (
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    label="Delivery Location"
+                    value={commonData.deliveryLocation}
+                    onChange={(e) =>
+                      handleCommonDataChange('deliveryLocation', e.target.value)
+                    }
+                    placeholder="Enter your delivery address"
+                    required
+                  />
+                </Grid>
+              )}
+
+              <Grid size={{ xs: 12 }}>
+                <FormControl component="fieldset">
+                  <FormLabel component="legend">Driving Option</FormLabel>
+                  <RadioGroup
+                    row
+                    value={commonData.isSelfDrive ? 'self' : 'driver'}
+                    onChange={(e) =>
+                      handleCommonDataChange('isSelfDrive', e.target.value === 'self')
+                    }
+                  >
+                    <FormControlLabel
+                      value="self"
+                      control={<Radio sx={{ color: '#c10007', '&.Mui-checked': { color: '#c10007' } }} />}
+                      label="Self-Drive"
+                      disabled={!hasDriverLicense}
+                    />
+                    <FormControlLabel
+                      value="driver"
+                      control={<Radio sx={{ color: '#c10007', '&.Mui-checked': { color: '#c10007' } }} />}
+                      label="With Driver"
+                    />
+                  </RadioGroup>
+                  {!hasDriverLicense && (
+                    <Typography variant="caption" color="error">
+                      Self-drive not available (no driver's license on file)
+                    </Typography>
+                  )}
+                </FormControl>
+              </Grid>
             </Grid>
           </Box>
         )}
@@ -562,6 +1038,33 @@ export default function MultiCarBookingModal({
               Review and customize each car's booking. Toggle "Use Common Data"
               to customize individual settings.
             </Alert>
+
+            {driverWarning && (
+              <Alert severity="warning">
+                {driverWarning}
+              </Alert>
+            )}
+
+            {dateConflicts.length > 0 && (
+              <Alert severity="error">
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  ⚠️ Please resolve the following date conflicts ({dateConflicts.length} car{dateConflicts.length > 1 ? 's' : ''}):
+                </Typography>
+                {dateConflicts.map((conflict, idx) => (
+                  <Box key={idx} sx={{ mb: 0.5 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                      • {conflict.carName}
+                    </Typography>
+                    <Typography variant="caption" sx={{ ml: 2, display: 'block' }}>
+                      {conflict.message}
+                    </Typography>
+                  </Box>
+                ))}
+                <Typography variant="body2" sx={{ mt: 1.5, fontWeight: 'bold' }}>
+                  Toggle "Use Common Data" off and adjust dates for each conflicted car below.
+                </Typography>
+              </Alert>
+            )}
 
             {carBookings.map((booking, index) => (
               <Accordion
@@ -599,7 +1102,15 @@ export default function MultiCarBookingModal({
                         ₱{calculateCarCost(booking).toLocaleString()} total
                       </Typography>
                     </Box>
-                    {booking.useCommonData && (
+                    {booking.hasConflict && (
+                      <Chip
+                        label="Date Conflict"
+                        size="small"
+                        color="error"
+                        icon={<HiExclamationCircle />}
+                      />
+                    )}
+                    {booking.useCommonData && !booking.hasConflict && (
                       <Chip
                         label="Using Common Data"
                         size="small"
@@ -622,6 +1133,27 @@ export default function MultiCarBookingModal({
                   <Box
                     sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
                   >
+                    {/* Show unavailable periods for this car */}
+                    {unavailablePeriods[booking.car.car_id] && unavailablePeriods[booking.car.car_id].length > 0 ? (
+                      <Alert severity="warning" sx={{ mb: 1 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                          ⚠️ Unavailable Dates for this Car:
+                        </Typography>
+                        {unavailablePeriods[booking.car.car_id].map((period, idx) => (
+                          <Typography key={idx} variant="body2" display="block" sx={{ mb: 0.5 }}>
+                            • {new Date(period.start_date).toLocaleDateString()} to {new Date(period.end_date).toLocaleDateString()}
+                            {period.reason && ` - ${period.reason === 'maintenance' ? 'Maintenance' : 'Booked by another customer'}`}
+                          </Typography>
+                        ))}
+                      </Alert>
+                    ) : (
+                      <Alert severity="success" sx={{ mb: 1 }}>
+                        <Typography variant="body2">
+                          ✓ This car has no booking conflicts or scheduled maintenance
+                        </Typography>
+                      </Alert>
+                    )}
+
                     <FormControlLabel
                       control={
                         <Switch
@@ -640,6 +1172,17 @@ export default function MultiCarBookingModal({
                       }
                       label="Use Common Data"
                     />
+
+                    {booking.hasConflict && (
+                      <Alert severity="error" sx={{ mb: 2 }}>
+                        <Typography variant="body2">
+                          {booking.conflictMessage}
+                        </Typography>
+                        <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>
+                          Please adjust the dates below or toggle "Use Common Data" off to set custom dates.
+                        </Typography>
+                      </Alert>
+                    )}
 
                     {!booking.useCommonData && (
                       <Grid container spacing={2}>
@@ -738,6 +1281,45 @@ export default function MultiCarBookingModal({
                             </Select>
                           </FormControl>
                         </Grid>
+
+                        <Grid size={{ xs: 12 }}>
+                          <FormControl component="fieldset">
+                            <FormLabel component="legend">Service Type</FormLabel>
+                            <RadioGroup
+                              row
+                              value={booking.deliveryType}
+                              onChange={(e) =>
+                                handleCarDataChange(index, 'deliveryType', e.target.value)
+                              }
+                            >
+                              <FormControlLabel
+                                value="pickup"
+                                control={<Radio sx={{ color: '#c10007', '&.Mui-checked': { color: '#c10007' } }} />}
+                                label="Pick-up at Office"
+                              />
+                              <FormControlLabel
+                                value="delivery"
+                                control={<Radio sx={{ color: '#c10007', '&.Mui-checked': { color: '#c10007' } }} />}
+                                label="Delivery Service"
+                              />
+                            </RadioGroup>
+                          </FormControl>
+                        </Grid>
+
+                        {booking.deliveryType === 'delivery' && (
+                          <Grid size={{ xs: 12 }}>
+                            <TextField
+                              fullWidth
+                              label="Delivery Location"
+                              value={booking.deliveryLocation}
+                              onChange={(e) =>
+                                handleCarDataChange(index, 'deliveryLocation', e.target.value)
+                              }
+                              placeholder="Enter your delivery address"
+                              required
+                            />
+                          </Grid>
+                        )}
                       </Grid>
                     )}
 
@@ -747,7 +1329,7 @@ export default function MultiCarBookingModal({
                     <FormControlLabel
                       control={
                         <Switch
-                          checked={booking.isSelfDrive}
+                          checked={booking.useCommonData ? commonData.isSelfDrive : booking.isSelfDrive}
                           onChange={(e) =>
                             handleCarDataChange(
                               index,
@@ -766,33 +1348,58 @@ export default function MultiCarBookingModal({
                           }}
                         />
                       }
-                      label="Self-Drive"
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <span>Self-Drive</span>
+                          {booking.useCommonData && (
+                            <Typography variant="caption" color="text.secondary">
+                              (changing this will use custom settings)
+                            </Typography>
+                          )}
+                        </Box>
+                      }
                     />
 
-                    {!booking.isSelfDrive && (
-                      <FormControl fullWidth required>
-                        <InputLabel>Select Driver</InputLabel>
-                        <Select
-                          value={booking.selectedDriver}
-                          label="Select Driver"
-                          onChange={(e) =>
-                            handleCarDataChange(
-                              index,
-                              'selectedDriver',
-                              e.target.value
-                            )
-                          }
-                        >
-                          {drivers.map((driver) => (
-                            <MenuItem
-                              key={driver.drivers_id}
-                              value={driver.drivers_id}
-                            >
-                              {driver.first_name} {driver.last_name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
+                    {!(booking.useCommonData ? commonData.isSelfDrive : booking.isSelfDrive) && (
+                      <>
+                        <FormControl fullWidth required>
+                          <InputLabel>Select Driver</InputLabel>
+                          <Select
+                            value={booking.selectedDriver}
+                            label="Select Driver"
+                            onChange={(e) =>
+                              handleCarDataChange(
+                                index,
+                                'selectedDriver',
+                                e.target.value
+                              )
+                            }
+                          >
+                            {drivers.map((driver) => (
+                              <MenuItem
+                                key={driver.drivers_id}
+                                value={driver.drivers_id}
+                              >
+                                {driver.first_name} {driver.last_name}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                        
+                        {/* Check if this driver is already assigned to another car */}
+                        {booking.selectedDriver && carBookings.some((b, idx) => 
+                          idx !== index && 
+                          b.selectedDriver && 
+                          String(b.selectedDriver) === String(booking.selectedDriver) &&
+                          !(b.useCommonData ? commonData.isSelfDrive : b.isSelfDrive)
+                        ) && (
+                          <Alert severity="error" sx={{ mt: 1 }}>
+                            <Typography variant="body2">
+                              ⚠️ This driver is already assigned to another car. Each driver can only drive one car at a time.
+                            </Typography>
+                          </Alert>
+                        )}
+                      </>
                     )}
                   </Box>
                 </AccordionDetails>

@@ -3,6 +3,7 @@ import {
   getPayments,
   createPayment,
   processBookingPayment,
+  processGroupPayment,
   getMyPayments,
   deletePayment,
   deletePaymentByBookingId,
@@ -26,6 +27,12 @@ router.post(
   verifyToken,
   requireCustomer,
   processBookingPayment
+);
+router.post(
+  "/process-group-payment",
+  verifyToken,
+  requireCustomer,
+  processGroupPayment
 );
 router.get("/my-payments", verifyToken, requireCustomer, getMyPayments);
 router.delete('/booking/:bookingId', verifyToken, adminOrStaff, deletePaymentByBookingId);

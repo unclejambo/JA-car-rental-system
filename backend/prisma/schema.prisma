@@ -127,6 +127,7 @@ model Booking {
   isExtended                 Boolean?      @default(false)
   extension_payment_deadline DateTime?     @db.Timestamptz(6)
   return_reminder_sent       Boolean?      @default(false)
+  booking_group_id           String?
   admin                      Admin?        @relation(fields: [admin_id], references: [admin_id])
   car                        Car           @relation(fields: [car_id], references: [car_id])
   customer                   Customer      @relation(fields: [customer_id], references: [customer_id])
@@ -167,6 +168,7 @@ model Payment {
   verified_by_admin_id Int?
   verification_date    DateTime? @db.Timestamptz(6)
   verification_notes   String?
+  booking_group_id     String?
   booking              Booking?  @relation(fields: [booking_id], references: [booking_id], onDelete: Restrict)
   customer             Customer  @relation(fields: [customer_id], references: [customer_id])
   Waitlist             Waitlist? @relation(fields: [waitlist_id], references: [waitlist_id])

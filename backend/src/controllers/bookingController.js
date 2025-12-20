@@ -893,6 +893,32 @@ export const createBulkBookings = async (req, res) => {
       });
     }
 
+    // Generate booking_group_id for multiple bookings
+    let bookingGroupId = null;
+    if (validatedBookings.length > 1) {
+      // Find the highest existing group number
+      const lastGroup = await prisma.$queryRaw`
+        SELECT booking_group_id 
+        FROM "Booking" 
+        WHERE booking_group_id LIKE 'GRP%' 
+        ORDER BY CAST(SUBSTRING(booking_group_id FROM 4) AS INTEGER) DESC 
+        LIMIT 1
+      `;
+      
+      let nextGroupNumber = 1;
+      if (lastGroup && lastGroup.length > 0 && lastGroup[0].booking_group_id) {
+        const lastNumber = parseInt(lastGroup[0].booking_group_id.substring(3));
+        nextGroupNumber = lastNumber + 1;
+      }
+      
+      bookingGroupId = `GRP${nextGroupNumber}`;
+      
+      // Assign group ID to all validated bookings
+      validatedBookings.forEach(booking => {
+        booking.booking_group_id = bookingGroupId;
+      });
+    }
+
     // Create all bookings in a transaction
     const createdBookings = await prisma.$transaction(async (tx) => {
       const results = [];
@@ -956,6 +982,7 @@ export const createBulkBookings = async (req, res) => {
               payment_method: null,
               paid_date: null,
               balance: bookingData.total_amount,
+              booking_group_id: bookingData.booking_group_id || null,
             },
           });
         } catch (paymentError) {

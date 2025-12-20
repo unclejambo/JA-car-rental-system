@@ -27,6 +27,7 @@ const ManageBookingsTable = ({
   rows,
   loading,
   onViewDetails,
+  onViewGroupDetails,
   onDataChange,
 }) => {
   const navigate = useNavigate();
@@ -103,14 +104,25 @@ const ManageBookingsTable = ({
 
     try {
       setProcessing(true);
-      const bookingId = row.actualBookingId;
 
-      // Call the confirm booking API
-      const result = await bookingAPI.confirmBooking(bookingId, logout);
+      // Handle group bookings - confirm all bookings in the group
+      if (row.isGroup && row.bookings && row.bookings.length > 0) {
+        const confirmPromises = row.bookings.map((booking) =>
+          bookingAPI.confirmBooking(booking.booking_id, logout)
+        );
 
-      // Use the message from backend response
-      const message = result.message || 'Booking confirmed successfully!';
-      showMessage(message, 'success');
+        await Promise.all(confirmPromises);
+        showMessage(
+          `All ${row.bookings.length} bookings in group confirmed successfully!`,
+          'success'
+        );
+      } else {
+        // Handle single booking
+        const bookingId = row.actualBookingId;
+        const result = await bookingAPI.confirmBooking(bookingId, logout);
+        const message = result.message || 'Booking confirmed successfully!';
+        showMessage(message, 'success');
+      }
 
       // Trigger real-time refresh of header notifications
       window.dispatchEvent(new Event('refreshNotifications'));
@@ -132,15 +144,23 @@ const ManageBookingsTable = ({
 
     try {
       setProcessing(true);
-      const bookingId = row.actualBookingId;
 
-      // Call the confirm cancellation API
-      const result = await bookingAPI.confirmCancellationRequest(
-        bookingId,
-        logout
-      );
-
-      showMessage('Cancellation confirmed successfully!', 'success');
+      // Handle group bookings
+      if (row.isGroup && row.bookings && row.bookings.length > 0) {
+        const confirmPromises = row.bookings.map((booking) =>
+          bookingAPI.confirmCancellationRequest(booking.booking_id, logout)
+        );
+        await Promise.all(confirmPromises);
+        showMessage(
+          `All ${row.bookings.length} cancellation requests in group confirmed!`,
+          'success'
+        );
+      } else {
+        // Handle single booking
+        const bookingId = row.actualBookingId;
+        await bookingAPI.confirmCancellationRequest(bookingId, logout);
+        showMessage('Cancellation confirmed successfully!', 'success');
+      }
 
       // Trigger real-time refresh of header notifications
       window.dispatchEvent(new Event('refreshNotifications'));
@@ -162,15 +182,23 @@ const ManageBookingsTable = ({
 
     try {
       setProcessing(true);
-      const bookingId = row.actualBookingId;
 
-      // Call the reject cancellation API
-      const result = await bookingAPI.rejectCancellationRequest(
-        bookingId,
-        logout
-      );
-
-      showMessage('Cancellation request rejected successfully!', 'success');
+      // Handle group bookings
+      if (row.isGroup && row.bookings && row.bookings.length > 0) {
+        const rejectPromises = row.bookings.map((booking) =>
+          bookingAPI.rejectCancellationRequest(booking.booking_id, logout)
+        );
+        await Promise.all(rejectPromises);
+        showMessage(
+          `All ${row.bookings.length} cancellation requests in group rejected!`,
+          'success'
+        );
+      } else {
+        // Handle single booking
+        const bookingId = row.actualBookingId;
+        await bookingAPI.rejectCancellationRequest(bookingId, logout);
+        showMessage('Cancellation request rejected successfully!', 'success');
+      }
 
       // Trigger real-time refresh of header notifications
       window.dispatchEvent(new Event('refreshNotifications'));
@@ -195,32 +223,53 @@ const ManageBookingsTable = ({
 
     try {
       setProcessing(true);
-      const bookingId = row.actualBookingId;
 
-      // Check if this is payment confirmation or extension approval
-      const isPaid =
-        row.isPay === true || row.isPay === 'true' || row.isPay === 'TRUE';
+      // Handle group bookings
+      if (row.isGroup && row.bookings && row.bookings.length > 0) {
+        const isPaid =
+          row.isPay === true || row.isPay === 'true' || row.isPay === 'TRUE';
 
-      if (isPaid) {
-        // Customer has paid - confirm the PAYMENT (not the extension request)
-        const result = await bookingAPI.confirmBooking(bookingId, logout);
-        showMessage(
-          'Extension payment confirmed! End date has been updated.',
-          'success'
-        );
-        // Refresh header notifications after confirming payment
+        if (isPaid) {
+          // Confirm payment for all bookings in group
+          const confirmPromises = row.bookings.map((booking) =>
+            bookingAPI.confirmBooking(booking.booking_id, logout)
+          );
+          await Promise.all(confirmPromises);
+          showMessage(
+            `All ${row.bookings.length} extension payments in group confirmed!`,
+            'success'
+          );
+        } else {
+          // Approve extension requests for all bookings in group
+          const approvePromises = row.bookings.map((booking) =>
+            bookingAPI.confirmExtensionRequest(booking.booking_id, logout)
+          );
+          await Promise.all(approvePromises);
+          showMessage(
+            `All ${row.bookings.length} extension requests in group approved!`,
+            'success'
+          );
+        }
         window.dispatchEvent(new Event('refreshNotifications'));
       } else {
-        // Customer hasn't paid yet - approve the extension REQUEST
-        const result = await bookingAPI.confirmExtensionRequest(
-          bookingId,
-          logout
-        );
-        showMessage(
-          'Extension request approved! Waiting for customer payment.',
-          'success'
-        );
-        // Refresh header notifications after approving extension
+        // Handle single booking
+        const bookingId = row.actualBookingId;
+        const isPaid =
+          row.isPay === true || row.isPay === 'true' || row.isPay === 'TRUE';
+
+        if (isPaid) {
+          await bookingAPI.confirmBooking(bookingId, logout);
+          showMessage(
+            'Extension payment confirmed! End date has been updated.',
+            'success'
+          );
+        } else {
+          await bookingAPI.confirmExtensionRequest(bookingId, logout);
+          showMessage(
+            'Extension request approved! Waiting for customer payment.',
+            'success'
+          );
+        }
         window.dispatchEvent(new Event('refreshNotifications'));
       }
 
@@ -241,12 +290,23 @@ const ManageBookingsTable = ({
 
     try {
       setProcessing(true);
-      const bookingId = row.actualBookingId;
 
-      // Call the reject extension API
-      const result = await bookingAPI.rejectExtensionRequest(bookingId, logout);
-
-      showMessage('Extension request rejected successfully!', 'success');
+      // Handle group bookings
+      if (row.isGroup && row.bookings && row.bookings.length > 0) {
+        const rejectPromises = row.bookings.map((booking) =>
+          bookingAPI.rejectExtensionRequest(booking.booking_id, logout)
+        );
+        await Promise.all(rejectPromises);
+        showMessage(
+          `All ${row.bookings.length} extension requests in group rejected!`,
+          'success'
+        );
+      } else {
+        // Handle single booking
+        const bookingId = row.actualBookingId;
+        await bookingAPI.rejectExtensionRequest(bookingId, logout);
+        showMessage('Extension request rejected successfully!', 'success');
+      }
 
       // Trigger real-time refresh of header notifications
       window.dispatchEvent(new Event('refreshNotifications'));
@@ -420,28 +480,69 @@ const ManageBookingsTable = ({
       editable: false,
       resizable: true,
       headerAlign: 'left',
-      renderCell: (params) => (
-        <Box>
-          <Typography
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.875rem',
-              color: '#1a1a1a',
-            }}
-          >
-            {params.value}
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: '0.75rem',
-              color: '#757575',
-              mt: 0.3,
-            }}
-          >
-            {params.row.car_plate_number || params.row.plate_number || ''}
-          </Typography>
-        </Box>
-      ),
+      renderCell: (params) => {
+        const isGroupBooking = params.row.isGroup === true;
+        
+        if (isGroupBooking) {
+          return (
+            <Box
+              onClick={() => onViewGroupDetails && onViewGroupDetails(params.row)}
+              sx={{
+                cursor: 'pointer',
+                '&:hover': {
+                  '& .MuiTypography-root': {
+                    color: '#c10007',
+                  },
+                },
+              }}
+            >
+              <Typography
+                sx={{
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  color: '#1976d2',
+                  textDecoration: 'underline',
+                  transition: 'color 0.2s',
+                }}
+              >
+                {params.value}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: '0.75rem',
+                  color: '#757575',
+                  mt: 0.3,
+                }}
+              >
+                {params.row.car_plate_number || params.row.plate_number || ''}
+              </Typography>
+            </Box>
+          );
+        }
+        
+        return (
+          <Box>
+            <Typography
+              sx={{
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                color: '#1a1a1a',
+              }}
+            >
+              {params.value}
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: '0.75rem',
+                color: '#757575',
+                mt: 0.3,
+              }}
+            >
+              {params.row.car_plate_number || params.row.plate_number || ''}
+            </Typography>
+          </Box>
+        );
+      },
     },
     {
       field: 'start_date',

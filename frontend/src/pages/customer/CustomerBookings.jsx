@@ -392,8 +392,70 @@ function CustomerBookings() {
     return formatDateForInput(endDate);
   };
 
+  // Helper function to group bookings by booking_group_id
+  const groupBookings = (bookingsList) => {
+    const grouped = [];
+    const processedGroups = new Set();
+    const ungroupedBookings = [];
+
+    bookingsList.forEach((booking) => {
+      if (booking.booking_group_id && !processedGroups.has(booking.booking_group_id)) {
+        // Find all bookings with the same group_id
+        const groupedBookings = bookingsList.filter(
+          (b) => b.booking_group_id === booking.booking_group_id
+        );
+        
+        // Calculate total amount for the group
+        const totalAmount = groupedBookings.reduce(
+          (sum, b) => sum + (b.total_amount || 0),
+          0
+        );
+        
+        // Calculate total balance for the group
+        const totalBalance = groupedBookings.reduce(
+          (sum, b) => sum + (b.balance || 0),
+          0
+        );
+        
+        // Calculate total paid for the group
+        const totalPaid = groupedBookings.reduce(
+          (sum, b) => sum + (b.total_paid || 0),
+          0
+        );
+
+        grouped.push({
+          isGroup: true,
+          booking_group_id: booking.booking_group_id,
+          booking_id: groupedBookings.map(b => b.booking_id).join(','), // For search purposes
+          bookings: groupedBookings,
+          car_count: groupedBookings.length,
+          total_amount: totalAmount,
+          balance: totalBalance,
+          total_paid: totalPaid,
+          payment_status: totalBalance > 0 ? 'Unpaid' : 'Paid',
+          booking_status: groupedBookings[0].booking_status, // Use status of first booking
+          start_date: groupedBookings[0].start_date,
+          end_date: groupedBookings[0].end_date,
+          pickup_time: groupedBookings[0].pickup_time,
+          dropoff_time: groupedBookings[0].dropoff_time,
+          pickup_loc: groupedBookings[0].pickup_loc,
+          dropoff_loc: groupedBookings[0].dropoff_loc,
+          isPay: groupedBookings.some(b => b.isPay),
+          isCancel: groupedBookings.some(b => b.isCancel),
+          isExtend: groupedBookings.some(b => b.isExtend),
+        });
+        
+        processedGroups.add(booking.booking_group_id);
+      } else if (!booking.booking_group_id) {
+        ungroupedBookings.push({ ...booking, isGroup: false });
+      }
+    });
+
+    return [...grouped, ...ungroupedBookings];
+  };
+
   // Filter bookings based on search query
-  const filteredBookings = (bookings || []).filter((booking) => {
+  const filteredBookings = groupBookings((bookings || []).filter((booking) => {
     if (!bookingSearchQuery) return true;
     const query = bookingSearchQuery.toLowerCase();
     return (
@@ -404,10 +466,10 @@ function CustomerBookings() {
       booking.pickup_location?.toLowerCase().includes(query) ||
       booking.dropoff_location?.toLowerCase().includes(query)
     );
-  });
+  }));
 
   // Filter payments based on search query
-  const filteredPayments = payments.filter((payment) => {
+  const filteredPayments = groupBookings(payments.filter((payment) => {
     if (!paymentSearchQuery) return true;
     const query = paymentSearchQuery.toLowerCase();
     return (
@@ -419,7 +481,7 @@ function CustomerBookings() {
       payment.pickup_date?.toLowerCase().includes(query) ||
       payment.dropoff_date?.toLowerCase().includes(query)
     );
-  });
+  }));
 
   return (
     <>
@@ -710,6 +772,213 @@ function CustomerBookings() {
                       );
                     })
                     .map((booking) => {
+                      // Check if this is a grouped booking
+                      if (booking.isGroup) {
+                        // Render grouped booking card
+                        return (
+                          <Card
+                            key={`group-${booking.booking_group_id}`}
+                            sx={{
+                              display: 'flex',
+                              flexDirection: { xs: 'column', sm: 'row' },
+                              border: '2px solid #4CAF50',
+                              position: 'relative',
+                              backgroundColor: '#f1f8f4',
+                              '&:hover': {
+                                boxShadow: '0 4px 12px rgba(76, 175, 80, 0.2)',
+                                borderColor: '#4CAF50',
+                              },
+                              transition: 'all 0.3s ease',
+                            }}
+                          >
+                            {/* Group Badge */}
+                            <Chip
+                              label={`Group Booking (${booking.car_count} Cars)`}
+                              size="small"
+                              sx={{
+                                position: 'absolute',
+                                top: 10,
+                                right: 10,
+                                zIndex: 1,
+                                backgroundColor: '#4CAF50',
+                                color: 'white',
+                                fontWeight: 'bold',
+                              }}
+                            />
+
+                            {/* Content */}
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexGrow: 1,
+                                flexDirection: 'column',
+                              }}
+                            >
+                              <CardContent
+                                sx={{ flex: '1 0 auto', p: { xs: 1.5, sm: 2 } }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'flex-start',
+                                    mb: 1.5,
+                                    pr: { xs: 15, sm: 0 },
+                                  }}
+                                >
+                                  <Box>
+                                    <Typography
+                                      variant="h6"
+                                      sx={{
+                                        fontWeight: 'bold',
+                                        mb: 0.5,
+                                        fontSize: { xs: '1rem', sm: '1.25rem' },
+                                      }}
+                                    >
+                                      Group Booking - {booking.car_count} Vehicles
+                                    </Typography>
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                      sx={{
+                                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                      }}
+                                    >
+                                      {booking.bookings.map((b, idx) => (
+                                        <span key={b.booking_id}>
+                                          {b.car_details.display_name}
+                                          {idx < booking.bookings.length - 1 ? ', ' : ''}
+                                        </span>
+                                      ))}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+
+                                {/* Booking Details */}
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: { xs: 0.3, md: 0.75 },
+                                    mb: 1.5,
+                                  }}
+                                >
+                                  {/* Date Range */}
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 0.5,
+                                    }}
+                                  >
+                                    <HiCalendar
+                                      size={16}
+                                      style={{ color: '#c10007', flexShrink: 0 }}
+                                    />
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                      }}
+                                    >
+                                      {formatPhilippineDate(booking.start_date, {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                      })}{' '}
+                                      -{' '}
+                                      {formatPhilippineDate(booking.end_date, {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                      })}
+                                    </Typography>
+                                  </Box>
+
+                                  {/* Locations */}
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 0.5,
+                                    }}
+                                  >
+                                    <HiLocationMarker
+                                      size={16}
+                                      style={{ color: '#4CAF50', flexShrink: 0 }}
+                                    />
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                      }}
+                                    >
+                                      <strong>Pickup:</strong> {booking.pickup_loc || 'JA Car Rental Office'}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+
+                                {/* Total Amount */}
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
+                                    mb: 1,
+                                  }}
+                                >
+                                  <HiCurrencyDollar
+                                    size={16}
+                                    style={{ color: '#c10007' }}
+                                  />
+                                  <Typography
+                                    variant="body1"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      color: '#c10007',
+                                      fontSize: { xs: '0.875rem', sm: '1rem' },
+                                    }}
+                                  >
+                                    Total: ₱{booking.total_amount?.toLocaleString()}
+                                  </Typography>
+                                </Box>
+
+                                <Divider sx={{ mb: 2 }} />
+
+                                {/* Individual Cars in Group */}
+                                <Box sx={{ mb: 2 }}>
+                                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                                    Vehicles in this group:
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                    {booking.bookings.map((b) => (
+                                      <Box key={b.booking_id} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)' } }}>
+                                        <Box
+                                          sx={{
+                                            p: 1,
+                                            border: '1px solid #e0e0e0',
+                                            borderRadius: 1,
+                                            backgroundColor: 'white',
+                                          }}
+                                        >
+                                          <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                                            {b.car_details.display_name}
+                                          </Typography>
+                                          <Typography variant="caption" color="text.secondary">
+                                            Plate: {b.car_details.license_plate} | ₱{b.total_amount?.toLocaleString()}
+                                          </Typography>
+                                        </Box>
+                                      </Box>
+                                    ))}
+                                  </Box>
+                                </Box>
+                              </CardContent>
+                            </Box>
+                          </Card>
+                        );
+                      }
+
+                      // Render regular single booking card
                       // Determine the status message and color based on pending requests
                       let statusMessage = '';
                       let statusColor = '';
@@ -1067,25 +1336,25 @@ function CustomerBookings() {
                                     <HiUser size={16} color="#c10007" />
                                     Your Assigned Driver
                                   </Typography>
-                                  <Grid container spacing={1} sx={{ mt: 0.5 }}>
-                                    <Grid item xs={12} sm={6}>
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
+                                    <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)' } }}>
                                       <Typography variant="body2" fontSize="0.75rem">
                                         <strong>Name:</strong> {booking.driver.first_name} {booking.driver.last_name}
                                       </Typography>
-                                    </Grid>
-                                    <Grid item xs={12} sm={6}>
+                                    </Box>
+                                    <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)' } }}>
                                       <Typography variant="body2" fontSize="0.75rem">
                                         <strong>License:</strong> {booking.driver.driver_license?.driver_license_no || 'N/A'}
                                       </Typography>
-                                    </Grid>
+                                    </Box>
                                     {booking.driver.contact_no && (
-                                      <Grid item xs={12}>
+                                      <Box sx={{ flex: '1 1 100%' }}>
                                         <Typography variant="body2" fontSize="0.75rem">
                                           <strong>Contact:</strong> {booking.driver.contact_no}
                                         </Typography>
-                                      </Grid>
+                                      </Box>
                                     )}
-                                  </Grid>
+                                  </Box>
                                 </Box>
                               )}
                               
@@ -1357,23 +1626,289 @@ function CustomerBookings() {
                         status === 'ongoing'
                       );
                     })
-                    .map((booking) => (
-                      <Card
-                        key={booking.booking_id}
-                        sx={{
-                          display: 'flex',
-                          flexDirection: 'row',
-                          border: '1px solid #e0e0e0',
-                          position: 'relative',
-                          width: '100%',
-                          borderRadius: { xs: 0, sm: 1 },
-                          '&:hover': {
-                            boxShadow: '0 4px 12px rgba(193, 0, 7, 0.1)',
-                            borderColor: '#c10007',
-                          },
-                          transition: 'all 0.3s ease',
-                        }}
-                      >
+                    .map((booking) => {
+                      // Check if this is a grouped booking
+                      if (booking.isGroup) {
+                        // Render grouped booking payment card
+                        return (
+                          <Card
+                            key={`group-payment-${booking.booking_group_id}`}
+                            sx={{
+                              display: 'flex',
+                              flexDirection: 'row',
+                              border: '2px solid #4CAF50',
+                              position: 'relative',
+                              width: '100%',
+                              backgroundColor: '#f1f8f4',
+                              borderRadius: { xs: 0, sm: 1 },
+                              '&:hover': {
+                                boxShadow: '0 4px 12px rgba(76, 175, 80, 0.2)',
+                                borderColor: '#4CAF50',
+                              },
+                              transition: 'all 0.3s ease',
+                            }}
+                          >
+                            {/* Pay Now / Pending Payment Button */}
+                            {booking.isPay ? (
+                              <Chip
+                                label="Awaiting Admin Approval"
+                                size="small"
+                                sx={{
+                                  position: 'absolute',
+                                  top: 10,
+                                  right: 10,
+                                  backgroundColor: '#FFA500',
+                                  color: 'white',
+                                  fontWeight: 'bold',
+                                }}
+                              />
+                            ) : (
+                              <Button
+                                size="small"
+                                variant="contained"
+                                sx={{
+                                  position: 'absolute',
+                                  top: { xs: 8, sm: 12 },
+                                  right: { xs: 8, sm: 12 },
+                                  backgroundColor: '#4CAF50',
+                                  color: 'white',
+                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                  padding: { xs: '4px 12px', sm: '6px 16px' },
+                                  '&:hover': {
+                                    backgroundColor: '#388E3C',
+                                  },
+                                }}
+                                onClick={() => {
+                                  setSelectedBooking(booking);
+                                  setShowPaymentDialog(true);
+                                }}
+                              >
+                                Pay Group Now
+                              </Button>
+                            )}
+
+                            {/* Content */}
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                direction: 'column',
+                                flexGrow: 1,
+                                ml: { xs: 0.5, sm: 1 },
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  flexGrow: 1,
+                                  flexDirection: 'column',
+                                }}
+                              >
+                                <CardContent
+                                  sx={{ flex: '1', p: { xs: 0.5, sm: 1 } }}
+                                >
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      flexDirection: { xs: 'column', sm: 'row' },
+                                      justifyContent: 'space-between',
+                                      alignItems: { xs: 'flex-start', sm: 'center' },
+                                      gap: { xs: 1, sm: 0 },
+                                      mb: 1.5,
+                                      pr: { xs: 12, sm: 15 },
+                                    }}
+                                  >
+                                    <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                                      <Typography
+                                        variant="h6"
+                                        sx={{
+                                          fontWeight: 'bold',
+                                          mb: 0.5,
+                                          fontSize: { xs: '1rem', sm: '1.25rem' },
+                                        }}
+                                      >
+                                        Group Payment - {booking.car_count} Vehicles
+                                      </Typography>
+                                      <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{
+                                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                        }}
+                                      >
+                                        {booking.bookings.map((b, idx) => (
+                                          <span key={b.booking_id}>
+                                            {b.car_details.display_name}
+                                            {idx < booking.bookings.length - 1 ? ', ' : ''}
+                                          </span>
+                                        ))}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+
+                                  {/* Booking Details */}
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: { xs: 0.3, md: 0.75 },
+                                      mb: 1,
+                                    }}
+                                  >
+                                    {/* Date Range */}
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                      }}
+                                    >
+                                      <HiCalendar
+                                        size={16}
+                                        style={{ color: '#c10007', flexShrink: 0 }}
+                                      />
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                        }}
+                                      >
+                                        {formatPhilippineDate(booking.start_date, {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          year: 'numeric',
+                                        })}{' '}
+                                        -{' '}
+                                        {formatPhilippineDate(booking.end_date, {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          year: 'numeric',
+                                        })}
+                                      </Typography>
+                                    </Box>
+
+                                    {/* Locations */}
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                      }}
+                                    >
+                                      <HiLocationMarker
+                                        size={16}
+                                        style={{ color: '#4CAF50', flexShrink: 0 }}
+                                      />
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                        }}
+                                      >
+                                        <strong>Pickup:</strong>{' '}
+                                        {booking.pickup_loc || 'JA Car Rental Office'}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+
+                                  {/* Balance/Unpaid Status */}
+                                  {booking.balance > 0 && (
+                                    <Box
+                                      sx={{
+                                        width: 'fit-content',
+                                        p: { xs: 0.8, sm: 1 },
+                                        backgroundColor: '#fff3e0',
+                                        borderRadius: 1,
+                                        border: '1px solid #ff9800',
+                                        mb: 1,
+                                      }}
+                                    >
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          fontWeight: 'bold',
+                                          color: '#f57c00',
+                                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                        }}
+                                      >
+                                        Outstanding Balance: ₱
+                                        {booking.balance?.toLocaleString()}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          color: '#666',
+                                          fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                                        }}
+                                      >
+                                        Minimum payment: ₱
+                                        {(booking.car_count * 1000).toLocaleString()} ({booking.car_count} cars × ₱1,000)
+                                      </Typography>
+                                    </Box>
+                                  )}
+
+                                  {/* Individual Cars in Group */}
+                                  <Box>
+                                    <Typography
+                                      variant="caption"
+                                      sx={{ fontWeight: 'bold', color: '#666' }}
+                                    >
+                                      Vehicles:
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                                      {booking.bookings.map((b) => (
+                                        <Box key={b.booking_id} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 4px)' } }}>
+                                          <Box
+                                            sx={{
+                                              p: 0.5,
+                                              border: '1px solid #e0e0e0',
+                                              borderRadius: 1,
+                                              backgroundColor: 'white',
+                                            }}
+                                          >
+                                            <Typography
+                                              variant="caption"
+                                              sx={{ fontWeight: 'bold', fontSize: '0.7rem' }}
+                                            >
+                                              {b.car_details.display_name}
+                                            </Typography>
+                                            <Typography
+                                              variant="caption"
+                                              color="text.secondary"
+                                              display="block"
+                                              sx={{ fontSize: '0.65rem' }}
+                                            >
+                                              Balance: ₱{b.balance?.toLocaleString()}
+                                            </Typography>
+                                          </Box>
+                                        </Box>
+                                      ))}
+                                    </Box>
+                                  </Box>
+                                </CardContent>
+                              </Box>
+                            </Box>
+                          </Card>
+                        );
+                      }
+
+                      // Render regular single booking payment card
+                      return (
+                        <Card
+                          key={booking.booking_id}
+                          sx={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            border: '1px solid #e0e0e0',
+                            position: 'relative',
+                            width: '100%',
+                            borderRadius: { xs: 0, sm: 1 },
+                            '&:hover': {
+                              boxShadow: '0 4px 12px rgba(193, 0, 7, 0.1)',
+                              borderColor: '#c10007',
+                            },
+                            transition: 'all 0.3s ease',
+                          }}
+                        >
                         {/* Pay Now / Pending Payment Button - Fixed Upper Right */}
                         {booking.isPay ? (
                           <Chip
@@ -1667,7 +2202,8 @@ function CustomerBookings() {
                           </Box>
                         </Box>
                       </Card>
-                    ))}
+                      );
+                    })}
                 </Box>
               )}
             </TabPanel>
@@ -1691,7 +2227,9 @@ function CustomerBookings() {
                     sx={{ p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}
                   >
                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                      {selectedBooking.car_details.display_name}
+                      {selectedBooking.isGroup 
+                        ? `Group Booking (${selectedBooking.car_count} cars)`
+                        : selectedBooking.car_details?.display_name || 'N/A'}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       {formatPhilippineDate(selectedBooking.start_date, {
@@ -1760,7 +2298,9 @@ function CustomerBookings() {
                     }}
                   >
                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                      {selectedBooking.car_details.display_name}
+                      {selectedBooking.isGroup 
+                        ? `Group Booking (${selectedBooking.car_count} cars)`
+                        : selectedBooking.car_details?.display_name || 'N/A'}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Current End Date:{' '}

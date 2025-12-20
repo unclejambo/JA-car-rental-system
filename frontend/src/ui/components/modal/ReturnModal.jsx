@@ -40,6 +40,11 @@ export default function ReturnModal({ show, onClose, bookingId }) {
   const [damageImageFile, setDamageImageFile] = useState(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
 
+  // New damage-related states
+  const [damageDescriptions, setDamageDescriptions] = useState('');
+  const [damageAmount, setDamageAmount] = useState('');
+  const [damageImages, setDamageImages] = useState([]);
+
   const [formData, setFormData] = useState({
     gasLevel: 'High',
     odometer: '',
@@ -142,6 +147,10 @@ export default function ReturnModal({ show, onClose, bookingId }) {
             const response = await returnAPI.calculateFees(bookingId, {
               gasLevel: formData.gasLevel,
               damageStatus: formData.damageStatus,
+              damageAmount:
+                formData.damageStatus === 'withDamage'
+                  ? parseFloat(damageAmount) || 0
+                  : 0,
               equipmentStatus: formData.equipmentStatus,
               equip_others: formData.equip_others,
               isClean: formData.isClean,
@@ -165,6 +174,7 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     formData.equip_others,
     formData.isClean,
     formData.hasStain,
+    damageAmount,
     releaseData,
     bookingData,
     overdueHours,
@@ -192,13 +202,16 @@ export default function ReturnModal({ show, onClose, bookingId }) {
       [name]: processedValue,
     }));
 
-    // Show damage upload when major/minor is selected
+    // Show damage fields when withDamage is selected
     if (name === 'damageStatus') {
-      const shouldShowUpload = value === 'major' || value === 'minor';
+      const shouldShowUpload = value === 'withDamage';
       setShowDamageUpload(shouldShowUpload);
 
-      // Clear damage image when switching to "No Damages"
+      // Clear damage data when switching to "No Damages"
       if (value === 'noDamage') {
+        setDamageDescriptions('');
+        setDamageAmount('');
+        setDamageImages([]);
         setDamageImageFile(null);
       }
     }
@@ -217,14 +230,25 @@ export default function ReturnModal({ show, onClose, bookingId }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate damage image is selected for major/minor damages
-    if (
-      (formData.damageStatus === 'major' ||
-        formData.damageStatus === 'minor') &&
-      !damageImageFile
-    ) {
-      setError('Please upload a damage image before submitting');
-      return;
+    // Validate damage fields when withDamage is selected
+    if (formData.damageStatus === 'withDamage') {
+      if (!damageDescriptions.trim()) {
+        setError('Please enter damage descriptions');
+        return;
+      }
+      if (!damageAmount || parseFloat(damageAmount) <= 0) {
+        setError('Please enter a valid damage fee amount');
+        return;
+      }
+
+      const damages = damageDescriptions
+        .split(',')
+        .map((d) => d.trim())
+        .filter((d) => d);
+      if (damageImages.length !== damages.length) {
+        setError('Please upload an image for each damage item');
+        return;
+      }
     }
 
     if (total > 0) {
@@ -239,41 +263,63 @@ export default function ReturnModal({ show, onClose, bookingId }) {
     try {
       setLoading(true);
 
-      // If there's a damage image file, upload it first
-      let uploadedImageUrl = null;
-      if (damageImageFile) {
-        const formDataUpload = new FormData();
-        formDataUpload.append('damageImage', damageImageFile);
-        formDataUpload.append(
-          'damageType',
-          formData.damageStatus === 'minorDamage' ? 'minor' : 'major'
-        );
+      // If there are damage images, upload them first
+      let uploadedImageUrls = [];
+      if (damageImages.length > 0) {
+        const damages = damageDescriptions
+          .split(',')
+          .map((d) => d.trim())
+          .filter((d) => d);
 
-        const uploadResponse = await returnAPI.uploadDamageImage(
-          bookingId,
-          formDataUpload
-        );
-        uploadedImageUrl = uploadResponse.imagePath;
+        for (let i = 0; i < damageImages.length; i++) {
+          const imageFile = damageImages[i];
+          const damageDesc = damages[i] || 'Damage';
+
+          const formDataUpload = new FormData();
+          formDataUpload.append('damageImage', imageFile);
+          formDataUpload.append('damageDescription', damageDesc);
+
+          const uploadResponse = await returnAPI.uploadDamageImage(
+            bookingId,
+            formDataUpload
+          );
+          if (uploadResponse.imagePath) {
+            uploadedImageUrls.push(uploadResponse.imagePath);
+          }
+        }
       }
 
       const submitData = {
         ...formData,
+        damageStatus:
+          formData.damageStatus === 'withDamage'
+            ? damageDescriptions
+            : 'No Damages',
+        damage_description:
+          formData.damageStatus === 'withDamage' ? damageDescriptions : null,
+        damage_fee:
+          formData.damageStatus === 'withDamage' ? parseFloat(damageAmount) : 0,
         totalFees: total,
         paymentData: directPayment ? paymentData : null,
-        damageImageUrl: uploadedImageUrl || null,
+        damageImageUrl:
+          uploadedImageUrls.length > 0 ? uploadedImageUrls.join(',') : null,
         overdueHours: showOverdueFeeCancel ? 0 : overdueHours,
       };
 
       await returnAPI.submitReturn(bookingId, submitData);
 
       setSuccess('Return submitted successfully');
+      // Trigger notification refresh before closing
+      window.dispatchEvent(new Event('refreshNotifications'));
+
       setTimeout(() => {
         onClose?.();
-        // Trigger notification refresh after successful return
-        window.dispatchEvent(new Event('refreshNotifications'));
       }, 2000);
     } catch (err) {
-      setError('Failed to submit return');
+      console.error('Return submission error:', err);
+      setError(
+        err?.response?.data?.error || err?.message || 'Failed to submit return'
+      );
     } finally {
       setLoading(false);
     }
@@ -402,15 +448,37 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                   </Box>
 
                   {/* Odometer */}
-                  <TextField
-                    name="odometer"
-                    label="Odometer"
-                    value={formData.odometer}
-                    onChange={handleInputChange}
-                    required
-                    size="small"
-                    inputMode="numeric"
-                  />
+                  <Box>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 0.5,
+                      }}
+                    >
+                      <FormLabel sx={{ fontWeight: 600 }}>Odometer</FormLabel>
+                      {bookingData?.car?.mileage && (
+                        <Typography
+                          variant="caption"
+                          sx={{ color: 'text.secondary', fontSize: '0.75rem' }}
+                        >
+                          Current Odometer:{' '}
+                          {bookingData.car.mileage.toLocaleString()} km
+                        </Typography>
+                      )}
+                    </Box>
+                    <TextField
+                      name="odometer"
+                      label="New Odometer Reading"
+                      value={formData.odometer}
+                      onChange={handleInputChange}
+                      required
+                      size="small"
+                      inputMode="numeric"
+                      fullWidth
+                    />
+                  </Box>
 
                   {/* Damage Check */}
                   <Box>
@@ -541,20 +609,9 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                         }}
                       />
                       <FormControlLabel
-                        value="major"
+                        value="withDamage"
                         control={<Radio />}
-                        label="Major"
-                        sx={{
-                          '& .MuiFormControlLabel-label': {
-                            userSelect: 'none',
-                            pointerEvents: 'none',
-                          },
-                        }}
-                      />
-                      <FormControlLabel
-                        value="minor"
-                        control={<Radio />}
-                        label="Minor"
+                        label="With Damage"
                         sx={{
                           '& .MuiFormControlLabel-label': {
                             userSelect: 'none',
@@ -564,39 +621,108 @@ export default function ReturnModal({ show, onClose, bookingId }) {
                       />
                     </RadioGroup>
 
-                    {/* Damage Image Upload */}
+                    {/* Damage Input Fields */}
                     {showDamageUpload && (
-                      <Box sx={{ mt: 1 }}>
-                        <Typography
-                          variant="caption"
-                          sx={{ display: 'block', mb: 1 }}
-                        >
-                          Upload damage image:{' '}
-                          {damageImageFile && '✅ Selected'}
-                        </Typography>
-                        <input
-                          type="file"
-                          accept="image/*"
+                      <Box sx={{ mt: 2 }}>
+                        <TextField
+                          label="Damage Descriptions"
+                          placeholder="Enter the damages (e.g., Scratched door, Broken mirror)"
+                          value={damageDescriptions}
                           onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              setDamageImageFile(file);
-                              handleDamageImageUpload(file);
+                            const value = e.target.value;
+                            setDamageDescriptions(value);
+                            // Update damage images array based on number of damages
+                            const damages = value
+                              .split(',')
+                              .map((d) => d.trim())
+                              .filter((d) => d);
+                            const currentCount = damageImages.length;
+                            if (damages.length < currentCount) {
+                              setDamageImages(
+                                damageImages.slice(0, damages.length)
+                              );
+                            } else if (damages.length > currentCount) {
+                              setDamageImages([
+                                ...damageImages,
+                                ...new Array(
+                                  damages.length - currentCount
+                                ).fill(null),
+                              ]);
                             }
                           }}
+                          fullWidth
+                          multiline
+                          minRows={2}
+                          required
+                          sx={{ mb: 2 }}
                         />
-                        {damageImageFile && (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              display: 'block',
-                              mt: 0.5,
-                              color: 'success.main',
-                            }}
-                          >
-                            Image selected: {damageImageFile.name}
-                          </Typography>
-                        )}
+
+                        <TextField
+                          label="Damage Fee Amount"
+                          type="number"
+                          value={damageAmount}
+                          onChange={(e) => setDamageAmount(e.target.value)}
+                          fullWidth
+                          required
+                          inputProps={{ min: 0, step: 0.01 }}
+                          sx={{ mb: 2 }}
+                        />
+
+                        {/* Image uploads for each damage */}
+                        {damageDescriptions.split(',').map((damage, index) => {
+                          const trimmedDamage = damage.trim();
+                          if (!trimmedDamage) return null;
+
+                          return (
+                            <Box
+                              key={index}
+                              sx={{
+                                mt: 2,
+                                p: 2,
+                                border: '1px solid #e0e0e0',
+                                borderRadius: 1,
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 600, mb: 1 }}
+                              >
+                                {index + 1}. {trimmedDamage}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                sx={{ display: 'block', mb: 1 }}
+                              >
+                                Upload image for this damage:{' '}
+                                {damageImages[index] && '✅ Selected'}
+                              </Typography>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    const newImages = [...damageImages];
+                                    newImages[index] = file;
+                                    setDamageImages(newImages);
+                                  }
+                                }}
+                              />
+                              {damageImages[index] && (
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    display: 'block',
+                                    mt: 0.5,
+                                    color: 'success.main',
+                                  }}
+                                >
+                                  Image selected: {damageImages[index].name}
+                                </Typography>
+                              )}
+                            </Box>
+                          );
+                        })}
                       </Box>
                     )}
                   </Box>

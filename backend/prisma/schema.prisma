@@ -261,7 +261,7 @@ model VerificationCode {
 model Return {
   return_id      BigInt   @id @unique @default(autoincrement())
   booking_id     Int?
-  damage_check   String?
+  damages        String?
   damage_img     String?  @db.VarChar
   equipment      String?
   gas_level      String?

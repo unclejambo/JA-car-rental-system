@@ -1489,13 +1489,11 @@ export default function BookingDetailsModal({
                           Damage Status:
                         </Typography>
                         <Chip
-                          label={returnData.damage_check || 'N/A'}
+                          label={returnData.damages || 'N/A'}
                           color={
-                            returnData.damage_check === 'No Damage'
+                            returnData.damages === 'No Damages'
                               ? 'success'
-                              : returnData.damage_check === 'minor'
-                                ? 'warning'
-                                : 'error'
+                              : 'error'
                           }
                           size="small"
                           variant="outlined"
@@ -1574,7 +1572,7 @@ export default function BookingDetailsModal({
                     </Box>
                   </Box>
 
-                  {/* Damage Image */}
+                  {/* Damage Images */}
                   {returnData.damage_img && (
                     <>
                       <Divider />
@@ -1587,27 +1585,43 @@ export default function BookingDetailsModal({
                             color: 'primary.main',
                           }}
                         >
-                          📸 Damage Image
+                          📸 Damage Images
                         </Typography>
                         <Box
-                          component="img"
-                          src={returnData.damage_img}
-                          alt="Damage"
                           sx={{
-                            width: '100%',
-                            height: 'auto',
-                            maxHeight: '300px',
-                            objectFit: 'contain',
-                            borderRadius: 1,
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            cursor: 'pointer',
-                            '&:hover': { opacity: 0.8 },
+                            display: 'grid',
+                            gridTemplateColumns: {
+                              xs: '1fr',
+                              sm: 'repeat(2, 1fr)',
+                              md: 'repeat(3, 1fr)',
+                            },
+                            gap: 2,
                           }}
-                          onClick={() =>
-                            window.open(returnData.damage_img, '_blank')
-                          }
-                        />
+                        >
+                          {returnData.damage_img
+                            .split(',')
+                            .map((imageUrl, index) => (
+                              <Box
+                                key={index}
+                                component="img"
+                                src={imageUrl.trim()}
+                                alt={`Damage ${index + 1}`}
+                                sx={{
+                                  width: '100%',
+                                  height: '200px',
+                                  objectFit: 'cover',
+                                  borderRadius: 1,
+                                  border: '1px solid',
+                                  borderColor: 'divider',
+                                  cursor: 'pointer',
+                                  '&:hover': { opacity: 0.8 },
+                                }}
+                                onClick={() =>
+                                  window.open(imageUrl.trim(), '_blank')
+                                }
+                              />
+                            ))}
+                        </Box>
                       </Box>
                     </>
                   )}

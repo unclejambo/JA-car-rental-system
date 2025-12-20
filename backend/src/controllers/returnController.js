@@ -149,6 +149,8 @@ export const submitReturn = async (req, res) => {
       gasLevel,
       odometer,
       damageStatus,
+      damage_description,
+      damage_fee,
       equipmentStatus,
       equip_others,
       isClean,
@@ -236,11 +238,11 @@ export const submitReturn = async (req, res) => {
       }
 
       // Damage fee calculation
-      if (damageStatus === 'minor') {
-        calculatedFees += feesObject.damage_fee || 0;
-        feesList.push('Damage');
-      } else if (damageStatus === 'major') {
-        calculatedFees += (feesObject.damage_fee || 0) * 3;
+      // If damageStatus is not 'No Damages', it contains the actual damage descriptions
+      // The damage_fee from the form should be used instead of calculated here
+      const hasDamage = damageStatus && damageStatus !== 'No Damages';
+      if (hasDamage && damage_fee) {
+        calculatedFees += parseFloat(damage_fee) || 0;
         feesList.push('Damage');
       }
 
@@ -278,7 +280,7 @@ export const submitReturn = async (req, res) => {
       const returnRecord = await tx.return.create({
         data: {
           booking_id: parseInt(bookingId),
-          damage_check: damageStatus === 'noDamage' ? 'No Damage' : damageStatus,
+          damages: damageStatus || 'No Damages',
           damage_img: damageImageUrl || null, // Use the uploaded image URL
           equipment: equipmentStatus,
           equip_others: equip_others || null,
@@ -393,14 +395,14 @@ export const submitReturn = async (req, res) => {
 export const uploadDamageImage = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const { damageType } = req.body; // 'major' or 'minor'
+    const { damageDescription } = req.body;
 
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' });
     }
 
-    if (!damageType || (damageType !== 'major' && damageType !== 'minor')) {
-      return res.status(400).json({ error: 'Invalid damage type. Must be "major" or "minor"' });
+    if (!damageDescription) {
+      return res.status(400).json({ error: 'Damage description is required' });
     }
 
     // Get booking and customer info
@@ -420,11 +422,11 @@ export const uploadDamageImage = async (req, res) => {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
-    // Create filename with specified format: {today's date}_{booking ID}_{Customer firstname}_{Major/Minor Damages}.jpg
+    // Create filename with format: DateOfReturn_BookingID_CustomerName_(DamageDescription).jpg
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const customerFirstName = booking.customer.first_name.replace(/[^a-zA-Z0-9]/g, ''); // Sanitize
-    const damageLevel = damageType.charAt(0).toUpperCase() + damageType.slice(1); // Capitalize
-    const filename = `${today}_${bookingId}_${customerFirstName}_${damageLevel}_Damages.jpg`;
+    const customerName = `${booking.customer.first_name}${booking.customer.last_name}`.replace(/[^a-zA-Z0-9]/g, ''); // Sanitize
+    const sanitizedDamage = damageDescription.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_'); // Sanitize damage description
+    const filename = `${today}_${bookingId}_${customerName}_(${sanitizedDamage}).jpg`;
     // Upload to Supabase storage: licenses/return_images/
     const bucket = 'licenses';
     const storagePath = `return_images/${filename}`;
@@ -484,6 +486,7 @@ export const calculateReturnFees = async (req, res) => {
     const {
       gasLevel,
       damageStatus,
+      damageAmount,
       equipmentStatus,
       equip_others,
       isClean,
@@ -560,10 +563,10 @@ export const calculateReturnFees = async (req, res) => {
     }
 
     // Damage fee calculation
-    if (damageStatus === 'minor') {
-      calculatedFees.damageFee = feesObject.damage_fee || 0;
-    } else if (damageStatus === 'major') {
-      calculatedFees.damageFee = (feesObject.damage_fee || 0) * 3;
+    // If damageStatus is not 'No Damages', it contains the actual damage descriptions
+    const hasDamage = damageStatus && damageStatus !== 'No Damages';
+    if (hasDamage && damageAmount) {
+      calculatedFees.damageFee = parseFloat(damageAmount) || 0;
     }
 
     // Cleaning fee calculation

@@ -414,22 +414,39 @@ export default function MultiCarBookingModal({
       updated[index] = {
         ...updated[index],
         useCommonData: useCommon,
-        // If switching to common data, copy common values
-        ...(useCommon && {
-          startDate: commonData.startDate,
-          endDate: commonData.endDate,
-          pickupTime: commonData.pickupTime,
-          dropoffTime: commonData.dropoffTime,
-          purpose: commonData.purpose,
-          customPurpose: commonData.customPurpose,
-          isSelfDrive: commonData.isSelfDrive,
-          deliveryType: commonData.deliveryType,
-          deliveryLocation: commonData.deliveryLocation,
-          pickupLocation: commonData.pickupLocation,
-          dropoffLocation: commonData.dropoffLocation,
-          // Clear driver if common data is self-drive
-          selectedDriver: commonData.isSelfDrive ? '' : updated[index].selectedDriver,
-        }),
+        // When toggling to common data OR toggling OFF common data, copy common values
+        // This ensures dates are preserved when unchecking to fix conflicts
+        ...(useCommon
+          ? {
+              // Switching TO common data
+              startDate: commonData.startDate,
+              endDate: commonData.endDate,
+              pickupTime: commonData.pickupTime,
+              dropoffTime: commonData.dropoffTime,
+              purpose: commonData.purpose,
+              customPurpose: commonData.customPurpose,
+              isSelfDrive: commonData.isSelfDrive,
+              deliveryType: commonData.deliveryType,
+              deliveryLocation: commonData.deliveryLocation,
+              pickupLocation: commonData.pickupLocation,
+              dropoffLocation: commonData.dropoffLocation,
+              // Clear driver if common data is self-drive
+              selectedDriver: commonData.isSelfDrive ? '' : updated[index].selectedDriver,
+            }
+          : {
+              // Switching OFF common data - copy current common values so user can modify them
+              startDate: commonData.startDate,
+              endDate: commonData.endDate,
+              pickupTime: commonData.pickupTime,
+              dropoffTime: commonData.dropoffTime,
+              purpose: commonData.purpose,
+              customPurpose: commonData.customPurpose,
+              isSelfDrive: commonData.isSelfDrive,
+              deliveryType: commonData.deliveryType,
+              deliveryLocation: commonData.deliveryLocation,
+              pickupLocation: commonData.pickupLocation,
+              dropoffLocation: commonData.dropoffLocation,
+            }),
       };
 
       // Check for conflicts when toggling to common data

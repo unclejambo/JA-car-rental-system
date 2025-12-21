@@ -435,7 +435,7 @@ export default function WeeklyCalendarView({
 
                     return (
                       <Tooltip
-                        key={booking.booking_id}
+                        key={`${booking.booking_id}-${dateKey}`}
                         title={
                           <Box>
                             <Typography

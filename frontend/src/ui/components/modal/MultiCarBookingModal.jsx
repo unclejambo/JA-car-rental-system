@@ -1074,59 +1074,71 @@ export default function MultiCarBookingModal({
                   setExpandedCar(expandedCar === index ? -1 : index)
                 }
               >
-                <AccordionSummary expandIcon={<HiChevronDown />}>
-                  <Box
-                    sx={{
+                <AccordionSummary 
+                  expandIcon={<HiChevronDown />}
+                  sx={{
+                    '& .MuiAccordionSummary-content': {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 2,
                       width: '100%',
+                    },
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={booking.car.car_img_url}
+                    alt={`${booking.car.make} ${booking.car.model}`}
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      objectFit: 'cover',
+                      borderRadius: 1,
+                    }}
+                  />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      {booking.car.make} {booking.car.model}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      ₱{calculateCarCost(booking).toLocaleString()} total
+                    </Typography>
+                  </Box>
+                  {booking.hasConflict && (
+                    <Chip
+                      label="Date Conflict"
+                      size="small"
+                      color="error"
+                      icon={<HiExclamationCircle />}
+                    />
+                  )}
+                  {booking.useCommonData && !booking.hasConflict && (
+                    <Chip
+                      label="Using Common Data"
+                      size="small"
+                      color="primary"
+                    />
+                  )}
+                  <Box
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeCar(index);
+                    }}
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: '#f44336',
+                      borderRadius: '50%',
+                      width: 32,
+                      height: 32,
+                      '&:hover': {
+                        backgroundColor: 'rgba(244, 67, 54, 0.08)',
+                      },
                     }}
                   >
-                    <Box
-                      component="img"
-                      src={booking.car.car_img_url}
-                      alt={`${booking.car.make} ${booking.car.model}`}
-                      sx={{
-                        width: 60,
-                        height: 60,
-                        objectFit: 'cover',
-                        borderRadius: 1,
-                      }}
-                    />
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                        {booking.car.make} {booking.car.model}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        ₱{calculateCarCost(booking).toLocaleString()} total
-                      </Typography>
-                    </Box>
-                    {booking.hasConflict && (
-                      <Chip
-                        label="Date Conflict"
-                        size="small"
-                        color="error"
-                        icon={<HiExclamationCircle />}
-                      />
-                    )}
-                    {booking.useCommonData && !booking.hasConflict && (
-                      <Chip
-                        label="Using Common Data"
-                        size="small"
-                        color="primary"
-                      />
-                    )}
-                    <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeCar(index);
-                      }}
-                      size="small"
-                      sx={{ color: '#f44336' }}
-                    >
-                      <HiTrash />
-                    </IconButton>
+                    <HiTrash size={18} />
                   </Box>
                 </AccordionSummary>
                 <AccordionDetails>

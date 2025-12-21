@@ -87,6 +87,8 @@ function CustomerBookings() {
   const [error, setError] = useState('');
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showCancelGroupDialog, setShowCancelGroupDialog] = useState(false);
+  const [selectedGroupBooking, setSelectedGroupBooking] = useState(null);
   const [showCancelExtensionDialog, setShowCancelExtensionDialog] =
     useState(false);
   const [showExtendDialog, setShowExtendDialog] = useState(false);
@@ -106,12 +108,28 @@ function CustomerBookings() {
   const [bookingSearchQuery, setBookingSearchQuery] = useState('');
   const [paymentSearchQuery, setPaymentSearchQuery] = useState('');
 
+  // State for managing multi-car booking groups
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
+
   const { logout } = useAuth();
   const API_BASE = getApiBase();
   const authenticatedFetch = React.useMemo(
     () => createAuthenticatedFetch(logout),
     [logout]
   );
+
+  // Toggle group expansion
+  const toggleGroupExpansion = (groupId) => {
+    setExpandedGroups((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupId)) {
+        newSet.delete(groupId);
+      } else {
+        newSet.add(groupId);
+      }
+      return newSet;
+    });
+  };
 
   // Show snackbar message
   const showMessage = (message, severity = 'success') => {
@@ -268,6 +286,79 @@ function CustomerBookings() {
       }
     } catch (error) {
       alert('❌ Failed to cancel booking. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Cancel all bookings in a group
+  // Open cancel group dialog
+  const openCancelGroupDialog = (groupBooking) => {
+    setSelectedGroupBooking(groupBooking);
+    setShowCancelGroupDialog(true);
+  };
+
+  // Execute cancel group
+  const handleCancelGroup = async () => {
+    if (!selectedGroupBooking || !selectedGroupBooking.bookings || selectedGroupBooking.bookings.length === 0) return;
+
+    const bookings = selectedGroupBooking.bookings;
+    const groupId = selectedGroupBooking.booking_group_id;
+
+    try {
+      setActionLoading(true);
+      
+      // Cancel each booking in the group
+      const cancelResults = await Promise.all(
+        bookings.map(async (booking) => {
+          try {
+            const response = await authenticatedFetch(
+              `${API_BASE}/bookings/${booking.booking_id}/cancel`,
+              { method: 'PUT' }
+            );
+            if (response.ok) {
+              return { success: true, booking_id: booking.booking_id };
+            } else {
+              const errorData = await response.json();
+              return { 
+                success: false, 
+                booking_id: booking.booking_id, 
+                error: errorData.error || 'Failed to cancel'
+              };
+            }
+          } catch (err) {
+            return { 
+              success: false, 
+              booking_id: booking.booking_id, 
+              error: 'Network error' 
+            };
+          }
+        })
+      );
+
+      const successCount = cancelResults.filter(r => r.success).length;
+      const failedResults = cancelResults.filter(r => !r.success);
+      
+      if (successCount === bookings.length) {
+        showMessage(`Successfully submitted cancellation request for all ${bookings.length} bookings. Waiting for admin approval.`, 'success');
+        setShowCancelGroupDialog(false);
+        setSelectedGroupBooking(null);
+        fetchBookings(); // Refresh the list
+        fetchPayments(); // Refresh payments too
+      } else if (successCount > 0) {
+        const errorMessages = failedResults.map(r => r.error).join(', ');
+        showMessage(`${successCount} booking(s) cancelled. ${failedResults.length} failed: ${errorMessages}`, 'warning');
+        setShowCancelGroupDialog(false);
+        setSelectedGroupBooking(null);
+        fetchBookings();
+        fetchPayments();
+      } else {
+        // All failed - show first error
+        const errorMessage = failedResults[0]?.error || 'Failed to cancel bookings';
+        showMessage(errorMessage, 'error');
+      }
+    } catch (error) {
+      showMessage('Failed to cancel bookings. Please try again.', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -454,34 +545,46 @@ function CustomerBookings() {
     return [...grouped, ...ungroupedBookings];
   };
 
-  // Filter bookings based on search query
-  const filteredBookings = groupBookings((bookings || []).filter((booking) => {
-    if (!bookingSearchQuery) return true;
-    const query = bookingSearchQuery.toLowerCase();
-    return (
-      booking.booking_id?.toString().includes(query) ||
-      booking.car_details?.display_name?.toLowerCase().includes(query) ||
-      booking.car_details?.license_plate?.toLowerCase().includes(query) ||
-      booking.booking_status?.toLowerCase().includes(query) ||
-      booking.pickup_location?.toLowerCase().includes(query) ||
-      booking.dropoff_location?.toLowerCase().includes(query)
-    );
-  }));
+  // Filter bookings based on search query and group them
+  const getFilteredAndGroupedBookings = () => {
+    const filtered = (bookings || []).filter((booking) => {
+      if (!bookingSearchQuery) return true;
+      const query = bookingSearchQuery.toLowerCase();
+      return (
+        booking.booking_id?.toString().includes(query) ||
+        booking.car_details?.display_name?.toLowerCase().includes(query) ||
+        booking.car_details?.license_plate?.toLowerCase().includes(query) ||
+        booking.booking_status?.toLowerCase().includes(query) ||
+        booking.pickup_location?.toLowerCase().includes(query) ||
+        booking.dropoff_location?.toLowerCase().includes(query)
+      );
+    });
+    
+    return groupBookings(filtered);
+  };
+
+  const allBookings = getFilteredAndGroupedBookings();
 
   // Filter payments based on search query
-  const filteredPayments = groupBookings(payments.filter((payment) => {
-    if (!paymentSearchQuery) return true;
-    const query = paymentSearchQuery.toLowerCase();
-    return (
-      payment.payment_id?.toString().includes(query) ||
-      payment.car_details?.display_name?.toLowerCase().includes(query) ||
-      payment.car_details?.license_plate?.toLowerCase().includes(query) ||
-      payment.start_date?.toLowerCase().includes(query) ||
-      payment.end_date?.toLowerCase().includes(query) ||
-      payment.pickup_date?.toLowerCase().includes(query) ||
-      payment.dropoff_date?.toLowerCase().includes(query)
-    );
-  }));
+  const getFilteredAndGroupedPayments = () => {
+    const filtered = payments.filter((payment) => {
+      if (!paymentSearchQuery) return true;
+      const query = paymentSearchQuery.toLowerCase();
+      return (
+        payment.payment_id?.toString().includes(query) ||
+        payment.car_details?.display_name?.toLowerCase().includes(query) ||
+        payment.car_details?.license_plate?.toLowerCase().includes(query) ||
+        payment.start_date?.toLowerCase().includes(query) ||
+        payment.end_date?.toLowerCase().includes(query) ||
+        payment.pickup_date?.toLowerCase().includes(query) ||
+        payment.dropoff_date?.toLowerCase().includes(query)
+      );
+    });
+    
+    return groupBookings(filtered);
+  };
+
+  const allPayments = getFilteredAndGroupedPayments();
 
   return (
     <>
@@ -727,7 +830,7 @@ function CustomerBookings() {
             {/* Tab Panels */}
             <TabPanel value={activeTab} index={0}>
               {/* MY BOOKINGS TAB - HORIZONTAL LAYOUT */}
-              {filteredBookings.filter((b) => {
+              {allBookings.filter((b) => {
                 const status = b.booking_status?.toLowerCase();
                 return (
                   status === 'pending' ||
@@ -761,7 +864,7 @@ function CustomerBookings() {
                     px: { xs: 0.5, sm: 0 },
                   }}
                 >
-                  {filteredBookings
+                  {allBookings
                     .filter((booking) => {
                       const status = booking.booking_status?.toLowerCase();
                       return (
@@ -972,6 +1075,33 @@ function CustomerBookings() {
                                     ))}
                                   </Box>
                                 </Box>
+
+                                {/* Action buttons for group booking */}
+                                {booking.booking_status?.toLowerCase() === 'pending' && !booking.isCancel && (
+                                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mt: 2 }}>
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      color="error"
+                                      startIcon={<HiTrash size={16} />}
+                                      onClick={() => openCancelGroupDialog(booking)}
+                                      disabled={actionLoading}
+                                      sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                                    >
+                                      Cancel All ({booking.car_count})
+                                    </Button>
+                                  </Box>
+                                )}
+                                {booking.isCancel && (
+                                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                                    <Chip 
+                                      label="Cancellation Pending Approval" 
+                                      color="warning" 
+                                      size="small"
+                                      sx={{ fontSize: '0.75rem' }}
+                                    />
+                                  </Box>
+                                )}
                               </CardContent>
                             </Box>
                           </Card>
@@ -1582,7 +1712,7 @@ function CustomerBookings() {
 
             <TabPanel value={activeTab} index={1}>
               {/* SETTLEMENT TAB - HORIZONTAL LAYOUT WITHOUT IMAGE */}
-              {filteredPayments.filter((b) => {
+              {allPayments.filter((b) => {
                 const status = b.booking_status?.toLowerCase();
                 return (
                   status === 'pending' ||
@@ -1616,7 +1746,7 @@ function CustomerBookings() {
                     px: { xs: 0.5, sm: 0 },
                   }}
                 >
-                  {filteredPayments
+                  {allPayments
                     .filter((booking) => {
                       const status = booking.booking_status?.toLowerCase();
                       return (
@@ -2270,6 +2400,128 @@ function CustomerBookings() {
                   ) : (
                     'Cancel Booking'
                   )}
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            {/* Cancel Group Booking Dialog */}
+            <Dialog
+              open={showCancelGroupDialog}
+              onClose={() => {
+                setShowCancelGroupDialog(false);
+                setSelectedGroupBooking(null);
+              }}
+              maxWidth="sm"
+              fullWidth
+              PaperProps={{
+                sx: { borderRadius: 2 }
+              }}
+            >
+              <DialogTitle sx={{ 
+                color: 'white', 
+                fontWeight: 'bold',
+                backgroundColor: '#c10007',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <HiTrash size={24} />
+                Cancel Group Booking
+              </DialogTitle>
+              <DialogContent sx={{ pt: 3 }}>
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                    This will cancel ALL bookings in this group!
+                  </Typography>
+                </Alert>
+                
+                {selectedGroupBooking && (
+                  <Box>
+                    <Typography variant="body1" sx={{ mb: 2, fontWeight: 'bold' }}>
+                      {selectedGroupBooking.car_count} Vehicles will be cancelled:
+                    </Typography>
+                    
+                    <Box sx={{ 
+                      maxHeight: 200, 
+                      overflowY: 'auto',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: 1,
+                      mb: 2
+                    }}>
+                      {selectedGroupBooking.bookings?.map((b, idx) => (
+                        <Box 
+                          key={b.booking_id} 
+                          sx={{ 
+                            p: 1.5, 
+                            borderBottom: idx < selectedGroupBooking.bookings.length - 1 ? '1px solid #e0e0e0' : 'none',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                              {b.car_details?.display_name || 'Unknown Car'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Plate: {b.car_details?.license_plate || 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" sx={{ color: '#c10007', fontWeight: 'bold' }}>
+                            ₱{b.total_amount?.toLocaleString()}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                    
+                    <Box sx={{ p: 2, backgroundColor: '#fff3e0', borderRadius: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Rental Period:</strong>{' '}
+                        {formatPhilippineDate(selectedGroupBooking.start_date, {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}{' '}
+                        -{' '}
+                        {formatPhilippineDate(selectedGroupBooking.end_date, {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold', color: '#c10007' }}>
+                        Total Amount: ₱{selectedGroupBooking.total_amount?.toLocaleString()}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+                
+                <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+                  ⚠️ Cancellation policies may apply. This action cannot be undone.
+                </Typography>
+              </DialogContent>
+              <DialogActions sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
+                <Button 
+                  onClick={() => {
+                    setShowCancelGroupDialog(false);
+                    setSelectedGroupBooking(null);
+                  }}
+                  sx={{ color: '#666' }}
+                >
+                  Keep Bookings
+                </Button>
+                <Button
+                  onClick={handleCancelGroup}
+                  color="error"
+                  variant="contained"
+                  disabled={actionLoading}
+                  startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <HiTrash size={16} />}
+                  sx={{ 
+                    backgroundColor: '#c10007',
+                    '&:hover': { backgroundColor: '#a50006' }
+                  }}
+                >
+                  {actionLoading ? 'Cancelling...' : `Cancel All ${selectedGroupBooking?.car_count || 0} Bookings`}
                 </Button>
               </DialogActions>
             </Dialog>

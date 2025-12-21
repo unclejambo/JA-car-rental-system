@@ -411,11 +411,13 @@ export default function MultiCarBookingModal({
     setCarBookings((prev) => {
       const updated = [...prev];
       const useCommon = !updated[index].useCommonData;
+      const currentBooking = updated[index];
+      
       updated[index] = {
         ...updated[index],
         useCommonData: useCommon,
-        // When toggling to common data OR toggling OFF common data, copy common values
-        // This ensures dates are preserved when unchecking to fix conflicts
+        // When toggling to common data, use common values
+        // When toggling OFF common data, preserve existing custom values if they exist, otherwise use common values
         ...(useCommon
           ? {
               // Switching TO common data
@@ -431,21 +433,21 @@ export default function MultiCarBookingModal({
               pickupLocation: commonData.pickupLocation,
               dropoffLocation: commonData.dropoffLocation,
               // Clear driver if common data is self-drive
-              selectedDriver: commonData.isSelfDrive ? '' : updated[index].selectedDriver,
+              selectedDriver: commonData.isSelfDrive ? '' : currentBooking.selectedDriver,
             }
           : {
-              // Switching OFF common data - copy current common values so user can modify them
-              startDate: commonData.startDate,
-              endDate: commonData.endDate,
-              pickupTime: commonData.pickupTime,
-              dropoffTime: commonData.dropoffTime,
-              purpose: commonData.purpose,
-              customPurpose: commonData.customPurpose,
-              isSelfDrive: commonData.isSelfDrive,
-              deliveryType: commonData.deliveryType,
-              deliveryLocation: commonData.deliveryLocation,
-              pickupLocation: commonData.pickupLocation,
-              dropoffLocation: commonData.dropoffLocation,
+              // Switching OFF common data - preserve existing custom values OR use common values as starting point
+              startDate: currentBooking.startDate || commonData.startDate,
+              endDate: currentBooking.endDate || commonData.endDate,
+              pickupTime: currentBooking.pickupTime || commonData.pickupTime,
+              dropoffTime: currentBooking.dropoffTime || commonData.dropoffTime,
+              purpose: currentBooking.purpose || commonData.purpose,
+              customPurpose: currentBooking.customPurpose || commonData.customPurpose,
+              isSelfDrive: currentBooking.isSelfDrive !== undefined ? currentBooking.isSelfDrive : commonData.isSelfDrive,
+              deliveryType: currentBooking.deliveryType || commonData.deliveryType,
+              deliveryLocation: currentBooking.deliveryLocation || commonData.deliveryLocation,
+              pickupLocation: currentBooking.pickupLocation || commonData.pickupLocation,
+              dropoffLocation: currentBooking.dropoffLocation || commonData.dropoffLocation,
             }),
       };
 
@@ -569,6 +571,9 @@ export default function MultiCarBookingModal({
           errors.push(`Car ${index + 1}: Start date is required`);
         if (!booking.endDate)
           errors.push(`Car ${index + 1}: End date is required`);
+        if (booking.startDate && booking.endDate && new Date(booking.startDate) > new Date(booking.endDate)) {
+          errors.push(`Car ${index + 1}: End date must be after start date`);
+        }
         if (!booking.purpose)
           errors.push(`Car ${index + 1}: Purpose is required`);
         if (booking.deliveryType === 'delivery' && !booking.deliveryLocation) {
@@ -686,9 +691,22 @@ export default function MultiCarBookingModal({
         return;
       }
     } else if (activeStep === 2) {
-      // Car Use Notice step - validate terms acceptance
+      // Car Use Notice step - validate terms acceptance and dates
       if (!termsAccepted) {
         setError('Please agree to the Car Use Notice terms to proceed.');
+        return;
+      }
+      // Final validation: ensure all cars have valid dates
+      const invalidBookings = [];
+      carBookings.forEach((booking, index) => {
+        const startDate = booking.useCommonData ? commonData.startDate : booking.startDate;
+        const endDate = booking.useCommonData ? commonData.endDate : booking.endDate;
+        if (!startDate || !endDate) {
+          invalidBookings.push(`${booking.car.make} ${booking.car.model}`);
+        }
+      });
+      if (invalidBookings.length > 0) {
+        setError(`Missing dates for: ${invalidBookings.join(', ')}. Please go back and set valid dates.`);
         return;
       }
     }
@@ -779,7 +797,9 @@ export default function MultiCarBookingModal({
       if (response.ok) {
         const result = await response.json();
         if (onBookingSuccess) {
-          onBookingSuccess(result);
+          // Pass prepared bookingsData with correct dates and current carBookings
+          const carsForSuccess = carBookings.map(b => b.car);
+          onBookingSuccess(result, bookingsData, carsForSuccess);
         }
         onClose();
       } else {
@@ -1599,11 +1619,23 @@ export default function MultiCarBookingModal({
               const finalEndDate = booking.useCommonData
                 ? commonData.endDate
                 : booking.endDate;
-              const days =
-                Math.floor(
-                  (new Date(finalEndDate) - new Date(finalStartDate)) /
-                    (1000 * 60 * 60 * 24)
-                ) + 1;
+              
+              // Validate dates exist and are valid
+              const isValidDate = finalStartDate && finalEndDate;
+              const days = isValidDate
+                ? Math.floor(
+                    (new Date(finalEndDate) - new Date(finalStartDate)) /
+                      (1000 * 60 * 60 * 24)
+                  ) + 1
+                : 0;
+              
+              // Format dates for display
+              const startDateDisplay = isValidDate 
+                ? new Date(finalStartDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                : 'Not set';
+              const endDateDisplay = isValidDate
+                ? new Date(finalEndDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                : 'Not set';
 
               return (
                 <Card
@@ -1632,8 +1664,16 @@ export default function MultiCarBookingModal({
                           {booking.car.license_plate}
                         </Typography>
                         <Typography variant="body2" sx={{ mt: 1 }}>
-                          {finalStartDate} to {finalEndDate} ({days} day
-                          {days !== 1 ? 's' : ''})
+                          {isValidDate ? (
+                            <>
+                              {startDateDisplay} to {endDateDisplay} ({days} day
+                              {days !== 1 ? 's' : ''})
+                            </>
+                          ) : (
+                            <span style={{ color: '#d32f2f', fontWeight: 'bold' }}>
+                              ⚠️ Dates not set - Please go back and set valid dates
+                            </span>
+                          )}
                         </Typography>
                         <Typography variant="body2">
                           {booking.isSelfDrive

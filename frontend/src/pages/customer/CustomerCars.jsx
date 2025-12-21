@@ -1090,11 +1090,13 @@ function CustomerCars() {
             setSelectedCars([]);
           }}
           cars={selectedCars}
-          onBookingSuccess={(result) => {
+          onBookingSuccess={(result, preparedBookingsData, actualCars) => {
             // Store the booking data for success modal
-            const bookingsArray = result.bookings || [];
+            // Use preparedBookingsData which has correct date/time fields, or fallback to result.bookings
+            const bookingsArray = preparedBookingsData || result.bookings || [];
+            const carsToUse = actualCars || selectedCars;
             setMultiSuccessBookingsData(bookingsArray);
-            setMultiSuccessCars(selectedCars);
+            setMultiSuccessCars(carsToUse);
             
             // Close booking modal and show success modal
             setShowMultiBookingModal(false);

@@ -196,7 +196,7 @@ export default function MultiCarBookingModal({
 
   const fetchFees = async () => {
     try {
-      const response = await authenticatedFetch(`${API_BASE}/fees`);
+      const response = await authenticatedFetch(`${API_BASE}/manage-fees`);
       if (response.ok) {
         const data = await response.json();
         setFees({

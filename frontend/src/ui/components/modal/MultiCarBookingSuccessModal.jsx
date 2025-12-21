@@ -29,7 +29,10 @@ export default function MultiCarBookingSuccessModal({
   if (!bookingsData || !cars || cars.length === 0) return null;
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -38,15 +41,26 @@ export default function MultiCarBookingSuccessModal({
   };
 
   const formatTime = (timeString) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    if (!timeString) return 'N/A';
+    // Handle both full datetime strings and time-only strings
+    const timeMatch = timeString.match(/\d{2}:\d{2}/);
+    if (timeMatch) {
+      const time = timeMatch[0];
+      const date = new Date(`2000-01-01T${time}`);
+      if (isNaN(date.getTime())) return 'Invalid Time';
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+    return 'N/A';
   };
 
   const calculateDays = (startDate, endDate) => {
+    if (!startDate || !endDate) return 0;
     const start = new Date(startDate);
     const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
     const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
     return diffDays + 1;
   };

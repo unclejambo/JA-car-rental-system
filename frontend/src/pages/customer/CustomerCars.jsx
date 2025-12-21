@@ -4,6 +4,7 @@ import Header from '../../ui/components/Header';
 import BookingModal from '../../ui/components/modal/BookingModal';
 import BookingSuccessModal from '../../ui/components/modal/BookingSuccessModal';
 import MultiCarBookingModal from '../../ui/components/modal/MultiCarBookingModal';
+import MultiCarBookingSuccessModal from '../../ui/components/modal/MultiCarBookingSuccessModal';
 import NotificationSettingsModal from '../../ui/components/modal/NotificationSettingsModal';
 import '../../styles/customercss/customerdashboard.css';
 import {
@@ -46,6 +47,9 @@ function CustomerCars() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successBookingData, setSuccessBookingData] = useState(null);
+  const [showMultiSuccessModal, setShowMultiSuccessModal] = useState(false);
+  const [multiSuccessBookingsData, setMultiSuccessBookingsData] = useState(null);
+  const [multiSuccessCars, setMultiSuccessCars] = useState([]);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [customerNotificationSetting, setCustomerNotificationSetting] =
     useState(0);
@@ -73,47 +77,47 @@ function CustomerCars() {
   );
 
   // Load cars from database
-  useEffect(() => {
-    const loadCars = async () => {
-      try {
-        setLoading(true);
-        const response = await authenticatedFetch(`${API_BASE}/cars`);
+  const loadCars = async () => {
+    try {
+      setLoading(true);
+      const response = await authenticatedFetch(`${API_BASE}/cars`);
 
-        if (response.ok) {
-          const response_data = await response.json();
+      if (response.ok) {
+        const response_data = await response.json();
 
-          // Handle paginated response - extract data array
-          const data = Array.isArray(response_data)
-            ? response_data
-            : response_data.data || [];
+        // Handle paginated response - extract data array
+        const data = Array.isArray(response_data)
+          ? response_data
+          : response_data.data || [];
 
-          // Filter to only show cars that are not deleted/inactive
-          const activeCars = data.filter(
-            (car) =>
-              car.car_status !== 'Deleted' && car.car_status !== 'Inactive'
+        // Filter to only show cars that are not deleted/inactive
+        const activeCars = data.filter(
+          (car) =>
+            car.car_status !== 'Deleted' && car.car_status !== 'Inactive'
+        );
+        setCars(activeCars || []);
+        setFilteredCars(activeCars || []);
+
+        // Set max price for slider
+        if (activeCars.length > 0) {
+          const maxCarPrice = Math.max(
+            ...activeCars.map((car) => car.rent_price || 0)
           );
-          setCars(activeCars || []);
-          setFilteredCars(activeCars || []);
-
-          // Set max price for slider
-          if (activeCars.length > 0) {
-            const maxCarPrice = Math.max(
-              ...activeCars.map((car) => car.rent_price || 0)
-            );
-            setMaxPrice(maxCarPrice);
-            setPriceRange([0, maxCarPrice]);
-          }
-        } else {
-          const errorText = await response.text();
-          setError('Failed to load cars. Please try again.');
+          setMaxPrice(maxCarPrice);
+          setPriceRange([0, maxCarPrice]);
         }
-      } catch (error) {
-        setError('Error connecting to server. Please try again.');
-      } finally {
-        setLoading(false);
+      } else {
+        const errorText = await response.text();
+        setError('Failed to load cars. Please try again.');
       }
-    };
+    } catch (error) {
+      setError('Error connecting to server. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadCars();
   }, []); // Remove dependencies that cause re-renders
 
@@ -1087,13 +1091,19 @@ function CustomerCars() {
           }}
           cars={selectedCars}
           onBookingSuccess={(result) => {
-            setSnackbarMessage(
-              `Successfully created ${result.bookings?.length || selectedCars.length} bookings!`
-            );
-            setSnackbarOpen(true);
+            // Store the booking data for success modal
+            const bookingsArray = result.bookings || [];
+            setMultiSuccessBookingsData(bookingsArray);
+            setMultiSuccessCars(selectedCars);
+            
+            // Close booking modal and show success modal
             setShowMultiBookingModal(false);
+            setShowMultiSuccessModal(true);
+            
+            // Clear selection state
             setMultiSelectMode(false);
             setSelectedCars([]);
+            
             // Refresh cars list
             loadCars();
           }}
@@ -1106,6 +1116,19 @@ function CustomerCars() {
           onClose={handleCloseSuccessModal}
           bookingData={successBookingData}
           car={selectedCar}
+        />
+      )}
+
+      {showMultiSuccessModal && (
+        <MultiCarBookingSuccessModal
+          open={showMultiSuccessModal}
+          onClose={() => {
+            setShowMultiSuccessModal(false);
+            setMultiSuccessBookingsData(null);
+            setMultiSuccessCars([]);
+          }}
+          bookingsData={multiSuccessBookingsData}
+          cars={multiSuccessCars}
         />
       )}
 

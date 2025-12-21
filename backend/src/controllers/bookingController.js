@@ -761,12 +761,31 @@ export const createBulkBookings = async (req, res) => {
       const startDateTime = new Date(booking.startDate);
       const endDateTime = new Date(booking.endDate);
 
+      // Validate dates are valid
+      if (isNaN(startDateTime.getTime())) {
+        validationErrors.push({
+          index: i,
+          errors: [`Invalid startDate format: ${booking.startDate}`],
+        });
+        continue;
+      }
+      if (isNaN(endDateTime.getTime())) {
+        validationErrors.push({
+          index: i,
+          errors: [`Invalid endDate format: ${booking.endDate}`],
+        });
+        continue;
+      }
+
       // Handle time fields
       const pickupTimeStr = booking.pickupTime || "09:00";
       const dropoffTimeStr = booking.dropoffTime || "17:00";
 
       const [pickupHour, pickupMinute] = pickupTimeStr.split(":");
-      const startDateStr = booking.startDate.split("T")[0];
+      // Extract date part safely
+      const startDateStr = booking.startDate.includes("T") 
+        ? booking.startDate.split("T")[0]
+        : booking.startDate.split(" ")[0] || booking.startDate.substring(0, 10);
       const pickupISOString = `${startDateStr}T${String(pickupHour).padStart(
         2,
         "0"
@@ -774,7 +793,9 @@ export const createBulkBookings = async (req, res) => {
       const pickupDateTime = new Date(pickupISOString);
 
       const [dropoffHour, dropoffMinute] = dropoffTimeStr.split(":");
-      const endDateStr = booking.endDate.split("T")[0];
+      const endDateStr = booking.endDate.includes("T")
+        ? booking.endDate.split("T")[0]
+        : booking.endDate.split(" ")[0] || booking.endDate.substring(0, 10);
       const dropoffISOString = `${endDateStr}T${String(dropoffHour).padStart(
         2,
         "0"
@@ -896,27 +917,38 @@ export const createBulkBookings = async (req, res) => {
     // Generate booking_group_id for multiple bookings
     let bookingGroupId = null;
     if (validatedBookings.length > 1) {
-      // Find the highest existing group number
-      const lastGroup = await prisma.$queryRaw`
-        SELECT booking_group_id 
-        FROM "Booking" 
-        WHERE booking_group_id LIKE 'GRP%' 
-        ORDER BY CAST(SUBSTRING(booking_group_id FROM 4) AS INTEGER) DESC 
-        LIMIT 1
-      `;
-      
-      let nextGroupNumber = 1;
-      if (lastGroup && lastGroup.length > 0 && lastGroup[0].booking_group_id) {
-        const lastNumber = parseInt(lastGroup[0].booking_group_id.substring(3));
-        nextGroupNumber = lastNumber + 1;
+      try {
+        // Find the highest existing group number
+        const lastGroup = await prisma.$queryRaw`
+          SELECT booking_group_id 
+          FROM "Booking" 
+          WHERE booking_group_id LIKE 'GRP%' 
+          AND booking_group_id IS NOT NULL
+          ORDER BY CAST(SUBSTRING(booking_group_id FROM 4) AS INTEGER) DESC 
+          LIMIT 1
+        `;
+        
+        let nextGroupNumber = 1;
+        if (lastGroup && lastGroup.length > 0 && lastGroup[0]?.booking_group_id) {
+          const lastNumber = parseInt(lastGroup[0].booking_group_id.substring(3));
+          if (!isNaN(lastNumber)) {
+            nextGroupNumber = lastNumber + 1;
+          }
+        }
+        
+        bookingGroupId = `GRP${nextGroupNumber}`;
+        
+        // Assign group ID to all validated bookings
+        validatedBookings.forEach(booking => {
+          booking.booking_group_id = bookingGroupId;
+        });
+      } catch (groupIdError) {
+        // If group ID generation fails, use timestamp-based ID
+        bookingGroupId = `GRP${Date.now()}`;
+        validatedBookings.forEach(booking => {
+          booking.booking_group_id = bookingGroupId;
+        });
       }
-      
-      bookingGroupId = `GRP${nextGroupNumber}`;
-      
-      // Assign group ID to all validated bookings
-      validatedBookings.forEach(booking => {
-        booking.booking_group_id = bookingGroupId;
-      });
     }
 
     // Create all bookings in a transaction
@@ -1081,9 +1113,11 @@ export const createBulkBookings = async (req, res) => {
       count: createdBookings.length,
     });
   } catch (error) {
+    console.error("Error in createBulkBookings:", error);
     res.status(500).json({
       error: "Failed to create bulk bookings",
       details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     });
   }
 };

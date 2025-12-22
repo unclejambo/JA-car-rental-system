@@ -3,6 +3,8 @@ import CustomerSideBar from '../../ui/components/CustomerSideBar';
 import Header from '../../ui/components/Header';
 import BookingModal from '../../ui/components/modal/BookingModal';
 import BookingSuccessModal from '../../ui/components/modal/BookingSuccessModal';
+import MultiCarBookingModal from '../../ui/components/modal/MultiCarBookingModal';
+import MultiCarBookingSuccessModal from '../../ui/components/modal/MultiCarBookingSuccessModal';
 import NotificationSettingsModal from '../../ui/components/modal/NotificationSettingsModal';
 import '../../styles/customercss/customerdashboard.css';
 import {
@@ -28,6 +30,7 @@ import {
   FormControlLabel,
   FormLabel,
   Snackbar,
+  Checkbox,
 } from '@mui/material';
 import { HiMiniTruck } from 'react-icons/hi2';
 import { HiAdjustmentsHorizontal } from 'react-icons/hi2';
@@ -44,6 +47,9 @@ function CustomerCars() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successBookingData, setSuccessBookingData] = useState(null);
+  const [showMultiSuccessModal, setShowMultiSuccessModal] = useState(false);
+  const [multiSuccessBookingsData, setMultiSuccessBookingsData] = useState(null);
+  const [multiSuccessCars, setMultiSuccessCars] = useState([]);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [customerNotificationSetting, setCustomerNotificationSetting] =
     useState(0);
@@ -56,6 +62,11 @@ function CustomerCars() {
   const [maxPrice, setMaxPrice] = useState(10000);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Multi-select mode states
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [selectedCars, setSelectedCars] = useState([]);
+  const [showMultiBookingModal, setShowMultiBookingModal] = useState(false);
+
   const { logout, user } = useAuth();
 
   // Create stable references
@@ -66,47 +77,47 @@ function CustomerCars() {
   );
 
   // Load cars from database
-  useEffect(() => {
-    const loadCars = async () => {
-      try {
-        setLoading(true);
-        const response = await authenticatedFetch(`${API_BASE}/cars`);
+  const loadCars = async () => {
+    try {
+      setLoading(true);
+      const response = await authenticatedFetch(`${API_BASE}/cars`);
 
-        if (response.ok) {
-          const response_data = await response.json();
+      if (response.ok) {
+        const response_data = await response.json();
 
-          // Handle paginated response - extract data array
-          const data = Array.isArray(response_data)
-            ? response_data
-            : response_data.data || [];
+        // Handle paginated response - extract data array
+        const data = Array.isArray(response_data)
+          ? response_data
+          : response_data.data || [];
 
-          // Filter to only show cars that are not deleted/inactive
-          const activeCars = data.filter(
-            (car) =>
-              car.car_status !== 'Deleted' && car.car_status !== 'Inactive'
+        // Filter to only show cars that are not deleted/inactive
+        const activeCars = data.filter(
+          (car) =>
+            car.car_status !== 'Deleted' && car.car_status !== 'Inactive'
+        );
+        setCars(activeCars || []);
+        setFilteredCars(activeCars || []);
+
+        // Set max price for slider
+        if (activeCars.length > 0) {
+          const maxCarPrice = Math.max(
+            ...activeCars.map((car) => car.rent_price || 0)
           );
-          setCars(activeCars || []);
-          setFilteredCars(activeCars || []);
-
-          // Set max price for slider
-          if (activeCars.length > 0) {
-            const maxCarPrice = Math.max(
-              ...activeCars.map((car) => car.rent_price || 0)
-            );
-            setMaxPrice(maxCarPrice);
-            setPriceRange([0, maxCarPrice]);
-          }
-        } else {
-          const errorText = await response.text();
-          setError('Failed to load cars. Please try again.');
+          setMaxPrice(maxCarPrice);
+          setPriceRange([0, maxCarPrice]);
         }
-      } catch (error) {
-        setError('Error connecting to server. Please try again.');
-      } finally {
-        setLoading(false);
+      } else {
+        const errorText = await response.text();
+        setError('Failed to load cars. Please try again.');
       }
-    };
+    } catch (error) {
+      setError('Error connecting to server. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadCars();
   }, []); // Remove dependencies that cause re-renders
 
@@ -150,10 +161,46 @@ function CustomerCars() {
   // Handle car click to open booking modal
   const handleCarClick = (car) => {
     const isUnderMaintenance = car.car_status?.toLowerCase().includes('maint');
-    if (!isUnderMaintenance) {
-      setSelectedCar(car);
-      setShowBookingModal(true);
+    if (isUnderMaintenance) {
+      return;
     }
+
+    // If in multi-select mode, toggle selection
+    if (multiSelectMode) {
+      handleCarSelection(car);
+      return;
+    }
+
+    setSelectedCar(car);
+    setShowBookingModal(true);
+  };
+
+  // Handle car selection in multi-select mode
+  const handleCarSelection = (car) => {
+    setSelectedCars((prev) => {
+      const isSelected = prev.some((c) => c.car_id === car.car_id);
+      if (isSelected) {
+        return prev.filter((c) => c.car_id !== car.car_id);
+      } else {
+        return [...prev, car];
+      }
+    });
+  };
+
+  // Toggle multi-select mode
+  const toggleMultiSelectMode = () => {
+    setMultiSelectMode(!multiSelectMode);
+    setSelectedCars([]);
+  };
+
+  // Open multi-booking modal
+  const handleBookMultipleCars = () => {
+    if (selectedCars.length === 0) {
+      setSnackbarMessage('Please select at least one car to book.');
+      setSnackbarOpen(true);
+      return;
+    }
+    setShowMultiBookingModal(true);
   };
 
   // Handle notification settings saved
@@ -447,40 +494,102 @@ function CustomerCars() {
                   </Box>
                 </Box>
 
-                <Button
-                  onClick={() => setShowFilters(!showFilters)}
-                  startIcon={<HiAdjustmentsHorizontal />}
-                  variant="contained"
-                  sx={{
-                    backgroundColor: '#c10007',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    minWidth: { xs: '120px', sm: '150px' },
-                    borderRadius: '8px',
-                    padding: '10px 20px',
-                    textTransform: 'none',
-                    boxShadow:
-                      '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                    '&:hover': {
-                      backgroundColor: '#a50006',
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Button
+                    onClick={toggleMultiSelectMode}
+                    variant="contained"
+                    sx={{
+                      backgroundColor: multiSelectMode ? '#666' : '#c10007',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      minWidth: { xs: '100px', sm: '120px' },
+                      borderRadius: '8px',
+                      padding: '10px 20px',
+                      textTransform: 'none',
                       boxShadow:
-                        '0 6px 8px -1px rgba(0, 0, 0, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.06)',
-                    },
-                    '&:focus': {
-                      backgroundColor: '#a50006',
-                    },
-                    '&:active': {
-                      backgroundColor: '#8b0005',
-                    },
-                  }}
-                >
-                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                    Filter Cars
-                  </Box>
-                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
-                    Filter
-                  </Box>
-                </Button>
+                        '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                      '&:hover': {
+                        backgroundColor: multiSelectMode ? '#555' : '#a50006',
+                        boxShadow:
+                          '0 6px 8px -1px rgba(0, 0, 0, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.06)',
+                      },
+                      '&:focus': {
+                        backgroundColor: multiSelectMode ? '#555' : '#a50006',
+                      },
+                      '&:active': {
+                        backgroundColor: multiSelectMode ? '#444' : '#8b0005',
+                      },
+                    }}
+                  >
+                    {multiSelectMode ? `Cancel` : 'Select Multiple'}
+                  </Button>
+
+                  {multiSelectMode && selectedCars.length > 0 && (
+                    <Button
+                      onClick={handleBookMultipleCars}
+                      variant="contained"
+                      sx={{
+                        backgroundColor: '#c10007',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        minWidth: { xs: '120px', sm: '150px' },
+                        borderRadius: '8px',
+                        padding: '10px 20px',
+                        textTransform: 'none',
+                        boxShadow:
+                          '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                        '&:hover': {
+                          backgroundColor: '#a50006',
+                          boxShadow:
+                            '0 6px 8px -1px rgba(0, 0, 0, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.06)',
+                        },
+                        '&:focus': {
+                          backgroundColor: '#a50006',
+                        },
+                        '&:active': {
+                          backgroundColor: '#8b0005',
+                        },
+                      }}
+                    >
+                      Book {selectedCars.length} Car{selectedCars.length !== 1 ? 's' : ''}
+                    </Button>
+                  )}
+
+                  <Button
+                    onClick={() => setShowFilters(!showFilters)}
+                    startIcon={<HiAdjustmentsHorizontal />}
+                    variant="contained"
+                    sx={{
+                      backgroundColor: '#c10007',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      minWidth: { xs: '120px', sm: '150px' },
+                      borderRadius: '8px',
+                      padding: '10px 20px',
+                      textTransform: 'none',
+                      boxShadow:
+                        '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                      '&:hover': {
+                        backgroundColor: '#a50006',
+                        boxShadow:
+                          '0 6px 8px -1px rgba(0, 0, 0, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.06)',
+                      },
+                      '&:focus': {
+                        backgroundColor: '#a50006',
+                      },
+                      '&:active': {
+                        backgroundColor: '#8b0005',
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                      Filter Cars
+                    </Box>
+                    <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+                      Filter
+                    </Box>
+                  </Button>
+                </Box>
               </Box>
             )}
 
@@ -736,6 +845,9 @@ function CustomerCars() {
                         const isUnderMaintenance = car.car_status
                           ?.toLowerCase()
                           .includes('maint');
+                        const isSelected = selectedCars.some(
+                          (c) => c.car_id === car.car_id
+                        );
                         return (
                           <Grid
                             size={{ xs: 12, sm: 6, md: 3 }}
@@ -756,6 +868,9 @@ function CustomerCars() {
                                 boxShadow: '0 3px 10px rgba(0,0,0,0.08)',
                                 transition:
                                   'transform 0.2s ease, box-shadow 0.2s ease',
+                                border: multiSelectMode && isSelected
+                                  ? '3px solid #2196f3'
+                                  : 'none',
                                 '&:hover': {
                                   transform: isUnderMaintenance
                                     ? 'none'
@@ -768,10 +883,38 @@ function CustomerCars() {
                                   ? 'not-allowed'
                                   : 'pointer',
                                 opacity: isUnderMaintenance ? 0.7 : 1,
-                                backgroundColor: '#fff',
+                                backgroundColor: multiSelectMode && isSelected
+                                  ? '#e3f2fd'
+                                  : '#fff',
+                                position: 'relative',
                               }}
                               onClick={() => handleCarClick(car)}
                             >
+                              {/* Multi-select checkbox overlay */}
+                              {multiSelectMode && !isUnderMaintenance && (
+                                <Box
+                                  sx={{
+                                    position: 'absolute',
+                                    top: 10,
+                                    right: 10,
+                                    zIndex: 2,
+                                    backgroundColor: 'white',
+                                    borderRadius: '50%',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                  }}
+                                >
+                                  <Checkbox
+                                    checked={isSelected}
+                                    sx={{
+                                      color: '#2196f3',
+                                      '&.Mui-checked': {
+                                        color: '#2196f3',
+                                      },
+                                    }}
+                                  />
+                                </Box>
+                              )}
+
                               <Box
                                 sx={{
                                   width: '100%',
@@ -938,12 +1081,56 @@ function CustomerCars() {
         />
       )}
 
+      {showMultiBookingModal && (
+        <MultiCarBookingModal
+          open={showMultiBookingModal}
+          onClose={() => {
+            setShowMultiBookingModal(false);
+            setMultiSelectMode(false);
+            setSelectedCars([]);
+          }}
+          cars={selectedCars}
+          onBookingSuccess={(result, preparedBookingsData, actualCars) => {
+            // Store the booking data for success modal
+            // Use preparedBookingsData which has correct date/time fields, or fallback to result.bookings
+            const bookingsArray = preparedBookingsData || result.bookings || [];
+            const carsToUse = actualCars || selectedCars;
+            setMultiSuccessBookingsData(bookingsArray);
+            setMultiSuccessCars(carsToUse);
+            
+            // Close booking modal and show success modal
+            setShowMultiBookingModal(false);
+            setShowMultiSuccessModal(true);
+            
+            // Clear selection state
+            setMultiSelectMode(false);
+            setSelectedCars([]);
+            
+            // Refresh cars list
+            loadCars();
+          }}
+        />
+      )}
+
       {showSuccessModal && (
         <BookingSuccessModal
           open={showSuccessModal}
           onClose={handleCloseSuccessModal}
           bookingData={successBookingData}
           car={selectedCar}
+        />
+      )}
+
+      {showMultiSuccessModal && (
+        <MultiCarBookingSuccessModal
+          open={showMultiSuccessModal}
+          onClose={() => {
+            setShowMultiSuccessModal(false);
+            setMultiSuccessBookingsData(null);
+            setMultiSuccessCars([]);
+          }}
+          bookingsData={multiSuccessBookingsData}
+          cars={multiSuccessCars}
         />
       )}
 

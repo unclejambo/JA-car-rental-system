@@ -62,10 +62,18 @@ export default function PaymentModal({
 
   React.useEffect(() => {
     if (booking && open) {
-      // Calculate remaining balance
-      const totalAmount = booking.total_amount || 0;
-      const totalPaid = booking.total_paid || 0;
-      const remainingBalance = totalAmount - totalPaid;
+      // Calculate remaining balance for single or grouped bookings
+      let remainingBalance = 0;
+      
+      if (booking.isGroup) {
+        // For grouped bookings, use the group's total balance
+        remainingBalance = booking.balance || 0;
+      } else {
+        // For single bookings
+        const totalAmount = booking.total_amount || 0;
+        const totalPaid = booking.total_paid || 0;
+        remainingBalance = totalAmount - totalPaid;
+      }
 
       setPaymentData({
         payment_method: '',
@@ -128,9 +136,11 @@ export default function PaymentModal({
       return false;
     }
 
-    // Validate minimum payment amount of 1000
-    if (parseFloat(paymentData.amount) < 1000) {
-      setError('Payment amount must be at least ₱1,000');
+    // Calculate minimum payment: for groups = car_count * 1000, for single = 1000
+    const minimumPayment = booking.isGroup ? (booking.car_count * 1000) : 1000;
+    
+    if (parseFloat(paymentData.amount) < minimumPayment) {
+      setError(`Payment amount must be at least ₱${minimumPayment.toLocaleString()}${booking.isGroup ? ` (₱1,000 × ${booking.car_count} cars)` : ''}`);
       return false;
     }
 
@@ -159,16 +169,32 @@ export default function PaymentModal({
       setLoading(true);
       setError('');
 
+      // Prepare payload for group or single booking payment
+      let payload;
+      
+      if (booking.isGroup) {
+        // For grouped bookings, send group payment request
+        payload = {
+          booking_group_id: booking.booking_group_id,
+          booking_ids: booking.bookings.map(b => b.booking_id),
+          ...paymentData,
+          amount: parseFloat(paymentData.amount),
+        };
+      } else {
+        // For single booking payment
+        payload = {
+          booking_id: booking.booking_id,
+          ...paymentData,
+          amount: parseFloat(paymentData.amount),
+        };
+      }
+
       const response = await authenticatedFetch(
-        `${API_BASE}/payments/process-booking-payment`,
+        `${API_BASE}/payments/${booking.isGroup ? 'process-group-payment' : 'process-booking-payment'}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            booking_id: booking.booking_id,
-            ...paymentData,
-            amount: parseFloat(paymentData.amount),
-          }),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -187,6 +213,10 @@ export default function PaymentModal({
             successMessage +=
               ' Your booking status will remain pending until payment is verified by our staff.';
           }
+        }
+
+        if (booking.isGroup) {
+          successMessage = `Group payment of ₱${parseFloat(paymentData.amount).toLocaleString()} processed for ${booking.car_count} vehicles! ${result.message || ''}`;
         }
 
         // Pass result with message to parent component
@@ -219,6 +249,13 @@ export default function PaymentModal({
 
   const getRemainingBalance = () => {
     if (!booking) return 0;
+    
+    if (booking.isGroup) {
+      // For grouped bookings, use the group's balance
+      return booking.balance || 0;
+    }
+    
+    // For single bookings
     const totalAmount = booking.total_amount || 0;
     const totalPaid = booking.total_paid || 0;
     return Math.max(0, totalAmount - totalPaid);
@@ -454,8 +491,8 @@ export default function PaymentModal({
                           <Typography sx={{ mr: 1 }}>₱</Typography>
                         ),
                       }}
-                      inputProps={{ min: 1000, max: getRemainingBalance() }}
-                      helperText={`Outstanding balance: ₱${getRemainingBalance().toLocaleString()} (Minimum: ₱1,000)`}
+                      inputProps={{ min: booking.isGroup ? (booking.car_count * 1000) : 1000, max: getRemainingBalance() }}
+                      helperText={`Outstanding balance: ₱${getRemainingBalance().toLocaleString()} (Minimum: ₱${booking.isGroup ? `${(booking.car_count * 1000).toLocaleString()} - ${booking.car_count} cars × ₱1,000` : '1,000'})`}
                       sx={{ width: '100%' }}
                     />
                   </Box>
@@ -641,10 +678,13 @@ export default function PaymentModal({
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box>
                 <Typography variant="body2" color="text.secondary">
-                  Booking ID
+                  {booking?.isGroup ? 'Group Booking IDs' : 'Booking ID'}
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  #{booking?.booking_id}
+                  {booking?.isGroup 
+                    ? booking.bookings.map(b => `#${b.booking_id}`).join(', ')
+                    : `#${booking?.booking_id}`
+                  }
                 </Typography>
               </Box>
 
@@ -652,10 +692,13 @@ export default function PaymentModal({
 
               <Box>
                 <Typography variant="body2" color="text.secondary">
-                  Vehicle
+                  Vehicle{booking?.isGroup ? 's' : ''}
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  {booking?.car_details?.make} {booking?.car_details?.model}
+                  {booking?.isGroup
+                    ? `${booking.car_count} Vehicles (${booking.bookings.map(b => b.car_details.display_name).join(', ')})`
+                    : `${booking?.car_details?.make} ${booking?.car_details?.model}`
+                  }
                 </Typography>
               </Box>
 
@@ -771,14 +814,27 @@ export default function PaymentModal({
           }}
         >
           <Typography variant="body1" sx={{ mb: 1 }}>
-            <strong>Booking #{booking.booking_id}</strong> -{' '}
-            {booking.car_details?.make} {booking.car_details?.model}
+            <strong>
+              {booking.isGroup 
+                ? `Group Booking (${booking.car_count} vehicles)` 
+                : `Booking #${booking.booking_id}`}
+            </strong>
+            {' - '}
+            {booking.isGroup 
+              ? booking.bookings.map(b => `${b.car_details.make} ${b.car_details.model}`).join(', ')
+              : `${booking.car_details?.make} ${booking.car_details?.model}`
+            }
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Outstanding Balance:{' '}
             <strong style={{ color: '#c10007' }}>
               ₱{getRemainingBalance().toLocaleString()}
             </strong>
+            {booking.isGroup && (
+              <span style={{ marginLeft: '8px', fontSize: '0.875rem' }}>
+                (Minimum payment: ₱{(booking.car_count * 1000).toLocaleString()})
+              </span>
+            )}
           </Typography>
         </Box>
 

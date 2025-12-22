@@ -740,9 +740,210 @@ export const processBookingPayment = async (req, res) => {
   }
 };
 
-// @desc    Get customer's payment history
-// @route   GET /payments/my-payments
+// @desc    Process payment for a group of bookings
+// @route   POST /payments/process-group-payment
 // @access  Private (Customer)
+export const processGroupPayment = async (req, res) => {
+  try {
+    const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
+
+    if (!customerId) {
+      return res
+        .status(401)
+        .json({ error: "Customer authentication required" });
+    }
+
+    const { booking_group_id, booking_ids, payment_method, gcash_no, reference_no, amount } =
+      req.body;
+
+    if (!booking_group_id || !booking_ids || !Array.isArray(booking_ids) || booking_ids.length === 0 || !amount || !payment_method) {
+      return res.status(400).json({
+        error: "booking_group_id, booking_ids (array), amount, and payment_method are required",
+      });
+    }
+
+    // Verify all bookings belong to this customer and have the same group_id
+    const bookings = await prisma.booking.findMany({
+      where: {
+        booking_id: { in: booking_ids.map(id => parseInt(id)) },
+        customer_id: parseInt(customerId),
+        booking_group_id: booking_group_id,
+      },
+      include: {
+        car: {
+          select: { make: true, model: true, year: true, license_plate: true },
+        },
+        customer: {
+          select: {
+            first_name: true,
+            last_name: true,
+            email: true,
+            contact_no: true,
+          },
+        },
+      },
+    });
+
+    if (bookings.length !== booking_ids.length) {
+      return res.status(403).json({
+        error: "Some bookings not found or do not belong to you or are not in the same group",
+      });
+    }
+
+    const carCount = bookings.length;
+    const minimumPayment = carCount * 1000;
+    const paymentAmount = parseFloat(amount);
+
+    // Validate minimum payment
+    if (paymentAmount < minimumPayment) {
+      return res.status(400).json({
+        error: `Minimum payment for ${carCount} cars is ₱${minimumPayment.toLocaleString()}`,
+        minimum_payment: minimumPayment,
+        car_count: carCount,
+      });
+    }
+
+    // Calculate total amount and total paid across all bookings in the group
+    const totalGroupAmount = bookings.reduce((sum, b) => sum + (b.total_amount || 0), 0);
+    
+    // Get all existing payments for these bookings
+    const existingPayments = await prisma.payment.findMany({
+      where: {
+        booking_id: { in: booking_ids.map(id => parseInt(id)) },
+      },
+      select: { amount: true },
+    });
+    
+    const totalGroupPaid = existingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const remainingGroupBalance = totalGroupAmount - totalGroupPaid;
+
+    // Validate payment doesn't exceed remaining balance
+    if (paymentAmount > remainingGroupBalance) {
+      return res.status(400).json({
+        error: "Payment amount exceeds remaining balance",
+        details: {
+          total_amount: totalGroupAmount,
+          amount_paid: totalGroupPaid,
+          remaining_balance: remainingGroupBalance,
+          attempted_payment: paymentAmount,
+        },
+      });
+    }
+
+    // Distribute payment proportionally among all bookings
+    const paymentPerCar = paymentAmount / carCount;
+
+    // Create payment records for each booking in the group
+    const paymentPromises = bookings.map(async (booking) => {
+      // Get current payments for this specific booking
+      const bookingPayments = await prisma.payment.findMany({
+        where: { booking_id: booking.booking_id },
+        select: { amount: true },
+      });
+      
+      const bookingPaid = bookingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const bookingBalance = (booking.total_amount || 0) - bookingPaid - paymentPerCar;
+
+      return prisma.payment.create({
+        data: {
+          booking_id: booking.booking_id,
+          customer_id: parseInt(customerId),
+          booking_group_id: booking_group_id,
+          description: `Group payment for ${booking.car.make} ${booking.car.model} ${booking.car.year} (${carCount} cars total)`,
+          payment_method,
+          gcash_no,
+          reference_no,
+          amount: Math.round(paymentPerCar), // Round to avoid decimal issues
+          paid_date: new Date(),
+          balance: Math.round(bookingBalance),
+        },
+      });
+    });
+
+    const payments = await Promise.all(paymentPromises);
+
+    // Update each booking's balance and payment status
+    const bookingUpdatePromises = bookings.map(async (booking) => {
+      const bookingPayments = await prisma.payment.findMany({
+        where: { booking_id: booking.booking_id },
+        select: { amount: true },
+      });
+      
+      const totalPaid = bookingPayments.reduce((sum, p) => sum + (p.amount || 0), 0) + Math.round(paymentPerCar);
+      const newBalance = (booking.total_amount || 0) - totalPaid;
+
+      return prisma.booking.update({
+        where: { booking_id: booking.booking_id },
+        data: {
+          isPay: true, // Set to true to signal admin for approval
+          balance: newBalance,
+          payment_status: newBalance <= 0 ? "Paid" : "Unpaid",
+        },
+      });
+    });
+
+    await Promise.all(bookingUpdatePromises);
+
+    // Send payment request notification to admin for GCash
+    if (payment_method === "GCash") {
+      try {
+        await sendAdminPaymentRequestNotification(
+          {
+            payment_id: payments[0].payment_id,
+            payment_method,
+            gcash_no,
+            reference_no,
+            amount: paymentAmount,
+            description: `Group payment for ${carCount} vehicles`,
+          },
+          {
+            customer_id: parseInt(customerId),
+            first_name: bookings[0].customer.first_name,
+            last_name: bookings[0].customer.last_name,
+            email: bookings[0].customer.email,
+            contact_no: bookings[0].customer.contact_no,
+          },
+          {
+            booking_id: booking_ids.join(', '),
+            start_date: bookings[0].start_date,
+            end_date: bookings[0].end_date,
+            total_amount: totalGroupAmount,
+          },
+          {
+            make: `${carCount} vehicles`,
+            model: bookings.map(b => `${b.car.make} ${b.car.model}`).join(', '),
+            year: '',
+            license_plate: bookings.map(b => b.car.license_plate).join(', '),
+          }
+        );
+      } catch (adminNotificationError) {
+        // Don't fail the payment request if notification fails
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Group payment of ₱${paymentAmount.toLocaleString()} processed successfully for ${carCount} vehicles! Payment distributed as ₱${Math.round(paymentPerCar).toLocaleString()} per vehicle.`,
+      group_payment: {
+        booking_group_id,
+        total_amount: paymentAmount,
+        payment_per_car: Math.round(paymentPerCar),
+        car_count: carCount,
+        bookings_updated: booking_ids,
+        remaining_group_balance: remainingGroupBalance - paymentAmount,
+      },
+      payments: payments.map(p => ({
+        payment_id: p.payment_id,
+        booking_id: p.booking_id,
+        amount: p.amount,
+        balance: p.balance,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to process group payment" });
+  }
+};
+
 // @desc    Get customer's payment history with pagination
 // @route   GET /payments/my-payments?page=1&pageSize=10&sortBy=paid_date&sortOrder=desc
 // @access  Private/Customer

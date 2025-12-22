@@ -711,6 +711,417 @@ export const createBooking = async (req, res) => {
   }
 };
 
+// Create multiple bookings at once (bulk booking)
+export const createBulkBookings = async (req, res) => {
+  try {
+    const customerId = req.user?.sub || req.user?.customer_id || req.user?.id;
+
+    if (!customerId) {
+      return res.status(401).json({
+        error: "Customer authentication required",
+      });
+    }
+
+    if (req.user?.role !== "customer") {
+      return res.status(403).json({
+        error: "Only customers can create bookings",
+      });
+    }
+
+    const { bookings } = req.body;
+
+    if (!Array.isArray(bookings) || bookings.length === 0) {
+      return res.status(400).json({
+        error: "Bookings array is required and must not be empty",
+      });
+    }
+
+    // Validate all bookings first before creating any
+    const validatedBookings = [];
+    const validationErrors = [];
+
+    for (let i = 0; i < bookings.length; i++) {
+      const booking = bookings[i];
+      const errors = [];
+
+      // Required fields validation
+      if (!booking.car_id) errors.push("car_id is required");
+      if (!booking.startDate) errors.push("startDate is required");
+      if (!booking.endDate) errors.push("endDate is required");
+
+      if (errors.length > 0) {
+        validationErrors.push({
+          index: i,
+          errors,
+        });
+        continue;
+      }
+
+      // Prepare booking data
+      const startDateTime = new Date(booking.startDate);
+      const endDateTime = new Date(booking.endDate);
+
+      // Validate dates are valid
+      if (isNaN(startDateTime.getTime())) {
+        validationErrors.push({
+          index: i,
+          errors: [`Invalid startDate format: ${booking.startDate}`],
+        });
+        continue;
+      }
+      if (isNaN(endDateTime.getTime())) {
+        validationErrors.push({
+          index: i,
+          errors: [`Invalid endDate format: ${booking.endDate}`],
+        });
+        continue;
+      }
+
+      // Handle time fields
+      const pickupTimeStr = booking.pickupTime || "09:00";
+      const dropoffTimeStr = booking.dropoffTime || "17:00";
+
+      const [pickupHour, pickupMinute] = pickupTimeStr.split(":");
+      // Extract date part safely
+      const startDateStr = booking.startDate.includes("T") 
+        ? booking.startDate.split("T")[0]
+        : booking.startDate.split(" ")[0] || booking.startDate.substring(0, 10);
+      const pickupISOString = `${startDateStr}T${String(pickupHour).padStart(
+        2,
+        "0"
+      )}:${String(pickupMinute).padStart(2, "0")}:00.000+08:00`;
+      const pickupDateTime = new Date(pickupISOString);
+
+      const [dropoffHour, dropoffMinute] = dropoffTimeStr.split(":");
+      const endDateStr = booking.endDate.includes("T")
+        ? booking.endDate.split("T")[0]
+        : booking.endDate.split(" ")[0] || booking.endDate.substring(0, 10);
+      const dropoffISOString = `${endDateStr}T${String(dropoffHour).padStart(
+        2,
+        "0"
+      )}:${String(dropoffMinute).padStart(2, "0")}:00.000+08:00`;
+      const dropoffDateTime = new Date(dropoffISOString);
+
+      const finalDriverId =
+        booking.selectedDriver &&
+        booking.selectedDriver !== "null" &&
+        booking.selectedDriver !== ""
+          ? parseInt(booking.selectedDriver)
+          : null;
+
+      const bookingData = {
+        customer_id: parseInt(customerId),
+        car_id: parseInt(booking.car_id),
+        booking_date: new Date(),
+        purpose: booking.purpose || "Not specified",
+        start_date: startDateTime,
+        end_date: endDateTime,
+        pickup_time: pickupDateTime,
+        pickup_loc:
+          booking.pickupLocation ||
+          booking.deliveryLocation ||
+          "JA Car Rental Office",
+        dropoff_time: dropoffDateTime,
+        dropoff_loc: booking.dropoffLocation || "JA Car Rental Office",
+        total_amount: Math.round(parseFloat(booking.totalCost || 0)),
+        payment_status: "Unpaid",
+        booking_status: "Pending",
+        isSelfDriver: booking.isSelfDrive !== undefined ? booking.isSelfDrive : true,
+        drivers_id: finalDriverId,
+        isExtend: false,
+        isCancel: false,
+        isRelease: false,
+        isReturned: false,
+        isPay: false,
+        balance: Math.round(parseFloat(booking.totalCost || 0)),
+        isDeliver: booking.deliveryType === "delivery",
+        deliver_loc:
+          booking.deliveryType === "delivery"
+            ? booking.deliveryLocation || booking.pickupLocation
+            : null,
+      };
+
+      // Validate car exists
+      const carExists = await prisma.car.findUnique({
+        where: { car_id: parseInt(booking.car_id) },
+      });
+
+      if (!carExists) {
+        validationErrors.push({
+          index: i,
+          errors: [`Car with ID ${booking.car_id} not found`],
+        });
+        continue;
+      }
+
+      // Check for date conflicts
+      const existingBookings = await prisma.booking.findMany({
+        where: {
+          car_id: parseInt(booking.car_id),
+          booking_status: {
+            in: ["Pending", "Confirmed", "In Progress"],
+          },
+          isCancel: false,
+        },
+        select: {
+          booking_id: true,
+          start_date: true,
+          end_date: true,
+          booking_status: true,
+        },
+      });
+
+      const dateValidation = validateBookingDates(
+        startDateTime,
+        endDateTime,
+        existingBookings,
+        1
+      );
+
+      if (!dateValidation.isValid) {
+        validationErrors.push({
+          index: i,
+          errors: [
+            `Date conflict: ${dateValidation.message}`,
+          ],
+        });
+        continue;
+      }
+
+      // Validate driver if specified
+      if (finalDriverId) {
+        const driverExists = await prisma.driver.findUnique({
+          where: { drivers_id: finalDriverId },
+        });
+
+        if (!driverExists) {
+          validationErrors.push({
+            index: i,
+            errors: [`Driver with ID ${finalDriverId} not found`],
+          });
+          continue;
+        }
+      }
+
+      validatedBookings.push(bookingData);
+    }
+
+    // If there are validation errors, return them all
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        error: "Validation failed for one or more bookings",
+        validationErrors,
+      });
+    }
+
+    // Generate booking_group_id for multiple bookings
+    let bookingGroupId = null;
+    if (validatedBookings.length > 1) {
+      try {
+        // Find the highest existing group number
+        const lastGroup = await prisma.$queryRaw`
+          SELECT booking_group_id 
+          FROM "Booking" 
+          WHERE booking_group_id LIKE 'GRP%' 
+          AND booking_group_id IS NOT NULL
+          ORDER BY CAST(SUBSTRING(booking_group_id FROM 4) AS INTEGER) DESC 
+          LIMIT 1
+        `;
+        
+        let nextGroupNumber = 1;
+        if (lastGroup && lastGroup.length > 0 && lastGroup[0]?.booking_group_id) {
+          const lastNumber = parseInt(lastGroup[0].booking_group_id.substring(3));
+          if (!isNaN(lastNumber)) {
+            nextGroupNumber = lastNumber + 1;
+          }
+        }
+        
+        bookingGroupId = `GRP${nextGroupNumber}`;
+        
+        // Assign group ID to all validated bookings
+        validatedBookings.forEach(booking => {
+          booking.booking_group_id = bookingGroupId;
+        });
+      } catch (groupIdError) {
+        // If group ID generation fails, use timestamp-based ID
+        bookingGroupId = `GRP${Date.now()}`;
+        validatedBookings.forEach(booking => {
+          booking.booking_group_id = bookingGroupId;
+        });
+      }
+    }
+
+    // Create all bookings in a transaction
+    const createdBookings = await prisma.$transaction(async (tx) => {
+      const results = [];
+
+      for (const bookingData of validatedBookings) {
+        const newBooking = await tx.booking.create({
+          data: bookingData,
+          include: {
+            customer: {
+              select: {
+                first_name: true,
+                last_name: true,
+                email: true,
+                contact_no: true,
+              },
+            },
+            car: {
+              select: {
+                make: true,
+                model: true,
+                year: true,
+                license_plate: true,
+              },
+            },
+            driver: {
+              select: {
+                drivers_id: true,
+                first_name: true,
+                last_name: true,
+                contact_no: true,
+              },
+            },
+          },
+        });
+
+        // Update car status if booking starts today or earlier
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const bookingStart = new Date(bookingData.start_date);
+        bookingStart.setHours(0, 0, 0, 0);
+
+        if (bookingStart <= today) {
+          try {
+            await tx.car.update({
+              where: { car_id: bookingData.car_id },
+              data: { car_status: "Rented" },
+            });
+          } catch (carUpdateError) {
+            // Don't fail the transaction
+          }
+        }
+
+        // Create payment record
+        try {
+          await tx.payment.create({
+            data: {
+              booking_id: newBooking.booking_id,
+              customer_id: bookingData.customer_id,
+              description: "User Booked the Car",
+              amount: 0,
+              payment_method: null,
+              paid_date: null,
+              balance: bookingData.total_amount,
+              booking_group_id: bookingData.booking_group_id || null,
+            },
+          });
+        } catch (paymentError) {
+          // Don't fail the transaction
+        }
+
+        // Update driver status
+        if (newBooking.drivers_id) {
+          try {
+            await tx.driver.update({
+              where: { drivers_id: newBooking.drivers_id },
+              data: { booking_status: 1 },
+            });
+          } catch (driverUpdateError) {
+            // Don't fail the transaction
+          }
+        }
+
+        results.push(newBooking);
+      }
+
+      return results;
+    });
+
+    // Send notifications for each booking (outside transaction)
+    for (const booking of createdBookings) {
+      try {
+        // Customer notification
+        await sendBookingSuccessNotification(
+          booking,
+          {
+            customer_id: booking.customer_id,
+            first_name: booking.customer.first_name,
+            last_name: booking.customer.last_name,
+            email: booking.customer.email,
+            contact_no: booking.customer.contact_no,
+          },
+          {
+            make: booking.car.make,
+            model: booking.car.model,
+            year: booking.car.year,
+            license_plate: booking.car.license_plate,
+          }
+        );
+
+        // Admin notification
+        await sendAdminNewBookingNotification(
+          booking,
+          {
+            customer_id: booking.customer_id,
+            first_name: booking.customer.first_name,
+            last_name: booking.customer.last_name,
+            email: booking.customer.email,
+            contact_no: booking.customer.contact_no,
+          },
+          {
+            make: booking.car.make,
+            model: booking.car.model,
+            year: booking.car.year,
+            license_plate: booking.car.license_plate,
+          }
+        );
+
+        // Driver notification if assigned
+        if (booking.driver) {
+          await sendDriverAssignedNotification(
+            booking,
+            {
+              drivers_id: booking.driver.drivers_id,
+              first_name: booking.driver.first_name,
+              last_name: booking.driver.last_name,
+              contact_no: booking.driver.contact_no,
+            },
+            {
+              first_name: booking.customer.first_name,
+              last_name: booking.customer.last_name,
+              contact_no: booking.customer.contact_no,
+            },
+            {
+              make: booking.car.make,
+              model: booking.car.model,
+              year: booking.car.year,
+              license_plate: booking.car.license_plate,
+            }
+          );
+        }
+      } catch (notificationError) {
+        // Don't fail if notifications fail
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully created ${createdBookings.length} booking(s)`,
+      bookings: createdBookings,
+      count: createdBookings.length,
+    });
+  } catch (error) {
+    console.error("Error in createBulkBookings:", error);
+    res.status(500).json({
+      error: "Failed to create bulk bookings",
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+    });
+  }
+};
+
 export const updateBooking = async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);

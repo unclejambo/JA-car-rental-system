@@ -11,6 +11,7 @@ import SearchBar from '../../ui/components/SearchBar';
 import { HiBookOpen, HiCurrencyDollar } from 'react-icons/hi2';
 import ManageFeesModal from '../../ui/components/modal/ManageFeesModal';
 import BookingDetailsModal from '../../ui/components/modal/BookingDetailsModal';
+import GroupBookingDetailsModal from '../../ui/components/modal/GroupBookingDetailsModal';
 import { createAuthenticatedFetch, getApiBase } from '../../utils/api';
 
 export default function AdminBookingPage() {
@@ -33,6 +34,7 @@ export default function AdminBookingPage() {
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [showManageFeesModal, setShowManageFeesModal] = useState(false);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
+  const [showGroupBookingModal, setShowGroupBookingModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -223,7 +225,47 @@ export default function AdminBookingPage() {
           );
         });
 
-        setRows(formattedData);
+        // Group bookings by booking_group_id
+        const groupedBookings = [];
+        const processedGroups = new Set();
+        const ungroupedBookings = [];
+
+        formattedData.forEach((booking) => {
+          if (booking.booking_group_id && !processedGroups.has(booking.booking_group_id)) {
+            // Find all bookings with same group_id
+            const groupBookings = formattedData.filter(
+              (b) => b.booking_group_id === booking.booking_group_id
+            );
+
+            // Calculate totals for the group
+            const totalAmount = groupBookings.reduce((sum, b) => sum + (b.total_amount || 0), 0);
+            const totalBalance = groupBookings.reduce((sum, b) => sum + (b.balance || 0), 0);
+
+            // Create a grouped record
+            groupedBookings.push({
+              ...booking, // Use first booking as base
+              isGroup: true,
+              booking_group_id: booking.booking_group_id,
+              bookings: groupBookings, // Store all bookings in group
+              car_count: groupBookings.length,
+              total_amount: totalAmount,
+              balance: totalBalance,
+              payment_status: totalBalance > 0 ? 'Unpaid' : 'Paid',
+              // Display properties
+              car_model: `Group Booking (${groupBookings.length} cars)`,
+              car_plate_number: booking.booking_group_id,
+            });
+
+            processedGroups.add(booking.booking_group_id);
+          } else if (!booking.booking_group_id) {
+            ungroupedBookings.push({ ...booking, isGroup: false });
+          }
+        });
+
+        // Combine grouped and ungrouped bookings
+        const finalData = [...groupedBookings, ...ungroupedBookings];
+
+        setRows(finalData);
         setError(null);
       })
       .catch((err) => {
@@ -283,6 +325,16 @@ export default function AdminBookingPage() {
     );
   }
 
+  const openGroupBookingModal = (groupData) => {
+    setSelectedBooking(groupData);
+    setShowGroupBookingModal(true);
+  };
+
+  const closeGroupBookingModal = () => {
+    setShowGroupBookingModal(false);
+    setSelectedBooking(null);
+  };
+
   return (
     <Box sx={{ display: 'flex' }}>
       <title>Booking Management</title>
@@ -295,6 +347,11 @@ export default function AdminBookingPage() {
         onClose={closeBookingDetailsModal}
         booking={selectedBooking}
         onPaymentSuccess={handlePaymentSuccess}
+      />
+      <GroupBookingDetailsModal
+        open={showGroupBookingModal}
+        onClose={closeGroupBookingModal}
+        groupData={selectedBooking}
       />
       <Header onMenuClick={() => setMobileOpen(true)} />
       <AdminSideBar
@@ -517,6 +574,7 @@ export default function AdminBookingPage() {
                 loading={loading}
                 activeTab={activeTab}
                 onViewDetails={openBookingDetailsModal}
+                onViewGroupDetails={openGroupBookingModal}
                 onDataChange={fetchBookings}
               />
             </Box>

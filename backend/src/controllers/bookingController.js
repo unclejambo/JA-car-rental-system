@@ -1414,12 +1414,21 @@ export const cancelMyBooking = async (req, res) => {
 
     // Set isCancel flag to true - waiting for admin confirmation
     // Do NOT change booking_status to cancelled yet
+    // If this booking is part of a group, temporarily remove it from the group
+    const updateData = {
+      isCancel: true,
+      // booking_status remains unchanged until admin confirms
+    };
+    
+    // If part of a multi-car booking group, store the original group ID and set it to null
+    if (booking.booking_group_id) {
+      updateData.original_booking_group_id = booking.booking_group_id;
+      updateData.booking_group_id = null;
+    }
+    
     const updatedBooking = await prisma.booking.update({
       where: { booking_id: bookingId },
-      data: {
-        isCancel: true,
-        // booking_status remains unchanged until admin confirms
-      },
+      data: updateData,
       include: {
         car: {
           select: { make: true, model: true, year: true, license_plate: true },
@@ -1592,11 +1601,15 @@ export const confirmCancellationRequest = async (req, res) => {
     }
 
     // Update booking status to Cancelled
+    // Keep booking_group_id as null (finalize separation from group)
+    // Clear original_booking_group_id since cancellation is confirmed
     const updatedBooking = await prisma.booking.update({
       where: { booking_id: bookingId },
       data: {
         booking_status: "Cancelled",
         isCancel: false,
+        original_booking_group_id: null,
+        // booking_group_id remains null (already set to null when cancel was requested)
       },
       include: {
         car: {
@@ -1718,11 +1731,20 @@ export const rejectCancellationRequest = async (req, res) => {
     }
 
     // Set isCancel to false to reject the request
+    // Restore original booking_group_id if it was part of a group
+    const updateData = {
+      isCancel: false,
+    };
+    
+    // Restore the booking back to its original group if it had one
+    if (booking.original_booking_group_id) {
+      updateData.booking_group_id = booking.original_booking_group_id;
+      updateData.original_booking_group_id = null;
+    }
+    
     const updatedBooking = await prisma.booking.update({
       where: { booking_id: bookingId },
-      data: {
-        isCancel: false,
-      },
+      data: updateData,
       include: {
         car: {
           select: { make: true, model: true, year: true, license_plate: true },

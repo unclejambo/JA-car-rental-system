@@ -240,6 +240,10 @@ export default function AdminBookingPage() {
             // Calculate totals for the group
             const totalAmount = groupBookings.reduce((sum, b) => sum + (b.total_amount || 0), 0);
             const totalBalance = groupBookings.reduce((sum, b) => sum + (b.balance || 0), 0);
+            
+            // Check if ANY booking in the group has cancellation or extension request
+            const hasAnyCancellation = groupBookings.some(b => b.isCancel === true || b.isCancel === 'true' || b.isCancel === 'TRUE');
+            const hasAnyExtension = groupBookings.some(b => b.isExtend === true || b.isExtend === 'true' || b.isExtend === 'TRUE');
 
             // Create a grouped record
             groupedBookings.push({
@@ -251,6 +255,9 @@ export default function AdminBookingPage() {
               total_amount: totalAmount,
               balance: totalBalance,
               payment_status: totalBalance > 0 ? 'Unpaid' : 'Paid',
+              // Override flags to reflect ANY booking in the group
+              isCancel: hasAnyCancellation,
+              isExtend: hasAnyExtension,
               // Display properties
               car_model: `Group Booking (${groupBookings.length} cars)`,
               car_plate_number: booking.booking_group_id,

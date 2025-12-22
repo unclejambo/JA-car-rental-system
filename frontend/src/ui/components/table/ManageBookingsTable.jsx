@@ -736,18 +736,34 @@ const ManageBookingsTable = ({
         resizable: true,
         headerAlign: 'left',
         renderCell: (params) => {
+          const wasGroupBooking = params.row.original_booking_group_id;
           return (
-            <Chip
-              label="Cancellation Request"
-              size="small"
-              sx={{
-                bgcolor: '#ffebee',
-                color: '#c62828',
-                fontWeight: 600,
-                fontSize: '0.75rem',
-                border: '1px solid #ef9a9a',
-              }}
-            />
+            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+              <Chip
+                label="Cancellation Request"
+                size="small"
+                sx={{
+                  bgcolor: '#ffebee',
+                  color: '#c62828',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  border: '1px solid #ef9a9a',
+                }}
+              />
+              {wasGroupBooking && (
+                <Chip
+                  label="From Group Booking"
+                  size="small"
+                  sx={{
+                    bgcolor: '#e3f2fd',
+                    color: '#1565c0',
+                    fontWeight: 500,
+                    fontSize: '0.7rem',
+                    border: '1px solid #90caf9',
+                  }}
+                />
+              )}
+            </Box>
           );
         },
       },

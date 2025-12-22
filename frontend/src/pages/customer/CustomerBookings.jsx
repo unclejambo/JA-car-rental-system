@@ -4,6 +4,7 @@ import CustomerSideBar from '../../ui/components/CustomerSideBar';
 import Header from '../../ui/components/Header';
 import SearchBar from '../../ui/components/SearchBar';
 import EditBookingModal from '../../ui/components/modal/NewEditBookingModal';
+import MultiCarEditBookingModal from '../../ui/components/modal/MultiCarEditBookingModal';
 import PaymentModal from '../../ui/components/modal/PaymentModal';
 import '../../styles/customercss/customerdashboard.css';
 import {
@@ -93,7 +94,10 @@ function CustomerBookings() {
     useState(false);
   const [showExtendDialog, setShowExtendDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showEditGroupDialog, setShowEditGroupDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [showCancelSingleInGroupDialog, setShowCancelSingleInGroupDialog] = useState(false);
+  const [selectedSingleBookingInGroup, setSelectedSingleBookingInGroup] = useState(null);
   const [extendDate, setExtendDate] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -296,6 +300,46 @@ function CustomerBookings() {
   const openCancelGroupDialog = (groupBooking) => {
     setSelectedGroupBooking(groupBooking);
     setShowCancelGroupDialog(true);
+  };
+
+  // Open edit group dialog
+  const openEditGroupDialog = (groupBooking) => {
+    setSelectedGroupBooking(groupBooking);
+    setShowEditGroupDialog(true);
+  };
+
+  // Open cancel single booking in group dialog
+  const openCancelSingleInGroupDialog = (booking) => {
+    setSelectedSingleBookingInGroup(booking);
+    setShowCancelSingleInGroupDialog(true);
+  };
+
+  // Execute cancel single booking in group
+  const handleCancelSingleInGroup = async () => {
+    if (!selectedSingleBookingInGroup) return;
+
+    try {
+      setActionLoading(true);
+      const response = await authenticatedFetch(
+        `${API_BASE}/bookings/${selectedSingleBookingInGroup.booking_id}/cancel`,
+        { method: 'PUT' }
+      );
+
+      if (response.ok) {
+        showMessage('Successfully submitted cancellation request. Waiting for admin approval.', 'success');
+        setShowCancelSingleInGroupDialog(false);
+        setSelectedSingleBookingInGroup(null);
+        fetchBookings();
+        fetchPayments();
+      } else {
+        const errorData = await response.json();
+        showMessage(errorData.error || 'Failed to cancel booking', 'error');
+      }
+    } catch (error) {
+      showMessage('Failed to cancel booking. Please try again.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   // Execute cancel group
@@ -1050,46 +1094,102 @@ function CustomerBookings() {
 
                                 {/* Individual Cars in Group */}
                                 <Box sx={{ mb: 2 }}>
-                                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
-                                    Vehicles in this group:
-                                  </Typography>
-                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                    {booking.bookings.map((b) => (
-                                      <Box key={b.booking_id} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)' } }}>
-                                        <Box
-                                          sx={{
-                                            p: 1,
-                                            border: '1px solid #e0e0e0',
-                                            borderRadius: 1,
-                                            backgroundColor: 'white',
-                                          }}
-                                        >
-                                          <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
-                                            {b.car_details.display_name}
-                                          </Typography>
-                                          <Typography variant="caption" color="text.secondary">
-                                            Plate: {b.car_details.license_plate} | ₱{b.total_amount?.toLocaleString()}
-                                          </Typography>
+                                  <Button
+                                    onClick={() => toggleGroupExpansion(booking.booking_group_id)}
+                                    size="small"
+                                    variant="text"
+                                    sx={{ 
+                                      mb: 1, 
+                                      textTransform: 'none',
+                                      color: '#c10007',
+                                      fontWeight: 'bold',
+                                      '&:hover': { backgroundColor: 'rgba(193, 0, 7, 0.1)' }
+                                    }}
+                                  >
+                                    {expandedGroups.has(booking.booking_group_id) ? '▼' : '▶'} {expandedGroups.has(booking.booking_group_id) ? 'Hide' : 'View'} Individual Vehicles
+                                  </Button>
+                                  {expandedGroups.has(booking.booking_group_id) && (
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                      {booking.bookings.map((b) => (
+                                        <Box key={b.booking_id} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)' } }}>
+                                          <Box
+                                            sx={{
+                                              p: 1,
+                                              border: '1px solid #e0e0e0',
+                                              borderRadius: 1,
+                                              backgroundColor: 'white',
+                                              display: 'flex',
+                                              flexDirection: 'column',
+                                              gap: 1,
+                                            }}
+                                          >
+                                            <Box>
+                                              <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                                                {b.car_details.display_name}
+                                              </Typography>
+                                              <Typography variant="caption" color="text.secondary">
+                                                Plate: {b.car_details.license_plate} | ₱{b.total_amount?.toLocaleString()}
+                                              </Typography>
+                                            </Box>
+                                            {(booking.booking_status?.toLowerCase() === 'pending' || booking.booking_status?.toLowerCase() === 'confirmed') && !b.isCancel && (
+                                              <Button
+                                                size="small"
+                                                variant="outlined"
+                                                color="error"
+                                                startIcon={<HiTrash size={12} />}
+                                                onClick={() => openCancelSingleInGroupDialog(b)}
+                                                disabled={actionLoading}
+                                                sx={{ fontSize: '0.65rem', alignSelf: 'flex-start' }}
+                                              >
+                                                Cancel This
+                                              </Button>
+                                            )}
+                                            {b.isCancel && (
+                                              <Chip 
+                                                label="Cancellation Pending" 
+                                                color="warning" 
+                                                size="small"
+                                                sx={{ fontSize: '0.6rem', alignSelf: 'flex-start' }}
+                                              />
+                                            )}
+                                          </Box>
                                         </Box>
-                                      </Box>
-                                    ))}
-                                  </Box>
+                                      ))}
+                                    </Box>
+                                  )}
                                 </Box>
 
                                 {/* Action buttons for group booking */}
-                                {booking.booking_status?.toLowerCase() === 'pending' && !booking.isCancel && (
+                                {!booking.isCancel && (
                                   <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mt: 2 }}>
-                                    <Button
-                                      size="small"
-                                      variant="outlined"
-                                      color="error"
-                                      startIcon={<HiTrash size={16} />}
-                                      onClick={() => openCancelGroupDialog(booking)}
-                                      disabled={actionLoading}
-                                      sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
-                                    >
-                                      Cancel All ({booking.car_count})
-                                    </Button>
+                                    {/* Edit button only for pending bookings */}
+                                    {booking.booking_status?.toLowerCase() === 'pending' && (
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        color="primary"
+                                        startIcon={<HiPencil size={16} />}
+                                        onClick={() => openEditGroupDialog(booking)}
+                                        disabled={actionLoading}
+                                        sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                                      >
+                                        Edit All
+                                      </Button>
+                                    )}
+                                    {/* Cancel button for pending or confirmed bookings */}
+                                    {(booking.booking_status?.toLowerCase() === 'pending' || booking.booking_status?.toLowerCase() === 'confirmed') && (
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        color="error"
+                                        startIcon={<HiTrash size={16} />}
+                                        onClick={() => openCancelGroupDialog(booking)}
+                                        disabled={actionLoading}
+                                        sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                                      >
+                                        Cancel All ({booking.car_count})
+                                      </Button>
+                                    )}
                                   </Box>
                                 )}
                                 {booking.isCancel && (
@@ -2612,6 +2712,17 @@ function CustomerBookings() {
         onBookingUpdated={handleBookingUpdated}
       />
 
+      {/* Edit Group Booking Modal */}
+      <MultiCarEditBookingModal
+        open={showEditGroupDialog}
+        onClose={() => {
+          setShowEditGroupDialog(false);
+          setSelectedGroupBooking(null);
+        }}
+        groupBooking={selectedGroupBooking}
+        onBookingUpdated={handleBookingUpdated}
+      />
+
       {/* Payment Modal */}
       <PaymentModal
         open={showPaymentDialog}
@@ -2675,6 +2786,66 @@ function CustomerBookings() {
             ) : (
               'Yes, Cancel Extension'
             )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Cancel Single Booking in Group Dialog */}
+      <Dialog
+        open={showCancelSingleInGroupDialog}
+        onClose={() => {
+          setShowCancelSingleInGroupDialog(false);
+          setSelectedSingleBookingInGroup(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 'bold', color: '#c10007' }}>
+          Cancel Booking?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to cancel this booking? This will only cancel the selected vehicle from your group booking.
+          </DialogContentText>
+          {selectedSingleBookingInGroup && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                <strong>Vehicle:</strong> {selectedSingleBookingInGroup.car_details?.display_name}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                <strong>Plate:</strong> {selectedSingleBookingInGroup.car_details?.license_plate}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                <strong>Amount:</strong> ₱{selectedSingleBookingInGroup.total_amount?.toLocaleString()}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#d32f2f', mt: 1, fontSize: '0.875rem' }}>
+                ⚠️ Cancellation policies may apply. This action will require admin approval.
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
+          <Button 
+            onClick={() => {
+              setShowCancelSingleInGroupDialog(false);
+              setSelectedSingleBookingInGroup(null);
+            }}
+            sx={{ color: '#666' }}
+          >
+            Keep Booking
+          </Button>
+          <Button
+            onClick={handleCancelSingleInGroup}
+            color="error"
+            variant="contained"
+            disabled={actionLoading}
+            startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <HiTrash size={16} />}
+            sx={{ 
+              backgroundColor: '#c10007',
+              '&:hover': { backgroundColor: '#a50006' }
+            }}
+          >
+            {actionLoading ? 'Cancelling...' : 'Cancel Booking'}
           </Button>
         </DialogActions>
       </Dialog>
